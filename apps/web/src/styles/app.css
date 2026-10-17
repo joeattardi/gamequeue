@@ -1557,10 +1557,6 @@ fieldset.stars:disabled .stars__star {
     align-items: center;
     gap: 14px;
     padding: 12px 0;
-    border-bottom: 1px solid var(--line);
-}
-.public-games li:last-child {
-    border-bottom: 0;
 }
 .public-games li img,
 .public-games li .cover {
