@@ -1,5 +1,15 @@
 import { RATING_MAX, type EntryStatus, type PublicEntryDto } from '@gamequeue/shared';
-import { Ban, CalendarDays, Gamepad2, Library, ListTodo, Pause, Play, Trophy } from 'lucide-react';
+import {
+    Ban,
+    CalendarDays,
+    Gamepad2,
+    Library,
+    ListOrdered,
+    ListTodo,
+    Pause,
+    Play,
+    Trophy
+} from 'lucide-react';
 import type { ReactNode } from 'react';
 import { Link, useParams } from 'react-router';
 import { ApiRequestError } from '../api/client';
@@ -75,7 +85,17 @@ function Stats({ summary }: { summary: { total: number; byStatus: Record<EntrySt
     );
 }
 
-/** Public: rendered for logged-out visitors too, so it brings its own header instead of the Shell. */
+/** Public pages are rendered for logged-out visitors too, so they bring their own header instead of the Shell. */
+export function PublicHeader() {
+    return (
+        <header className="topbar">
+            <Link to="/">
+                <Logo />
+            </Link>
+        </header>
+    );
+}
+
 export function ProfilePage() {
     const { username = '' } = useParams();
     const profile = useProfile(username);
@@ -84,11 +104,7 @@ export function ProfilePage() {
 
     return (
         <>
-            <header className="topbar">
-                <Link to="/">
-                    <Logo />
-                </Link>
-            </header>
+            <PublicHeader />
             <main className="page">
                 {profile.isPending && <p role="status">Loading…</p>}
                 {profile.isError && (
@@ -127,6 +143,13 @@ export function ProfilePage() {
                                     s.entry ? [s.entry] : []
                                 )}
                             />
+                        </section>
+
+                        <section aria-labelledby="p-queue">
+                            <h2 id="p-queue">Up next</h2>
+                            <Link to={`/u/${profile.data.username}/queue`}>
+                                <ListOrdered aria-hidden="true" /> See the full queue
+                            </Link>
                         </section>
 
                         {profile.data.lists.map((l) => (

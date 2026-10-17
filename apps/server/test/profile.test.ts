@@ -47,7 +47,38 @@ describe('public profile', () => {
         ]);
         expect(text).not.toContain('secret note');
         expect(text).not.toContain('me@example.com');
-        expect(text).not.toContain('Queue');
+    });
+
+    it('shows the queue in order, publicly, without creating one', async () => {
+        const { app, post, put, add } = await setup();
+        const hades = await add(1);
+        const celeste = await add(2);
+        expect((await (await app.request('/api/profiles/joe/queue')).json()).queue.entries).toEqual(
+            []
+        );
+        await post('/queue/items', { entryId: hades.id });
+        await post('/queue/items', { entryId: celeste.id });
+        // the queue is not among the profile's lists
+        expect((await (await app.request('/api/profiles/joe')).json()).profile.lists).toEqual([]);
+        await put('/queue/order', { entryIds: [celeste.id, hades.id] });
+
+        const res = await app.request('/api/profiles/JOE/queue');
+        expect(res.status).toBe(200);
+        const text = await res.text();
+        const { queue } = JSON.parse(text);
+        expect(queue.username).toBe('joe');
+        expect(queue.entries.map((e: { game: { name: string } }) => e.game.name)).toEqual([
+            'Celeste',
+            'Hades'
+        ]);
+        expect(text).not.toContain('me@example.com');
+    });
+
+    it('does not create a queue when viewing one', async () => {
+        const { app, db } = makeApp();
+        await register(app, 'me@example.com', undefined, 'joe');
+        await app.request('/api/profiles/joe/queue');
+        expect(db.select().from(lists).all()).toHaveLength(0);
     });
 
     it('shows games in slots', async () => {
@@ -72,5 +103,6 @@ describe('public profile', () => {
         const { app } = makeApp();
         expect((await app.request('/api/profiles/nobody')).status).toBe(404);
         expect((await app.request('/api/profiles/a')).status).toBe(404);
+        expect((await app.request('/api/profiles/nobody/queue')).status).toBe(404);
     });
 });

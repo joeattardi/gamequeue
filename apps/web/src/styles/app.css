@@ -1532,3 +1532,31 @@ fieldset.stars:disabled .stars__star {
 .statbar .counter--abandoned {
     background: var(--status-bad);
 }
+
+.public-queue {
+    list-style: none;
+    margin: 16px 0 0;
+    padding: 0;
+    display: grid;
+    gap: 8px;
+}
+.public-queue li {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 10px 14px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--surface);
+}
+.public-queue li img,
+.public-queue li .cover {
+    width: 48px;
+    flex: none;
+}
+.public-queue__pos {
+    min-width: 2ch;
+    text-align: right;
+    font-weight: 600;
+    color: var(--accent);
+}
