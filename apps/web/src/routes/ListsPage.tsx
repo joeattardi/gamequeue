@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { ApiRequestError } from '../api/client';
 import { useCreateList, useLists } from '../api/lists';
-import { Plus } from 'lucide-react';
+import { List, Plus } from 'lucide-react';
 
 export function ListsPage() {
     const lists = useLists();
@@ -25,7 +25,10 @@ export function ListsPage() {
         <section>
             <div className="page-head">
                 <div>
-                    <h1>Lists</h1>
+                    <h1>
+                        <List aria-hidden="true" />
+                        Lists
+                    </h1>
                     <p className="muted">Ordered lists of games. Your queue has its own page.</p>
                 </div>
             </div>

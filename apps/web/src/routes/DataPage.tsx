@@ -3,6 +3,7 @@ import { useRef, useState, type ChangeEvent } from 'react';
 import { Link } from 'react-router';
 import { ApiRequestError } from '../api/client';
 import { useImport } from '../api/data';
+import { Database } from 'lucide-react';
 
 interface Problem {
     path: string;
@@ -70,7 +71,10 @@ export function DataPage() {
         <section>
             <div className="page-head">
                 <div>
-                    <h1>Your data</h1>
+                    <h1>
+                        <Database aria-hidden="true" />
+                        Your data
+                    </h1>
                     <p className="muted">Back up everything, or bring it back later.</p>
                 </div>
             </div>

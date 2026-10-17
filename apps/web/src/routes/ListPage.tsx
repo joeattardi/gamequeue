@@ -33,7 +33,16 @@ import { useConfirm } from '../components/Confirm';
 import { Cover } from '../components/Cover';
 import { ResultSkeletons } from '../components/ResultSkeletons';
 import { formatMinutes, platformLabel, useDebounced, yearOf } from '../lib';
-import { ArrowLeft, ChevronDown, ChevronUp, Pencil, Trash2, X } from 'lucide-react';
+import {
+    ArrowLeft,
+    ChevronDown,
+    ChevronUp,
+    List,
+    ListOrdered,
+    Pencil,
+    Trash2,
+    X
+} from 'lucide-react';
 
 export function ListPage() {
     const id = Number(useParams().id);
@@ -115,14 +124,17 @@ function ListView({
             )}
             <div className="page-head">
                 <div>
-                    <h1>{name}</h1>
+                    <h1>
+                        {isQueue ? <ListOrdered aria-hidden="true" /> : <List aria-hidden="true" />}
+                        {name}
+                    </h1>
                     <p className="muted" aria-live="polite">
                         {order.length} {order.length === 1 ? 'game' : 'games'}
                         {isQueue && ' · starting a game takes it off the queue'}
                     </p>
                 </div>
                 <div className="row">
-                    <Link className="btn btn--primary" to={`/pick?list=${id}`}>
+                    <Link className="btn btn--primary" to={`/pick/criteria?list=${id}`}>
                         Random pick
                     </Link>
                     {!isQueue && (

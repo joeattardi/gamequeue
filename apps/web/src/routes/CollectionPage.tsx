@@ -5,7 +5,7 @@ import { useEntries, useFacets } from '../api/collection';
 import { AddGameDialog } from '../components/AddGameDialog';
 import { Cover } from '../components/Cover';
 import { formatMinutes, platformLabel, useDebounced, yearOf } from '../lib';
-import { Plus, Star } from 'lucide-react';
+import { Library, ListTodo, Plus, Star } from 'lucide-react';
 
 const SORT_LABELS: Record<(typeof ENTRY_SORTS)[number], string> = {
     title: 'Title',
@@ -45,7 +45,14 @@ export function CollectionPage({ view }: { view: 'all' | 'backlog' }) {
         <section>
             <div className="page-head">
                 <div>
-                    <h1>{view === 'backlog' ? 'Backlog' : 'Collection'}</h1>
+                    <h1>
+                        {view === 'backlog' ? (
+                            <ListTodo aria-hidden="true" />
+                        ) : (
+                            <Library aria-hidden="true" />
+                        )}
+                        {view === 'backlog' ? 'Backlog' : 'Collection'}
+                    </h1>
                     <p className="muted" aria-live="polite">
                         {entries.data
                             ? `${entries.data.length} ${entries.data.length === 1 ? 'game' : 'games'}${filtered ? ' match' : ''}`

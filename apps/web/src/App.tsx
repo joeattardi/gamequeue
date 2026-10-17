@@ -8,6 +8,8 @@ import { EntryPage } from './routes/EntryPage';
 import { Home } from './routes/Home';
 import { ListPage, QueuePage } from './routes/ListPage';
 import { ListsPage } from './routes/ListsPage';
+import { PickChoosePage } from './routes/PickChoosePage';
+import { PickCriteriaPage } from './routes/PickCriteriaPage';
 import { PickPage } from './routes/PickPage';
 import { ProfilePage } from './routes/ProfilePage';
 import { ProfileGamesPage } from './routes/ProfileGamesPage';
@@ -53,6 +55,8 @@ export function App() {
                 <Route path="lists" element={<ListsPage />} />
                 <Route path="lists/:id" element={<ListPage />} />
                 <Route path="pick" element={<PickPage />} />
+                <Route path="pick/criteria" element={<PickCriteriaPage />} />
+                <Route path="pick/choose" element={<PickChoosePage />} />
                 <Route path="data" element={<DataPage />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
             </Route>

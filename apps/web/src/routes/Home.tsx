@@ -5,7 +5,7 @@ import { ManageSlotsDialog } from '../components/ManageSlotsDialog';
 import { UpNext } from '../components/UpNext';
 import { SlotBay } from '../components/SlotBay';
 import { useSlots } from '../api/slots';
-import { SlidersHorizontal } from 'lucide-react';
+import { House, SlidersHorizontal } from 'lucide-react';
 
 export function Home() {
     const slots = useSlots();
@@ -16,7 +16,10 @@ export function Home() {
         <section>
             <div className="page-head">
                 <div>
-                    <h1>Now playing</h1>
+                    <h1>
+                        <House aria-hidden="true" />
+                        Now playing
+                    </h1>
                     <p className="muted">What's in each slot right now.</p>
                 </div>
                 <button className="btn" onClick={() => setManaging(true)}>
