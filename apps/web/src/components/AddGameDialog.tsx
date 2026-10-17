@@ -49,7 +49,7 @@ function AddGameBody({ onDone }: { onDone: () => void }) {
             {search.data?.map((r) => (
               <li key={r.igdbId}>
                 <button className="result" disabled={r.entryId !== null} onClick={() => setPicked(r)}>
-                  <Cover imageId={r.coverImageId} name={r.name} size="cover_small" />
+                  <Cover imageId={r.coverImageId} name={r.name} size="cover_big" />
                   <span className="result__text">
                     <strong>{r.name}</strong>
                     <span className="muted">{[r.year, r.platforms.slice(0, 4).map(platformLabel).join(", ")].filter(Boolean).join(" · ")}</span>
