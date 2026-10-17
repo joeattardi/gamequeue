@@ -1559,7 +1559,7 @@ fieldset.stars:disabled .stars__star {
     align-items: center;
     gap: 14px;
     padding: 10px 14px;
-    border-radius: var(--radius);
+    border-radius: var(--radius-sm);
     background: var(--surface);
 }
 .public-games li img,
