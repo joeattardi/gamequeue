@@ -1,7 +1,7 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
 import type { ListDetailDto, ListSummaryDto, PickInput, PickResultDto } from '@gamequeue/shared';
 import { api } from './client';
-import { useInvalidateCollection } from './collection';
+import { useInvalidateAfterDelete, useInvalidateCollection } from './collection';
 
 export const useLists = () =>
     useQuery({
@@ -34,7 +34,7 @@ export function useRenameList(id: number) {
 }
 
 export function useDeleteList(id: number) {
-    const invalidate = useInvalidateCollection();
+    const invalidate = useInvalidateAfterDelete(['list', id]);
     return useMutation({
         mutationFn: () => api(`/lists/${id}`, { method: 'DELETE' }),
         onSuccess: invalidate

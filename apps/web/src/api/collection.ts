@@ -53,22 +53,36 @@ export function useGameSearch(q: string) {
     });
 }
 
+const COLLECTION_KEYS = [
+    'entries',
+    'entry',
+    'facets',
+    'search',
+    'playthroughs',
+    'slots',
+    'lists',
+    'list',
+    'queue'
+];
+
 export function useInvalidateCollection() {
     const qc = useQueryClient();
+    return () => Promise.all(COLLECTION_KEYS.map((k) => qc.invalidateQueries({ queryKey: [k] })));
+}
+
+/**
+ * Like useInvalidateCollection, for after deleting the thing a page is showing. Refetching that
+ * page's own queries would 404, flip the page to its "not found" state and unmount it before the
+ * caller can navigate away, so those queries are left alone.
+ */
+export function useInvalidateAfterDelete(...gone: (readonly unknown[])[]) {
+    const qc = useQueryClient();
     return () =>
-        Promise.all(
-            [
-                'entries',
-                'entry',
-                'facets',
-                'search',
-                'playthroughs',
-                'slots',
-                'lists',
-                'list',
-                'queue'
-            ].map((k) => qc.invalidateQueries({ queryKey: [k] }))
-        );
+        qc.invalidateQueries({
+            predicate: ({ queryKey }) =>
+                COLLECTION_KEYS.includes(queryKey[0] as string) &&
+                !gone.some((key) => key.every((part, i) => queryKey[i] === part))
+        });
 }
 
 export function useAddEntry() {
@@ -91,7 +105,7 @@ export function usePatchEntry(id: number) {
 }
 
 export function useDeleteEntry(id: number) {
-    const invalidate = useInvalidateCollection();
+    const invalidate = useInvalidateAfterDelete(['entry', id], ['playthroughs', id]);
     return useMutation({
         mutationFn: () => api(`/entries/${id}`, { method: 'DELETE' }),
         onSuccess: invalidate
