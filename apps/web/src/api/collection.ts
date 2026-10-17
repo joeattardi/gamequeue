@@ -57,9 +57,17 @@ export function useInvalidateCollection() {
     const qc = useQueryClient();
     return () =>
         Promise.all(
-            ['entries', 'entry', 'facets', 'search', 'playthroughs', 'slots', 'lists', 'list'].map(
-                (k) => qc.invalidateQueries({ queryKey: [k] })
-            )
+            [
+                'entries',
+                'entry',
+                'facets',
+                'search',
+                'playthroughs',
+                'slots',
+                'lists',
+                'list',
+                'queue'
+            ].map((k) => qc.invalidateQueries({ queryKey: [k] }))
         );
 }
 

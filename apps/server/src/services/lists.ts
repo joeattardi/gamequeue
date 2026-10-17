@@ -15,6 +15,34 @@ function requireList(db: Db, userId: number, id: number) {
     return list;
 }
 
+/** The user's queue, created the first time it's needed. */
+export function ensureQueue(db: Db, userId: number) {
+    const find = () =>
+        db
+            .select()
+            .from(lists)
+            .where(and(eq(lists.userId, userId), eq(lists.kind, 'queue')))
+            .get();
+    return (
+        find() ??
+        db
+            .insert(lists)
+            .values({ userId, name: 'Queue', kind: 'queue' })
+            .onConflictDoNothing()
+            .returning()
+            .get() ??
+        find()!
+    );
+}
+
+export function getQueue(db: Db, userId: number): ListDetailDto {
+    return getList(db, userId, ensureQueue(db, userId).id);
+}
+
+function assertPlainList(list: { kind: string }, action: string) {
+    if (list.kind === 'queue') throw new HttpError(400, `The queue can't be ${action}`);
+}
+
 export function listLists(db: Db, userId: number): ListSummaryDto[] {
     return db
         .select({
@@ -23,7 +51,7 @@ export function listLists(db: Db, userId: number): ListSummaryDto[] {
             count: sql<number>`(select count(*) from ${listItems} where ${listItems.listId} = ${lists.id})`
         })
         .from(lists)
-        .where(eq(lists.userId, userId))
+        .where(and(eq(lists.userId, userId), eq(lists.kind, 'list')))
         .orderBy(asc(sql`lower(${lists.name})`), asc(lists.id))
         .all();
 }
@@ -39,7 +67,7 @@ export function getList(db: Db, userId: number, id: number): ListDetailDto {
         .map((r) => r.entryId);
     // hydrate() keeps the order it's given
     const dtos: EntryDto[] = hydrate(db, userId, ids);
-    return { id: list.id, name: list.name, entries: dtos };
+    return { id: list.id, name: list.name, kind: list.kind, entries: dtos };
 }
 
 export function createList(db: Db, userId: number, name: string): ListSummaryDto {
@@ -48,12 +76,12 @@ export function createList(db: Db, userId: number, name: string): ListSummaryDto
 }
 
 export function renameList(db: Db, userId: number, id: number, name: string) {
-    requireList(db, userId, id);
+    assertPlainList(requireList(db, userId, id), 'renamed');
     db.update(lists).set({ name }).where(eq(lists.id, id)).run();
 }
 
 export function deleteList(db: Db, userId: number, id: number) {
-    requireList(db, userId, id);
+    assertPlainList(requireList(db, userId, id), 'deleted');
     db.delete(lists).where(eq(lists.id, id)).run();
 }
 
@@ -78,6 +106,36 @@ export function addToList(db: Db, userId: number, listId: number, entryId: numbe
     return getList(db, userId, listId);
 }
 
+/** Deletes one item and closes the gap so positions stay 0..n-1. */
+function removeItem(db: Db, listId: number, entryId: number) {
+    db.delete(listItems)
+        .where(and(eq(listItems.listId, listId), eq(listItems.entryId, entryId)))
+        .run();
+    const rest = db
+        .select({ entryId: listItems.entryId })
+        .from(listItems)
+        .where(eq(listItems.listId, listId))
+        .orderBy(asc(listItems.position))
+        .all();
+    rest.forEach((r, i) =>
+        db
+            .update(listItems)
+            .set({ position: i })
+            .where(and(eq(listItems.listId, listId), eq(listItems.entryId, r.entryId)))
+            .run()
+    );
+}
+
+/** Starting a game takes it off the queue. Does nothing if it wasn't queued. */
+export function dequeue(db: Db, userId: number, entryId: number) {
+    const queue = db
+        .select({ id: lists.id })
+        .from(lists)
+        .where(and(eq(lists.userId, userId), eq(lists.kind, 'queue')))
+        .get();
+    if (queue) removeItem(db, queue.id, entryId);
+}
+
 export function removeFromList(
     db: Db,
     userId: number,
@@ -85,25 +143,7 @@ export function removeFromList(
     entryId: number
 ): ListDetailDto {
     requireList(db, userId, listId);
-    db.transaction((tx) => {
-        tx.delete(listItems)
-            .where(and(eq(listItems.listId, listId), eq(listItems.entryId, entryId)))
-            .run();
-        // Close the gap so positions stay 0..n-1
-        const rest = tx
-            .select({ entryId: listItems.entryId })
-            .from(listItems)
-            .where(eq(listItems.listId, listId))
-            .orderBy(asc(listItems.position))
-            .all();
-        rest.forEach((r, i) =>
-            tx
-                .update(listItems)
-                .set({ position: i })
-                .where(and(eq(listItems.listId, listId), eq(listItems.entryId, r.entryId)))
-                .run()
-        );
-    });
+    db.transaction((tx) => removeItem(tx as unknown as Db, listId, entryId));
     return getList(db, userId, listId);
 }
 

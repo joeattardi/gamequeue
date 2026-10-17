@@ -2,6 +2,7 @@ import type { SlotDto } from '@gamequeue/shared';
 import { useState } from 'react';
 import { AssignDialog } from '../components/AssignDialog';
 import { ManageSlotsDialog } from '../components/ManageSlotsDialog';
+import { UpNext } from '../components/UpNext';
 import { SlotBay } from '../components/SlotBay';
 import { useSlots } from '../api/slots';
 
@@ -37,6 +38,7 @@ export function Home() {
                 slot={assigning ? (slots.data?.find((s) => s.id === assigning.id) ?? null) : null}
                 onClose={() => setAssigning(null)}
             />
+            <UpNext />
             <ManageSlotsDialog open={managing} onClose={() => setManaging(false)} />
         </section>
     );

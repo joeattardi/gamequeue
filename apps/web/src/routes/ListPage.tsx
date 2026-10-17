@@ -28,6 +28,7 @@ import {
     useRenameList,
     useReorderList
 } from '../api/lists';
+import { useQueue } from '../api/queue';
 import { Cover } from '../components/Cover';
 import { formatMinutes, platformLabel, useDebounced, yearOf } from '../lib';
 
@@ -47,7 +48,29 @@ export function ListPage() {
     return <ListView id={id} name={list.data.name} entries={list.data.entries} />;
 }
 
-function ListView({ id, name, entries }: { id: number; name: string; entries: EntryDto[] }) {
+export function QueuePage() {
+    const queue = useQueue();
+    if (queue.isPending) return <p role="status">Loading…</p>;
+    if (queue.isError || !queue.data)
+        return (
+            <p className="form-error" role="alert">
+                Couldn't load your queue.
+            </p>
+        );
+    return <ListView id={queue.data.id} name="Queue" entries={queue.data.entries} isQueue />;
+}
+
+function ListView({
+    id,
+    name,
+    entries,
+    isQueue = false
+}: {
+    id: number;
+    name: string;
+    entries: EntryDto[];
+    isQueue?: boolean;
+}) {
     const navigate = useNavigate();
     const reorder = useReorderList(id);
     const remove = useRemoveFromList();
@@ -81,35 +104,44 @@ function ListView({ id, name, entries }: { id: number; name: string; entries: En
 
     return (
         <section>
-            <Link to="/lists" className="back">
-                ← Lists
-            </Link>
+            {!isQueue && (
+                <Link to="/lists" className="back">
+                    ← Lists
+                </Link>
+            )}
             <div className="page-head">
                 <div>
                     <h1>{name}</h1>
                     <p className="muted" aria-live="polite">
                         {order.length} {order.length === 1 ? 'game' : 'games'}
+                        {isQueue && ' · starting a game takes it off the queue'}
                     </p>
                 </div>
                 <div className="row">
                     <Link className="btn btn--primary" to={`/pick?list=${id}`}>
                         Random pick
                     </Link>
-                    <RenameButton id={id} name={name} />
-                    <button
-                        className="btn btn--danger"
-                        disabled={del.isPending}
-                        onClick={() =>
-                            confirm(`Delete the list "${name}"? Your games are not affected.`) &&
-                            del.mutate(undefined, { onSuccess: () => navigate('/lists') })
-                        }
-                    >
-                        Delete list
-                    </button>
+                    {!isQueue && (
+                        <>
+                            <RenameButton id={id} name={name} />
+                            <button
+                                className="btn btn--danger"
+                                disabled={del.isPending}
+                                onClick={() =>
+                                    confirm(
+                                        `Delete the list "${name}"? Your games are not affected.`
+                                    ) &&
+                                    del.mutate(undefined, { onSuccess: () => navigate('/lists') })
+                                }
+                            >
+                                Delete list
+                            </button>
+                        </>
+                    )}
                 </div>
             </div>
 
-            <AddGames listId={id} inList={new Set(order.map((e) => e.id))} />
+            <AddGames listId={id} isQueue={isQueue} inList={new Set(order.map((e) => e.id))} />
             <p className="form-error" role="alert">
                 {error}
             </p>
@@ -117,9 +149,13 @@ function ListView({ id, name, entries }: { id: number; name: string; entries: En
             {order.length === 0 ? (
                 <div className="empty">
                     <p>
-                        <strong>This list is empty.</strong>
+                        <strong>{isQueue ? 'Your queue is empty.' : 'This list is empty.'}</strong>
                     </p>
-                    <p className="muted">Search above to add games from your collection.</p>
+                    <p className="muted">
+                        {isQueue
+                            ? 'Search above to line up what to play next. Any game in your collection can go on it.'
+                            : 'Search above to add games from your collection.'}
+                    </p>
                 </div>
             ) : (
                 <DndContext
@@ -138,6 +174,7 @@ function ListView({ id, name, entries }: { id: number; name: string; entries: En
                                     entry={entry}
                                     index={i}
                                     last={i === order.length - 1}
+                                    isQueue={isQueue}
                                     onMove={(by) => move(i, by)}
                                     onRemove={() =>
                                         remove.mutate({ listId: id, entryId: entry.id })
@@ -156,10 +193,12 @@ function Row({
     entry,
     index,
     last,
+    isQueue,
     onMove,
     onRemove
 }: {
     entry: EntryDto;
+    isQueue: boolean;
     index: number;
     last: boolean;
     onMove: (by: -1 | 1) => void;
@@ -238,7 +277,7 @@ function Row({
                 <button
                     className="btn btn--ghost btn--danger"
                     onClick={onRemove}
-                    aria-label={`Remove ${game.name} from this list`}
+                    aria-label={`Remove ${game.name} from this ${isQueue ? 'queue' : 'list'}`}
                 >
                     ✕
                 </button>
@@ -303,13 +342,21 @@ function RenameButton({ id, name }: { id: number; name: string }) {
     );
 }
 
-function AddGames({ listId, inList }: { listId: number; inList: Set<number> }) {
+function AddGames({
+    listId,
+    inList,
+    isQueue
+}: {
+    listId: number;
+    inList: Set<number>;
+    isQueue: boolean;
+}) {
     const [text, setText] = useState('');
     const q = useDebounced(text.trim(), 250);
     return (
         <div className="panel">
             <label className="field">
-                <span>Add games from your collection</span>
+                <span>{isQueue ? 'Add games to the queue' : 'Add games from your collection'}</span>
                 <input
                     type="search"
                     value={text}

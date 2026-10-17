@@ -25,9 +25,7 @@ export function ListsPage() {
             <div className="page-head">
                 <div>
                     <h1>Lists</h1>
-                    <p className="muted">
-                        Ordered lists of games. Use one as your "up next" queue.
-                    </p>
+                    <p className="muted">Ordered lists of games. Your queue has its own page.</p>
                 </div>
             </div>
             <form className="inline-form" onSubmit={submit}>

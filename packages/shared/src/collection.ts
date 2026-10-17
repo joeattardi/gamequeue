@@ -63,8 +63,10 @@ export interface EntryDto {
     lastFinishedOn: string | null;
     /** The slot it currently occupies, if any */
     slotId: number | null;
-    /** Lists it belongs to */
+    /** Lists it belongs to (the queue is separate, see `queued`) */
     lists: { id: number; name: string }[];
+    /** On the queue */
+    queued: boolean;
     /** Platforms the user owns it on */
     platforms: PlatformDto[];
     tags: string[];

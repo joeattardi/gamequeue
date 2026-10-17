@@ -1,6 +1,7 @@
 import type { EntryDto, SlotDto } from '@gamequeue/shared';
 import { useMemo, useState } from 'react';
 import { useEntries } from '../api/collection';
+import { useQueue } from '../api/queue';
 import { needsPlatform, useSlots } from '../api/slots';
 import { platformLabel, yearOf } from '../lib';
 import { Cover } from './Cover';
@@ -11,7 +12,7 @@ const BACKLOG = new URLSearchParams({ view: 'backlog' });
 const PAUSED = new URLSearchParams({ view: 'all', status: 'paused' });
 const PLAYING = new URLSearchParams({ view: 'all', status: 'playing' });
 
-/** Choose a game for one slot: anything in progress first, then the backlog. */
+/** Choose a game for one slot: your queue first, then anything in progress, then the backlog. */
 export function AssignDialog({ slot, onClose }: { slot: SlotDto | null; onClose: () => void }) {
     const ref = useModalDialog(slot !== null);
     return (
@@ -31,6 +32,7 @@ function AssignBody({ slot, onDone }: { slot: SlotDto; onDone: () => void }) {
     const backlog = useEntries(BACKLOG);
     const paused = useEntries(PAUSED);
     const playing = useEntries(PLAYING);
+    const queue = useQueue();
     const slots = useSlots();
     const { assignTo, pending, error } = useAssign();
     const [text, setText] = useState('');
@@ -38,15 +40,17 @@ function AssignBody({ slot, onDone }: { slot: SlotDto; onDone: () => void }) {
     const [platformId, setPlatformId] = useState('');
 
     const candidates = useMemo(() => {
-        // In progress first (playing, then paused), then the backlog
+        // Queue first, then in progress (playing, then paused), then the backlog
+        const seen = new Set<number>();
         const all = [
+            ...(queue.data?.entries ?? []),
             ...(playing.data ?? []),
             ...(paused.data ?? []),
             ...(backlog.data ?? [])
-        ].filter((e) => e.id !== slot.entry?.id);
+        ].filter((e) => e.id !== slot.entry?.id && !seen.has(e.id) && seen.add(e.id));
         const q = text.trim().toLowerCase();
         return q ? all.filter((e) => e.game.name.toLowerCase().includes(q)) : all;
-    }, [backlog.data, paused.data, playing.data, text, slot.entry?.id]);
+    }, [queue.data, backlog.data, paused.data, playing.data, text, slot.entry?.id]);
     const slotName = (id: number | null) => slots.data?.find((s) => s.id === id)?.name;
 
     function choose(entry: EntryDto) {
@@ -109,7 +113,7 @@ function AssignBody({ slot, onDone }: { slot: SlotDto; onDone: () => void }) {
                         </p>
                     )}
                     <label className="field">
-                        <span>Search games in progress and your backlog</span>
+                        <span>Search your queue, games in progress and your backlog</span>
                         <input
                             type="search"
                             value={text}
@@ -122,7 +126,10 @@ function AssignBody({ slot, onDone }: { slot: SlotDto; onDone: () => void }) {
                     <p className="form-error" role="alert">
                         {error}
                     </p>
-                    {backlog.isPending || paused.isPending || playing.isPending ? (
+                    {backlog.isPending ||
+                    paused.isPending ||
+                    playing.isPending ||
+                    queue.isPending ? (
                         <p className="muted" role="status">
                             Loading…
                         </p>
@@ -155,6 +162,7 @@ function AssignBody({ slot, onDone }: { slot: SlotDto; onDone: () => void }) {
                                                     .join(' · ')}
                                             </span>
                                         </span>
+                                        {e.queued && <span className="badge">queued</span>}
                                         {e.slotId !== null ? (
                                             <span className="badge badge--playing">
                                                 in {slotName(e.slotId) ?? 'a slot'}

@@ -6,7 +6,7 @@ import { CollectionPage } from './routes/CollectionPage';
 import { DataPage } from './routes/DataPage';
 import { EntryPage } from './routes/EntryPage';
 import { Home } from './routes/Home';
-import { ListPage } from './routes/ListPage';
+import { ListPage, QueuePage } from './routes/ListPage';
 import { ListsPage } from './routes/ListsPage';
 import { PickPage } from './routes/PickPage';
 
@@ -41,6 +41,7 @@ export function App() {
                 <Route path="collection" element={<CollectionPage view="all" />} />
                 <Route path="backlog" element={<CollectionPage view="backlog" />} />
                 <Route path="games/:id" element={<EntryPage />} />
+                <Route path="queue" element={<QueuePage />} />
                 <Route path="lists" element={<ListsPage />} />
                 <Route path="lists/:id" element={<ListPage />} />
                 <Route path="pick" element={<PickPage />} />

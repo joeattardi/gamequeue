@@ -15,6 +15,7 @@ import { entries, entryPlatforms, platforms, playthroughs, slots } from '../db/s
 import { HttpError } from '../errors.js';
 import { existingPlatformIds } from './games.js';
 import { getEntry } from './entries.js';
+import { dequeue } from './lists.js';
 import { toDto } from './playthrough-dto.js';
 
 const DAY_MS = 24 * 3600 * 1000;
@@ -134,6 +135,7 @@ export function startPlaythrough(
             .set({ status: to, updatedAt: Date.now() })
             .where(eq(entries.id, entryId))
             .run();
+        dequeue(t, userId, entryId);
     });
     return getEntry(db, userId, entryId)!;
 }

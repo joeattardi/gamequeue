@@ -8,7 +8,7 @@ import { authRoutes } from './routes/auth.js';
 import { dataRoutes } from './routes/data.js';
 import { entryRoutes } from './routes/entries.js';
 import { igdbRoutes } from './routes/igdb.js';
-import { listRoutes, pickRoutes } from './routes/lists.js';
+import { listRoutes, pickRoutes, queueRoutes } from './routes/lists.js';
 import { slotRoutes } from './routes/slots.js';
 import { entryActionRoutes, playthroughRoutes } from './routes/playthroughs.js';
 import { HttpError } from './errors.js';
@@ -69,6 +69,7 @@ export function createApp(deps: AppDeps) {
     app.route('/api/playthroughs', playthroughRoutes(deps));
     app.route('/api/slots', slotRoutes(deps));
     app.route('/api/lists', listRoutes(deps));
+    app.route('/api/queue', queueRoutes(deps));
     app.route('/api/pick', pickRoutes(deps));
     app.route('/api/data', dataRoutes(deps));
 

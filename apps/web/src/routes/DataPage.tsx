@@ -176,7 +176,7 @@ export function DataPage() {
 }
 
 function ReportSummary({ report }: { report: ImportReport }) {
-    const { games, playthroughs, lists, slots } = report;
+    const { games, playthroughs, lists, queue, slots } = report;
     const verb = report.dryRun ? 'Will add' : 'Added';
     const nothing =
         games.added +
@@ -184,6 +184,7 @@ function ReportSummary({ report }: { report: ImportReport }) {
             playthroughs.added +
             lists.created +
             lists.itemsAdded +
+            queue.added +
             slots.created +
             slots.filled ===
         0;
@@ -203,6 +204,7 @@ function ReportSummary({ report }: { report: ImportReport }) {
                 <Stat label="Playthroughs you already had" value={playthroughs.duplicates} />
                 <Stat label={`${verb} lists`} value={lists.created} />
                 <Stat label={`${verb} list entries`} value={lists.itemsAdded} />
+                <Stat label={`${verb} to queue`} value={queue.added} />
                 <Stat label={`${verb} slots`} value={slots.created} />
                 <Stat label="Slots filled" value={slots.filled} />
             </dl>

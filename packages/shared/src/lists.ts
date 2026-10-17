@@ -10,6 +10,7 @@ export interface ListSummaryDto {
 export interface ListDetailDto {
     id: number;
     name: string;
+    kind: 'list' | 'queue';
     /** In list order */
     entries: EntryDto[];
 }

@@ -235,9 +235,18 @@ export const lists = sqliteTable(
             .notNull()
             .references(() => users.id, { onDelete: 'cascade' }),
         name: text('name').notNull(),
+        // 'queue' is the user's one "up next" list; it's created on first use
+        kind: text('kind', { enum: ['list', 'queue'] })
+            .notNull()
+            .default('list'),
         createdAt: integer('created_at').notNull().default(now)
     },
-    (t) => [index('lists_user_idx').on(t.userId)]
+    (t) => [
+        index('lists_user_idx').on(t.userId),
+        uniqueIndex('lists_one_queue_idx')
+            .on(t.userId)
+            .where(sql`${t.kind} = 'queue'`)
+    ]
 );
 
 export const listItems = sqliteTable(

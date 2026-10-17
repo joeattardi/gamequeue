@@ -110,7 +110,12 @@ export const exportFileSchema = z
                     games: z.array(id)
                 })
             )
-            .max(500)
+            .max(500),
+        /**
+         * IGDB ids in queue order. Added after v1 shipped: files without it are still valid v1,
+         * and an older reader just ignores it.
+         */
+        queue: z.array(id).max(50_000).default([])
     })
     .superRefine((f, ctx) => {
         const ids = new Set<number>();
@@ -130,6 +135,15 @@ export const exportFileSchema = z
                     code: 'custom',
                     path: ['slots', i, 'igdbId'],
                     message: `Game ${s.igdbId} isn't in the file`
+                });
+            }
+        });
+        f.queue.forEach((g, i) => {
+            if (!ids.has(g)) {
+                ctx.addIssue({
+                    code: 'custom',
+                    path: ['queue', i],
+                    message: `Game ${g} isn't in the file`
                 });
             }
         });
@@ -155,6 +169,8 @@ export interface ImportReport {
     games: { added: number; updated: number; unchanged: number };
     playthroughs: { added: number; duplicates: number; skipped: number };
     lists: { created: number; itemsAdded: number };
+    /** Games added to the end of the queue */
+    queue: { added: number };
     slots: { created: number; filled: number };
     /** Things worth knowing, e.g. values of yours that were kept over the file's */
     notes: string[];

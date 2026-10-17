@@ -2,6 +2,7 @@ import type { EntryDto } from '@gamequeue/shared';
 import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router';
 import { ApiRequestError } from '../api/client';
+import { useAddToQueue, useRemoveFromQueue } from '../api/queue';
 import { useAddToList, useCreateList, useLists, useRemoveFromList } from '../api/lists';
 
 /** Which lists a game is on, with quick add/remove and a way to start a new list. */
@@ -10,6 +11,8 @@ export function ListsPanel({ entry }: { entry: EntryDto }) {
     const add = useAddToList();
     const remove = useRemoveFromList();
     const create = useCreateList();
+    const enqueue = useAddToQueue();
+    const dequeue = useRemoveFromQueue();
     const [name, setName] = useState('');
     const [error, setError] = useState<string>();
     const member = new Set(entry.lists.map((l) => l.id));
@@ -21,6 +24,12 @@ export function ListsPanel({ entry }: { entry: EntryDto }) {
         const vars = { listId, entryId: entry.id };
         if (member.has(listId)) remove.mutate(vars, { onError: fail });
         else add.mutate(vars, { onError: fail });
+    }
+
+    function toggleQueue() {
+        setError(undefined);
+        const m = entry.queued ? dequeue : enqueue;
+        m.mutate(entry.id, { onError: fail });
     }
 
     function submit(e: FormEvent) {
@@ -37,7 +46,11 @@ export function ListsPanel({ entry }: { entry: EntryDto }) {
 
     return (
         <section aria-labelledby="lists-h" className="panel">
-            <h2 id="lists-h">Lists</h2>
+            <h2 id="lists-h">Queue &amp; lists</h2>
+            <label className="check">
+                <input type="checkbox" checked={entry.queued} onChange={toggleQueue} />
+                On my <Link to="/queue">queue</Link>
+            </label>
             {lists.data?.length ? (
                 <fieldset className="checks">
                     <legend className="sr-only">Lists this game is on</legend>
@@ -54,7 +67,7 @@ export function ListsPanel({ entry }: { entry: EntryDto }) {
                 </fieldset>
             ) : (
                 <p className="muted">
-                    No lists yet. Make one below, or see <Link to="/lists">all lists</Link>.
+                    No other lists yet. Make one below, or see <Link to="/lists">all lists</Link>.
                 </p>
             )}
             <form className="inline-form" onSubmit={submit}>
@@ -64,7 +77,7 @@ export function ListsPanel({ entry }: { entry: EntryDto }) {
                         value={name}
                         onChange={(e) => setName(e.target.value)}
                         maxLength={60}
-                        placeholder="e.g. Up next"
+                        placeholder="e.g. Cozy games"
                     />
                 </label>
                 <button className="btn" type="submit" disabled={create.isPending || !name.trim()}>

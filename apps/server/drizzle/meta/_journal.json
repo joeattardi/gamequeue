@@ -29,6 +29,13 @@
       "when": 1792228433993,
       "tag": "0003_last_monster_badoon",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1792261474365,
+      "tag": "0004_careless_invaders",
+      "breakpoints": true
     }
   ]
 }

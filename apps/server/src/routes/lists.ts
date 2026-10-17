@@ -13,7 +13,9 @@ import {
     addToList,
     createList,
     deleteList,
+    ensureQueue,
     getList,
+    getQueue,
     listLists,
     removeFromList,
     renameList,
@@ -83,6 +85,42 @@ export function pickRoutes({ db, config }: AppDeps) {
     r.use('*', requireAuth(db, config));
     r.post('/', async (c) =>
         c.json(pick(db, c.get('user').id, validate(pickSchema, await body(c))))
+    );
+    return r;
+}
+
+/** The queue is a list with its own URL, so clients don't need to know its id up front. */
+export function queueRoutes({ db, config }: AppDeps) {
+    const r = new Hono<{ Variables: AuthVars }>();
+    r.use('*', requireAuth(db, config));
+    const uid = (c: { get(k: 'user'): { id: number } }) => c.get('user').id;
+    const queueId = (c: { get(k: 'user'): { id: number } }) => ensureQueue(db, uid(c)).id;
+
+    r.get('/', (c) => c.json({ list: getQueue(db, uid(c)) }));
+    r.post('/items', async (c) =>
+        c.json({
+            list: addToList(
+                db,
+                uid(c),
+                queueId(c),
+                validate(addListItemSchema, await body(c)).entryId
+            )
+        })
+    );
+    r.delete('/items/:entryId', (c) =>
+        c.json({
+            list: removeFromList(db, uid(c), queueId(c), parseId(c.req.param('entryId')))
+        })
+    );
+    r.put('/order', async (c) =>
+        c.json({
+            list: reorderList(
+                db,
+                uid(c),
+                queueId(c),
+                validate(reorderListSchema, await body(c)).entryIds
+            )
+        })
     );
     return r;
 }

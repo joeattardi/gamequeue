@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { useFacets } from '../api/collection';
 import { useLists, usePick } from '../api/lists';
+import { useQueue } from '../api/queue';
 import { ApiRequestError } from '../api/client';
 import { needsPlatform, useSlots } from '../api/slots';
 import { Cover } from '../components/Cover';
@@ -28,6 +29,7 @@ export function PickPage() {
     const [params] = useSearchParams();
     const facets = useFacets();
     const lists = useLists();
+    const queue = useQueue();
     const pick = usePick();
 
     const [source, setSource] = useState(
@@ -80,7 +82,7 @@ export function PickPage() {
                 <div>
                     <h1>Random pick</h1>
                     <p className="muted">
-                        Can't decide? Let fate choose from your backlog or a list.
+                        Can't decide? Let fate choose from your backlog, queue or a list.
                     </p>
                 </div>
             </div>
@@ -96,6 +98,7 @@ export function PickPage() {
                     <span>Pick from</span>
                     <select value={source} onChange={(e) => setSource(e.target.value)}>
                         <option value="backlog">Backlog (unplayed games)</option>
+                        {queue.data && <option value={`list:${queue.data.id}`}>Queue</option>}
                         {lists.data?.map((l) => (
                             <option key={l.id} value={`list:${l.id}`}>
                                 List: {l.name}

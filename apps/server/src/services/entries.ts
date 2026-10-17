@@ -268,6 +268,7 @@ export function hydrate(db: Db, userId: number, ids: number[]): EntryDto[] {
     const history = new Map<number, PlaythroughDto[]>();
     const slotOf = new Map<number, number>();
     const listsOf = new Map<number, { id: number; name: string }[]>();
+    const queued = new Set<number>();
     const gameIds = new Set<number>();
 
     for (const chunk of chunks) {
@@ -307,12 +308,21 @@ export function hydrate(db: Db, userId: number, ids: number[]): EntryDto[] {
             slotOf.set(r.entryId!, r.id);
         }
         for (const r of db
-            .select({ entryId: listItems.entryId, id: lists.id, name: lists.name })
+            .select({
+                entryId: listItems.entryId,
+                id: lists.id,
+                name: lists.name,
+                kind: lists.kind
+            })
             .from(listItems)
             .innerJoin(lists, eq(lists.id, listItems.listId))
             .where(inArray(listItems.entryId, chunk))
             .orderBy(asc(sql`lower(${lists.name})`))
             .all()) {
+            if (r.kind === 'queue') {
+                queued.add(r.entryId);
+                continue;
+            }
             (listsOf.get(r.entryId) ?? listsOf.set(r.entryId, []).get(r.entryId)!).push({
                 id: r.id,
                 name: r.name
@@ -383,6 +393,7 @@ export function hydrate(db: Db, userId: number, ids: number[]): EntryDto[] {
                 addedAt: e.addedAt,
                 slotId: slotOf.get(e.id) ?? null,
                 lists: listsOf.get(e.id) ?? [],
+                queued: queued.has(e.id),
                 playthroughCount: history.get(e.id)?.length ?? 0,
                 openPlaythrough: history.get(e.id)?.find((p) => p.outcome === null) ?? null,
                 lastFinishedOn:

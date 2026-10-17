@@ -152,6 +152,11 @@ export function buildExport(db: Db, userId: number, now = new Date()): ExportFil
         }))
     }));
 
+    const igdbIds = (entryIds: number[] = []) =>
+        entryIds.flatMap((entryId) => {
+            const igdbId = igdbIdOfEntry.get(entryId);
+            return igdbId === undefined ? [] : [igdbId];
+        });
     const slotRows = db
         .select()
         .from(slots)
@@ -164,6 +169,7 @@ export function buildExport(db: Db, userId: number, now = new Date()): ExportFil
         .where(eq(lists.userId, userId))
         .orderBy(asc(lists.id))
         .all();
+    const queueRow = listRows.find((l) => l.kind === 'queue');
     const items = group(
         db
             .select({ key: listItems.listId, value: listItems.entryId })
@@ -184,12 +190,9 @@ export function buildExport(db: Db, userId: number, now = new Date()): ExportFil
             position: s.position,
             igdbId: s.entryId === null ? null : (igdbIdOfEntry.get(s.entryId) ?? null)
         })),
-        lists: listRows.map((l) => ({
-            name: l.name,
-            games: (items.get(l.id) ?? []).flatMap((entryId) => {
-                const igdbId = igdbIdOfEntry.get(entryId);
-                return igdbId === undefined ? [] : [igdbId];
-            })
-        }))
+        lists: listRows
+            .filter((l) => l.kind === 'list')
+            .map((l) => ({ name: l.name, games: igdbIds(items.get(l.id)) })),
+        queue: igdbIds(queueRow && items.get(queueRow.id))
     };
 }

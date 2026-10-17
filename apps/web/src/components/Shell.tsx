@@ -18,6 +18,7 @@ export function Shell({ user }: { user: UserDto }) {
                     </NavLink>
                     <NavLink to="/collection">Collection</NavLink>
                     <NavLink to="/backlog">Backlog</NavLink>
+                    <NavLink to="/queue">Queue</NavLink>
                     <NavLink to="/lists">Lists</NavLink>
                     <NavLink to="/pick">Pick</NavLink>
                     <NavLink to="/data">Data</NavLink>

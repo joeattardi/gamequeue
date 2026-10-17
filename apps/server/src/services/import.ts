@@ -14,6 +14,7 @@ import {
 } from '../db/schema.js';
 import { saveGame, upsertPlatforms } from './games.js';
 import { setTags } from './entries.js';
+import { ensureQueue } from './lists.js';
 import { syncStatus } from './playthroughs.js';
 
 const MAX_NOTES = 50;
@@ -43,6 +44,7 @@ export function importData(
         games: { added: 0, updated: 0, unchanged: 0 },
         playthroughs: { added: 0, duplicates: 0, skipped: 0 },
         lists: { created: 0, itemsAdded: 0 },
+        queue: { added: 0 },
         slots: { created: 0, filled: 0 },
         notes: [],
         moreNotes: 0
@@ -270,7 +272,7 @@ function mergeLists(
     for (const l of db
         .select()
         .from(lists)
-        .where(eq(lists.userId, userId))
+        .where(and(eq(lists.userId, userId), eq(lists.kind, 'list')))
         .orderBy(asc(lists.id))
         .all()) {
         if (!byName.has(lower(l.name))) byName.set(lower(l.name), l.id);
@@ -306,6 +308,32 @@ function mergeLists(
             db.insert(listItems).values({ listId, entryId, position: position++ }).run();
             present.add(entryId);
             report.lists.itemsAdded++;
+        }
+    }
+
+    // Queue: games already queued keep their place; new ones go on the end
+    if (file.queue.length > 0) {
+        const queueId = ensureQueue(db, userId).id;
+        const queued = new Set(
+            db
+                .select({ entryId: listItems.entryId })
+                .from(listItems)
+                .where(eq(listItems.listId, queueId))
+                .all()
+                .map((r) => r.entryId)
+        );
+        let position =
+            (db
+                .select({ n: max(listItems.position) })
+                .from(listItems)
+                .where(eq(listItems.listId, queueId))
+                .get()!.n ?? -1) + 1;
+        for (const gameId of new Set(file.queue)) {
+            const entryId = entryIdByGame.get(gameId)!;
+            if (queued.has(entryId)) continue;
+            db.insert(listItems).values({ listId: queueId, entryId, position: position++ }).run();
+            queued.add(entryId);
+            report.queue.added++;
         }
     }
 }
