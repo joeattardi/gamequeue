@@ -1654,12 +1654,13 @@ fieldset.stars:disabled .stars__star {
 }
 .public-grid__info {
     position: absolute;
-    inset: auto 0 0;
+    inset: 0;
     display: grid;
+    align-content: end;
     gap: 4px;
-    padding: 28px 8px 8px;
-    border-radius: 0 0 10px 10px;
-    background: linear-gradient(to top, rgb(0 0 0 / 0.88), rgb(0 0 0 / 0));
+    padding: 8px;
+    border-radius: 10px;
+    background: linear-gradient(to top, rgb(0 0 0 / 0.92), rgb(0 0 0 / 0.7));
     color: #fff;
     font-size: 0.85rem;
     line-height: 1.25;
