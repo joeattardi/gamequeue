@@ -53,12 +53,12 @@ export function useGameSearch(q: string) {
     });
 }
 
-function useInvalidateCollection() {
+export function useInvalidateCollection() {
     const qc = useQueryClient();
     return () =>
         Promise.all(
-            ['entries', 'entry', 'facets', 'search', 'playthroughs'].map((k) =>
-                qc.invalidateQueries({ queryKey: [k] })
+            ['entries', 'entry', 'facets', 'search', 'playthroughs', 'slots', 'lists', 'list'].map(
+                (k) => qc.invalidateQueries({ queryKey: [k] })
             )
         );
 }

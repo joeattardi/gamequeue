@@ -209,7 +209,7 @@ function StartForm({
     );
 }
 
-function CloseForm({
+export function CloseForm({
     mode,
     pending,
     onSubmit,

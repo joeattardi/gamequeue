@@ -1,0 +1,364 @@
+import {
+    DndContext,
+    KeyboardSensor,
+    PointerSensor,
+    closestCenter,
+    useSensor,
+    useSensors,
+    type DragEndEvent
+} from '@dnd-kit/core';
+import {
+    SortableContext,
+    arrayMove,
+    sortableKeyboardCoordinates,
+    useSortable,
+    verticalListSortingStrategy
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import type { EntryDto } from '@gamequeue/shared';
+import { useEffect, useState, type FormEvent } from 'react';
+import { Link, useNavigate, useParams } from 'react-router';
+import { useEntries } from '../api/collection';
+import { ApiRequestError } from '../api/client';
+import {
+    useAddToList,
+    useDeleteList,
+    useList,
+    useRemoveFromList,
+    useRenameList,
+    useReorderList
+} from '../api/lists';
+import { Cover } from '../components/Cover';
+import { formatMinutes, platformLabel, useDebounced, yearOf } from '../lib';
+
+export function ListPage() {
+    const id = Number(useParams().id);
+    const list = useList(id);
+    if (list.isPending) return <p role="status">Loading…</p>;
+    if (list.isError || !list.data)
+        return (
+            <div className="empty">
+                <p>
+                    <strong>That list doesn't exist.</strong>
+                </p>
+                <Link to="/lists">Back to lists</Link>
+            </div>
+        );
+    return <ListView id={id} name={list.data.name} entries={list.data.entries} />;
+}
+
+function ListView({ id, name, entries }: { id: number; name: string; entries: EntryDto[] }) {
+    const navigate = useNavigate();
+    const reorder = useReorderList(id);
+    const remove = useRemoveFromList();
+    const del = useDeleteList(id);
+    const [order, setOrder] = useState(entries);
+    const [error, setError] = useState<string>();
+    useEffect(() => setOrder(entries), [entries]);
+
+    const sensors = useSensors(
+        useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+        useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+    );
+
+    function commit(next: EntryDto[]) {
+        setOrder(next); // optimistic; the query refetches and corrects it if the save fails
+        setError(undefined);
+        reorder.mutate(
+            next.map((e) => e.id),
+            { onError: () => setError("Couldn't save the new order.") }
+        );
+    }
+
+    function onDragEnd({ active, over }: DragEndEvent) {
+        if (!over || active.id === over.id) return;
+        const from = order.findIndex((e) => e.id === active.id);
+        const to = order.findIndex((e) => e.id === over.id);
+        commit(arrayMove(order, from, to));
+    }
+
+    const move = (index: number, by: -1 | 1) => commit(arrayMove(order, index, index + by));
+
+    return (
+        <section>
+            <Link to="/lists" className="back">
+                ← Lists
+            </Link>
+            <div className="page-head">
+                <div>
+                    <h1>{name}</h1>
+                    <p className="muted" aria-live="polite">
+                        {order.length} {order.length === 1 ? 'game' : 'games'}
+                    </p>
+                </div>
+                <div className="row">
+                    <Link className="btn btn--primary" to={`/pick?list=${id}`}>
+                        Random pick
+                    </Link>
+                    <RenameButton id={id} name={name} />
+                    <button
+                        className="btn btn--danger"
+                        disabled={del.isPending}
+                        onClick={() =>
+                            confirm(`Delete the list "${name}"? Your games are not affected.`) &&
+                            del.mutate(undefined, { onSuccess: () => navigate('/lists') })
+                        }
+                    >
+                        Delete list
+                    </button>
+                </div>
+            </div>
+
+            <AddGames listId={id} inList={new Set(order.map((e) => e.id))} />
+            <p className="form-error" role="alert">
+                {error}
+            </p>
+
+            {order.length === 0 ? (
+                <div className="empty">
+                    <p>
+                        <strong>This list is empty.</strong>
+                    </p>
+                    <p className="muted">Search above to add games from your collection.</p>
+                </div>
+            ) : (
+                <DndContext
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    onDragEnd={onDragEnd}
+                >
+                    <SortableContext
+                        items={order.map((e) => e.id)}
+                        strategy={verticalListSortingStrategy}
+                    >
+                        <ol className="rows">
+                            {order.map((entry, i) => (
+                                <Row
+                                    key={entry.id}
+                                    entry={entry}
+                                    index={i}
+                                    last={i === order.length - 1}
+                                    onMove={(by) => move(i, by)}
+                                    onRemove={() =>
+                                        remove.mutate({ listId: id, entryId: entry.id })
+                                    }
+                                />
+                            ))}
+                        </ol>
+                    </SortableContext>
+                </DndContext>
+            )}
+        </section>
+    );
+}
+
+function Row({
+    entry,
+    index,
+    last,
+    onMove,
+    onRemove
+}: {
+    entry: EntryDto;
+    index: number;
+    last: boolean;
+    onMove: (by: -1 | 1) => void;
+    onRemove: () => void;
+}) {
+    const {
+        attributes,
+        listeners,
+        setNodeRef,
+        setActivatorNodeRef,
+        transform,
+        transition,
+        isDragging
+    } = useSortable({ id: entry.id });
+    const { game } = entry;
+    return (
+        <li
+            ref={setNodeRef}
+            className={`row-item${isDragging ? ' row-item--dragging' : ''}`}
+            style={{ transform: CSS.Transform.toString(transform), transition }}
+        >
+            <button
+                ref={setActivatorNodeRef}
+                className="handle"
+                aria-label={`Reorder ${game.name}. Press space, then use the arrow keys.`}
+                {...attributes}
+                {...listeners}
+            >
+                ⠿
+            </button>
+            <span className="row-item__pos muted" aria-hidden="true">
+                {index + 1}
+            </span>
+            <Link
+                to={`/games/${entry.id}`}
+                className="row-item__cover"
+                tabIndex={-1}
+                aria-hidden="true"
+            >
+                <Cover imageId={game.coverImageId} name={game.name} size="cover_big" />
+            </Link>
+            <div className="row-item__main">
+                <Link to={`/games/${entry.id}`} className="row-item__title">
+                    {game.name}
+                </Link>
+                <span className="muted">
+                    {[
+                        yearOf(game.releaseDate),
+                        entry.platforms.map(platformLabel).join(', '),
+                        entry.ttbMinutes !== null ? formatMinutes(entry.ttbMinutes) : null
+                    ]
+                        .filter(Boolean)
+                        .join(' · ')}
+                </span>
+                {entry.status !== 'unplayed' && (
+                    <span className={`badge badge--${entry.status}`}>{entry.status}</span>
+                )}
+            </div>
+            <div className="row-item__actions">
+                <button
+                    className="btn btn--ghost"
+                    disabled={index === 0}
+                    onClick={() => onMove(-1)}
+                    aria-label={`Move ${game.name} up`}
+                >
+                    ↑
+                </button>
+                <button
+                    className="btn btn--ghost"
+                    disabled={last}
+                    onClick={() => onMove(1)}
+                    aria-label={`Move ${game.name} down`}
+                >
+                    ↓
+                </button>
+                <button
+                    className="btn btn--ghost btn--danger"
+                    onClick={onRemove}
+                    aria-label={`Remove ${game.name} from this list`}
+                >
+                    ✕
+                </button>
+            </div>
+        </li>
+    );
+}
+
+function RenameButton({ id, name }: { id: number; name: string }) {
+    const rename = useRenameList(id);
+    const [editing, setEditing] = useState(false);
+    const [text, setText] = useState(name);
+    const [error, setError] = useState<string>();
+    function submit(e: FormEvent) {
+        e.preventDefault();
+        setError(undefined);
+        rename.mutate(text.trim(), {
+            onSuccess: () => setEditing(false),
+            onError: (err) =>
+                setError(err instanceof ApiRequestError ? err.message : 'Something went wrong.')
+        });
+    }
+    if (!editing)
+        return (
+            <button
+                className="btn"
+                onClick={() => {
+                    setText(name);
+                    setEditing(true);
+                }}
+            >
+                Rename
+            </button>
+        );
+    return (
+        <form className="inline-form" onSubmit={submit}>
+            <label className="field">
+                <span className="sr-only">List name</span>
+                <input
+                    value={text}
+                    onChange={(e) => setText(e.target.value)}
+                    maxLength={60}
+                    autoFocus
+                />
+            </label>
+            <button
+                className="btn btn--primary"
+                type="submit"
+                disabled={rename.isPending || !text.trim()}
+            >
+                Save
+            </button>
+            <button className="btn btn--ghost" type="button" onClick={() => setEditing(false)}>
+                Cancel
+            </button>
+            {error && (
+                <span className="form-error" role="alert">
+                    {error}
+                </span>
+            )}
+        </form>
+    );
+}
+
+function AddGames({ listId, inList }: { listId: number; inList: Set<number> }) {
+    const [text, setText] = useState('');
+    const q = useDebounced(text.trim(), 250);
+    return (
+        <div className="panel">
+            <label className="field">
+                <span>Add games from your collection</span>
+                <input
+                    type="search"
+                    value={text}
+                    onChange={(e) => setText(e.target.value)}
+                    placeholder="Search by title…"
+                    autoComplete="off"
+                />
+            </label>
+            {q && <AddResults listId={listId} q={q} inList={inList} />}
+        </div>
+    );
+}
+
+function AddResults({ listId, q, inList }: { listId: number; q: string; inList: Set<number> }) {
+    const results = useEntries(new URLSearchParams({ view: 'all', q }));
+    const add = useAddToList();
+    const matches = (results.data ?? []).filter((e) => !inList.has(e.id)).slice(0, 8);
+    if (results.isPending) return <p className="muted">Searching…</p>;
+    if (matches.length === 0)
+        return (
+            <p className="muted">
+                {results.data?.length ? 'Already in this list.' : 'No matches.'}
+            </p>
+        );
+    return (
+        <ul className="results">
+            {matches.map((e) => (
+                <li key={e.id}>
+                    <button
+                        className="result"
+                        disabled={add.isPending}
+                        onClick={() => add.mutate({ listId, entryId: e.id })}
+                    >
+                        <Cover imageId={e.game.coverImageId} name={e.game.name} size="cover_big" />
+                        <span className="result__text">
+                            <strong>{e.game.name}</strong>
+                            <span className="muted">
+                                {[
+                                    yearOf(e.game.releaseDate),
+                                    e.platforms.map(platformLabel).join(', ')
+                                ]
+                                    .filter(Boolean)
+                                    .join(' · ')}
+                            </span>
+                        </span>
+                        <span className="badge">+ Add</span>
+                    </button>
+                </li>
+            ))}
+        </ul>
+    );
+}

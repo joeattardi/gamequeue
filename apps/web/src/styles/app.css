@@ -719,3 +719,222 @@ textarea {
 .field input[type='date'] {
     min-width: 10.5rem;
 }
+
+/* ---- M3: slots, lists, pick ---- */
+.bays {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 16px;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
+    align-items: start;
+}
+.bay {
+    display: grid;
+    gap: 14px;
+    padding: 18px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+}
+.bay--empty {
+    border-style: dashed;
+    background: var(--surface-2);
+    align-content: space-between;
+    min-height: 200px;
+}
+.bay__name {
+    margin: 0;
+    font-size: 0.85rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+}
+.bay__game {
+    display: grid;
+    grid-template-columns: 120px 1fr;
+    gap: 16px;
+    align-items: start;
+}
+.bay__cover {
+    display: block;
+}
+.bay__title {
+    font: 700 1.25rem/1.2 var(--font-display);
+    color: var(--ink);
+    text-decoration: none;
+    overflow-wrap: anywhere;
+}
+.bay__title:hover {
+    text-decoration: underline;
+}
+.bay__meta {
+    margin: 6px 0 0;
+}
+.bay__foot {
+    border-top: 1px solid var(--line);
+    padding-top: 10px;
+}
+@media (max-width: 420px) {
+    .bay__game {
+        grid-template-columns: 96px 1fr;
+    }
+}
+
+.slot-edit {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 8px;
+}
+.slot-edit__row {
+    display: flex;
+    gap: 8px;
+    align-items: end;
+    flex-wrap: wrap;
+}
+
+.list-cards {
+    list-style: none;
+    margin: 16px 0 0;
+    padding: 0;
+    display: grid;
+    gap: 12px;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+}
+.list-card {
+    display: grid;
+    gap: 4px;
+    padding: 16px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--surface);
+    color: inherit;
+    text-decoration: none;
+}
+.list-card:hover {
+    background: var(--surface-2);
+}
+
+.rows {
+    list-style: none;
+    margin: 16px 0 0;
+    padding: 0;
+    display: grid;
+    gap: 8px;
+}
+.row-item {
+    display: grid;
+    grid-template-columns: auto auto 64px 1fr auto;
+    gap: 10px 12px;
+    align-items: center;
+    padding: 8px 10px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+}
+.row-item--dragging {
+    position: relative;
+    z-index: 2;
+    box-shadow: var(--shadow);
+    background: var(--surface-2);
+}
+.row-item__pos {
+    min-width: 1.5ch;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+.row-item__cover .cover {
+    border-radius: 6px;
+    box-shadow: none;
+}
+.row-item__main {
+    display: grid;
+    gap: 2px;
+    justify-items: start;
+    min-width: 0;
+}
+.row-item__title {
+    font: 700 1.05rem var(--font-display);
+    color: var(--ink);
+    text-decoration: none;
+    overflow-wrap: anywhere;
+}
+.row-item__title:hover {
+    text-decoration: underline;
+}
+.row-item__actions {
+    display: flex;
+    gap: 2px;
+}
+.row-item__actions .btn {
+    padding: 8px 12px;
+}
+.handle {
+    all: unset;
+    cursor: grab;
+    width: 44px;
+    height: 44px;
+    display: grid;
+    place-items: center;
+    border-radius: var(--radius-sm);
+    color: var(--ink-muted);
+    font-size: 1.3rem;
+    touch-action: none;
+}
+.handle:hover {
+    background: var(--surface-2);
+    color: var(--ink);
+}
+.handle:focus-visible {
+    outline: 3px solid var(--focus);
+}
+.handle:active {
+    cursor: grabbing;
+}
+@media (max-width: 560px) {
+    .row-item {
+        grid-template-columns: auto 56px 1fr;
+    }
+    .row-item__pos {
+        display: none;
+    }
+    .row-item__actions {
+        grid-column: 2 / -1;
+    }
+}
+
+.pick-form {
+    margin-bottom: 20px;
+}
+.field-legend {
+    font-weight: 600;
+    width: 100%;
+    padding: 0;
+    margin-bottom: 4px;
+}
+.pick-result {
+    grid-template-columns: 1fr;
+    margin-top: 8px;
+}
+@media (min-width: 640px) {
+    .pick-result {
+        grid-template-columns: 240px 1fr;
+        gap: 24px;
+    }
+}
+.pick-result__cover {
+    max-width: 240px;
+}
+.pick-result__title {
+    margin: 0;
+    font-size: clamp(1.5rem, 4vw, 2rem);
+}
+.summary--clamp {
+    display: -webkit-box;
+    -webkit-line-clamp: 5;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}

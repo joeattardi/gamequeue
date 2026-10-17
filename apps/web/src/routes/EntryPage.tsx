@@ -4,6 +4,7 @@ import { Link, useNavigate, useParams } from 'react-router';
 import { useAllPlatforms, useDeleteEntry, useEntry, usePatchEntry } from '../api/collection';
 import { ApiRequestError } from '../api/client';
 import { Cover } from '../components/Cover';
+import { ListsPanel } from '../components/ListsPanel';
 import { HistoryPanel, StatusPanel } from '../components/PlaythroughPanels';
 import { formatMinutes, platformLabel, yearOf } from '../lib';
 
@@ -89,6 +90,7 @@ function EntryDetail({ entry }: { entry: EntryDto }) {
                         />
                     </section>
 
+                    <ListsPanel entry={entry} />
                     <PlatformsEditor entry={entry} onSave={(ids) => save({ platformIds: ids })} />
                     <RatingNotes entry={entry} onSave={save} />
                     <TagsEditor

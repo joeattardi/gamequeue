@@ -59,6 +59,10 @@ export interface EntryDto {
     openPlaythrough: PlaythroughDto | null;
     /** End date of the most recent finished playthrough, if known */
     lastFinishedOn: string | null;
+    /** The slot it currently occupies, if any */
+    slotId: number | null;
+    /** Lists it belongs to */
+    lists: { id: number; name: string }[];
     /** Platforms the user owns it on */
     platforms: PlatformDto[];
     tags: string[];

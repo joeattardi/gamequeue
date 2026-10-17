@@ -16,8 +16,8 @@ Full design (data model, API surface, rationale): `/Users/joe/.claude/plans/floa
 - M0 scaffold, DB + migrations, auth: **done**
 - M1 IGDB integration + collection, backlog view: **done**
 - M2 status + playthroughs: **done**
-- M3 slots, lists/queue, random pick (completes v1): next. Note for M3: `finish`/`abandon` in `apps/server/src/services/playthroughs.ts` must also empty the entry's slot, and slot assignment must reuse `startPlaythrough`/`togglePause` so status stays consistent.
-- M4 export/import
+- M3 slots, lists/queue, random pick (completes v1): **done**
+- M4 export/import: next (ask the replace-vs-merge question first)
 - M5 (post-v1) smart lists, stats, CSV export of lists
 
 Not yet verified by hand: real IGDB calls (needs credentials in `apps/server/.env`) and the web UI in a browser. Tests use a fake IGDB client / fake fetch.
@@ -29,6 +29,9 @@ Not yet verified by hand: real IGDB calls (needs credentials in `apps/server/.en
 - **Backlog:** strictly `unplayed` entries (derived, never stored). Random pick has an "include paused" toggle, off by default.
 - **Ratings:** entry rating is its own field; finishing a rated playthrough pre-fills it only if empty.
 - **Playthrough dates may be unknown** (null start/end) so games finished long ago can be logged; stats must skip nulls. Dates are `YYYY-MM-DD`; the web client sends its local date, the server falls back to UTC today.
+- **Slot rules as built:** a game in a slot is always `playing` or `paused`. Finishing/abandoning, or history edits that leave playing/paused, empty its slot (`vacateSlots` in `playthroughs.ts`); deleting an entry empties it via `ON DELETE set null`. Pausing keeps the game in its slot. **Clearing or deleting a slot pauses its game** (never drops it). Moving a game between slots doesn't restart it.
+- **Lists:** items are addressed by `entryId` (not a separate item id): `POST /lists/:id/items {entryId}`, `DELETE /lists/:id/items/:entryId`, `PUT /lists/:id/order {entryIds}` (must be exactly the list's games). Adding twice is a no-op.
+- **Random pick:** candidates are `unplayed` games (plus `paused` if `includePaused`) from the backlog or a list, whatever the list holds. Filters: platform/tag/genre are any-of within a group and AND across groups; a max time-to-beat excludes games with unknown time. Re-roll sends `excludeEntryIds`; when all were shown it wraps, never repeating the last pick. Logic is pure in `packages/shared/src/pick.ts` with an injectable RNG.
 - **Status rules:** start (unplayed/finished/abandoned → playing, opens playthrough), pause, resume, finish/abandon (closes playthrough, empties its slot), log past playthrough. At most one open playthrough per entry (partial unique index).
 - **Design:** flat modern look (hairline borders, no offset shadows), warm paper + orange palette, Bricolage Grotesque + Figtree, light/dark. Keep it responsive and keyboard accessible.
 
@@ -42,6 +45,8 @@ Not yet verified by hand: real IGDB calls (needs credentials in `apps/server/.en
 - **Unverified:** IGDB's docs don't list `game_type` IDs, so DLC/mod/etc. are excluded by _type name_ in `apps/server/src/igdb/mappers.ts` (`EXCLUDED_TYPES`); unknown types are kept. Verify against real search results.
 - **CSRF:** Hono `csrf()` only checks form-style content types, so `app.ts` also rejects mutations with a disallowed `Origin` and any non-JSON `Content-Type`. Body-less mutations (DELETE, logout) need an `Origin` header (browsers send it; tests/curl must add it).
 - **Auth:** argon2id (`@node-rs/argon2`), session token hashed with SHA-256 in the DB, `gq_session` cookie (httpOnly, SameSite=Lax), generic login error, in-memory login rate limit, `SIGNUPS_ENABLED=false` → 403 on register.
+- **Migrations gotcha:** drizzle-kit drops `ON DELETE ...` from `ALTER TABLE ... ADD COLUMN ... REFERENCES` on SQLite. Check generated SQL for added FK columns and patch it by hand (done in `0003` for `slots.entry_id`).
+- **Nested transactions:** services call each other inside `db.transaction` (drizzle uses savepoints), e.g. `assignToSlot` reuses `startPlaythrough`/`togglePause`; a thrown `HttpError` rolls everything back.
 - **Migrations:** edit `apps/server/src/db/schema.ts`, run `npm run db:generate`, commit the new file in `apps/server/drizzle/`. They run at startup and in every test DB.
 - **Tests:** Vitest against in-memory SQLite via `createApp({db, config, igdb})` and `app.request()`; helpers in `apps/server/test/helpers.ts` (`makeApp`, `fakeIgdb`, `fakeGame`). Drizzle throws on empty `.values([])`, so guard inserts of possibly-empty arrays.
 - **TypeScript** is pinned to 5.9 (npm lists 7.x; not tried).

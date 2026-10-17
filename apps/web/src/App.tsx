@@ -5,6 +5,9 @@ import { AuthPage } from './routes/AuthPage';
 import { CollectionPage } from './routes/CollectionPage';
 import { EntryPage } from './routes/EntryPage';
 import { Home } from './routes/Home';
+import { ListPage } from './routes/ListPage';
+import { ListsPage } from './routes/ListsPage';
+import { PickPage } from './routes/PickPage';
 
 export function App() {
     const me = useMe();
@@ -37,6 +40,9 @@ export function App() {
                 <Route path="collection" element={<CollectionPage view="all" />} />
                 <Route path="backlog" element={<CollectionPage view="backlog" />} />
                 <Route path="games/:id" element={<EntryPage />} />
+                <Route path="lists" element={<ListsPage />} />
+                <Route path="lists/:id" element={<ListPage />} />
+                <Route path="pick" element={<PickPage />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
             </Route>
         </Routes>

@@ -13,6 +13,8 @@ import {
     entries,
     entryPlatforms,
     entryTags,
+    listItems,
+    lists,
     gameGenres,
     gamePlatforms,
     games,
@@ -20,6 +22,7 @@ import {
     genres,
     platforms,
     playthroughs,
+    slots,
     tags,
     themes
 } from '../db/schema.js';
@@ -250,7 +253,7 @@ export function getEntry(db: Db, userId: number, id: number): EntryDto | undefin
 }
 
 /** Loads full DTOs for the given entry ids, preserving their order. */
-function hydrate(db: Db, userId: number, ids: number[]): EntryDto[] {
+export function hydrate(db: Db, userId: number, ids: number[]): EntryDto[] {
     if (ids.length === 0) return [];
     // Chunked to stay clear of SQLite's bound-parameter limit on very large collections
     const chunks: number[][] = [];
@@ -263,6 +266,8 @@ function hydrate(db: Db, userId: number, ids: number[]): EntryDto[] {
     const owned = new Map<number, PlatformDto[]>();
     const tagMap = new Map<number, string[]>();
     const history = new Map<number, PlaythroughDto[]>();
+    const slotOf = new Map<number, number>();
+    const listsOf = new Map<number, { id: number; name: string }[]>();
     const gameIds = new Set<number>();
 
     for (const chunk of chunks) {
@@ -293,6 +298,25 @@ function hydrate(db: Db, userId: number, ids: number[]): EntryDto[] {
             (history.get(r.p.entryId) ?? history.set(r.p.entryId, []).get(r.p.entryId)!).push(
                 toDto(r.p, r.platform)
             );
+        }
+        for (const r of db
+            .select({ entryId: slots.entryId, id: slots.id })
+            .from(slots)
+            .where(and(eq(slots.userId, userId), inArray(slots.entryId, chunk)))
+            .all()) {
+            slotOf.set(r.entryId!, r.id);
+        }
+        for (const r of db
+            .select({ entryId: listItems.entryId, id: lists.id, name: lists.name })
+            .from(listItems)
+            .innerJoin(lists, eq(lists.id, listItems.listId))
+            .where(inArray(listItems.entryId, chunk))
+            .orderBy(asc(sql`lower(${lists.name})`))
+            .all()) {
+            (listsOf.get(r.entryId) ?? listsOf.set(r.entryId, []).get(r.entryId)!).push({
+                id: r.id,
+                name: r.name
+            });
         }
         for (const r of db
             .select({ entryId: entryTags.entryId, name: tags.name })
@@ -357,6 +381,8 @@ function hydrate(db: Db, userId: number, ids: number[]): EntryDto[] {
                 ttbOverrideMinutes: e.ttbOverrideMinutes,
                 ttbMinutes: e.ttbOverrideMinutes ?? minutes(g.ttbNormallySeconds),
                 addedAt: e.addedAt,
+                slotId: slotOf.get(e.id) ?? null,
+                lists: listsOf.get(e.id) ?? [],
                 playthroughCount: history.get(e.id)?.length ?? 0,
                 openPlaythrough: history.get(e.id)?.find((p) => p.outcome === null) ?? null,
                 lastFinishedOn:

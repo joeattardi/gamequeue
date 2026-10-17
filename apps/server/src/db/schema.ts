@@ -39,10 +39,18 @@ export const slots = sqliteTable(
             .notNull()
             .references(() => users.id, { onDelete: 'cascade' }),
         name: text('name').notNull(),
-        position: integer('position').notNull()
-        // entry_id (+ partial unique index) is added in M3 once entries exist
+        position: integer('position').notNull(),
+        // The game occupying this slot. One row per slot means a slot holds at most one game.
+        // Deleting an entry just empties its slot.
+        entryId: integer('entry_id').references(() => entries.id, { onDelete: 'set null' })
     },
-    (t) => [uniqueIndex('slots_user_position_idx').on(t.userId, t.position)]
+    (t) => [
+        uniqueIndex('slots_user_position_idx').on(t.userId, t.position),
+        // ...and a game can't sit in two slots at once
+        uniqueIndex('slots_user_entry_idx')
+            .on(t.userId, t.entryId)
+            .where(sql`${t.entryId} IS NOT NULL`)
+    ]
 );
 
 // ---------------------------------------------------------------------------
@@ -216,5 +224,36 @@ export const playthroughs = sqliteTable(
         uniqueIndex('playthroughs_one_open_idx')
             .on(t.entryId)
             .where(sql`${t.outcome} IS NULL`)
+    ]
+);
+
+export const lists = sqliteTable(
+    'lists',
+    {
+        id: integer('id').primaryKey({ autoIncrement: true }),
+        userId: integer('user_id')
+            .notNull()
+            .references(() => users.id, { onDelete: 'cascade' }),
+        name: text('name').notNull(),
+        createdAt: integer('created_at').notNull().default(now)
+    },
+    (t) => [index('lists_user_idx').on(t.userId)]
+);
+
+export const listItems = sqliteTable(
+    'list_items',
+    {
+        listId: integer('list_id')
+            .notNull()
+            .references(() => lists.id, { onDelete: 'cascade' }),
+        entryId: integer('entry_id')
+            .notNull()
+            .references(() => entries.id, { onDelete: 'cascade' }),
+        // 0-based order within the list; rewritten wholesale on reorder
+        position: integer('position').notNull()
+    },
+    (t) => [
+        primaryKey({ columns: [t.listId, t.entryId] }),
+        index('list_items_entry_idx').on(t.entryId)
     ]
 );

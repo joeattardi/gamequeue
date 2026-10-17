@@ -22,6 +22,13 @@
       "when": 1792228096602,
       "tag": "0002_familiar_black_crow",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1792228433993,
+      "tag": "0003_last_monster_badoon",
+      "breakpoints": true
     }
   ]
 }
