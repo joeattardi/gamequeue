@@ -1595,3 +1595,57 @@ fieldset.stars:disabled .stars__star {
     color: var(--accent);
     fill: currentColor;
 }
+
+.layout-toggle {
+    display: flex;
+    justify-content: flex-end;
+    gap: 2px;
+    margin-top: 16px;
+}
+.layout-toggle button {
+    display: grid;
+    place-items: center;
+    padding: 6px 8px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--ink-muted);
+    cursor: pointer;
+}
+.layout-toggle button[aria-pressed='true'] {
+    background: var(--accent-soft);
+    color: var(--accent);
+    border-color: var(--accent);
+}
+.layout-toggle .lucide {
+    width: 18px;
+    height: 18px;
+}
+.layout-toggle + .public-games,
+.layout-toggle + .public-grid {
+    margin-top: 10px;
+}
+.public-grid {
+    list-style: none;
+    margin: 16px 0 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 14px;
+}
+.public-grid li {
+    position: relative;
+}
+.public-grid__pos {
+    position: absolute;
+    top: 6px;
+    left: 6px;
+    min-width: 22px;
+    padding: 1px 6px;
+    border-radius: 999px;
+    background: var(--accent);
+    color: #fff;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-align: center;
+}
