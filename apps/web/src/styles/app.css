@@ -120,6 +120,7 @@ a {
     border: 1px solid var(--line);
     background: var(--surface);
     color: var(--ink);
+    text-decoration: none;
     cursor: pointer;
     transition:
         background-color 0.12s,
@@ -505,6 +506,21 @@ select:disabled {
     display: grid;
     gap: 14px;
 }
+/* Fixed size so the add-game dialog doesn't jump as results come and go */
+.dialog--fixed[open] {
+    display: flex;
+    height: min(90dvh, 720px);
+}
+.dialog__body--fill {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    align-content: start;
+}
+.dialog__body--fill:has(.results) {
+    grid-template-rows: auto auto auto minmax(0, 1fr);
+    overflow-y: hidden;
+}
 .dialog__head {
     display: flex;
     justify-content: space-between;
@@ -525,8 +541,9 @@ select:disabled {
     margin: 0;
     display: grid;
     gap: 8px;
-    max-height: 60dvh;
+    min-height: 0;
     overflow-y: auto;
+    align-content: start;
 }
 .result {
     display: flex;

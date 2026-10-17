@@ -14,7 +14,7 @@ export function AddGameDialog({ open, onClose }: { open: boolean; onClose: () =>
     return (
         <dialog
             ref={ref}
-            className="dialog"
+            className="dialog dialog--fixed"
             onClose={onClose}
             aria-labelledby="add-title"
             onClick={(e) => e.target === ref.current && onClose()}
@@ -31,7 +31,7 @@ function AddGameBody({ onDone }: { onDone: () => void }) {
     const [picked, setPicked] = useState<SearchResultDto>();
 
     return (
-        <div className="dialog__body">
+        <div className="dialog__body dialog__body--fill">
             <div className="dialog__head">
                 <h2 id="add-title">
                     {picked ? 'Which platforms do you own it on?' : 'Add a game'}
