@@ -1,4 +1,4 @@
-import { coverUrl, type CoverSize } from '@gamequeue/shared';
+import { coverSrcSet, coverUrl, type CoverSize } from '@gamequeue/shared';
 
 /** Cover art with a typographic fallback for games IGDB has no image for. */
 export function Cover({
@@ -20,6 +20,7 @@ export function Cover({
         <img
             className="cover"
             src={coverUrl(imageId, size)}
+            srcSet={coverSrcSet(imageId, size)}
             alt={`${name} cover`}
             loading="lazy"
             width={264}

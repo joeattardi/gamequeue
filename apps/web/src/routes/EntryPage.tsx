@@ -44,7 +44,7 @@ function EntryDetail({ entry }: { entry: EntryDto }) {
             </Link>
             <div className="entry__layout">
                 <div className="entry__cover">
-                    <Cover imageId={game.coverImageId} name={game.name} />
+                    <Cover imageId={game.coverImageId} name={game.name} size="720p" />
                 </div>
                 <div className="stack">
                     <header>
