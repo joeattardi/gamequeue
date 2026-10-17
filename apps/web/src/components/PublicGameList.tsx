@@ -115,7 +115,7 @@ function Skeleton({ layout, numbered }: { layout: Layout; numbered: boolean }) {
                 <ul className="public-grid" role="status" aria-label="Loading games">
                     {Array.from({ length: 12 }, (_, i) => (
                         <li key={i}>
-                            <div className="skeleton skeleton--cover" />
+                            <div className="public-skeleton public-skeleton--cover" />
                         </li>
                     ))}
                 </ul>
@@ -124,13 +124,13 @@ function Skeleton({ layout, numbered }: { layout: Layout; numbered: boolean }) {
                     {Array.from({ length: 8 }, (_, i) => (
                         <li key={i}>
                             {numbered && <span className="public-games__pos">&nbsp;</span>}
-                            <div className="skeleton skeleton--thumb" />
-                            <div className="skeleton-lines">
+                            <div className="public-skeleton public-skeleton--thumb" />
+                            <div className="public-skeleton-lines">
                                 <span
-                                    className="skeleton skeleton--line"
+                                    className="public-skeleton public-skeleton--line"
                                     style={{ width: `${140 + ((i * 37) % 90)}px` }}
                                 />
-                                <span className="skeleton skeleton--short" />
+                                <span className="public-skeleton public-skeleton--short" />
                             </div>
                         </li>
                     ))}
