@@ -9,6 +9,7 @@ Full design (data model, API surface, rationale): `/Users/joe/.claude/plans/floa
 - Build one milestone at a time. After each: run `npm run typecheck` and `npm test`, make a git commit, give a 3-5 line summary and what to try manually. **Don't start the next milestone until the user says so.**
 - If a requirement is ambiguous or needs a product decision, ask instead of guessing. Technical choices inside the stack are mine to make; mention the notable ones.
 - Code style is enforced by Prettier (`.prettierrc.json`: 4 spaces, single quotes, semicolons, no trailing commas, width 100). Run `npm run format` before committing; `npm run format:check` verifies.
+- Keep `ARCHITECTURE.md` up to date: when a change adds or alters routes, tables, services, auth/session behaviour, IGDB communication or web pages, update the matching section in the same commit.
 - Commit message footer: follow the attribution line given by the session's system reminder.
 
 ## Status
