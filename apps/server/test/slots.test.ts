@@ -82,6 +82,21 @@ describe('assigning games', () => {
         expect(await history(e.id)).toHaveLength(1);
     });
 
+    it('slots a game that is already playing without opening another playthrough', async () => {
+        const { add, assign, getSlots, history, call } = await setup();
+        const e = await add(1);
+        await call(`/entries/${e.id}/start`, 'POST', { date: '2025-02-01' });
+        const [main] = await getSlots();
+        const res = await assign(main!.id, { entryId: e.id });
+        expect(res.status).toBe(200);
+        expect(res.slots[0].entry).toMatchObject({
+            id: e.id,
+            status: 'playing',
+            openPlaythrough: { startedOn: '2025-02-01' }
+        });
+        expect(await history(e.id)).toHaveLength(1);
+    });
+
     it('replays a finished game', async () => {
         const { add, assign, getSlots, history, call } = await setup();
         const e = await add(1);

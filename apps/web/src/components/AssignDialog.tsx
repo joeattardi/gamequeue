@@ -1,15 +1,16 @@
 import type { EntryDto, SlotDto } from '@gamequeue/shared';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useEntries } from '../api/collection';
-import { needsPlatform } from '../api/slots';
+import { needsPlatform, useSlots } from '../api/slots';
 import { platformLabel, yearOf } from '../lib';
 import { Cover } from './Cover';
 import { useAssign } from './useAssign';
 
 const BACKLOG = new URLSearchParams({ view: 'backlog' });
 const PAUSED = new URLSearchParams({ view: 'all', status: 'paused' });
+const PLAYING = new URLSearchParams({ view: 'all', status: 'playing' });
 
-/** Choose a game for one slot from the backlog and your paused games. */
+/** Choose a game for one slot: anything in progress first, then the backlog. */
 export function AssignDialog({ slot, onClose }: { slot: SlotDto | null; onClose: () => void }) {
     const ref = useRef<HTMLDialogElement>(null);
     useEffect(() => {
@@ -34,18 +35,24 @@ export function AssignDialog({ slot, onClose }: { slot: SlotDto | null; onClose:
 function AssignBody({ slot, onDone }: { slot: SlotDto; onDone: () => void }) {
     const backlog = useEntries(BACKLOG);
     const paused = useEntries(PAUSED);
+    const playing = useEntries(PLAYING);
+    const slots = useSlots();
     const { assignTo, pending, error } = useAssign();
     const [text, setText] = useState('');
     const [picked, setPicked] = useState<EntryDto>();
     const [platformId, setPlatformId] = useState('');
 
     const candidates = useMemo(() => {
-        const all = [...(paused.data ?? []), ...(backlog.data ?? [])].filter(
-            (e) => e.id !== slot.entry?.id
-        );
+        // In progress first (playing, then paused), then the backlog
+        const all = [
+            ...(playing.data ?? []),
+            ...(paused.data ?? []),
+            ...(backlog.data ?? [])
+        ].filter((e) => e.id !== slot.entry?.id);
         const q = text.trim().toLowerCase();
         return q ? all.filter((e) => e.game.name.toLowerCase().includes(q)) : all;
-    }, [backlog.data, paused.data, text, slot.entry?.id]);
+    }, [backlog.data, paused.data, playing.data, text, slot.entry?.id]);
+    const slotName = (id: number | null) => slots.data?.find((s) => s.id === id)?.name;
 
     function choose(entry: EntryDto) {
         if (needsPlatform(entry)) return setPicked(entry);
@@ -107,7 +114,7 @@ function AssignBody({ slot, onDone }: { slot: SlotDto; onDone: () => void }) {
                         </p>
                     )}
                     <label className="field">
-                        <span>Search your backlog and paused games</span>
+                        <span>Search games in progress and your backlog</span>
                         <input
                             type="search"
                             value={text}
@@ -119,15 +126,13 @@ function AssignBody({ slot, onDone }: { slot: SlotDto; onDone: () => void }) {
                     <p className="form-error" role="alert">
                         {error}
                     </p>
-                    {backlog.isPending || paused.isPending ? (
+                    {backlog.isPending || paused.isPending || playing.isPending ? (
                         <p className="muted" role="status">
                             Loading…
                         </p>
                     ) : candidates.length === 0 ? (
                         <p className="muted">
-                            {text
-                                ? 'No matches.'
-                                : 'Nothing in your backlog. Add some games first.'}
+                            {text ? 'No matches.' : 'Nothing to choose from. Add some games first.'}
                         </p>
                     ) : (
                         <ul className="results">
@@ -154,8 +159,16 @@ function AssignBody({ slot, onDone }: { slot: SlotDto; onDone: () => void }) {
                                                     .join(' · ')}
                                             </span>
                                         </span>
-                                        {e.status === 'paused' && (
-                                            <span className="badge badge--paused">paused</span>
+                                        {e.slotId !== null ? (
+                                            <span className="badge badge--playing">
+                                                in {slotName(e.slotId) ?? 'a slot'}
+                                            </span>
+                                        ) : (
+                                            e.status !== 'unplayed' && (
+                                                <span className={`badge badge--${e.status}`}>
+                                                    {e.status}
+                                                </span>
+                                            )
                                         )}
                                     </button>
                                 </li>
