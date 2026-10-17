@@ -9,6 +9,7 @@ import { ListsPanel } from '../components/ListsPanel';
 import { ScoreGauge } from '../components/ScoreGauge';
 import { HistoryPanel, StatusPanel } from '../components/PlaythroughPanels';
 import { formatMinutes, platformLabel, yearOf } from '../lib';
+import { ArrowLeft, Trash2, X } from 'lucide-react';
 
 export function EntryPage() {
     const id = Number(useParams().id);
@@ -43,7 +44,7 @@ function EntryDetail({ entry }: { entry: EntryDto }) {
     return (
         <article className="entry">
             <Link to="/collection" className="back">
-                ← Collection
+                <ArrowLeft /> Collection
             </Link>
             <div className="entry__layout">
                 <div className="entry__cover">
@@ -121,6 +122,7 @@ function EntryDetail({ entry }: { entry: EntryDto }) {
                             }
                             disabled={del.isPending}
                         >
+                            <Trash2 />
                             Remove from collection
                         </button>
                     </div>
@@ -295,7 +297,7 @@ function TagsEditor({ tags, onSave }: { tags: string[]; onSave: (tags: string[])
                             aria-label={`Remove tag ${t}`}
                             onClick={() => onSave(tags.filter((x) => x !== t))}
                         >
-                            ✕
+                            <X />
                         </button>
                     </li>
                 ))}

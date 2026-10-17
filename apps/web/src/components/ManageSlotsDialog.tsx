@@ -10,6 +10,7 @@ import {
 } from '../api/slots';
 import { useConfirm } from './Confirm';
 import { useModalDialog } from './useModalDialog';
+import { ChevronDown, ChevronUp, X } from 'lucide-react';
 
 export function ManageSlotsDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
     const ref = useModalDialog(open);
@@ -56,7 +57,7 @@ function Body({ onDone }: { onDone: () => void }) {
             <div className="dialog__head">
                 <h2 id="slots-title">Edit slots</h2>
                 <button className="btn btn--ghost" onClick={onDone} aria-label="Close">
-                    ✕
+                    <X />
                 </button>
             </div>
             <ul className="slot-edit">
@@ -144,7 +145,7 @@ function SlotRow({
                     onClick={() => onMove(-1)}
                     aria-label={`Move ${slot.name} up`}
                 >
-                    ↑
+                    <ChevronUp />
                 </button>
                 <button
                     className="btn btn--ghost"
@@ -152,7 +153,7 @@ function SlotRow({
                     onClick={() => onMove(1)}
                     aria-label={`Move ${slot.name} down`}
                 >
-                    ↓
+                    <ChevronDown />
                 </button>
                 <button
                     className="btn btn--ghost btn--danger"

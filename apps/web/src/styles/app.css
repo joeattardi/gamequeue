@@ -112,7 +112,18 @@ a {
     color: var(--accent-ink);
 }
 
+/* Lucide icons: sized to the text they sit beside, inheriting its colour */
+.lucide {
+    width: 1.15em;
+    height: 1.15em;
+    flex: none;
+}
+
 .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
     font: 600 0.95rem var(--font-body);
     padding: 10px 16px;
     min-height: 44px;
@@ -121,6 +132,7 @@ a {
     background: var(--surface);
     color: var(--ink);
     text-decoration: none;
+    white-space: nowrap;
     cursor: pointer;
     transition:
         background-color 0.12s,
@@ -264,6 +276,7 @@ a {
     margin-left: 12px;
 }
 .nav a {
+    gap: 8px;
     padding: 8px 12px;
     border-radius: var(--radius-sm);
     color: var(--ink);
@@ -280,18 +293,20 @@ a {
     background: var(--accent-soft);
     color: var(--accent);
 }
-@media (max-width: 640px) {
+@media (max-width: 1080px) {
     .topbar {
         flex-wrap: wrap;
-    }
-    .logo__word {
-        display: none;
     }
     .nav {
         order: 3;
         flex-basis: 100%;
         margin: 0;
         overflow-x: auto;
+    }
+}
+@media (max-width: 640px) {
+    .logo__word {
+        display: none;
     }
 }
 
@@ -438,7 +453,9 @@ select:disabled {
     margin-top: 4px;
 }
 .badge {
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
     font-size: 0.78rem;
     font-weight: 700;
     padding: 2px 8px;
@@ -447,6 +464,11 @@ select:disabled {
     color: var(--accent);
     border: 0;
     text-transform: capitalize;
+}
+.badge .lucide {
+    width: 0.95em;
+    height: 0.95em;
+    fill: currentColor;
 }
 .badge--quiet {
     background: var(--surface-2);
@@ -619,7 +641,9 @@ select:disabled {
 }
 
 .back {
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
     margin-bottom: 12px;
 }
 .entry__layout {
@@ -765,6 +789,10 @@ select:disabled {
 .confirm__icon--danger {
     background: color-mix(in srgb, var(--danger) 16%, transparent);
     color: var(--danger);
+}
+.confirm__icon .lucide {
+    width: 22px;
+    height: 22px;
 }
 .confirm__text h2 {
     margin: 0 0 6px;

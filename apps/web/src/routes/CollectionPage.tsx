@@ -5,6 +5,7 @@ import { useEntries, useFacets } from '../api/collection';
 import { AddGameDialog } from '../components/AddGameDialog';
 import { Cover } from '../components/Cover';
 import { formatMinutes, platformLabel, useDebounced, yearOf } from '../lib';
+import { Plus, Star } from 'lucide-react';
 
 const SORT_LABELS: Record<(typeof ENTRY_SORTS)[number], string> = {
     title: 'Title',
@@ -53,7 +54,8 @@ export function CollectionPage({ view }: { view: 'all' | 'backlog' }) {
                     </p>
                 </div>
                 <button className="btn btn--primary" onClick={() => setAdding(true)}>
-                    + Add game
+                    <Plus />
+                    Add game
                 </button>
             </div>
 
@@ -183,6 +185,7 @@ function Empty({
             </p>
             {!filtered && (
                 <button className="btn btn--primary" onClick={onAdd}>
+                    <Plus />
                     Add your first game
                 </button>
             )}
@@ -211,7 +214,11 @@ function Card({ entry }: { entry: EntryDto }) {
                                     : entry.status}
                             </span>
                         )}
-                        {entry.rating !== null && <span className="badge">★ {entry.rating}</span>}
+                        {entry.rating !== null && (
+                            <span className="badge">
+                                <Star /> {entry.rating}
+                            </span>
+                        )}
                         {entry.ttbMinutes !== null && (
                             <span className="badge badge--quiet">
                                 {formatMinutes(entry.ttbMinutes)}

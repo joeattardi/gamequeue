@@ -32,6 +32,7 @@ import { useQueue } from '../api/queue';
 import { useConfirm } from '../components/Confirm';
 import { Cover } from '../components/Cover';
 import { formatMinutes, platformLabel, useDebounced, yearOf } from '../lib';
+import { ArrowLeft, ChevronDown, ChevronUp, Pencil, Trash2, X } from 'lucide-react';
 
 export function ListPage() {
     const id = Number(useParams().id);
@@ -108,7 +109,7 @@ function ListView({
         <section>
             {!isQueue && (
                 <Link to="/lists" className="back">
-                    ← Lists
+                    <ArrowLeft /> Lists
                 </Link>
             )}
             <div className="page-head">
@@ -140,6 +141,7 @@ function ListView({
                                     del.mutate(undefined, { onSuccess: () => navigate('/lists') })
                                 }
                             >
+                                <Trash2 />
                                 Delete list
                             </button>
                         </>
@@ -270,7 +272,7 @@ function Row({
                     onClick={() => onMove(-1)}
                     aria-label={`Move ${game.name} up`}
                 >
-                    ↑
+                    <ChevronUp />
                 </button>
                 <button
                     className="btn btn--ghost"
@@ -278,14 +280,14 @@ function Row({
                     onClick={() => onMove(1)}
                     aria-label={`Move ${game.name} down`}
                 >
-                    ↓
+                    <ChevronDown />
                 </button>
                 <button
                     className="btn btn--ghost btn--danger"
                     onClick={onRemove}
                     aria-label={`Remove ${game.name} from this ${isQueue ? 'queue' : 'list'}`}
                 >
-                    ✕
+                    <X />
                 </button>
             </div>
         </li>
@@ -315,6 +317,7 @@ function RenameButton({ id, name }: { id: number; name: string }) {
                     setEditing(true);
                 }}
             >
+                <Pencil />
                 Rename
             </button>
         );

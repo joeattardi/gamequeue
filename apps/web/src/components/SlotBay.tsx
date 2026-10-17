@@ -6,6 +6,7 @@ import { useClearSlot } from '../api/slots';
 import { formatDate, platformLabel } from '../lib';
 import { Cover } from './Cover';
 import { CloseForm } from './PlaythroughPanels';
+import { ArrowLeftRight, Ban, Check, Dices, Eraser, Gamepad2, Pause, Play } from 'lucide-react';
 
 export function SlotBay({ slot, onChoose }: { slot: SlotDto; onChoose: (slot: SlotDto) => void }) {
     const entry = slot.entry;
@@ -21,9 +22,11 @@ export function SlotBay({ slot, onChoose }: { slot: SlotDto; onChoose: (slot: Sl
                 <p className="muted">Empty</p>
                 <div className="row">
                     <button className="btn btn--primary" onClick={() => onChoose(slot)}>
+                        <Gamepad2 />
                         Choose a game
                     </button>
                     <Link className="btn" to="/pick">
+                        <Dices />
                         Random pick
                     </Link>
                 </div>
@@ -61,6 +64,7 @@ export function SlotBay({ slot, onChoose }: { slot: SlotDto; onChoose: (slot: Sl
                                 disabled={busy}
                                 onClick={() => act.mutate({ action: 'pause' })}
                             >
+                                <Pause />
                                 Pause
                             </button>
                         ) : (
@@ -69,13 +73,16 @@ export function SlotBay({ slot, onChoose }: { slot: SlotDto; onChoose: (slot: Sl
                                 disabled={busy}
                                 onClick={() => act.mutate({ action: 'resume' })}
                             >
+                                <Play />
                                 Resume
                             </button>
                         )}
                         <button className="btn btn--primary" onClick={() => setClosing('finish')}>
+                            <Check />
                             Finished
                         </button>
                         <button className="btn btn--ghost" onClick={() => setClosing('abandon')}>
+                            <Ban />
                             Abandon
                         </button>
                     </div>
@@ -94,6 +101,7 @@ export function SlotBay({ slot, onChoose }: { slot: SlotDto; onChoose: (slot: Sl
             )}
             <div className="row bay__foot">
                 <button className="btn btn--ghost" onClick={() => onChoose(slot)} disabled={busy}>
+                    <ArrowLeftRight />
                     Swap…
                 </button>
                 <button
@@ -102,6 +110,7 @@ export function SlotBay({ slot, onChoose }: { slot: SlotDto; onChoose: (slot: Sl
                     disabled={busy}
                     title="Pauses the game and frees the slot"
                 >
+                    <Eraser />
                     Clear slot
                 </button>
             </div>

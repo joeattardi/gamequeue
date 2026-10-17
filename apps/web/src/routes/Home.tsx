@@ -5,6 +5,7 @@ import { ManageSlotsDialog } from '../components/ManageSlotsDialog';
 import { UpNext } from '../components/UpNext';
 import { SlotBay } from '../components/SlotBay';
 import { useSlots } from '../api/slots';
+import { SlidersHorizontal } from 'lucide-react';
 
 export function Home() {
     const slots = useSlots();
@@ -19,6 +20,7 @@ export function Home() {
                     <p className="muted">What's in each slot right now.</p>
                 </div>
                 <button className="btn" onClick={() => setManaging(true)}>
+                    <SlidersHorizontal />
                     Edit slots
                 </button>
             </div>

@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { ApiRequestError } from '../api/client';
 import { useCreateList, useLists } from '../api/lists';
+import { Plus } from 'lucide-react';
 
 export function ListsPage() {
     const lists = useLists();
@@ -43,6 +44,7 @@ export function ListsPage() {
                     type="submit"
                     disabled={create.isPending || !name.trim()}
                 >
+                    <Plus />
                     Create list
                 </button>
             </form>

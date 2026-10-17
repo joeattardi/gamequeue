@@ -7,6 +7,7 @@ import { platformLabel, useDebounced } from '../lib';
 import { Cover } from './Cover';
 import { useModalDialog } from './useModalDialog';
 import { ScoreGauge } from './ScoreGauge';
+import { X } from 'lucide-react';
 
 export function AddGameDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
     const ref = useModalDialog(open);
@@ -37,7 +38,7 @@ function AddGameBody({ onDone }: { onDone: () => void }) {
                     {picked ? 'Which platforms do you own it on?' : 'Add a game'}
                 </h2>
                 <button className="btn btn--ghost" onClick={onDone} aria-label="Close">
-                    ✕
+                    <X />
                 </button>
             </div>
             {picked ? (

@@ -9,6 +9,7 @@ import { needsPlatform, useSlots } from '../api/slots';
 import { Cover } from '../components/Cover';
 import { useAssign } from '../components/useAssign';
 import { formatMinutes, platformLabel, yearOf } from '../lib';
+import { ArrowRight, Dices, RefreshCw } from 'lucide-react';
 
 const MAX_TIMES = [
     { label: 'Any length', minutes: 0 },
@@ -156,6 +157,7 @@ export function PickPage() {
                 )}
                 <div>
                     <button className="btn btn--primary" type="submit" disabled={pick.isPending}>
+                        <Dices />
                         {pick.isPending ? 'Picking…' : 'Pick for me'}
                     </button>
                 </div>
@@ -309,10 +311,12 @@ function Result({
                         </p>
                         <div className="row">
                             <button className="btn" onClick={onReroll} disabled={rerolling}>
+                                <RefreshCw />
                                 Re-roll
                             </button>
                             <Link className="btn btn--ghost" to={`/games/${entry.id}`}>
                                 Open game
+                                <ArrowRight />
                             </Link>
                         </div>
                     </>

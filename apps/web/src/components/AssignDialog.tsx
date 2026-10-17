@@ -7,6 +7,7 @@ import { platformLabel, yearOf } from '../lib';
 import { Cover } from './Cover';
 import { useAssign } from './useAssign';
 import { useModalDialog } from './useModalDialog';
+import { X } from 'lucide-react';
 
 const BACKLOG = new URLSearchParams({ view: 'backlog' });
 const PAUSED = new URLSearchParams({ view: 'all', status: 'paused' });
@@ -67,7 +68,7 @@ function AssignBody({ slot, onDone }: { slot: SlotDto; onDone: () => void }) {
                         : `Choose a game for ${slot.name}`}
                 </h2>
                 <button className="btn btn--ghost" onClick={onDone} aria-label="Close">
-                    ✕
+                    <X />
                 </button>
             </div>
             {picked ? (

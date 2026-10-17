@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useRef, useState, type ReactNode } from 'react';
 import { useModalDialog } from './useModalDialog';
+import { CircleQuestionMark, TriangleAlert } from 'lucide-react';
 
 export interface ConfirmOptions {
     title: string;
@@ -55,7 +56,7 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
                 {options && (
                     <div className="dialog__body confirm">
                         <div className={`confirm__icon confirm__icon--${tone}`} aria-hidden="true">
-                            {tone === 'danger' ? '!' : '?'}
+                            {tone === 'danger' ? <TriangleAlert /> : <CircleQuestionMark />}
                         </div>
                         <div className="confirm__text">
                             <h2 id="confirm-title">{options.title}</h2>
