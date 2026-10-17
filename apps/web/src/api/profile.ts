@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import type { ProfileDto, ProfileQueueDto } from '@gamequeue/shared';
+import type { ProfileDto, ProfileGamesDto, ProfileView } from '@gamequeue/shared';
 import { api } from './client';
 
 export const useProfile = (username: string) =>
@@ -9,10 +9,11 @@ export const useProfile = (username: string) =>
         retry: false
     });
 
-export const useProfileQueue = (username: string) =>
+export const useProfileGames = (username: string, view: ProfileView, enabled = true) =>
     useQuery({
-        queryKey: ['profile', username, 'queue'],
+        queryKey: ['profile', username, view],
         queryFn: async () =>
-            (await api<{ queue: ProfileQueueDto }>(`/profiles/${username}/queue`)).queue,
-        retry: false
+            (await api<{ games: ProfileGamesDto }>(`/profiles/${username}/${view}`)).games,
+        retry: false,
+        enabled
     });

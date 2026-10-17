@@ -15,8 +15,21 @@ export interface ProfileDto {
     lists: { id: number; name: string; entries: PublicEntryDto[] }[];
 }
 
-export interface ProfileQueueDto {
+/** The sub-pages of a public profile, each a plain list of games (`/u/:username/:view`). */
+export const PROFILE_VIEWS = [
+    'queue',
+    'collection',
+    'backlog',
+    'playing',
+    'paused',
+    'finished',
+    'abandoned'
+] as const;
+export type ProfileView = (typeof PROFILE_VIEWS)[number];
+
+export interface ProfileGamesDto {
     username: string;
-    /** In queue order, next game first */
+    view: ProfileView;
+    /** The queue in queue order (next game first); every other view sorted by title */
     entries: PublicEntryDto[];
 }

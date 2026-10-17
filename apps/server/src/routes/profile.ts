@@ -1,8 +1,8 @@
 import { Hono } from 'hono';
-import { usernameSchema } from '@gamequeue/shared';
+import { PROFILE_VIEWS, usernameSchema, type ProfileView } from '@gamequeue/shared';
 import type { AppDeps } from '../app.js';
 import { HttpError } from '../errors.js';
-import { getProfile, getProfileQueue } from '../services/profile.js';
+import { getProfile, getProfileGames } from '../services/profile.js';
 
 /** Public: deliberately has no requireAuth. */
 export function profileRoutes({ db }: AppDeps) {
@@ -15,8 +15,10 @@ export function profileRoutes({ db }: AppDeps) {
     r.get('/:username', (c) =>
         c.json({ profile: getProfile(db, parseUsername(c.req.param('username'))) })
     );
-    r.get('/:username/queue', (c) =>
-        c.json({ queue: getProfileQueue(db, parseUsername(c.req.param('username'))) })
-    );
+    r.get('/:username/:view', (c) => {
+        const view = c.req.param('view') as ProfileView;
+        if (!PROFILE_VIEWS.includes(view)) throw new HttpError(404, 'Not found');
+        return c.json({ games: getProfileGames(db, parseUsername(c.req.param('username')), view) });
+    });
     return r;
 }

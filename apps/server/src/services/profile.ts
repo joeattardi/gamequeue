@@ -1,15 +1,18 @@
 import { and, count, eq } from 'drizzle-orm';
 import {
     ENTRY_STATUSES,
+    entryQuerySchema,
     type EntryDto,
     type EntryStatus,
     type ProfileDto,
-    type ProfileQueueDto,
+    type ProfileGamesDto,
+    type ProfileView,
     type PublicEntryDto
 } from '@gamequeue/shared';
 import type { Db } from '../db/client.js';
 import { entries, listItems, lists, users } from '../db/schema.js';
 import { HttpError } from '../errors.js';
+import { listEntries } from './entries.js';
 import { getList, listLists } from './lists.js';
 import { listSlots } from './slots.js';
 
@@ -69,16 +72,28 @@ export function getProfile(db: Db, username: string): ProfileDto {
     };
 }
 
-/** Read-only: a user who never queued anything has no queue row yet, which reads as empty. */
-export function getProfileQueue(db: Db, username: string): ProfileQueueDto {
+/**
+ * Read-only: a user who never queued anything has no queue row yet, which reads as empty.
+ * Only the queue is ordered by the user; everything else is sorted by title.
+ */
+export function getProfileGames(db: Db, username: string, view: ProfileView): ProfileGamesDto {
     const user = requireUser(db, username);
-    const queue = db
-        .select({ id: lists.id })
-        .from(lists)
-        .where(and(eq(lists.userId, user.id), eq(lists.kind, 'queue')))
-        .get();
-    return {
-        username: user.username,
-        entries: queue ? getList(db, user.id, queue.id).entries.map(toPublic) : []
-    };
+    let list: EntryDto[];
+    if (view === 'queue') {
+        const queue = db
+            .select({ id: lists.id })
+            .from(lists)
+            .where(and(eq(lists.userId, user.id), eq(lists.kind, 'queue')))
+            .get();
+        list = queue ? getList(db, user.id, queue.id).entries : [];
+    } else if (view === 'collection') {
+        list = listEntries(db, user.id, entryQuerySchema.parse({}));
+    } else {
+        list = listEntries(
+            db,
+            user.id,
+            entryQuerySchema.parse(view === 'backlog' ? { view } : { status: view })
+        );
+    }
+    return { username: user.username, view, entries: list.map(toPublic) };
 }

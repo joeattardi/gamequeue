@@ -1,6 +1,7 @@
 import {
     RATING_MAX,
     type EntryStatus,
+    type ProfileView,
     type ProfileDto,
     type PublicEntryDto
 } from '@gamequeue/shared';
@@ -20,7 +21,7 @@ import { Link, useParams } from 'react-router';
 import { ApiRequestError } from '../api/client';
 import { useProfile } from '../api/profile';
 import { Cover } from '../components/Cover';
-import { Logo } from '../components/Logo';
+import { PublicHeader } from '../components/PublicHeader';
 
 function Games({ entries }: { entries: PublicEntryDto[] }) {
     if (entries.length === 0) return <p className="muted">Nothing here yet.</p>;
@@ -45,14 +46,49 @@ function Games({ entries }: { entries: PublicEntryDto[] }) {
     );
 }
 
-const STATS: { key: 'total' | EntryStatus; label: string; icon: ReactNode }[] = [
-    { key: 'total', label: 'Total games', icon: <Library aria-hidden="true" /> },
-    { key: 'unplayed', label: 'In backlog', icon: <ListTodo aria-hidden="true" /> },
-    { key: 'playing', label: 'Playing', icon: <Play aria-hidden="true" /> },
-    { key: 'paused', label: 'Paused', icon: <Pause aria-hidden="true" /> },
-    { key: 'finished', label: 'Finished', icon: <Trophy aria-hidden="true" /> },
-    { key: 'abandoned', label: 'Abandoned', icon: <Ban aria-hidden="true" /> }
+const STATS: { key: 'total' | EntryStatus; view: ProfileView; label: string; icon: ReactNode }[] = [
+    {
+        key: 'total',
+        view: 'collection',
+        label: 'Total games',
+        icon: <Library aria-hidden="true" />
+    },
+    {
+        key: 'unplayed',
+        view: 'backlog',
+        label: 'In backlog',
+        icon: <ListTodo aria-hidden="true" />
+    },
+    { key: 'playing', view: 'playing', label: 'Playing', icon: <Play aria-hidden="true" /> },
+    { key: 'paused', view: 'paused', label: 'Paused', icon: <Pause aria-hidden="true" /> },
+    { key: 'finished', view: 'finished', label: 'Finished', icon: <Trophy aria-hidden="true" /> },
+    { key: 'abandoned', view: 'abandoned', label: 'Abandoned', icon: <Ban aria-hidden="true" /> }
 ];
+
+/** One stat tile; it links to the sub-page listing exactly those games. */
+function Counter({
+    className,
+    to,
+    icon,
+    value,
+    label
+}: {
+    className: string;
+    to: string;
+    icon: ReactNode;
+    value: number;
+    label: string;
+}) {
+    return (
+        <li className={`counter ${className}`}>
+            <Link to={to} className="counter__link">
+                <span className="counter__icon">{icon}</span>
+                <span className="counter__value">{value}</span>
+                <span className="counter__label">{label}</span>
+            </Link>
+        </li>
+    );
+}
 
 function Stats({ username, summary }: { username: string; summary: ProfileDto['summary'] }) {
     const count = (k: 'total' | EntryStatus) =>
@@ -62,21 +98,22 @@ function Stats({ username, summary }: { username: string; summary: ProfileDto['s
         <>
             <ul className="counters">
                 {STATS.map((st) => (
-                    <li key={st.key} className={`counter counter--${st.key}`}>
-                        <span className="counter__icon">{st.icon}</span>
-                        <span className="counter__value">{count(st.key)}</span>
-                        <span className="counter__label">{st.label}</span>
-                    </li>
+                    <Counter
+                        key={st.key}
+                        className={`counter--${st.key}`}
+                        to={`/u/${username}/${st.view}`}
+                        icon={st.icon}
+                        value={count(st.key)}
+                        label={st.label}
+                    />
                 ))}
-                <li className="counter counter--queued">
-                    <Link to={`/u/${username}/queue`} className="counter__link">
-                        <span className="counter__icon">
-                            <ListOrdered aria-hidden="true" />
-                        </span>
-                        <span className="counter__value">{summary.queued}</span>
-                        <span className="counter__label">In queue</span>
-                    </Link>
-                </li>
+                <Counter
+                    className="counter--queued"
+                    to={`/u/${username}/queue`}
+                    icon={<ListOrdered aria-hidden="true" />}
+                    value={summary.queued}
+                    label="In queue"
+                />
             </ul>
             {summary.total > 0 && (
                 <div
@@ -96,17 +133,6 @@ function Stats({ username, summary }: { username: string; summary: ProfileDto['s
                 </div>
             )}
         </>
-    );
-}
-
-/** Public pages are rendered for logged-out visitors too, so they bring their own header instead of the Shell. */
-export function PublicHeader() {
-    return (
-        <header className="topbar">
-            <Link to="/">
-                <Logo />
-            </Link>
-        </header>
     );
 }
 

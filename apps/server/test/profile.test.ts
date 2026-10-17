@@ -53,7 +53,7 @@ describe('public profile', () => {
         const { app, post, put, add } = await setup();
         const hades = await add(1);
         const celeste = await add(2);
-        expect((await (await app.request('/api/profiles/joe/queue')).json()).queue.entries).toEqual(
+        expect((await (await app.request('/api/profiles/joe/queue')).json()).games.entries).toEqual(
             []
         );
         await post('/queue/items', { entryId: hades.id });
@@ -68,13 +68,28 @@ describe('public profile', () => {
         const res = await app.request('/api/profiles/JOE/queue');
         expect(res.status).toBe(200);
         const text = await res.text();
-        const { queue } = JSON.parse(text);
+        const { games: queue } = JSON.parse(text);
         expect(queue.username).toBe('joe');
         expect(queue.entries.map((e: { game: { name: string } }) => e.game.name)).toEqual([
             'Celeste',
             'Hades'
         ]);
         expect(text).not.toContain('me@example.com');
+    });
+
+    it('lists games per status, backlog and collection', async () => {
+        const { app, put, add } = await setup();
+        const hades = await add(1);
+        await add(2);
+        await put('/slots/1/entry', { entryId: hades.id });
+        const names = async (view: string) =>
+            (await (await app.request(`/api/profiles/joe/${view}`)).json()).games.entries.map(
+                (e: { game: { name: string } }) => e.game.name
+            );
+        expect(await names('collection')).toEqual(['Celeste', 'Hades']);
+        expect(await names('playing')).toEqual(['Hades']);
+        expect(await names('backlog')).toEqual(['Celeste']);
+        expect(await names('finished')).toEqual([]);
     });
 
     it('does not create a queue when viewing one', async () => {
@@ -107,5 +122,6 @@ describe('public profile', () => {
         expect((await app.request('/api/profiles/nobody')).status).toBe(404);
         expect((await app.request('/api/profiles/a')).status).toBe(404);
         expect((await app.request('/api/profiles/nobody/queue')).status).toBe(404);
+        expect((await app.request('/api/profiles/joe/nonsense')).status).toBe(404);
     });
 });
