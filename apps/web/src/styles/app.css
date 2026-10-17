@@ -1551,12 +1551,16 @@ fieldset.stars:disabled .stars__star {
     list-style: none;
     margin: 16px 0 0;
     padding: 0;
+    display: grid;
+    gap: 8px;
 }
 .public-games li {
     display: flex;
     align-items: center;
     gap: 14px;
-    padding: 12px 0;
+    padding: 10px 14px;
+    border-radius: var(--radius);
+    background: var(--surface);
 }
 .public-games li img,
 .public-games li .cover {
