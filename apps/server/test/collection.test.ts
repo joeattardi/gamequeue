@@ -269,11 +269,11 @@ describe('editing and deleting', () => {
         const e = await add(1);
         const res = await post(
             `/entries/${e.id}`,
-            { rating: 9, notes: 'Great', platformIds: [PS5.id], tags: ['roguelike', 'Fast'] },
+            { rating: 5, notes: 'Great', platformIds: [PS5.id], tags: ['roguelike', 'Fast'] },
             'PATCH'
         );
         const out = (await res.json()).entry;
-        expect(out).toMatchObject({ rating: 9, notes: 'Great', tags: ['Fast', 'roguelike'] });
+        expect(out).toMatchObject({ rating: 5, notes: 'Great', tags: ['Fast', 'roguelike'] });
         expect(out.platforms.map((p: { id: number }) => p.id)).toEqual([PS5.id]);
     });
 
@@ -281,7 +281,7 @@ describe('editing and deleting', () => {
         const { add, post } = await setup();
         const e = await add(1);
         for (const body of [
-            { rating: 11 },
+            { rating: 6 },
             { rating: 0 },
             { platformIds: [] },
             {},

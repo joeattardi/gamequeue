@@ -220,7 +220,7 @@ describe('keeping slots and status consistent', () => {
 
     it('finishing or abandoning empties the slot', async () => {
         const { call, e, getSlots } = await playing();
-        await call(`/entries/${e.id}/finish`, 'POST', { rating: 8 });
+        await call(`/entries/${e.id}/finish`, 'POST', { rating: 4 });
         expect((await getSlots())[0]!.entry).toBeNull();
 
         const s = await playing();

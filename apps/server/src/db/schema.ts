@@ -151,7 +151,7 @@ export const entries = sqliteTable(
         status: text('status', { enum: ['unplayed', 'playing', 'paused', 'finished', 'abandoned'] })
             .notNull()
             .default('unplayed'),
-        rating: integer('rating'), // 1-10
+        rating: integer('rating'), // 1-5 stars
         notes: text('notes').notNull().default(''),
         ttbOverrideMinutes: integer('ttb_override_minutes'),
         addedAt: integer('added_at').notNull().default(now),
@@ -217,7 +217,7 @@ export const playthroughs = sqliteTable(
         endedOn: text('ended_on'),
         // null while the playthrough is still open
         outcome: text('outcome', { enum: ['finished', 'abandoned'] }),
-        rating: integer('rating') // 1-10
+        rating: integer('rating') // 1-5 stars
     },
     (t) => [
         index('playthroughs_entry_idx').on(t.entryId),

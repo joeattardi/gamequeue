@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { PlatformDto } from './collection.js';
+import { ratingSchema, type PlatformDto } from './collection.js';
 import { isValidIsoDate } from './status.js';
 
 export interface PlaythroughDto {
@@ -15,7 +15,6 @@ export interface PlaythroughDto {
 }
 
 export const isoDateSchema = z.string().refine(isValidIsoDate, 'Use a valid date (YYYY-MM-DD)');
-const ratingSchema = z.number().int().min(1).max(10);
 const platformIdSchema = z.number().int().positive();
 
 export const startSchema = z.object({

@@ -1264,3 +1264,65 @@ input[type='file'] {
 .result:hover:not(:disabled) .gauge {
     --gauge-surface: var(--surface-2);
 }
+
+.stars {
+    border: 0;
+    margin: 0;
+    padding: 0;
+    min-width: 0;
+}
+.stars legend {
+    padding: 0;
+    margin-bottom: 4px;
+    font-weight: 600;
+}
+.stars__row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+.stars__group {
+    display: inline-flex;
+}
+.stars__star {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    cursor: pointer;
+    color: var(--line-strong);
+    transition:
+        color 0.12s,
+        transform 0.12s;
+}
+.stars__star .lucide {
+    width: 28px;
+    height: 28px;
+}
+.stars__star[data-on='true'] {
+    color: var(--accent);
+}
+.stars__star[data-on='true'] .lucide {
+    fill: currentColor;
+}
+.stars__star:hover {
+    transform: scale(1.15);
+}
+.stars__star:has(input:focus-visible) {
+    outline: 3px solid var(--focus);
+    border-radius: var(--radius-sm);
+}
+fieldset.stars:disabled .stars__star {
+    cursor: progress;
+    opacity: 0.6;
+}
+@media (prefers-reduced-motion: reduce) {
+    .stars__star {
+        transition: none;
+    }
+    .stars__star:hover {
+        transform: none;
+    }
+}

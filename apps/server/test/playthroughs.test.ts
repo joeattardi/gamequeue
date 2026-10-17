@@ -51,15 +51,15 @@ describe('start, pause, resume, finish', () => {
         expect((await act(e.id, 'pause')).entry.status).toBe('paused');
         expect((await act(e.id, 'resume')).entry.status).toBe('playing');
 
-        const done = await act(e.id, 'finish', { date: '2025-03-20', rating: 9 });
+        const done = await act(e.id, 'finish', { date: '2025-03-20', rating: 5 });
         expect(done.entry).toMatchObject({
             status: 'finished',
-            rating: 9,
+            rating: 5,
             openPlaythrough: null,
             lastFinishedOn: '2025-03-20'
         });
         expect(await history(e.id)).toMatchObject([
-            { startedOn: '2025-03-01', endedOn: '2025-03-20', outcome: 'finished', rating: 9 }
+            { startedOn: '2025-03-01', endedOn: '2025-03-20', outcome: 'finished', rating: 5 }
         ]);
         expect((await entry(e.id)).status).toBe('finished');
     });
@@ -124,9 +124,9 @@ describe('start, pause, resume, finish', () => {
         expect((await act(e.id, 'start', { date: '2999-01-01' })).status).toBe(400);
         await act(e.id, 'start', { date: '2025-05-10' });
         expect((await act(e.id, 'finish', { date: '2025-05-09' })).status).toBe(400);
-        expect((await act(e.id, 'finish', { rating: 11 })).status).toBe(400);
+        expect((await act(e.id, 'finish', { rating: 6 })).status).toBe(400);
         expect((await act(e.id, 'finish', { rating: 0 })).status).toBe(400);
-        expect((await act(e.id, 'finish', { date: '2025-05-10', rating: 8 })).status).toBe(200);
+        expect((await act(e.id, 'finish', { date: '2025-05-10', rating: 4 })).status).toBe(200);
     });
 });
 
@@ -135,12 +135,12 @@ describe('rating pre-fill', () => {
         const { add, act, call } = await setup();
         const a = await add(1);
         await act(a.id, 'start');
-        expect((await act(a.id, 'finish', { rating: 7 })).entry.rating).toBe(7);
+        expect((await act(a.id, 'finish', { rating: 3 })).entry.rating).toBe(3);
 
         const b = await add(2);
         await call(`/entries/${b.id}`, 'PATCH', { rating: 4 });
         await act(b.id, 'start');
-        const done = await act(b.id, 'finish', { rating: 9 });
+        const done = await act(b.id, 'finish', { rating: 5 });
         expect(done.entry.rating).toBe(4);
     });
 
@@ -157,7 +157,7 @@ describe('replays', () => {
         const { add, act, history } = await setup();
         const e = await add(1);
         await act(e.id, 'start', { date: '2023-01-01' });
-        await act(e.id, 'finish', { date: '2023-02-01', rating: 8 });
+        await act(e.id, 'finish', { date: '2023-02-01', rating: 4 });
         const replay = await act(e.id, 'start', { date: '2025-01-01' });
         expect(replay.entry).toMatchObject({ status: 'playing', playthroughCount: 2 });
         expect(replay.entry.lastFinishedOn).toBe('2023-02-01');
@@ -198,12 +198,12 @@ describe('logging past playthroughs', () => {
             outcome: 'finished',
             startedOn: '2019-06-01',
             endedOn: '2019-07-01',
-            rating: 10
+            rating: 5
         });
         expect(res.status).toBe(201);
         expect((await res.json()).entry).toMatchObject({
             status: 'finished',
-            rating: 10,
+            rating: 5,
             lastFinishedOn: '2019-07-01',
             playthroughCount: 1
         });
@@ -269,7 +269,7 @@ describe('editing and deleting playthroughs', () => {
         const s = await setup();
         const e = await s.add(1);
         await s.act(e.id, 'start', { date: '2024-01-01' });
-        await s.act(e.id, 'finish', { date: '2024-02-01', rating: 6 });
+        await s.act(e.id, 'finish', { date: '2024-02-01', rating: 3 });
         const [p] = await s.history(e.id);
         return { ...s, e, p };
     }
@@ -279,7 +279,7 @@ describe('editing and deleting playthroughs', () => {
         const res = await call(`/playthroughs/${p.id}`, 'PATCH', {
             startedOn: '2023-12-20',
             endedOn: '2024-02-10',
-            rating: 8,
+            rating: 4,
             outcome: 'abandoned'
         });
         expect(res.status).toBe(200);
@@ -292,7 +292,7 @@ describe('editing and deleting playthroughs', () => {
         expect(
             (await call(`/playthroughs/${p.id}`, 'PATCH', { endedOn: '2023-01-01' })).status
         ).toBe(400);
-        expect((await call(`/playthroughs/${p.id}`, 'PATCH', { rating: 11 })).status).toBe(400);
+        expect((await call(`/playthroughs/${p.id}`, 'PATCH', { rating: 6 })).status).toBe(400);
         expect((await call(`/playthroughs/${p.id}`, 'PATCH', {})).status).toBe(400);
         expect((await call(`/playthroughs/${p.id}`, 'PATCH', { platformId: 99999 })).status).toBe(
             400

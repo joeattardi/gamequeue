@@ -4,6 +4,7 @@ import { Link, useNavigate, useParams } from 'react-router';
 import { useAllPlatforms, useDeleteEntry, useEntry, usePatchEntry } from '../api/collection';
 import { ApiRequestError } from '../api/client';
 import { useConfirm } from '../components/Confirm';
+import { StarRating } from '../components/StarRating';
 import { Cover } from '../components/Cover';
 import { ListsPanel } from '../components/ListsPanel';
 import { ScoreGauge } from '../components/ScoreGauge';
@@ -247,22 +248,7 @@ function RatingNotes({
     return (
         <section aria-labelledby="mine-h" className="panel">
             <h2 id="mine-h">My take</h2>
-            <label className="field">
-                <span>Rating</span>
-                <select
-                    value={entry.rating ?? ''}
-                    onChange={(e) =>
-                        onSave({ rating: e.target.value ? Number(e.target.value) : null })
-                    }
-                >
-                    <option value="">Not rated</option>
-                    {Array.from({ length: 10 }, (_, i) => 10 - i).map((n) => (
-                        <option key={n} value={n}>
-                            {n} / 10
-                        </option>
-                    ))}
-                </select>
-            </label>
+            <StarRating value={entry.rating} onChange={(rating) => onSave({ rating })} />
             <label className="field">
                 <span>Notes</span>
                 <textarea

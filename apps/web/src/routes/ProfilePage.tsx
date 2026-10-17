@@ -1,4 +1,4 @@
-import { ENTRY_STATUSES, type PublicEntryDto } from '@gamequeue/shared';
+import { ENTRY_STATUSES, RATING_MAX, type PublicEntryDto } from '@gamequeue/shared';
 import { Link, useParams } from 'react-router';
 import { ApiRequestError } from '../api/client';
 import { useProfile } from '../api/profile';
@@ -15,7 +15,12 @@ function Games({ entries }: { entries: PublicEntryDto[] }) {
                     <strong>{e.game.name}</strong>
                     <div>
                         <span className={`badge badge--${e.status}`}>{e.status}</span>
-                        {e.rating !== null && <span className="muted"> {e.rating}/10</span>}
+                        {e.rating !== null && (
+                            <span className="muted">
+                                {' '}
+                                {e.rating}/{RATING_MAX}
+                            </span>
+                        )}
                     </div>
                 </li>
             ))}

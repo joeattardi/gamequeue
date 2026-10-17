@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { ENTRY_STATUSES, tagsSchema } from './collection.js';
+import { ENTRY_STATUSES, ratingSchema, tagsSchema } from './collection.js';
 import { isoDateSchema } from './playthroughs.js';
 import { MAX_SLOTS } from './slots.js';
 
@@ -7,7 +7,7 @@ export const EXPORT_FORMAT = 'gamequeue-export';
 export const EXPORT_VERSION = 1;
 
 const id = z.number().int().positive();
-const rating = z.number().int().min(1).max(10);
+const rating = ratingSchema;
 
 const platformRef = z.object({
     id,

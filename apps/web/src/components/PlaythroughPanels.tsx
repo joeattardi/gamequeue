@@ -1,4 +1,9 @@
-import { availableActions, type EntryDto, type PlaythroughDto } from '@gamequeue/shared';
+import {
+    availableActions,
+    RATING_MAX,
+    type EntryDto,
+    type PlaythroughDto
+} from '@gamequeue/shared';
 import { useState, type FormEvent, type ReactNode } from 'react';
 import {
     useDeletePlaythrough,
@@ -9,34 +14,11 @@ import {
 } from '../api/collection';
 import { ApiRequestError } from '../api/client';
 import { useConfirm } from './Confirm';
+import { StarRating } from './StarRating';
 import { daysBetween, formatDate, platformLabel, todayLocal } from '../lib';
 
 const errorText = (e: unknown) =>
     e instanceof ApiRequestError ? e.message : 'Something went wrong.';
-
-function RatingSelect({
-    value,
-    onChange,
-    label = 'Rating'
-}: {
-    value: string;
-    onChange: (v: string) => void;
-    label?: string;
-}) {
-    return (
-        <label className="field">
-            <span>{label}</span>
-            <select value={value} onChange={(e) => onChange(e.target.value)}>
-                <option value="">Not rated</option>
-                {Array.from({ length: 10 }, (_, i) => 10 - i).map((n) => (
-                    <option key={n} value={n}>
-                        {n} / 10
-                    </option>
-                ))}
-            </select>
-        </label>
-    );
-}
 
 function PlatformSelect({
     platforms,
@@ -222,10 +204,10 @@ export function CloseForm({
     onCancel: () => void;
 }) {
     const [date, setDate] = useState(todayLocal());
-    const [rating, setRating] = useState('');
+    const [rating, setRating] = useState<number | null>(null);
     function submit(e: FormEvent) {
         e.preventDefault();
-        onSubmit({ date, rating: rating ? Number(rating) : null });
+        onSubmit({ date, rating });
     }
     return (
         <form className="inline-form subpanel" onSubmit={submit}>
@@ -239,7 +221,7 @@ export function CloseForm({
                     required
                 />
             </label>
-            <RatingSelect value={rating} onChange={setRating} label="Rating for this playthrough" />
+            <StarRating value={rating} onChange={setRating} label="Rating for this playthrough" />
             <button className="btn btn--primary" type="submit" disabled={pending}>
                 Confirm
             </button>
@@ -301,7 +283,7 @@ function HistoryRow({ p, entry }: { p: PlaythroughDto; entry: EntryDto }) {
                     {[
                         p.platform && platformLabel(p.platform),
                         days !== null && `${days} ${days === 1 ? 'day' : 'days'}`,
-                        p.rating !== null && `★ ${p.rating}/10`
+                        p.rating !== null && `★ ${p.rating}/${RATING_MAX}`
                     ]
                         .filter(Boolean)
                         .join(' · ')}
@@ -344,7 +326,7 @@ function EditForm({
     const [startedOn, setStartedOn] = useState(p.startedOn ?? '');
     const [endedOn, setEndedOn] = useState(p.endedOn ?? '');
     const [outcome, setOutcome] = useState(p.outcome ?? '');
-    const [rating, setRating] = useState(p.rating ? String(p.rating) : '');
+    const [rating, setRating] = useState<number | null>(p.rating);
     const [platformId, setPlatformId] = useState(p.platform ? String(p.platform.id) : '');
     const [error, setError] = useState<string>();
     const open = p.outcome === null;
@@ -361,7 +343,7 @@ function EditForm({
                 id: p.id,
                 patch: {
                     startedOn: startedOn || null,
-                    rating: rating ? Number(rating) : null,
+                    rating,
                     ...(platformId ? { platformId: Number(platformId) } : {}),
                     ...(open
                         ? {}
@@ -407,7 +389,7 @@ function EditForm({
                     </label>
                 )}
                 <PlatformSelect platforms={platforms} value={platformId} onChange={setPlatformId} />
-                <RatingSelect value={rating} onChange={setRating} />
+                <StarRating value={rating} onChange={setRating} />
             </div>
             <p className="form-error" role="alert">
                 {error}
@@ -429,7 +411,7 @@ function LogForm({ entry }: { entry: EntryDto }): ReactNode {
     const [outcome, setOutcome] = useState<'finished' | 'abandoned'>('finished');
     const [startedOn, setStartedOn] = useState('');
     const [endedOn, setEndedOn] = useState('');
-    const [rating, setRating] = useState('');
+    const [rating, setRating] = useState<number | null>(null);
     const [platformId, setPlatformId] = useState(
         entry.platforms.length === 1 ? String(entry.platforms[0]!.id) : ''
     );
@@ -443,14 +425,14 @@ function LogForm({ entry }: { entry: EntryDto }): ReactNode {
                 outcome,
                 startedOn: startedOn || null,
                 endedOn: endedOn || null,
-                rating: rating ? Number(rating) : null,
+                rating,
                 ...(platformId ? { platformId: Number(platformId) } : {})
             },
             {
                 onSuccess: () => {
                     setStartedOn('');
                     setEndedOn('');
-                    setRating('');
+                    setRating(null);
                 },
                 onError: (e) => setError(errorText(e))
             }
@@ -493,7 +475,7 @@ function LogForm({ entry }: { entry: EntryDto }): ReactNode {
                         onChange={(e) => setEndedOn(e.target.value)}
                     />
                 </label>
-                <RatingSelect value={rating} onChange={setRating} />
+                <StarRating value={rating} onChange={setRating} />
             </div>
             <p className="form-error" role="alert">
                 {error}

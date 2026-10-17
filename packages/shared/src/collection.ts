@@ -4,6 +4,10 @@ import type { PlaythroughDto } from './playthroughs.js';
 export const ENTRY_STATUSES = ['unplayed', 'playing', 'paused', 'finished', 'abandoned'] as const;
 export type EntryStatus = (typeof ENTRY_STATUSES)[number];
 
+/** Ratings are whole stars, 1 to RATING_MAX */
+export const RATING_MAX = 5;
+export const ratingSchema = z.number().int().min(1).max(RATING_MAX);
+
 export const ENTRY_SORTS = ['title', 'added', 'release', 'rating', 'ttb'] as const;
 export type EntrySort = (typeof ENTRY_SORTS)[number];
 
@@ -91,7 +95,7 @@ export type AddEntryInput = z.infer<typeof addEntrySchema>;
 
 export const patchEntrySchema = z
     .object({
-        rating: z.number().int().min(1).max(10).nullable(),
+        rating: ratingSchema.nullable(),
         notes: z.string().max(10_000),
         ttbOverrideMinutes: z.number().int().min(1).max(60_000).nullable(),
         platformIds: z

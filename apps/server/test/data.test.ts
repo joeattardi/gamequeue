@@ -15,7 +15,7 @@ async function richCollection(s: Api) {
 
     // Hades: finished once, now being replayed on PS5 and sitting in Main
     await call(`/entries/${hades.id}/start`, 'POST', { platformId: PC.id, date: '2025-01-01' });
-    await call(`/entries/${hades.id}/finish`, 'POST', { date: '2025-02-01', rating: 9 });
+    await call(`/entries/${hades.id}/finish`, 'POST', { date: '2025-02-01', rating: 4 });
     await call(`/entries/${hades.id}/start`, 'POST', { platformId: PS5.id, date: '2025-06-01' });
     const slotList = (await call('/slots')).slots as { id: number; name: string }[];
     await call(`/slots/${slotList[0]!.id}/entry`, 'PUT', { entryId: hades.id });
@@ -76,7 +76,7 @@ describe('export', () => {
                 outcome: 'finished',
                 startedOn: '2025-01-01',
                 endedOn: '2025-02-01',
-                rating: 9,
+                rating: 4,
                 platform: { id: PC.id }
             },
             { outcome: null, startedOn: '2025-06-01', endedOn: null, platform: { id: PS5.id } }
@@ -275,7 +275,7 @@ describe('merging into existing data', () => {
     it('reports your kept values in the notes', async () => {
         const { file, b } = await scenario();
         const { report } = await importFile(b, file, false);
-        expect(report.notes).toContain('Hades: kept your rating of 5 (the file has 9)');
+        expect(report.notes).toContain('Hades: kept your rating of 5 (the file has 4)');
     });
 
     it('merges lists by name (case-insensitive) and appends to the end', async () => {
@@ -404,7 +404,7 @@ describe('validation', () => {
         const s = await setupApi();
         const file = await validFile();
         file.games[1]!.status = 'dreaming' as never;
-        file.games[0]!.playthroughs[0]!.rating = 11;
+        file.games[0]!.playthroughs[0]!.rating = 6;
         file.games[2]!.playthroughs = [
             {
                 platform: null,
