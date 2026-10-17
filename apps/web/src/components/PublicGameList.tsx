@@ -66,8 +66,15 @@ export function PublicGameList({
                 {toggle}
                 <ol className="public-grid">
                     {entries.map((e, i) => (
-                        <li key={e.id} title={e.game.name}>
+                        <li key={e.id} tabIndex={0}>
                             <Cover imageId={e.game.coverImageId} name={e.game.name} />
+                            <div className="public-grid__info">
+                                <strong>{e.game.name}</strong>
+                                <div>
+                                    <span className={`badge badge--${e.status}`}>{e.status}</span>
+                                    {e.rating !== null && <StarDisplay value={e.rating} />}
+                                </div>
+                            </div>
                             {numbered && <span className="public-grid__pos">{i + 1}</span>}
                         </li>
                     ))}
