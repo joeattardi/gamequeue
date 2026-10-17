@@ -58,7 +58,10 @@ describe('public profile', () => {
         );
         await post('/queue/items', { entryId: hades.id });
         await post('/queue/items', { entryId: celeste.id });
-        // the queue is not among the profile's lists
+        // the queue is counted in the summary but is not among the profile's lists
+        expect((await (await app.request('/api/profiles/joe')).json()).profile.summary.queued).toBe(
+            2
+        );
         expect((await (await app.request('/api/profiles/joe')).json()).profile.lists).toEqual([]);
         await put('/queue/order', { entryIds: [celeste.id, hades.id] });
 

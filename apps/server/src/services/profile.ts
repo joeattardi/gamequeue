@@ -1,4 +1,4 @@
-import { and, eq } from 'drizzle-orm';
+import { and, count, eq } from 'drizzle-orm';
 import {
     ENTRY_STATUSES,
     type EntryDto,
@@ -8,7 +8,7 @@ import {
     type PublicEntryDto
 } from '@gamequeue/shared';
 import type { Db } from '../db/client.js';
-import { entries, lists, users } from '../db/schema.js';
+import { entries, listItems, lists, users } from '../db/schema.js';
 import { HttpError } from '../errors.js';
 import { getList, listLists } from './lists.js';
 import { listSlots } from './slots.js';
@@ -45,6 +45,14 @@ export function getProfile(db: Db, username: string): ProfileDto {
         .all();
     for (const { status } of statuses) byStatus[status]++;
 
+    const queued =
+        db
+            .select({ n: count() })
+            .from(listItems)
+            .innerJoin(lists, eq(lists.id, listItems.listId))
+            .where(and(eq(lists.userId, user.id), eq(lists.kind, 'queue')))
+            .get()?.n ?? 0;
+
     return {
         username: user.username,
         joinedAt: user.createdAt,
@@ -52,7 +60,7 @@ export function getProfile(db: Db, username: string): ProfileDto {
             name: s.name,
             entry: s.entry ? toPublic(s.entry) : null
         })),
-        summary: { total: statuses.length, byStatus },
+        summary: { total: statuses.length, queued, byStatus },
         lists: listLists(db, user.id).map((l) => ({
             id: l.id,
             name: l.name,

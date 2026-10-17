@@ -1,4 +1,9 @@
-import { RATING_MAX, type EntryStatus, type PublicEntryDto } from '@gamequeue/shared';
+import {
+    RATING_MAX,
+    type EntryStatus,
+    type ProfileDto,
+    type PublicEntryDto
+} from '@gamequeue/shared';
 import {
     Ban,
     CalendarDays,
@@ -49,7 +54,7 @@ const STATS: { key: 'total' | EntryStatus; label: string; icon: ReactNode }[] = 
     { key: 'abandoned', label: 'Abandoned', icon: <Ban aria-hidden="true" /> }
 ];
 
-function Stats({ summary }: { summary: { total: number; byStatus: Record<EntryStatus, number> } }) {
+function Stats({ username, summary }: { username: string; summary: ProfileDto['summary'] }) {
     const count = (k: 'total' | EntryStatus) =>
         k === 'total' ? summary.total : summary.byStatus[k];
     const done = summary.byStatus.finished + summary.byStatus.abandoned;
@@ -63,6 +68,15 @@ function Stats({ summary }: { summary: { total: number; byStatus: Record<EntrySt
                         <span className="counter__label">{st.label}</span>
                     </li>
                 ))}
+                <li className="counter counter--queued">
+                    <Link to={`/u/${username}/queue`} className="counter__link">
+                        <span className="counter__icon">
+                            <ListOrdered aria-hidden="true" />
+                        </span>
+                        <span className="counter__value">{summary.queued}</span>
+                        <span className="counter__label">In queue</span>
+                    </Link>
+                </li>
             </ul>
             {summary.total > 0 && (
                 <div
@@ -133,7 +147,10 @@ export function ProfilePage() {
 
                         <section aria-labelledby="p-collection">
                             <h2 id="p-collection">Collection</h2>
-                            <Stats summary={profile.data.summary} />
+                            <Stats
+                                username={profile.data.username}
+                                summary={profile.data.summary}
+                            />
                         </section>
 
                         <section aria-labelledby="p-playing">
@@ -143,13 +160,6 @@ export function ProfilePage() {
                                     s.entry ? [s.entry] : []
                                 )}
                             />
-                        </section>
-
-                        <section aria-labelledby="p-queue">
-                            <h2 id="p-queue">Up next</h2>
-                            <Link to={`/u/${profile.data.username}/queue`}>
-                                <ListOrdered aria-hidden="true" /> See the full queue
-                            </Link>
                         </section>
 
                         {profile.data.lists.map((l) => (

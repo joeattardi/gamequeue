@@ -11,7 +11,7 @@ export interface ProfileDto {
     /** Account creation time, ms since epoch */
     joinedAt: number;
     slots: { name: string; entry: PublicEntryDto | null }[];
-    summary: { total: number; byStatus: Record<EntryStatus, number> };
+    summary: { total: number; queued: number; byStatus: Record<EntryStatus, number> };
     lists: { id: number; name: string; entries: PublicEntryDto[] }[];
 }
 
