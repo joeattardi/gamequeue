@@ -7,3 +7,4 @@ export * from './slots.js';
 export * from './lists.js';
 export * from './pick.js';
 export * from './export.js';
+export * from './profile.js';

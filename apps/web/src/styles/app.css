@@ -71,16 +71,17 @@ a {
     gap: 10px;
     min-width: 0;
 }
-.topbar__email {
+.topbar__username {
     color: var(--ink-muted);
     font-size: 0.9rem;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
     max-width: 28vw;
+    text-decoration: none;
 }
 @media (max-width: 520px) {
-    .topbar__email {
+    .topbar__username {
         display: none;
     }
 }

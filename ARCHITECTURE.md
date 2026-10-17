@@ -48,7 +48,7 @@ Browser
        1. csrf() on /api/*
        2. origin + content-type guard for POST/PUT/PATCH/DELETE
        3. router matched by prefix
-       4. requireAuth(db, config)   (every router except /api/auth and /api/health)
+       4. requireAuth(db, config)   (every router except /api/auth, /api/health and /api/profiles)
        5. route handler: validate(sharedSchema, input) -> service function(db, userId, ...)
   -> service reads/writes SQLite via Drizzle, returns a DTO
   -> JSON response; errors thrown as HttpError (or Zod failures via validate) are turned into
@@ -58,14 +58,14 @@ Browser
 
 Details:
 
-- **Route mounting** (`app.ts`): `/api/auth`, `/api/igdb`, `/api/entries` (two routers share the prefix: CRUD and playthrough/status actions), `/api/playthroughs`, `/api/slots`, `/api/lists`, `/api/queue`, `/api/pick`, `/api/data`. Each router applies `requireAuth` itself; `requireAuth` is a no-op if an earlier router on the same prefix already authenticated the request. Mount new routers under a specific prefix, never a `use('*', requireAuth)` router at `/api`, which would also gate login.
+- **Route mounting** (`app.ts`): `/api/auth`, `/api/igdb`, `/api/entries` (two routers share the prefix: CRUD and playthrough/status actions), `/api/playthroughs`, `/api/slots`, `/api/lists`, `/api/queue`, `/api/pick`, `/api/data`, and the public `/api/profiles`. Each router applies `requireAuth` itself; `requireAuth` is a no-op if an earlier router on the same prefix already authenticated the request. Mount new routers under a specific prefix, never a `use('*', requireAuth)` router at `/api`, which would also gate login.
 - **CSRF**: Hono's `csrf()` only checks form content types, so `app.ts` additionally rejects mutations whose `Origin` isn't same-origin or in `ALLOWED_ORIGINS` (403), and any body that isn't `application/json` (415). Body-less mutations (DELETE, logout) need an `Origin` header; browsers send one, curl and tests must add it.
 - **Validation**: input schemas live in `packages/shared` and are applied with `validate()`; failure is a 400 with `details: [{path, message}]`.
 - **Errors**: `HttpError(status, message, extra)` is thrown from services. Statuses in use: 400, 404, 409 (e.g. already collected, slot occupied; `extra` carries the conflicting data), 502 (IGDB down), 503 (IGDB not configured). Throwing inside `db.transaction` rolls it back.
 - **Transactions**: services call each other inside `db.transaction` (Drizzle uses savepoints for nesting). For example `assignToSlot` reuses `startPlaythrough` and `togglePause`.
 - **Services** (`apps/server/src/services/`): `entries` (collection CRUD, listing/filtering, facets, tags, hydrating `EntryDto`), `playthroughs` (status transitions, history, `vacateSlots`, `syncStatus`), `slots`, `lists` (lists and the queue), `pick`, `games` (IGDB-backed metadata cache), `export`, `import`.
 - **Production serving** (`index.ts`): if the built web dir exists (`WEB_DIST`, default `../web/dist`) it is served statically with an SPA fallback to `index.html`. Expired sessions are purged at startup and every 6 hours.
-- **Web client**: `App.tsx` calls `useMe()`; unauthenticated users only get `/login` and `/register`, authenticated users get the `Shell` layout with pages for home, collection, backlog, game (`games/:id`), queue, lists, list, pick and data (export/import). Query keys group by area (`entries`, `entry`, `facets`, `platforms`, `search`, `playthroughs`, lists, slots, queue); mutations invalidate the relevant groups. Confirmations use `useConfirm()` and dialogs use native `<dialog>` via `useModalDialog`.
+- **Web client**: `App.tsx` calls `useMe()`; unauthenticated users get `/login`, `/register` and the public profile `/u/:username` (`ProfilePage`, which brings its own header instead of the `Shell`; also reachable when logged in), authenticated users get the `Shell` layout with pages for home, collection, backlog, game (`games/:id`), queue, lists, list, pick and data (export/import). Query keys group by area (`entries`, `entry`, `facets`, `platforms`, `search`, `playthroughs`, lists, slots, queue); mutations invalidate the relevant groups. Confirmations use `useConfirm()` and dialogs use native `<dialog>` via `useModalDialog`.
 
 ## Data model
 
@@ -83,7 +83,7 @@ SQLite via better-sqlite3, WAL mode, `PRAGMA foreign_keys = ON`. Schema in `apps
 
 | Table                | Purpose                                                                                                                                                                                              |
 | -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `users`              | email (unique), argon2id `password_hash`                                                                                                                                                             |
+| `users`              | username (unique, stored lowercase), email (unique), argon2id `password_hash`                                                                                                                                                             |
 | `sessions`           | `id` = SHA-256 of the cookie token, `expires_at`; cascades with the user                                                                                                                             |
 | `entries`            | A game in a user's collection: `status` (unplayed/playing/paused/finished/abandoned), `rating` 1-10, notes, time-to-beat override. Unique per `(user_id, game_id)`                                   |
 | `entry_platforms`    | Platforms the user owns the game on                                                                                                                                                                  |
@@ -106,10 +106,11 @@ Relationships to remember:
 
 ## Auth and sessions
 
-- **Accounts**: `POST /api/auth/register` (403 when `SIGNUPS_ENABLED=false`) hashes the password with argon2id (`@node-rs/argon2`, parameters pinned in `auth/password.ts`), inserts the user and default slots in one transaction (the unique email index is the duplicate check; failure is a generic 409), then logs the user in.
-- **Login** (`POST /api/auth/login`): checks two in-memory `FailureLimiter`s first (per `email|ip`: 5 failures / 15 min; per IP: 30 / 15 min; 429 with `Retry-After`). It always runs an argon2 verify, against a dummy hash if the email is unknown, so timing doesn't reveal which accounts exist. Wrong credentials return one generic 401. Success resets the per-account counter. The client IP comes from the socket, or from `X-Forwarded-For` only when `TRUST_PROXY=true`. The limiters are per process, which is fine for a single-instance deployment.
+- **Accounts**: `POST /api/auth/register` (403 when `SIGNUPS_ENABLED=false`) hashes the password with argon2id (`@node-rs/argon2`, parameters pinned in `auth/password.ts`), inserts the user and default slots in one transaction (the unique username and email indexes are the duplicate check; failure is a generic 409). Usernames are 3-30 chars of `a-z 0-9 _ -`, lowercased by `usernameSchema`; email is kept but is not used to log in, then logs the user in.
+- **Login** (`POST /api/auth/login`): checks two in-memory `FailureLimiter`s first (per `username|ip`: 5 failures / 15 min; per IP: 30 / 15 min; 429 with `Retry-After`). It always runs an argon2 verify, against a dummy hash if the username is unknown, so timing doesn't reveal which accounts exist. Wrong credentials return one generic 401. Success resets the per-account counter. The client IP comes from the socket, or from `X-Forwarded-For` only when `TRUST_PROXY=true`. The limiters are per process, which is fine for a single-instance deployment.
 - **Sessions** (`auth/sessions.ts`): on login a random 32-byte token is generated; only its SHA-256 hash is stored (`sessions.id`), so a DB leak doesn't yield usable cookies. The raw token goes to the browser in the `gq_session` cookie (httpOnly, SameSite=Lax, `Secure` when `NODE_ENV=production`, path `/`). TTL is 30 days, sliding: when less than half remains, the expiry is extended and the cookie re-issued. Expired sessions found on lookup are deleted, and a periodic purge removes the rest.
-- **Per-request auth** (`auth/middleware.ts`): `requireAuth` reads the cookie, calls `resolveSession`, and sets `c.var.user = {id, email}`. A missing or invalid session returns 401 (and clears a stale cookie). Handlers get the user id from `c.get('user')`; every service query is scoped by it.
+- **Per-request auth** (`auth/middleware.ts`): `requireAuth` reads the cookie, calls `resolveSession`, and sets `c.var.user = {id, username, email}`. A missing or invalid session returns 401 (and clears a stale cookie). Handlers get the user id from `c.get('user')`; every service query is scoped by it.
+- **Public profile** (`GET /api/profiles/:username`, `routes/profile.ts` + `services/profile.ts`): no login. Returns username, join date, slot contents, a count per status and the user's lists with their games, as `PublicEntryDto` (no notes, email, queue or slot/list internals). Unknown or malformed usernames are 404. It is read-only: it never calls `ensureQueue`. Everything is public; there is no visibility setting.
 - **Logout** (`POST /api/auth/logout`) deletes the session row and clears the cookie. `GET /api/auth/me` backs the web app's `useMe()` gate.
 - **CSRF**: see the origin/content-type guard under Request flow.
 

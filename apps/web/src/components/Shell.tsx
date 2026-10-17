@@ -1,5 +1,5 @@
 import type { UserDto } from '@gamequeue/shared';
-import { NavLink, Outlet } from 'react-router';
+import { Link, NavLink, Outlet } from 'react-router';
 import { useLogout } from '../api/auth';
 import { Logo } from './Logo';
 
@@ -24,9 +24,9 @@ export function Shell({ user }: { user: UserDto }) {
                     <NavLink to="/data">Data</NavLink>
                 </nav>
                 <div className="topbar__user">
-                    <span className="topbar__email" title={user.email}>
-                        {user.email}
-                    </span>
+                    <Link className="topbar__username" to={`/u/${user.username}`}>
+                        {user.username}
+                    </Link>
                     <button
                         className="btn btn--ghost"
                         onClick={() => logout.mutate()}

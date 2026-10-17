@@ -9,6 +9,7 @@ import { Home } from './routes/Home';
 import { ListPage, QueuePage } from './routes/ListPage';
 import { ListsPage } from './routes/ListsPage';
 import { PickPage } from './routes/PickPage';
+import { ProfilePage } from './routes/ProfilePage';
 
 export function App() {
     const me = useMe();
@@ -30,12 +31,14 @@ export function App() {
             <Routes>
                 <Route path="/login" element={<AuthPage mode="login" />} />
                 <Route path="/register" element={<AuthPage mode="register" />} />
+                <Route path="/u/:username" element={<ProfilePage />} />
                 <Route path="*" element={<Navigate to="/login" replace />} />
             </Routes>
         );
     }
     return (
         <Routes>
+            <Route path="/u/:username" element={<ProfilePage />} />
             <Route element={<Shell user={me.data} />}>
                 <Route index element={<Home />} />
                 <Route path="collection" element={<CollectionPage view="all" />} />

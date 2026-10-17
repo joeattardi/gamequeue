@@ -4,7 +4,7 @@ import type { Config } from '../config.js';
 import type { Db } from '../db/client.js';
 import { resolveSession, SESSION_COOKIE, SESSION_TTL_MS } from './sessions.js';
 
-export type AuthVars = { user: { id: number; email: string } };
+export type AuthVars = { user: { id: number; username: string; email: string } };
 
 export function cookieOptions(config: Config, expiresAt: number) {
     return {

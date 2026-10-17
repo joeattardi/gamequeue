@@ -12,6 +12,8 @@ const now = sql`(unixepoch() * 1000)`;
 
 export const users = sqliteTable('users', {
     id: integer('id').primaryKey({ autoIncrement: true }),
+    // Stored lowercase (usernameSchema), so the plain unique index is case-insensitive
+    username: text('username').notNull().unique(),
     email: text('email').notNull().unique(),
     passwordHash: text('password_hash').notNull(),
     createdAt: integer('created_at').notNull().default(now)

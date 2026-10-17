@@ -21,7 +21,9 @@ describe('register', () => {
         const { app, db } = makeApp();
         const res = await register(app, 'Me@Example.com');
         expect(res.status).toBe(201);
-        expect((await res.json()).user.email).toBe('me@example.com');
+        const { user } = await res.json();
+        expect(user.email).toBe('me@example.com');
+        expect(user.username).toBe('user_me');
         const cookie = res.headers.get('set-cookie')!;
         expect(cookie).toMatch(/HttpOnly/i);
         expect(cookie).toMatch(/SameSite=Lax/i);
@@ -46,6 +48,18 @@ describe('register', () => {
         expect((await register(app, 'dup@b.co')).status).toBe(201);
         expect((await register(app, 'dup@b.co')).status).toBe(409);
     });
+
+    it('validates usernames and treats them as case-insensitive and unique', async () => {
+        const { app } = makeApp();
+        for (const bad of ['ab', 'has space', 'x'.repeat(31), 'dot.ted'])
+            expect((await register(app, 'a@b.co', 'correct horse battery', bad)).status).toBe(400);
+        const ok = await register(app, 'a@b.co', 'correct horse battery', 'Player_One');
+        expect(ok.status).toBe(201);
+        expect((await ok.json()).user.username).toBe('player_one');
+        expect((await register(app, 'c@d.co', 'correct horse battery', 'PLAYER_ONE')).status).toBe(
+            409
+        );
+    });
 });
 
 describe('login and sessions', () => {
@@ -54,7 +68,7 @@ describe('login and sessions', () => {
         await register(app);
         const res = await app.request(
             '/api/auth/login',
-            json({ email: 'me@example.com', password: 'correct horse battery' })
+            json({ username: 'user_me', password: 'correct horse battery' })
         );
         expect(res.status).toBe(200);
         const cookie = cookieFrom(res);
@@ -69,19 +83,31 @@ describe('login and sessions', () => {
 
         const me = await app.request('/api/auth/me', { headers: { cookie } });
         expect(me.status).toBe(200);
-        expect((await me.json()).user.email).toBe('me@example.com');
+        expect((await me.json()).user).toMatchObject({
+            username: 'user_me',
+            email: 'me@example.com'
+        });
     });
 
-    it('gives the same generic error for unknown email and wrong password', async () => {
+    it('logs in case-insensitively by username, not by email', async () => {
+        const { app } = makeApp();
+        await register(app);
+        const login = (body: object) => app.request('/api/auth/login', json(body));
+        const password = 'correct horse battery';
+        expect((await login({ username: 'USER_ME', password })).status).toBe(200);
+        expect((await login({ email: 'me@example.com', password })).status).toBe(400);
+    });
+
+    it('gives the same generic error for unknown username and wrong password', async () => {
         const { app } = makeApp();
         await register(app);
         const a = await app.request(
             '/api/auth/login',
-            json({ email: 'me@example.com', password: 'nope nope nope' })
+            json({ username: 'user_me', password: 'nope nope nope' })
         );
         const b = await app.request(
             '/api/auth/login',
-            json({ email: 'ghost@example.com', password: 'nope nope nope' })
+            json({ username: 'ghost', password: 'nope nope nope' })
         );
         expect(a.status).toBe(401);
         expect(b.status).toBe(401);
@@ -92,10 +118,7 @@ describe('login and sessions', () => {
         const { app } = makeApp();
         await register(app);
         const bad = () =>
-            app.request(
-                '/api/auth/login',
-                json({ email: 'me@example.com', password: 'wrong wrong' })
-            );
+            app.request('/api/auth/login', json({ username: 'user_me', password: 'wrong wrong' }));
         for (let i = 0; i < 5; i++) expect((await bad()).status).toBe(401);
         const blocked = await bad();
         expect(blocked.status).toBe(429);
@@ -103,7 +126,7 @@ describe('login and sessions', () => {
         // even the right password is refused while limited
         const right = await app.request(
             '/api/auth/login',
-            json({ email: 'me@example.com', password: 'correct horse battery' })
+            json({ username: 'user_me', password: 'correct horse battery' })
         );
         expect(right.status).toBe(429);
     });
@@ -125,7 +148,11 @@ describe('login and sessions', () => {
 
     it('expires and slides sessions', () => {
         const { db } = makeApp();
-        const u = db.insert(users).values({ email: 'x@y.z', passwordHash: 'h' }).returning().get();
+        const u = db
+            .insert(users)
+            .values({ username: 'xyz', email: 'x@y.z', passwordHash: 'h' })
+            .returning()
+            .get();
         const t0 = 1_000_000;
         const { token } = createSession(db, u.id, t0);
         expect(resolveSession(db, token, t0 + 1000)?.renewed).toBe(false);
@@ -147,7 +174,11 @@ describe('login and sessions', () => {
 describe('CSRF', () => {
     it('rejects cross-origin mutations and allows configured origins', async () => {
         const { app } = makeApp({ allowedOrigins: ['http://localhost:5173'] });
-        const body = { email: 'me@example.com', password: 'correct horse battery' };
+        const body = {
+            username: 'me_user',
+            email: 'me@example.com',
+            password: 'correct horse battery'
+        };
         const evil = await app.request(
             '/api/auth/register',
             json(body, { origin: 'https://evil.example' })

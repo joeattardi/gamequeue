@@ -6,6 +6,7 @@ import type { Db } from './db/client.js';
 import { FailureLimiter } from './auth/rate-limit.js';
 import { authRoutes } from './routes/auth.js';
 import { dataRoutes } from './routes/data.js';
+import { profileRoutes } from './routes/profile.js';
 import { entryRoutes } from './routes/entries.js';
 import { igdbRoutes } from './routes/igdb.js';
 import { listRoutes, pickRoutes, queueRoutes } from './routes/lists.js';
@@ -72,6 +73,8 @@ export function createApp(deps: AppDeps) {
     app.route('/api/queue', queueRoutes(deps));
     app.route('/api/pick', pickRoutes(deps));
     app.route('/api/data', dataRoutes(deps));
+    // Public: no login required
+    app.route('/api/profiles', profileRoutes(deps));
 
     app.notFound((c) => c.json({ error: 'Not found' }, 404));
     app.onError((err, c) => {

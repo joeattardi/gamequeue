@@ -84,7 +84,11 @@ describe('adding games', () => {
         const cookie2 = cookieFrom(
             await app.request(
                 '/api/auth/register',
-                json({ email: 'two@example.com', password: 'another long pass' })
+                json({
+                    username: 'user_two',
+                    email: 'two@example.com',
+                    password: 'another long pass'
+                })
             )
         );
         const res = await app.request('/api/entries', {
@@ -307,7 +311,11 @@ describe('editing and deleting', () => {
         const cookie2 = cookieFrom(
             await app.request(
                 '/api/auth/register',
-                json({ email: 'two@example.com', password: 'another long pass' })
+                json({
+                    username: 'user_two',
+                    email: 'two@example.com',
+                    password: 'another long pass'
+                })
             )
         );
         const headers = { cookie: cookie2, 'content-type': 'application/json' };

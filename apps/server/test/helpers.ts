@@ -28,9 +28,13 @@ export const cookieFrom = (res: Response) => res.headers.get('set-cookie')?.spli
 export async function register(
     app: App,
     email = 'me@example.com',
-    password = 'correct horse battery'
+    password = 'correct horse battery',
+    username = `user_${email
+        .split('@')[0]!
+        .toLowerCase()
+        .replace(/[^a-z0-9_-]/g, '_')}`
 ) {
-    return app.request('/api/auth/register', json({ email, password }));
+    return app.request('/api/auth/register', json({ username, email, password }));
 }
 
 export const PS5 = { id: 167, name: 'PlayStation 5', abbreviation: 'PS5' };

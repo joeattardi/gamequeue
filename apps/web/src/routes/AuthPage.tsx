@@ -16,14 +16,22 @@ export function AuthPage({ mode }: { mode: 'login' | 'register' }) {
         e.preventDefault();
         setError(undefined);
         const form = new FormData(e.currentTarget);
-        const input = { email: String(form.get('email')), password: String(form.get('password')) };
-        const parsed = (isLogin ? loginSchema : registerSchema).safeParse(input);
-        if (!parsed.success)
-            return setError(parsed.error.issues[0]?.message ?? 'Check your details');
-        mutation.mutate(parsed.data, {
-            onError: (err) =>
-                setError(err instanceof ApiRequestError ? err.message : 'Something went wrong')
-        });
+        const input = {
+            username: String(form.get('username')),
+            email: String(form.get('email')),
+            password: String(form.get('password'))
+        };
+        const onError = (err: Error) =>
+            setError(err instanceof ApiRequestError ? err.message : 'Something went wrong');
+        if (isLogin) {
+            const parsed = loginSchema.safeParse(input);
+            if (!parsed.success) return setError(parsed.error.issues[0]?.message);
+            login.mutate(parsed.data, { onError });
+        } else {
+            const parsed = registerSchema.safeParse(input);
+            if (!parsed.success) return setError(parsed.error.issues[0]?.message);
+            register.mutate(parsed.data, { onError });
+        }
     }
 
     return (
@@ -32,9 +40,28 @@ export function AuthPage({ mode }: { mode: 'login' | 'register' }) {
                 <Logo />
                 <h1>{isLogin ? 'Welcome back' : 'Create your account'}</h1>
                 <label className="field">
-                    <span>Email</span>
-                    <input name="email" type="email" autoComplete="email" required autoFocus />
+                    <span>Username</span>
+                    <input
+                        name="username"
+                        autoComplete="username"
+                        autoCapitalize="none"
+                        spellCheck={false}
+                        required
+                        autoFocus
+                    />
+                    {!isLogin && (
+                        <small className="muted">
+                            3-30 characters: letters, numbers, _ and -. Shown on your public
+                            profile.
+                        </small>
+                    )}
                 </label>
+                {!isLogin && (
+                    <label className="field">
+                        <span>Email</span>
+                        <input name="email" type="email" autoComplete="email" required />
+                    </label>
+                )}
                 <label className="field">
                     <span>Password</span>
                     <input

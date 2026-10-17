@@ -51,7 +51,11 @@ export async function setupApi() {
         cookieFrom(
             await app.request(
                 '/api/auth/register',
-                json({ email: 'two@example.com', password: 'another long pass' })
+                json({
+                    username: 'user_two',
+                    email: 'two@example.com',
+                    password: 'another long pass'
+                })
             )
         );
     return { app, db, cookie, call, add, secondUser };

@@ -64,17 +64,17 @@ export function authRoutes({ db, config, limiters }: Deps) {
         if (!config.signupsEnabled) return c.json({ error: 'Signups are disabled' }, 403);
         const body = await parseBody(c, registerSchema);
         if (body.response) return body.response;
-        const { email, password } = body.data;
+        const { username, email, password } = body.data;
 
         const passwordHash = await hashPassword(password);
         // The unique index is the source of truth; no check-then-insert race.
-        let user: { id: number; email: string } | undefined;
+        let user: { id: number; username: string; email: string } | undefined;
         try {
             user = db.transaction((tx) => {
                 const u = tx
                     .insert(users)
-                    .values({ email, passwordHash })
-                    .returning({ id: users.id, email: users.email })
+                    .values({ username, email, passwordHash })
+                    .returning({ id: users.id, username: users.username, email: users.email })
                     .get();
                 tx.insert(slots)
                     .values(
@@ -100,11 +100,11 @@ export function authRoutes({ db, config, limiters }: Deps) {
     r.post('/login', async (c) => {
         const body = await parseBody(c, loginSchema);
         if (body.response) return body.response;
-        const { email, password } = body.data;
+        const { username, password } = body.data;
 
         const ip = clientIp(c, config.trustProxy);
         const keys: [FailureLimiter, string][] = [
-            [limiters.loginByAccount, `${email}|${ip}`],
+            [limiters.loginByAccount, `${username}|${ip}`],
             [limiters.loginByIp, ip]
         ];
         const wait = Math.max(...keys.map(([l, k]) => l.retryAfter(k)));
@@ -113,17 +113,17 @@ export function authRoutes({ db, config, limiters }: Deps) {
             return c.json({ error: 'Too many attempts. Try again later.' }, 429);
         }
 
-        const row = db.select().from(users).where(eq(users.email, email)).get();
-        // Always run a verify so response time doesn't reveal whether the email exists.
+        const row = db.select().from(users).where(eq(users.username, username)).get();
+        // Always run a verify so response time doesn't reveal whether the username exists.
         const ok = await verifyPassword(row?.passwordHash ?? (await dummyHash()), password);
         if (!row || !ok) {
             for (const [l, k] of keys) l.fail(k);
-            return c.json({ error: 'Invalid email or password' }, 401);
+            return c.json({ error: 'Invalid username or password' }, 401);
         }
         limiters.loginByAccount.reset(keys[0]![1]);
         const { token, expiresAt } = createSession(db, row.id);
         setSessionCookie(c, config, token, expiresAt);
-        return c.json({ user: { id: row.id, email: row.email } });
+        return c.json({ user: { id: row.id, username: row.username, email: row.email } });
     });
 
     r.post('/logout', (c) => {

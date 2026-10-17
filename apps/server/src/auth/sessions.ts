@@ -21,7 +21,12 @@ export function createSession(db: Db, userId: number, now = Date.now()) {
 export function resolveSession(db: Db, token: string, now = Date.now()) {
     const id = hashToken(token);
     const row = db
-        .select({ expiresAt: sessions.expiresAt, userId: users.id, email: users.email })
+        .select({
+            expiresAt: sessions.expiresAt,
+            userId: users.id,
+            username: users.username,
+            email: users.email
+        })
         .from(sessions)
         .innerJoin(users, eq(users.id, sessions.userId))
         .where(eq(sessions.id, id))
@@ -37,7 +42,7 @@ export function resolveSession(db: Db, token: string, now = Date.now()) {
         db.update(sessions).set({ expiresAt }).where(eq(sessions.id, id)).run();
     }
     return {
-        user: { id: row.userId, email: row.email },
+        user: { id: row.userId, username: row.username, email: row.email },
         expiresAt,
         renewed: expiresAt !== row.expiresAt
     };

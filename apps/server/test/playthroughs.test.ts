@@ -343,7 +343,11 @@ describe('isolation and cleanup', () => {
         const other = cookieFrom(
             await app.request(
                 '/api/auth/register',
-                json({ email: 'two@example.com', password: 'another long pass' })
+                json({
+                    username: 'user_two',
+                    email: 'two@example.com',
+                    password: 'another long pass'
+                })
             )
         );
         const headers = {
