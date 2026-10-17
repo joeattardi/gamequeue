@@ -27,6 +27,8 @@ export interface IgdbSearchHit {
     name: string;
     year: number | null;
     coverImageId: string | null;
+    /** IGDB's aggregated rating, 0-100 */
+    rating: number | null;
     platforms: PlatformDto[];
 }
 

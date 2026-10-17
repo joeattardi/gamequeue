@@ -18,6 +18,8 @@ export interface SearchResultDto {
     name: string;
     year: number | null;
     coverImageId: string | null;
+    /** IGDB's aggregated rating, 0-100 */
+    igdbRating: number | null;
     platforms: PlatformDto[];
     /** Set when the game is already in the user's collection */
     entryId: number | null;

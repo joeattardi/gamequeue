@@ -74,6 +74,7 @@ export function fakeIgdb(catalog: GameRecord[]) {
                     name: g.name,
                     year: g.releaseDate ? Number(g.releaseDate.slice(0, 4)) : null,
                     coverImageId: g.coverImageId,
+                    rating: g.igdbRating,
                     platforms: g.platforms
                 }));
         },

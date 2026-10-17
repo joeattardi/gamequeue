@@ -140,6 +140,11 @@ describe('search', () => {
         expect(res.results.map((r: { igdbId: number }) => r.igdbId)).toEqual([2, 3]);
         expect(res.results[0].entryId).toBe(e.id);
         expect(res.results[1].entryId).toBeNull();
+        // the IGDB rating comes along, and is null when IGDB has none
+        expect(res.results.map((r: { igdbRating: number | null }) => r.igdbRating)).toEqual([
+            80,
+            null
+        ]);
         await call('/igdb/search?q=EL'); // same query, different case
         expect(igdb.calls.search).toBe(1);
     });

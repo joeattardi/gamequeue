@@ -59,6 +59,7 @@ export function mapSearchHit(raw: RawGame): IgdbSearchHit {
                 ? null
                 : new Date(raw.first_release_date * 1000).getUTCFullYear(),
         coverImageId: raw.cover?.image_id ?? null,
+        rating: raw.total_rating === undefined ? null : Math.round(raw.total_rating),
         platforms: platforms(raw.platforms)
     };
 }

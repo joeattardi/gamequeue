@@ -46,10 +46,14 @@ export function ScoreGauge({
     const tier = gaugeTier(percent);
     // Three characters (100, 10.5...) need a smaller face to clear the arc
     const valueScale = text.length >= 3 ? 0.27 : 0.34;
+    // The caption won't fit under the number on a compact gauge; the accessible label still has it
+    const showLabel = size >= 64;
+    // Notches scale with the gauge so they stay crisp rather than busy at small sizes
+    const notch = Math.max(1.5, size * 0.024);
 
     return (
         <div
-            className={`gauge gauge--${tier}`}
+            className={`gauge gauge--${tier}${showLabel ? '' : ' gauge--compact'}`}
             style={{ width: size, height: size }}
             role="img"
             aria-label={`${label} score: ${text} out of ${max}, ${tier}`}
@@ -88,7 +92,7 @@ export function ScoreGauge({
                             y1={inner.y}
                             x2={outer.x}
                             y2={outer.y}
-                            strokeWidth={2.5}
+                            strokeWidth={notch}
                         />
                     );
                 })}
@@ -112,9 +116,11 @@ export function ScoreGauge({
                 <span className="gauge__value" style={{ fontSize: size * valueScale }}>
                     {text}
                 </span>
-                <span className="gauge__label" style={{ fontSize: Math.max(11, size * 0.115) }}>
-                    {label}
-                </span>
+                {showLabel && (
+                    <span className="gauge__label" style={{ fontSize: Math.max(11, size * 0.115) }}>
+                        {label}
+                    </span>
+                )}
             </div>
         </div>
     );

@@ -87,6 +87,7 @@ describe('IGDB client', () => {
                     id: 1,
                     name: 'Hades',
                     first_release_date: 1600000000,
+                    total_rating: 87.6,
                     cover: { image_id: 'abc' },
                     platforms: [{ id: 6, name: 'PC', abbreviation: 'PC' }],
                     game_type: { type: 'Main Game' }
@@ -102,8 +103,10 @@ describe('IGDB client', () => {
             name: 'Hades',
             year: 2020,
             coverImageId: 'abc',
+            rating: 88, // rounded from IGDB's 87.6
             platforms: [{ id: 6, name: 'PC', abbreviation: 'PC' }]
         });
+        expect(hits[1]!.rating).toBeNull(); // IGDB had no rating for this one
         const req = requests[0]!;
         expect(req.url).toBe('https://api.igdb.com/v4/games');
         expect(req.body).toContain('search "had\\"es"');

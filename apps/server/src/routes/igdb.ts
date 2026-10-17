@@ -46,6 +46,7 @@ export function igdbRoutes({ db, config, igdb }: AppDeps) {
             name: h.name,
             year: h.year,
             coverImageId: h.coverImageId,
+            igdbRating: h.rating,
             platforms: h.platforms,
             entryId: owned.get(h.id) ?? null
         }));

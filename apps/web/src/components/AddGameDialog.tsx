@@ -5,6 +5,7 @@ import { useAddEntry, useAllPlatforms, useGameSearch } from '../api/collection';
 import { ApiRequestError } from '../api/client';
 import { platformLabel, useDebounced } from '../lib';
 import { Cover } from './Cover';
+import { ScoreGauge } from './ScoreGauge';
 
 export function AddGameDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
     const ref = useRef<HTMLDialogElement>(null);
@@ -102,6 +103,16 @@ function AddGameBody({ onDone }: { onDone: () => void }) {
                                     {r.entryId !== null && (
                                         <span className="badge">In collection</span>
                                     )}
+                                    {/* A fixed-width slot keeps the scores lined up, rated or not */}
+                                    <span className="result__score">
+                                        {r.igdbRating !== null && (
+                                            <ScoreGauge
+                                                value={r.igdbRating}
+                                                label="IGDB"
+                                                size={56}
+                                            />
+                                        )}
+                                    </span>
                                 </button>
                             </li>
                         ))}

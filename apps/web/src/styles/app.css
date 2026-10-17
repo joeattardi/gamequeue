@@ -1102,3 +1102,16 @@ input[type='file'] {
 .entry__head h1 {
     overflow-wrap: anywhere;
 }
+
+/* ---- Score in search results ---- */
+.gauge--compact .gauge__text {
+    padding-bottom: 0;
+}
+.result__score {
+    flex: none;
+    width: 56px;
+    height: 56px;
+}
+.result:hover:not(:disabled) .gauge {
+    --gauge-surface: var(--surface-2);
+}
