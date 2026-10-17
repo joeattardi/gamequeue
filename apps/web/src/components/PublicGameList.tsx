@@ -102,3 +102,40 @@ export function PublicGameList({
         </>
     );
 }
+
+/** Placeholder shown while a list loads, in whichever layout the visitor last chose. */
+export function PublicGameListSkeleton({ count = 12 }: { count?: number }) {
+    const [layout] = useState<Layout>(loadLayout);
+    const items = Array.from({ length: count }, (_, i) => i);
+    return (
+        <div role="status" aria-label="Loading games">
+            <div className="layout-toggle" aria-hidden="true">
+                <span className="skeleton skeleton--toggle" />
+            </div>
+            {layout === 'grid' ? (
+                <ul className="public-grid" aria-hidden="true">
+                    {items.map((i) => (
+                        <li key={i}>
+                            <div className="skeleton skeleton--cover" />
+                        </li>
+                    ))}
+                </ul>
+            ) : (
+                <ul className="public-games" aria-hidden="true">
+                    {items.slice(0, 8).map((i) => (
+                        <li key={i}>
+                            <div className="skeleton skeleton--thumb" />
+                            <div className="skeleton-lines">
+                                <span
+                                    className="skeleton skeleton--line"
+                                    style={{ width: `${55 + ((i * 17) % 35)}%` }}
+                                />
+                                <span className="skeleton skeleton--line skeleton--short" />
+                            </div>
+                        </li>
+                    ))}
+                </ul>
+            )}
+        </div>
+    );
+}

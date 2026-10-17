@@ -3,7 +3,7 @@ import { ArrowLeft } from 'lucide-react';
 import { Link, useParams } from 'react-router';
 import { ApiRequestError } from '../api/client';
 import { useProfileGames } from '../api/profile';
-import { PublicGameList } from '../components/PublicGameList';
+import { PublicGameList, PublicGameListSkeleton } from '../components/PublicGameList';
 import { PublicHeader } from '../components/PublicHeader';
 
 const VIEWS: Record<ProfileView, { title: string; empty: string; numbered?: boolean }> = {
@@ -34,7 +34,7 @@ export function ProfileGamesPage() {
                     <ArrowLeft aria-hidden="true" /> {username}
                 </Link>
                 {notFound && <p role="alert">There is nothing here.</p>}
-                {!notFound && games.isPending && <p role="status">Loading…</p>}
+                {!notFound && games.isPending && <PublicGameListSkeleton />}
                 {!notFound && games.isError && <p role="alert">Couldn't load.</p>}
                 {!notFound && games.data && meta && (
                     <>
