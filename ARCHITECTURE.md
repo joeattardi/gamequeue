@@ -83,7 +83,7 @@ SQLite via better-sqlite3, WAL mode, `PRAGMA foreign_keys = ON`. Schema in `apps
 
 | Table                | Purpose                                                                                                                                                                                              |
 | -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `users`              | username (unique, stored lowercase), email (unique), argon2id `password_hash`                                                                                                                                                             |
+| `users`              | username (unique, stored lowercase), email (unique), argon2id `password_hash`                                                                                                                        |
 | `sessions`           | `id` = SHA-256 of the cookie token, `expires_at`; cascades with the user                                                                                                                             |
 | `entries`            | A game in a user's collection: `status` (unplayed/playing/paused/finished/abandoned), `rating` 1-10, notes, time-to-beat override. Unique per `(user_id, game_id)`                                   |
 | `entry_platforms`    | Platforms the user owns the game on                                                                                                                                                                  |
