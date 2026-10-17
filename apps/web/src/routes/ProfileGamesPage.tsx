@@ -3,7 +3,7 @@ import { ArrowLeft } from 'lucide-react';
 import { Link, useParams } from 'react-router';
 import { ApiRequestError } from '../api/client';
 import { useProfileGames } from '../api/profile';
-import { PublicGameList, PublicGameListSkeleton } from '../components/PublicGameList';
+import { PublicGameList } from '../components/PublicGameList';
 import { PublicHeader } from '../components/PublicHeader';
 
 const VIEWS: Record<ProfileView, { title: string; empty: string; numbered?: boolean }> = {
@@ -34,15 +34,14 @@ export function ProfileGamesPage() {
                     <ArrowLeft aria-hidden="true" /> {username}
                 </Link>
                 {notFound && <p role="alert">There is nothing here.</p>}
-                {!notFound && games.isPending && <PublicGameListSkeleton />}
                 {!notFound && games.isError && <p role="alert">Couldn't load.</p>}
-                {!notFound && games.data && meta && (
+                {!notFound && !games.isError && meta && (
                     <>
                         <h1>
-                            {games.data.username}: {meta.title.toLowerCase()}
+                            {games.data?.username ?? username}: {meta.title.toLowerCase()}
                         </h1>
                         <PublicGameList
-                            entries={games.data.entries}
+                            entries={games.data?.entries}
                             numbered={meta.numbered}
                             empty={meta.empty}
                         />

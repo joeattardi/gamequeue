@@ -21,13 +21,13 @@ export function PublicGameList({
     numbered = false,
     empty
 }: {
-    entries: PublicEntryDto[];
+    /** Undefined while loading: the selector stays, the list shows skeletons */
+    entries: PublicEntryDto[] | undefined;
     /** Show each game's position, for ordered lists such as the queue */
     numbered?: boolean;
     empty: string;
 }) {
     const [layout, setLayout] = useState<Layout>(loadLayout);
-    if (entries.length === 0) return <p className="muted">{empty}</p>;
 
     const choose = (next: Layout) => {
         setLayout(next);
@@ -60,30 +60,29 @@ export function PublicGameList({
         </div>
     );
 
-    if (layout === 'grid')
-        return (
-            <>
-                {toggle}
-                <ol className="public-grid">
-                    {entries.map((e, i) => (
-                        <li key={e.id} tabIndex={0}>
-                            <Cover imageId={e.game.coverImageId} name={e.game.name} />
-                            <div className="public-grid__info">
-                                <strong>{e.game.name}</strong>
-                                <div>
-                                    <span className={`badge badge--${e.status}`}>{e.status}</span>
-                                    {e.rating !== null && <StarDisplay value={e.rating} />}
-                                </div>
+    let content;
+    if (!entries) content = <Skeleton layout={layout} numbered={numbered} />;
+    else if (entries.length === 0) content = <p className="muted">{empty}</p>;
+    else if (layout === 'grid')
+        content = (
+            <ol className="public-grid">
+                {entries.map((e, i) => (
+                    <li key={e.id} tabIndex={0}>
+                        <Cover imageId={e.game.coverImageId} name={e.game.name} />
+                        <div className="public-grid__info">
+                            <strong>{e.game.name}</strong>
+                            <div>
+                                <span className={`badge badge--${e.status}`}>{e.status}</span>
+                                {e.rating !== null && <StarDisplay value={e.rating} />}
                             </div>
-                            {numbered && <span className="public-grid__pos">{i + 1}</span>}
-                        </li>
-                    ))}
-                </ol>
-            </>
+                        </div>
+                        {numbered && <span className="public-grid__pos">{i + 1}</span>}
+                    </li>
+                ))}
+            </ol>
         );
-    return (
-        <>
-            {toggle}
+    else
+        content = (
             <ol className="public-games">
                 {entries.map((e, i) => (
                     <li key={e.id}>
@@ -99,22 +98,22 @@ export function PublicGameList({
                     </li>
                 ))}
             </ol>
+        );
+    return (
+        <>
+            {toggle}
+            {content}
         </>
     );
 }
 
-/** Placeholder shown while a list loads, in whichever layout the visitor last chose. */
-export function PublicGameListSkeleton({ count = 12 }: { count?: number }) {
-    const [layout] = useState<Layout>(loadLayout);
-    const items = Array.from({ length: count }, (_, i) => i);
+/** Loading placeholders built on the real list's own classes, so sizes match. */
+function Skeleton({ layout, numbered }: { layout: Layout; numbered: boolean }) {
     return (
         <div role="status" aria-label="Loading games">
-            <div className="layout-toggle" aria-hidden="true">
-                <span className="skeleton skeleton--toggle" />
-            </div>
             {layout === 'grid' ? (
                 <ul className="public-grid" aria-hidden="true">
-                    {items.map((i) => (
+                    {Array.from({ length: 12 }, (_, i) => (
                         <li key={i}>
                             <div className="skeleton skeleton--cover" />
                         </li>
@@ -122,15 +121,16 @@ export function PublicGameListSkeleton({ count = 12 }: { count?: number }) {
                 </ul>
             ) : (
                 <ul className="public-games" aria-hidden="true">
-                    {items.slice(0, 8).map((i) => (
+                    {Array.from({ length: 8 }, (_, i) => (
                         <li key={i}>
+                            {numbered && <span className="public-games__pos">&nbsp;</span>}
                             <div className="skeleton skeleton--thumb" />
                             <div className="skeleton-lines">
                                 <span
                                     className="skeleton skeleton--line"
-                                    style={{ width: `${55 + ((i * 17) % 35)}%` }}
+                                    style={{ width: `${140 + ((i * 37) % 90)}px` }}
                                 />
-                                <span className="skeleton skeleton--line skeleton--short" />
+                                <span className="skeleton skeleton--short" />
                             </div>
                         </li>
                     ))}
