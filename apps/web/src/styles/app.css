@@ -1559,6 +1559,7 @@ fieldset.stars:disabled .stars__star {
     align-items: center;
     gap: 14px;
     padding: 10px 14px;
+    border: 1px solid color-mix(in srgb, var(--line) 55%, var(--surface));
     border-radius: var(--radius-sm);
     background: var(--surface);
 }
