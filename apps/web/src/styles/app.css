@@ -96,7 +96,7 @@ textarea { width: 100%; resize: vertical; }
 .card { position: relative; }
 .card__link { display: grid; gap: 8px; color: inherit; text-decoration: none; }
 .card__link:hover .cover { transform: translate(-2px, -3px) rotate(-0.6deg); box-shadow: 6px 7px 0 var(--ink); }
-.cover { width: 100%; aspect-ratio: 3 / 4; object-fit: cover; display: block; border: 2px solid var(--ink); border-radius: 6px; background: var(--surface-2); box-shadow: 4px 4px 0 var(--ink); transition: transform 0.12s, box-shadow 0.12s; }
+.cover { width: 100%; height: auto; aspect-ratio: 3 / 4; object-fit: cover; display: block; border: 2px solid var(--ink); border-radius: 6px; background: var(--surface-2); box-shadow: 4px 4px 0 var(--ink); transition: transform 0.12s, box-shadow 0.12s; }
 .cover--empty { display: grid; place-items: center; padding: 12px; text-align: center; font-family: var(--font-display); font-weight: 700; background: var(--accent-soft); overflow: hidden; }
 .card__meta { display: grid; gap: 2px; }
 .card__title { font-family: var(--font-display); line-height: 1.2; overflow-wrap: anywhere; }
@@ -119,7 +119,7 @@ textarea { width: 100%; resize: vertical; }
 .result { display: flex; align-items: center; gap: 12px; width: 100%; padding: 8px; text-align: left; font: inherit; color: inherit; background: var(--bg); border: 2px solid var(--line); border-radius: var(--radius-sm); cursor: pointer; min-height: 44px; }
 .result:hover:not(:disabled) { border-color: var(--ink); }
 .result:disabled { opacity: 0.6; cursor: default; }
-.result .cover { width: 48px; flex: none; box-shadow: 2px 2px 0 var(--ink); }
+.result .cover { width: 48px; height: auto; flex: none; box-shadow: 2px 2px 0 var(--ink); }
 .result__text { display: grid; flex: 1; min-width: 0; }
 .stack { display: grid; gap: 14px; align-content: start; }
 .row { display: flex; gap: 10px; flex-wrap: wrap; }
