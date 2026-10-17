@@ -667,3 +667,55 @@ textarea {
 .btn--danger:hover:not(:disabled) {
     border-color: var(--danger);
 }
+
+/* ---- M2: status and playthroughs ---- */
+.panel__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+.subpanel {
+    padding: 14px;
+    background: var(--surface-2);
+    border-radius: var(--radius-sm);
+}
+.history {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 8px;
+}
+.history__row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px 16px;
+    flex-wrap: wrap;
+    padding: 10px 12px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+}
+.history__row > .stack {
+    width: 100%;
+}
+.history__main {
+    display: flex;
+    align-items: center;
+    gap: 4px 12px;
+    flex-wrap: wrap;
+}
+.disclosure summary {
+    cursor: pointer;
+    font-weight: 600;
+    min-height: 32px;
+    display: flex;
+    align-items: center;
+}
+.disclosure[open] summary {
+    margin-bottom: 12px;
+}
+.field input[type='date'] {
+    min-width: 10.5rem;
+}

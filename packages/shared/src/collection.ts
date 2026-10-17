@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import type { PlaythroughDto } from './playthroughs.js';
 
 export const ENTRY_STATUSES = ['unplayed', 'playing', 'paused', 'finished', 'abandoned'] as const;
 export type EntryStatus = (typeof ENTRY_STATUSES)[number];
@@ -53,6 +54,11 @@ export interface EntryDto {
     ttbMinutes: number | null;
     addedAt: number;
     game: GameDto;
+    playthroughCount: number;
+    /** The playthrough in progress (status playing or paused), if any */
+    openPlaythrough: PlaythroughDto | null;
+    /** End date of the most recent finished playthrough, if known */
+    lastFinishedOn: string | null;
     /** Platforms the user owns it on */
     platforms: PlatformDto[];
     tags: string[];

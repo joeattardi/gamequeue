@@ -190,3 +190,31 @@ export const entryTags = sqliteTable(
     },
     (t) => [primaryKey({ columns: [t.entryId, t.tagId] }), index('entry_tags_tag_idx').on(t.tagId)]
 );
+
+export const playthroughs = sqliteTable(
+    'playthroughs',
+    {
+        id: integer('id').primaryKey({ autoIncrement: true }),
+        userId: integer('user_id')
+            .notNull()
+            .references(() => users.id, { onDelete: 'cascade' }),
+        entryId: integer('entry_id')
+            .notNull()
+            .references(() => entries.id, { onDelete: 'cascade' }),
+        platformId: integer('platform_id').references(() => platforms.id),
+        // ISO dates (YYYY-MM-DD). Null = unknown, e.g. a game finished long ago.
+        startedOn: text('started_on'),
+        endedOn: text('ended_on'),
+        // null while the playthrough is still open
+        outcome: text('outcome', { enum: ['finished', 'abandoned'] }),
+        rating: integer('rating') // 1-10
+    },
+    (t) => [
+        index('playthroughs_entry_idx').on(t.entryId),
+        index('playthroughs_user_ended_idx').on(t.userId, t.endedOn),
+        // At most one open playthrough per entry
+        uniqueIndex('playthroughs_one_open_idx')
+            .on(t.entryId)
+            .where(sql`${t.outcome} IS NULL`)
+    ]
+);

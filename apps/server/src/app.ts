@@ -7,6 +7,7 @@ import { FailureLimiter } from './auth/rate-limit.js';
 import { authRoutes } from './routes/auth.js';
 import { entryRoutes } from './routes/entries.js';
 import { igdbRoutes } from './routes/igdb.js';
+import { entryActionRoutes, playthroughRoutes } from './routes/playthroughs.js';
 import { HttpError } from './errors.js';
 import type { IgdbClient } from './igdb/types.js';
 import type { AuthVars } from './auth/middleware.js';
@@ -61,6 +62,8 @@ export function createApp(deps: AppDeps) {
 
     app.route('/api/igdb', igdbRoutes(deps));
     app.route('/api/entries', entryRoutes(deps));
+    app.route('/api/entries', entryActionRoutes(deps));
+    app.route('/api/playthroughs', playthroughRoutes(deps));
 
     app.notFound((c) => c.json({ error: 'Not found' }, 404));
     app.onError((err, c) => {

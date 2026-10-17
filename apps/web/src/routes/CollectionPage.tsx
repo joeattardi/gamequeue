@@ -205,7 +205,11 @@ function Card({ entry }: { entry: EntryDto }) {
                     </span>
                     <span className="card__chips">
                         {entry.status !== 'unplayed' && (
-                            <span className={`badge badge--${entry.status}`}>{entry.status}</span>
+                            <span className={`badge badge--${entry.status}`}>
+                                {entry.status === 'finished' && entry.lastFinishedOn
+                                    ? `finished ${entry.lastFinishedOn.slice(0, 4)}`
+                                    : entry.status}
+                            </span>
                         )}
                         {entry.rating !== null && <span className="badge">★ {entry.rating}</span>}
                         {entry.ttbMinutes !== null && (

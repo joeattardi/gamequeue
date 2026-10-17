@@ -25,6 +25,8 @@ export const clearSessionCookie = (c: Context, config: Config) =>
 
 export function requireAuth(db: Db, config: Config): MiddlewareHandler<{ Variables: AuthVars }> {
     return async (c, next) => {
+        // Several routers share the /api/entries prefix; authenticate once per request
+        if (c.get('user')) return next();
         const token = getCookie(c, SESSION_COOKIE);
         const session = token ? resolveSession(db, token) : undefined;
         if (!token || !session) {

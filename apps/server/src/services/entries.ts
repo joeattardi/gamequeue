@@ -5,7 +5,8 @@ import type {
     EntryQuery,
     FacetsDto,
     PatchEntryInput,
-    PlatformDto
+    PlatformDto,
+    PlaythroughDto
 } from '@gamequeue/shared';
 import type { Db } from '../db/client.js';
 import {
@@ -18,12 +19,14 @@ import {
     gameThemes,
     genres,
     platforms,
+    playthroughs,
     tags,
     themes
 } from '../db/schema.js';
 import { HttpError } from '../errors.js';
 import type { IgdbClient } from '../igdb/types.js';
 import { ensureGame, existingPlatformIds } from './games.js';
+import { toDto } from './playthrough-dto.js';
 
 const dedupeTags = (names: string[]) => {
     const seen = new Map<string, string>();
@@ -259,6 +262,7 @@ function hydrate(db: Db, userId: number, ids: number[]): EntryDto[] {
     >();
     const owned = new Map<number, PlatformDto[]>();
     const tagMap = new Map<number, string[]>();
+    const history = new Map<number, PlaythroughDto[]>();
     const gameIds = new Set<number>();
 
     for (const chunk of chunks) {
@@ -279,6 +283,16 @@ function hydrate(db: Db, userId: number, ids: number[]): EntryDto[] {
             .orderBy(asc(platforms.name))
             .all()) {
             (owned.get(r.entryId) ?? owned.set(r.entryId, []).get(r.entryId)!).push(r.p);
+        }
+        for (const r of db
+            .select({ p: playthroughs, platform: platforms })
+            .from(playthroughs)
+            .leftJoin(platforms, eq(platforms.id, playthroughs.platformId))
+            .where(inArray(playthroughs.entryId, chunk))
+            .all()) {
+            (history.get(r.p.entryId) ?? history.set(r.p.entryId, []).get(r.p.entryId)!).push(
+                toDto(r.p, r.platform)
+            );
         }
         for (const r of db
             .select({ entryId: entryTags.entryId, name: tags.name })
@@ -343,6 +357,14 @@ function hydrate(db: Db, userId: number, ids: number[]): EntryDto[] {
                 ttbOverrideMinutes: e.ttbOverrideMinutes,
                 ttbMinutes: e.ttbOverrideMinutes ?? minutes(g.ttbNormallySeconds),
                 addedAt: e.addedAt,
+                playthroughCount: history.get(e.id)?.length ?? 0,
+                openPlaythrough: history.get(e.id)?.find((p) => p.outcome === null) ?? null,
+                lastFinishedOn:
+                    (history.get(e.id) ?? [])
+                        .filter((p) => p.outcome === 'finished' && p.endedOn)
+                        .map((p) => p.endedOn!)
+                        .sort()
+                        .at(-1) ?? null,
                 platforms: owned.get(e.id) ?? [],
                 tags: tagMap.get(e.id) ?? [],
                 game: {

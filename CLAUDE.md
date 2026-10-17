@@ -15,8 +15,8 @@ Full design (data model, API surface, rationale): `/Users/joe/.claude/plans/floa
 
 - M0 scaffold, DB + migrations, auth: **done**
 - M1 IGDB integration + collection, backlog view: **done**
-- M2 status + playthroughs: next
-- M3 slots, lists/queue, random pick (completes v1)
+- M2 status + playthroughs: **done**
+- M3 slots, lists/queue, random pick (completes v1): next. Note for M3: `finish`/`abandon` in `apps/server/src/services/playthroughs.ts` must also empty the entry's slot, and slot assignment must reuse `startPlaythrough`/`togglePause` so status stays consistent.
 - M4 export/import
 - M5 (post-v1) smart lists, stats, CSV export of lists
 
@@ -28,6 +28,7 @@ Not yet verified by hand: real IGDB calls (needs credentials in `apps/server/.en
 - **Lists:** only hold collection entries (no wishlist in v1; a wishlist could later be an ownership state).
 - **Backlog:** strictly `unplayed` entries (derived, never stored). Random pick has an "include paused" toggle, off by default.
 - **Ratings:** entry rating is its own field; finishing a rated playthrough pre-fills it only if empty.
+- **Playthrough dates may be unknown** (null start/end) so games finished long ago can be logged; stats must skip nulls. Dates are `YYYY-MM-DD`; the web client sends its local date, the server falls back to UTC today.
 - **Status rules:** start (unplayed/finished/abandoned → playing, opens playthrough), pause, resume, finish/abandon (closes playthrough, empties its slot), log past playthrough. At most one open playthrough per entry (partial unique index).
 - **Design:** flat modern look (hairline borders, no offset shadows), warm paper + orange palette, Bricolage Grotesque + Figtree, light/dark. Keep it responsive and keyboard accessible.
 

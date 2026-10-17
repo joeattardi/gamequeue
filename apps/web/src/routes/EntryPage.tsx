@@ -4,6 +4,7 @@ import { Link, useNavigate, useParams } from 'react-router';
 import { useAllPlatforms, useDeleteEntry, useEntry, usePatchEntry } from '../api/collection';
 import { ApiRequestError } from '../api/client';
 import { Cover } from '../components/Cover';
+import { HistoryPanel, StatusPanel } from '../components/PlaythroughPanels';
 import { formatMinutes, platformLabel, yearOf } from '../lib';
 
 export function EntryPage() {
@@ -56,9 +57,11 @@ function EntryDetail({ entry }: { entry: EntryDto }) {
                                 .filter(Boolean)
                                 .join(' · ')}
                         </p>
-                        <span className={`badge badge--${entry.status}`}>{entry.status}</span>
                     </header>
                     {game.summary && <p className="summary">{game.summary}</p>}
+
+                    <StatusPanel entry={entry} />
+                    <HistoryPanel entry={entry} />
 
                     <section aria-labelledby="ttb-h" className="panel">
                         <h2 id="ttb-h">Time to beat</h2>

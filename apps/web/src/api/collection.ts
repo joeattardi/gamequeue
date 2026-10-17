@@ -1,6 +1,12 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
     AddEntryInput,
+    CloseInput,
+    LogPlaythroughInput,
+    PatchPlaythroughInput,
+    PlaythroughDto,
+    StartInput,
+    StatusAction,
     EntryDto,
     FacetsDto,
     PatchEntryInput,
@@ -51,7 +57,7 @@ function useInvalidateCollection() {
     const qc = useQueryClient();
     return () =>
         Promise.all(
-            ['entries', 'entry', 'facets', 'search'].map((k) =>
+            ['entries', 'entry', 'facets', 'search', 'playthroughs'].map((k) =>
                 qc.invalidateQueries({ queryKey: [k] })
             )
         );
@@ -80,6 +86,68 @@ export function useDeleteEntry(id: number) {
     const invalidate = useInvalidateCollection();
     return useMutation({
         mutationFn: () => api(`/entries/${id}`, { method: 'DELETE' }),
+        onSuccess: invalidate
+    });
+}
+
+export const usePlaythroughs = (entryId: number) =>
+    useQuery({
+        queryKey: ['playthroughs', entryId],
+        queryFn: async () =>
+            (await api<{ playthroughs: PlaythroughDto[] }>(`/entries/${entryId}/playthroughs`))
+                .playthroughs
+    });
+
+type ActionBody = StartInput | CloseInput | undefined;
+
+/** start / pause / resume / finish / abandon */
+export function useEntryAction(entryId: number) {
+    const invalidate = useInvalidateCollection();
+    return useMutation({
+        mutationFn: async (v: { action: StatusAction; body?: ActionBody }) =>
+            (
+                await api<{ entry: EntryDto }>(`/entries/${entryId}/${v.action}`, {
+                    method: 'POST',
+                    body: v.body ?? {}
+                })
+            ).entry,
+        onSuccess: invalidate
+    });
+}
+
+export function useLogPlaythrough(entryId: number) {
+    const invalidate = useInvalidateCollection();
+    return useMutation({
+        mutationFn: async (input: LogPlaythroughInput) =>
+            (
+                await api<{ entry: EntryDto }>(`/entries/${entryId}/playthroughs`, {
+                    method: 'POST',
+                    body: input
+                })
+            ).entry,
+        onSuccess: invalidate
+    });
+}
+
+export function usePatchPlaythrough() {
+    const invalidate = useInvalidateCollection();
+    return useMutation({
+        mutationFn: async (v: { id: number; patch: PatchPlaythroughInput }) =>
+            (
+                await api<{ entry: EntryDto }>(`/playthroughs/${v.id}`, {
+                    method: 'PATCH',
+                    body: v.patch
+                })
+            ).entry,
+        onSuccess: invalidate
+    });
+}
+
+export function useDeletePlaythrough() {
+    const invalidate = useInvalidateCollection();
+    return useMutation({
+        mutationFn: async (id: number) =>
+            (await api<{ entry: EntryDto }>(`/playthroughs/${id}`, { method: 'DELETE' })).entry,
         onSuccess: invalidate
     });
 }
