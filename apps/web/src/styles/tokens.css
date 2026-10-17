@@ -3,20 +3,20 @@
     --font-display: 'Bricolage Grotesque Variable', system-ui, sans-serif;
     --font-body: 'Figtree Variable', system-ui, sans-serif;
 
-    /* warm paper + ember orange; text/bg pairs all clear WCAG AA */
-    --bg: #fbf6ec;
-    --surface: #fffdf8;
-    --surface-2: #f4eddf;
-    --ink: #241c14;
-    --ink-muted: #6a5d4d;
-    --line: #e6dcc9;
-    --line-strong: #a8997f;
-    --accent: #c2410c;
-    --accent-ink: #fff8ee;
-    --accent-soft: #fde6d3;
+    /* cool paper + cobalt blue; text/bg pairs all clear WCAG AA */
+    --bg: #f3f6fb;
+    --surface: #fbfcff;
+    --surface-2: #e8eef8;
+    --ink: #111c2e;
+    --ink-muted: #526078;
+    --line: #d6deec;
+    --line-strong: #8392ab;
+    --accent: #1d4ed8;
+    --accent-ink: #f5f8ff;
+    --accent-soft: #dbe6fc;
     --danger: #b42318;
     --danger-ink: #fff;
-    --focus: #1d4ed8;
+    --focus: #0a2a7a;
 
     /* Score status colours: contrast >= 3:1 on the page and panel surfaces (measured), see ScoreGauge */
     --status-bad: #c62f2f;
@@ -25,25 +25,25 @@
 
     --radius: 16px;
     --radius-sm: 10px;
-    --shadow: 0 1px 2px rgb(40 25 5 / 0.08), 0 4px 16px -6px rgb(40 25 5 / 0.12);
+    --shadow: 0 1px 2px rgb(10 25 60 / 0.08), 0 4px 16px -6px rgb(10 25 60 / 0.12);
     --gutter: clamp(16px, 4vw, 32px);
 }
 
 @media (prefers-color-scheme: dark) {
     :root {
-        --bg: #17120d;
-        --surface: #211a13;
-        --surface-2: #2c231a;
-        --ink: #f6ecdc;
-        --ink-muted: #b5a68f;
-        --line: #332a1f;
-        --line-strong: #7a6a54;
-        --accent: #fb923c;
-        --accent-ink: #1c1109;
-        --accent-soft: #3a2314;
+        --bg: #0d1320;
+        --surface: #151d2e;
+        --surface-2: #1d283d;
+        --ink: #e8eefb;
+        --ink-muted: #9fb0cc;
+        --line: #243049;
+        --line-strong: #5b6d8f;
+        --accent: #6ea0ff;
+        --accent-ink: #08122b;
+        --accent-soft: #1a2a4d;
         --danger: #f97066;
         --danger-ink: #2a0a07;
-        --focus: #93c5fd;
+        --focus: #bfdbfe;
         --status-bad: #e5584f;
         --status-mid: #d99a1e;
         --status-good: #34b055;

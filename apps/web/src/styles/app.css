@@ -408,7 +408,7 @@ select:disabled {
 }
 .card__link:hover .cover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 20px -8px rgb(40 25 5 / 0.35);
+    box-shadow: 0 8px 20px -8px rgb(10 25 60 / 0.35);
 }
 .cover {
     width: 100%;
@@ -521,7 +521,7 @@ select:disabled {
     box-shadow: 0 24px 60px -12px rgb(0 0 0 / 0.35);
 }
 .dialog::backdrop {
-    background: rgb(20 12 4 / 0.55);
+    background: rgb(5 10 25 / 0.55);
 }
 .dialog__body {
     padding: 20px;
