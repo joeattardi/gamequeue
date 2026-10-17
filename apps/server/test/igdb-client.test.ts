@@ -112,8 +112,8 @@ describe('IGDB client', () => {
         expect(req.headers.Authorization).toBe('Bearer tok1');
     });
 
-    it('keeps re-releases that IGDB types as "Update" (e.g. Witcher 3 Remastered)', async () => {
-        // Shapes taken from a live IGDB search for "witcher 3"
+    it('keeps ownable games IGDB files under unexpected types, and drops only add-ons', async () => {
+        // Names and types taken from live IGDB searches
         const { client } = setup(() =>
             json([
                 { id: 1942, name: 'The Witcher 3: Wild Hunt', game_type: { type: 'Main Game' } },
@@ -122,6 +122,13 @@ describe('IGDB client', () => {
                     name: 'The Witcher 3: Wild Hunt Remastered',
                     game_type: { type: 'Update' }
                 },
+                {
+                    id: 27979,
+                    name: 'Kingdom Hearts HD 1.5 + 2.5 Remix',
+                    game_type: { type: 'Bundle' }
+                },
+                { id: 99, name: 'Predecessor', game_type: { type: 'Fork' } },
+                { id: 98, name: 'Deltarune: Chapter 1', game_type: { type: 'Episode' } },
                 {
                     id: 13166,
                     name: 'The Witcher 3: Wild Hunt - Blood and Wine',
@@ -137,15 +144,11 @@ describe('IGDB client', () => {
                     name: 'The Witcher 3: Enhanced Edition - Redux',
                     game_type: { type: 'Mod' }
                 },
-                {
-                    id: 141472,
-                    name: 'The Witcher 3: Wild Hunt + Dark Souls III',
-                    game_type: { type: 'Bundle' }
-                }
+                { id: 97, name: 'Some Addon Pack', game_type: { type: 'Pack / Addon' } }
             ])
         );
-        const hits = await client.search('witcher 3');
-        expect(hits.map((h) => h.id)).toEqual([1942, 415005, 13166]);
+        const hits = await client.search('witcher');
+        expect(hits.map((h) => h.id)).toEqual([1942, 415005, 27979, 99, 98, 13166]);
     });
 
     it('fetches a game and its time-to-beat in a single multiquery request', async () => {

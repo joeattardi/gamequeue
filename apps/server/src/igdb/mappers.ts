@@ -34,21 +34,16 @@ const platforms = (raw?: RawNamed[]) =>
     (raw ?? []).map((p) => ({ id: p.id, name: p.name, abbreviation: p.abbreviation ?? null }));
 
 /**
- * Game types we don't want in a personal collection. Matched by name; unknown types are kept.
- * Names checked against live IGDB results ("Main Game", "DLC", "Bundle", "Expansion", "Mod", "Update").
- * "Update" is deliberately NOT excluded: IGDB files real standalone re-releases under it, e.g.
- * "The Witcher 3: Wild Hunt Remastered" has type "Update".
+ * Game types that are add-ons rather than something you'd own as a game. Matched by name; unknown
+ * types are kept. IGDB's full list (checked live): Main Game, DLC, Expansion, Bundle, Standalone
+ * Expansion, Mod, Episode, Season, Remake, Remaster, Expanded Game, Port, Fork, Pack / Addon, Update.
+ *
+ * Everything else is deliberately kept, because IGDB files real, ownable games under unexpected types:
+ * "Bundle" is "Kingdom Hearts HD 1.5 + 2.5 Remix", "Update" is "The Witcher 3: Wild Hunt Remastered",
+ * "Fork" is "Predecessor", "Episode" is "Deltarune: Chapter 1". When in doubt, show it: an extra search
+ * result costs a glance, a hidden game costs the user the ability to add it at all.
  */
-const EXCLUDED_TYPES = new Set([
-    'dlc',
-    'dlc addon',
-    'bundle',
-    'mod',
-    'episode',
-    'season',
-    'pack',
-    'fork'
-]);
+const EXCLUDED_TYPES = new Set(['dlc', 'mod', 'pack / addon']);
 
 export function isCollectable(raw: Pick<RawGame, 'game_type'>): boolean {
     const type = typeof raw.game_type === 'object' ? raw.game_type?.type : undefined;
