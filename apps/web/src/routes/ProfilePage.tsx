@@ -1,5 +1,5 @@
 import { RATING_MAX, type EntryStatus, type PublicEntryDto } from '@gamequeue/shared';
-import { Ban, CalendarDays, Library, ListTodo, Pause, Play, Trophy } from 'lucide-react';
+import { Ban, CalendarDays, Gamepad2, Library, ListTodo, Pause, Play, Trophy } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { Link, useParams } from 'react-router';
 import { ApiRequestError } from '../api/client';
@@ -45,12 +45,12 @@ function Stats({ summary }: { summary: { total: number; byStatus: Record<EntrySt
     const done = summary.byStatus.finished + summary.byStatus.abandoned;
     return (
         <>
-            <ul className="stats">
+            <ul className="counters">
                 {STATS.map((st) => (
-                    <li key={st.key} className={`stat stat--${st.key}`}>
-                        <span className="stat__icon">{st.icon}</span>
-                        <span className="stat__value">{count(st.key)}</span>
-                        <span className="stat__label">{st.label}</span>
+                    <li key={st.key} className={`counter counter--${st.key}`}>
+                        <span className="counter__icon">{st.icon}</span>
+                        <span className="counter__value">{count(st.key)}</span>
+                        <span className="counter__label">{st.label}</span>
                     </li>
                 ))}
             </ul>
@@ -65,7 +65,7 @@ function Stats({ summary }: { summary: { total: number; byStatus: Record<EntrySt
                         .map((st) => (
                             <span
                                 key={st.key}
-                                className={`statbar__seg stat--${st.key}`}
+                                className={`statbar__seg counter--${st.key}`}
                                 style={{ flexGrow: count(st.key) }}
                             />
                         ))}
@@ -99,11 +99,11 @@ export function ProfilePage() {
                 {profile.data && (
                     <>
                         <div className="profile-hero">
-                            <span className="profile-hero__avatar" aria-hidden="true">
-                                {profile.data.username.charAt(0).toUpperCase()}
-                            </span>
                             <div>
-                                <h1>{profile.data.username}</h1>
+                                <h1>
+                                    <Gamepad2 aria-hidden="true" />
+                                    {profile.data.username}
+                                </h1>
                                 <p className="muted profile-hero__joined">
                                     <CalendarDays aria-hidden="true" />
                                     Joined{' '}

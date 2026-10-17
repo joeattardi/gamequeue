@@ -5,9 +5,10 @@ import { useAddEntry, useAllPlatforms, useGameSearch } from '../api/collection';
 import { ApiRequestError } from '../api/client';
 import { platformLabel, useDebounced } from '../lib';
 import { Cover } from './Cover';
+import { ResultSkeletons } from './ResultSkeletons';
 import { useModalDialog } from './useModalDialog';
 import { ScoreGauge } from './ScoreGauge';
-import { X } from 'lucide-react';
+import { SearchX, X } from 'lucide-react';
 
 export function AddGameDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
     const ref = useModalDialog(open);
@@ -30,6 +31,22 @@ function AddGameBody({ onDone }: { onDone: () => void }) {
     const q = useDebounced(text.trim(), 300);
     const search = useGameSearch(q);
     const [picked, setPicked] = useState<SearchResultDto>();
+    const searching = text.trim().length >= 2 && (search.isFetching || q !== text.trim());
+
+    const status =
+        text.trim().length < 2
+            ? 'Type at least 2 characters.'
+            : searching
+              ? 'Searching…'
+              : search.isError
+                ? search.error instanceof ApiRequestError
+                    ? search.error.message
+                    : 'Search failed.'
+                : search.data?.length === 0
+                  ? 'No games found.'
+                  : '';
+    const noResults = !searching && !search.isError && search.data?.length === 0 && q.length >= 2;
+    const visible = status !== '' && !searching && !noResults;
 
     return (
         <div className="dialog__body dialog__body--fill">
@@ -57,62 +74,66 @@ function AddGameBody({ onDone }: { onDone: () => void }) {
                             placeholder="e.g. Hades"
                         />
                     </label>
-                    <div aria-live="polite" className="search-status muted">
-                        {text.trim().length < 2
-                            ? 'Type at least 2 characters.'
-                            : search.isFetching || q !== text.trim()
-                              ? 'Searching…'
-                              : search.isError
-                                ? search.error instanceof ApiRequestError
-                                    ? search.error.message
-                                    : 'Search failed.'
-                                : search.data?.length === 0
-                                  ? 'No games found.'
-                                  : ''}
+                    {/* Always mounted so screen readers announce changes; only takes up room when there is text to see */}
+                    <div aria-live="polite" className={visible ? 'search-status muted' : 'sr-only'}>
+                        {status}
                     </div>
-                    <ul className="results">
-                        {search.data?.map((r) => (
-                            <li key={r.igdbId}>
-                                <button
-                                    className="result"
-                                    disabled={r.entryId !== null}
-                                    onClick={() => setPicked(r)}
-                                >
-                                    <Cover
-                                        imageId={r.coverImageId}
-                                        name={r.name}
-                                        size="cover_big"
-                                    />
-                                    <span className="result__text">
-                                        <strong>{r.name}</strong>
-                                        <span className="muted">
-                                            {[
-                                                r.year,
-                                                r.platforms
-                                                    .slice(0, 4)
-                                                    .map(platformLabel)
-                                                    .join(', ')
-                                            ]
-                                                .filter(Boolean)
-                                                .join(' · ')}
-                                        </span>
-                                    </span>
-                                    {r.entryId !== null && (
-                                        <span className="badge">In collection</span>
-                                    )}
-                                    {/* A fixed-width slot keeps the scores lined up, rated or not */}
-                                    <span className="result__score">
-                                        {r.igdbRating !== null && (
-                                            <ScoreGauge
-                                                value={r.igdbRating}
-                                                label="IGDB"
-                                                size={56}
-                                            />
-                                        )}
-                                    </span>
-                                </button>
+                    <ul className="results" aria-busy={searching}>
+                        {searching && <ResultSkeletons />}
+                        {noResults && (
+                            <li className="empty-state" aria-hidden="true">
+                                <span className="empty-state__icon">
+                                    <SearchX />
+                                </span>
+                                <strong>No games found for “{q}”</strong>
+                                <span className="muted">
+                                    Check the spelling, or try a shorter or simpler title.
+                                </span>
                             </li>
-                        ))}
+                        )}
+                        {!searching &&
+                            search.data?.map((r) => (
+                                <li key={r.igdbId}>
+                                    <button
+                                        className="result"
+                                        disabled={r.entryId !== null}
+                                        onClick={() => setPicked(r)}
+                                    >
+                                        <Cover
+                                            imageId={r.coverImageId}
+                                            name={r.name}
+                                            size="cover_big"
+                                        />
+                                        <span className="result__text">
+                                            <strong>{r.name}</strong>
+                                            <span className="muted">
+                                                {[
+                                                    r.year,
+                                                    r.platforms
+                                                        .slice(0, 4)
+                                                        .map(platformLabel)
+                                                        .join(', ')
+                                                ]
+                                                    .filter(Boolean)
+                                                    .join(' · ')}
+                                            </span>
+                                        </span>
+                                        {r.entryId !== null && (
+                                            <span className="badge">In collection</span>
+                                        )}
+                                        {/* A fixed-width slot keeps the scores lined up, rated or not */}
+                                        <span className="result__score">
+                                            {r.igdbRating !== null && (
+                                                <ScoreGauge
+                                                    value={r.igdbRating}
+                                                    label="IGDB"
+                                                    size={56}
+                                                />
+                                            )}
+                                        </span>
+                                    </button>
+                                </li>
+                            ))}
                     </ul>
                 </>
             )}

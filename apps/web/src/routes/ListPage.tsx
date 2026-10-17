@@ -31,6 +31,7 @@ import {
 import { useQueue } from '../api/queue';
 import { useConfirm } from '../components/Confirm';
 import { Cover } from '../components/Cover';
+import { ResultSkeletons } from '../components/ResultSkeletons';
 import { formatMinutes, platformLabel, useDebounced, yearOf } from '../lib';
 import { ArrowLeft, ChevronDown, ChevronUp, Pencil, Trash2, X } from 'lucide-react';
 
@@ -383,7 +384,15 @@ function AddResults({ listId, q, inList }: { listId: number; q: string; inList: 
     const results = useEntries(new URLSearchParams({ view: 'all', q }));
     const add = useAddToList();
     const matches = (results.data ?? []).filter((e) => !inList.has(e.id)).slice(0, 8);
-    if (results.isPending) return <p className="muted">Searching…</p>;
+    if (results.isPending)
+        return (
+            <ul className="results" aria-busy="true">
+                <li className="sr-only" role="status">
+                    Searching…
+                </li>
+                <ResultSkeletons trailing="badge" />
+            </ul>
+        );
     if (matches.length === 0)
         return (
             <p className="muted">
