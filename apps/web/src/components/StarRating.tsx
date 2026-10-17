@@ -61,3 +61,18 @@ export function StarRating({
         </fieldset>
     );
 }
+
+/** Read-only stars for showing someone's rating; the text lives in the label, the icons are decoration. */
+export function StarDisplay({ value }: { value: number }) {
+    return (
+        <span
+            className="star-display"
+            role="img"
+            aria-label={`Rated ${value} out of ${RATING_MAX} stars`}
+        >
+            {STARS.map((n) => (
+                <Star key={n} aria-hidden="true" data-on={n <= value} />
+            ))}
+        </span>
+    );
+}

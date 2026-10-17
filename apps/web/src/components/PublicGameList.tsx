@@ -1,5 +1,6 @@
 import type { PublicEntryDto } from '@gamequeue/shared';
 import { Cover } from './Cover';
+import { StarDisplay } from './StarRating';
 
 /** The one layout shared by every public profile sub-page (`/u/:username/:view`). */
 export function PublicGameList({
@@ -23,6 +24,7 @@ export function PublicGameList({
                         <strong>{e.game.name}</strong>
                         <div>
                             <span className={`badge badge--${e.status}`}>{e.status}</span>
+                            {e.rating !== null && <StarDisplay value={e.rating} />}
                         </div>
                     </div>
                 </li>
