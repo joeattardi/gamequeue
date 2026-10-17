@@ -112,6 +112,42 @@ describe('IGDB client', () => {
         expect(req.headers.Authorization).toBe('Bearer tok1');
     });
 
+    it('keeps re-releases that IGDB types as "Update" (e.g. Witcher 3 Remastered)', async () => {
+        // Shapes taken from a live IGDB search for "witcher 3"
+        const { client } = setup(() =>
+            json([
+                { id: 1942, name: 'The Witcher 3: Wild Hunt', game_type: { type: 'Main Game' } },
+                {
+                    id: 415005,
+                    name: 'The Witcher 3: Wild Hunt Remastered',
+                    game_type: { type: 'Update' }
+                },
+                {
+                    id: 13166,
+                    name: 'The Witcher 3: Wild Hunt - Blood and Wine',
+                    game_type: { type: 'Expansion' }
+                },
+                {
+                    id: 170450,
+                    name: "The Witcher 3: Wild Hunt - New Quest 'Fool's Gold'",
+                    game_type: { type: 'DLC' }
+                },
+                {
+                    id: 283715,
+                    name: 'The Witcher 3: Enhanced Edition - Redux',
+                    game_type: { type: 'Mod' }
+                },
+                {
+                    id: 141472,
+                    name: 'The Witcher 3: Wild Hunt + Dark Souls III',
+                    game_type: { type: 'Bundle' }
+                }
+            ])
+        );
+        const hits = await client.search('witcher 3');
+        expect(hits.map((h) => h.id)).toEqual([1942, 415005, 13166]);
+    });
+
     it('fetches a game and its time-to-beat in a single multiquery request', async () => {
         const { client, requests } = setup(() =>
             json([

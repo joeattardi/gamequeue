@@ -20,7 +20,7 @@ Full design (data model, API surface, rationale): `/Users/joe/.claude/plans/floa
 - M4 export/import: next (ask the replace-vs-merge question first)
 - M5 (post-v1) smart lists, stats, CSV export of lists
 
-Not yet verified by hand: real IGDB calls (needs credentials in `apps/server/.env`) and the web UI in a browser. Tests use a fake IGDB client / fake fetch.
+Verified against live IGDB (Oct 2026, via a script using `apps/server/.env`): token flow, search, and the game + time-to-beat multiquery. Not verified by Claude: the web UI in a browser (no browser tool in sessions so far). Tests use a fake IGDB client / fake fetch.
 
 ## Product decisions (confirmed by the user)
 
@@ -42,7 +42,7 @@ Not yet verified by hand: real IGDB calls (needs credentials in `apps/server/.en
 ## Technical notes worth knowing
 
 - **IGDB** (checked against api-docs.igdb.com): 4 req/s and max 8 open requests; token via Twitch client credentials (cached, refreshed 1h before expiry); a new game is one `/multiquery` (game + `game_time_to_beats`, values in seconds). Cached metadata is never re-fetched. Covers are stored as `image_id` only (`packages/shared/src/igdb-images.ts`).
-- **Unverified:** IGDB's docs don't list `game_type` IDs, so DLC/mod/etc. are excluded by _type name_ in `apps/server/src/igdb/mappers.ts` (`EXCLUDED_TYPES`); unknown types are kept. Verify against real search results.
+- **Search filtering:** DLC, bundles, mods, episodes, seasons, packs and forks are excluded by IGDB's `game_type.type` _name_ in `apps/server/src/igdb/mappers.ts` (`EXCLUDED_TYPES`); unknown types are kept. The names were checked against live results. `Update` is intentionally kept because IGDB files real re-releases under it (Witcher 3 Remastered). Editions are excluded by the query itself (`version_parent = null`).
 - **CSRF:** Hono `csrf()` only checks form-style content types, so `app.ts` also rejects mutations with a disallowed `Origin` and any non-JSON `Content-Type`. Body-less mutations (DELETE, logout) need an `Origin` header (browsers send it; tests/curl must add it).
 - **Auth:** argon2id (`@node-rs/argon2`), session token hashed with SHA-256 in the DB, `gq_session` cookie (httpOnly, SameSite=Lax), generic login error, in-memory login rate limit, `SIGNUPS_ENABLED=false` → 403 on register.
 - **Migrations gotcha:** drizzle-kit drops `ON DELETE ...` from `ALTER TABLE ... ADD COLUMN ... REFERENCES` on SQLite. Check generated SQL for added FK columns and patch it by hand (done in `0003` for `slots.entry_id`).

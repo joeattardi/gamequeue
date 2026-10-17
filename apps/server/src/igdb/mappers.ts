@@ -33,7 +33,12 @@ const toIsoDate = (unixSeconds?: number) =>
 const platforms = (raw?: RawNamed[]) =>
     (raw ?? []).map((p) => ({ id: p.id, name: p.name, abbreviation: p.abbreviation ?? null }));
 
-/** Game types we don't want in a personal collection. Matched by name; unknown types are kept. */
+/**
+ * Game types we don't want in a personal collection. Matched by name; unknown types are kept.
+ * Names checked against live IGDB results ("Main Game", "DLC", "Bundle", "Expansion", "Mod", "Update").
+ * "Update" is deliberately NOT excluded: IGDB files real standalone re-releases under it, e.g.
+ * "The Witcher 3: Wild Hunt Remastered" has type "Update".
+ */
 const EXCLUDED_TYPES = new Set([
     'dlc',
     'dlc addon',
@@ -42,7 +47,6 @@ const EXCLUDED_TYPES = new Set([
     'episode',
     'season',
     'pack',
-    'update',
     'fork'
 ]);
 
