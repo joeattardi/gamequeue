@@ -56,7 +56,7 @@ export function vacateSlots(db: Db, entryId: number) {
 }
 
 /** Recomputes the entry's status from its playthrough history. */
-function syncStatus(db: Db, entryId: number) {
+export function syncStatus(db: Db, entryId: number) {
     const entry = db.select().from(entries).where(eq(entries.id, entryId)).get()!;
     const items = db.select().from(playthroughs).where(eq(playthroughs.entryId, entryId)).all();
     const status = statusFromHistory(entry.status, items);

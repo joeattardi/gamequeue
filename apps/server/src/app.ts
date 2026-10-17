@@ -5,6 +5,7 @@ import type { Config } from './config.js';
 import type { Db } from './db/client.js';
 import { FailureLimiter } from './auth/rate-limit.js';
 import { authRoutes } from './routes/auth.js';
+import { dataRoutes } from './routes/data.js';
 import { entryRoutes } from './routes/entries.js';
 import { igdbRoutes } from './routes/igdb.js';
 import { listRoutes, pickRoutes } from './routes/lists.js';
@@ -69,6 +70,7 @@ export function createApp(deps: AppDeps) {
     app.route('/api/slots', slotRoutes(deps));
     app.route('/api/lists', listRoutes(deps));
     app.route('/api/pick', pickRoutes(deps));
+    app.route('/api/data', dataRoutes(deps));
 
     app.notFound((c) => c.json({ error: 'Not found' }, 404));
     app.onError((err, c) => {

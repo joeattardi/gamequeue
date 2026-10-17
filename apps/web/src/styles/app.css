@@ -938,3 +938,50 @@ textarea {
     -webkit-box-orient: vertical;
     overflow: hidden;
 }
+
+/* ---- M4: data ---- */
+.form-error-block {
+    display: grid;
+    gap: 8px;
+}
+.problems {
+    margin: 0;
+    padding-left: 1.2em;
+    display: grid;
+    gap: 4px;
+}
+.problems code {
+    font-size: 0.85em;
+    background: var(--surface-2);
+    padding: 1px 6px;
+    border-radius: 6px;
+}
+.report {
+    margin: 0;
+    display: grid;
+    gap: 10px;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+}
+.stat {
+    display: flex;
+    flex-direction: column-reverse;
+    padding: 12px 14px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+}
+.stat dd {
+    margin: 0;
+    font: 700 1.6rem var(--font-display);
+}
+.stat dt {
+    color: var(--ink-muted);
+    font-size: 0.85rem;
+}
+.stat--zero dd {
+    color: var(--ink-muted);
+}
+input[type='file'] {
+    font: inherit;
+    padding: 10px 0;
+}

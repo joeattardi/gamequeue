@@ -47,7 +47,7 @@ function assertPlatformsExist(db: Db, ids: number[]) {
 }
 
 /** Replaces an entry's tag set, creating tags as needed (case-insensitive, first spelling wins). */
-function setTags(db: Db, userId: number, entryId: number, names: string[]) {
+export function setTags(db: Db, userId: number, entryId: number, names: string[]) {
     const wanted = dedupeTags(names);
     db.delete(entryTags).where(eq(entryTags.entryId, entryId)).run();
     for (const name of wanted) {

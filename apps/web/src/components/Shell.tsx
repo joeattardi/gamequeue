@@ -20,6 +20,7 @@ export function Shell({ user }: { user: UserDto }) {
                     <NavLink to="/backlog">Backlog</NavLink>
                     <NavLink to="/lists">Lists</NavLink>
                     <NavLink to="/pick">Pick</NavLink>
+                    <NavLink to="/data">Data</NavLink>
                 </nav>
                 <div className="topbar__user">
                     <span className="topbar__email" title={user.email}>

@@ -3,6 +3,7 @@ import { useMe } from './api/auth';
 import { Shell } from './components/Shell';
 import { AuthPage } from './routes/AuthPage';
 import { CollectionPage } from './routes/CollectionPage';
+import { DataPage } from './routes/DataPage';
 import { EntryPage } from './routes/EntryPage';
 import { Home } from './routes/Home';
 import { ListPage } from './routes/ListPage';
@@ -43,6 +44,7 @@ export function App() {
                 <Route path="lists" element={<ListsPage />} />
                 <Route path="lists/:id" element={<ListPage />} />
                 <Route path="pick" element={<PickPage />} />
+                <Route path="data" element={<DataPage />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
             </Route>
         </Routes>

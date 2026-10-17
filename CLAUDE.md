@@ -17,8 +17,8 @@ Full design (data model, API surface, rationale): `/Users/joe/.claude/plans/floa
 - M1 IGDB integration + collection, backlog view: **done**
 - M2 status + playthroughs: **done**
 - M3 slots, lists/queue, random pick (completes v1): **done**
-- M4 export/import: next (ask the replace-vs-merge question first)
-- M5 (post-v1) smart lists, stats, CSV export of lists
+- M4 export/import: **done** (merge, not replace). v1 is complete.
+- M5 (post-v1) smart lists, stats, CSV export of lists: next, when the user asks
 
 Verified against live IGDB (Oct 2026, via a script using `apps/server/.env`): token flow, search, and the game + time-to-beat multiquery. Not verified by Claude: the web UI in a browser (no browser tool in sessions so far). Tests use a fake IGDB client / fake fetch.
 
@@ -32,12 +32,9 @@ Verified against live IGDB (Oct 2026, via a script using `apps/server/.env`): to
 - **Slot rules as built:** a game in a slot is always `playing` or `paused`. Finishing/abandoning, or history edits that leave playing/paused, empty its slot (`vacateSlots` in `playthroughs.ts`); deleting an entry empties it via `ON DELETE set null`. Pausing keeps the game in its slot. **Clearing or deleting a slot pauses its game** (never drops it). Moving a game between slots doesn't restart it.
 - **Lists:** items are addressed by `entryId` (not a separate item id): `POST /lists/:id/items {entryId}`, `DELETE /lists/:id/items/:entryId`, `PUT /lists/:id/order {entryIds}` (must be exactly the list's games). Adding twice is a no-op.
 - **Random pick:** candidates are `unplayed` games (plus `paused` if `includePaused`) from the backlog or a list, whatever the list holds. Filters: platform/tag/genre are any-of within a group and AND across groups; a max time-to-beat excludes games with unknown time. Re-roll sends `excludeEntryIds`; when all were shown it wraps, never repeating the last pick. Logic is pure in `packages/shared/src/pick.ts` with an injectable RNG.
+- **Import = merge** (decided by the user; no replace mode). Match games by `igdb_id`, lists/slots by name (case-insensitive), playthroughs by platform+dates+outcome. Your existing values win; empty ones are filled; platforms and tags are unioned; playthroughs/list items/slots are added, never removed. An in-progress playthrough is skipped if one is already open; slots are only filled when empty and the game is playing/paused and not slotted elsewhere. Importing the same file twice changes nothing.
 - **Status rules:** start (unplayed/finished/abandoned → playing, opens playthrough), pause, resume, finish/abandon (closes playthrough, empties its slot), log past playthrough. At most one open playthrough per entry (partial unique index).
 - **Design:** flat modern look (hairline borders, no offset shadows), warm paper + orange palette, Bricolage Grotesque + Figtree, light/dark. Keep it responsive and keyboard accessible.
-
-## Open question
-
-- **M4:** should import **replace** or **merge** (matching on `igdb_id`)? Ask the user before building it.
 
 ## Technical notes worth knowing
 
@@ -45,6 +42,8 @@ Verified against live IGDB (Oct 2026, via a script using `apps/server/.env`): to
 - **Search filtering:** DLC, bundles, mods, episodes, seasons, packs and forks are excluded by IGDB's `game_type.type` _name_ in `apps/server/src/igdb/mappers.ts` (`EXCLUDED_TYPES`); unknown types are kept. The names were checked against live results. `Update` is intentionally kept because IGDB files real re-releases under it (Witcher 3 Remastered). Editions are excluded by the query itself (`version_parent = null`).
 - **CSRF:** Hono `csrf()` only checks form-style content types, so `app.ts` also rejects mutations with a disallowed `Origin` and any non-JSON `Content-Type`. Body-less mutations (DELETE, logout) need an `Origin` header (browsers send it; tests/curl must add it).
 - **Auth:** argon2id (`@node-rs/argon2`), session token hashed with SHA-256 in the DB, `gq_session` cookie (httpOnly, SameSite=Lax), generic login error, in-memory login rate limit, `SIGNUPS_ENABLED=false` → 403 on register.
+- **Export/import** (`apps/server/src/services/export.ts`, `import.ts`, routes at `/api/data/*`; schema in `packages/shared/src/export.ts`): one versioned JSON (`format: gamequeue-export`, `version: 1`) with a metadata snapshot per game so import never calls IGDB. `POST /api/data/import` is a **dry run unless `?commit=true`**; the dry run executes the real merge inside a transaction and rolls back, so its report is exactly what commit does. Changing the file format means bumping `EXPORT_VERSION` and keeping a reader for the old one. Mount new routers under a specific prefix: a sub-router with `use('*', requireAuth)` mounted at `/api` would also gate `/api/auth/login`.
+- **Known limitation:** import writes user-supplied metadata into the _shared_ game cache for games not cached yet (existing cache rows, including platform names, are never overwritten). Fine for a personal app; if signups are ever opened to untrusted users, a crafted file could seed wrong cover/name for an uncached IGDB id. Mitigation would be to mark imported cache rows and refresh them from IGDB.
 - **Migrations gotcha:** drizzle-kit drops `ON DELETE ...` from `ALTER TABLE ... ADD COLUMN ... REFERENCES` on SQLite. Check generated SQL for added FK columns and patch it by hand (done in `0003` for `slots.entry_id`).
 - **Nested transactions:** services call each other inside `db.transaction` (drizzle uses savepoints), e.g. `assignToSlot` reuses `startPlaythrough`/`togglePause`; a thrown `HttpError` rolls everything back.
 - **Migrations:** edit `apps/server/src/db/schema.ts`, run `npm run db:generate`, commit the new file in `apps/server/drizzle/`. They run at startup and in every test DB.

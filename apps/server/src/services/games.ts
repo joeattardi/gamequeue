@@ -35,22 +35,39 @@ export async function callIgdb<T>(fn: () => Promise<T>): Promise<T> {
     }
 }
 
-export function upsertPlatforms(db: Db, list: PlatformDto[]) {
+/**
+ * Inserts platforms into the shared list. By default IGDB's names win and update what we have;
+ * `keepExisting` (used for user-supplied import files) never touches a row that already exists.
+ */
+export function upsertPlatforms(
+    db: Db,
+    list: PlatformDto[],
+    opts: { keepExisting?: boolean } = {}
+) {
     for (const p of list) {
-        db.insert(platforms)
-            .values(p)
-            .onConflictDoUpdate({
-                target: platforms.id,
-                set: { name: p.name, abbreviation: p.abbreviation }
-            })
-            .run();
+        const insert = db.insert(platforms).values(p);
+        if (opts.keepExisting) insert.onConflictDoNothing().run();
+        else
+            insert
+                .onConflictDoUpdate({
+                    target: platforms.id,
+                    set: { name: p.name, abbreviation: p.abbreviation }
+                })
+                .run();
     }
 }
 
 /** Writes a fetched game and its relations into the shared cache. */
-export function saveGame(db: Db, g: GameRecord, now = Date.now()) {
+export function saveGame(
+    db: Db,
+    g: GameRecord,
+    now = Date.now(),
+    opts: { keepExistingPlatforms?: boolean } = {}
+) {
     db.transaction((tx) => {
-        upsertPlatforms(tx as unknown as Db, g.platforms);
+        upsertPlatforms(tx as unknown as Db, g.platforms, {
+            keepExisting: opts.keepExistingPlatforms
+        });
         for (const x of g.genres) tx.insert(genres).values(x).onConflictDoNothing().run();
         for (const x of g.themes) tx.insert(themes).values(x).onConflictDoNothing().run();
         tx.insert(games)
