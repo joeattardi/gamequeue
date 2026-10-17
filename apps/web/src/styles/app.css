@@ -699,6 +699,71 @@ select:disabled {
     border-color: var(--danger);
 }
 
+.btn--danger-solid {
+    background: var(--danger);
+    color: var(--danger-ink);
+    border-color: transparent;
+}
+.btn--danger-solid:hover:not(:disabled) {
+    background: var(--danger);
+    border-color: transparent;
+    filter: brightness(1.08);
+}
+
+/* ---- Confirmation dialog ---- */
+.dialog--confirm {
+    width: min(100% - 24px, 420px);
+}
+.dialog--confirm[open] {
+    animation: confirm-in 0.14s ease-out;
+}
+@keyframes confirm-in {
+    from {
+        opacity: 0;
+        transform: translateY(6px) scale(0.98);
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .dialog--confirm[open] {
+        animation: none;
+    }
+}
+.confirm {
+    grid-template-columns: auto 1fr;
+    align-items: start;
+    gap: 16px;
+    padding: 24px;
+}
+.confirm__icon {
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    font: 700 1.2rem/1 var(--font-display, inherit);
+    background: color-mix(in srgb, var(--accent) 16%, transparent);
+    color: var(--accent);
+}
+.confirm__icon--danger {
+    background: color-mix(in srgb, var(--danger) 16%, transparent);
+    color: var(--danger);
+}
+.confirm__text h2 {
+    margin: 0 0 6px;
+    font-size: 1.2rem;
+}
+.confirm__text p {
+    margin: 0;
+}
+.confirm__actions {
+    grid-column: 1 / -1;
+    display: flex;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 4px;
+}
+
 /* ---- M2: status and playthroughs ---- */
 .panel__head {
     display: flex;

@@ -2,6 +2,7 @@ import type { EntryDto, SlotDto } from '@gamequeue/shared';
 import { useState } from 'react';
 import { ApiRequestError } from '../api/client';
 import { useAssignSlot } from '../api/slots';
+import { useConfirm } from './Confirm';
 import { todayLocal } from '../lib';
 
 /**
@@ -10,9 +11,10 @@ import { todayLocal } from '../lib';
  */
 export function useAssign() {
     const assign = useAssignSlot();
+    const confirm = useConfirm();
     const [error, setError] = useState<string>();
 
-    function assignTo(
+    async function assignTo(
         slot: SlotDto,
         entry: EntryDto,
         opts: { platformId?: number; onDone?: () => void } = {}
@@ -20,11 +22,12 @@ export function useAssign() {
         const replacing = slot.entry !== null && slot.entry.id !== entry.id;
         if (
             replacing &&
-            !confirm(
-                `${slot.entry!.game.name} is in ${slot.name}.\n\n` +
-                    `Replace it with ${entry.game.name}? ${slot.entry!.game.name} will be paused ` +
-                    `and you can pick it back up later.`
-            )
+            !(await confirm({
+                title: `Replace ${slot.entry!.game.name}?`,
+                message: `${slot.entry!.game.name} is in ${slot.name}. Starting ${entry.game.name} there will pause it, and you can pick it back up later.`,
+                confirmLabel: 'Replace',
+                tone: 'default'
+            }))
         ) {
             return;
         }

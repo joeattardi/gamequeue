@@ -8,6 +8,7 @@ import {
     usePlaythroughs
 } from '../api/collection';
 import { ApiRequestError } from '../api/client';
+import { useConfirm } from './Confirm';
 import { daysBetween, formatDate, platformLabel, todayLocal } from '../lib';
 
 const errorText = (e: unknown) =>
@@ -279,6 +280,7 @@ export function HistoryPanel({ entry }: { entry: EntryDto }) {
 function HistoryRow({ p, entry }: { p: PlaythroughDto; entry: EntryDto }) {
     const [editing, setEditing] = useState(false);
     const del = useDeletePlaythrough();
+    const confirm = useConfirm();
     const days = daysBetween(p.startedOn, p.endedOn);
     const label = p.outcome ?? 'in progress';
     if (editing)
@@ -312,7 +314,15 @@ function HistoryRow({ p, entry }: { p: PlaythroughDto; entry: EntryDto }) {
                 <button
                     className="btn btn--ghost btn--danger"
                     disabled={del.isPending}
-                    onClick={() => confirm('Delete this playthrough?') && del.mutate(p.id)}
+                    onClick={async () =>
+                        (await confirm({
+                            title: 'Delete this playthrough?',
+                            message:
+                                'It is removed from the game’s history, and the game’s status is updated to match.',
+                            confirmLabel: 'Delete playthrough',
+                            tone: 'danger'
+                        })) && del.mutate(p.id)
+                    }
                 >
                     Delete
                 </button>

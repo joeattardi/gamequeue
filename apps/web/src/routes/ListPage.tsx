@@ -29,6 +29,7 @@ import {
     useReorderList
 } from '../api/lists';
 import { useQueue } from '../api/queue';
+import { useConfirm } from '../components/Confirm';
 import { Cover } from '../components/Cover';
 import { formatMinutes, platformLabel, useDebounced, yearOf } from '../lib';
 
@@ -75,6 +76,7 @@ function ListView({
     const reorder = useReorderList(id);
     const remove = useRemoveFromList();
     const del = useDeleteList(id);
+    const confirm = useConfirm();
     const [order, setOrder] = useState(entries);
     const [error, setError] = useState<string>();
     useEffect(() => setOrder(entries), [entries]);
@@ -127,10 +129,14 @@ function ListView({
                             <button
                                 className="btn btn--danger"
                                 disabled={del.isPending}
-                                onClick={() =>
-                                    confirm(
-                                        `Delete the list "${name}"? Your games are not affected.`
-                                    ) &&
+                                onClick={async () =>
+                                    (await confirm({
+                                        title: `Delete “${name}”?`,
+                                        message:
+                                            'The list will be removed. Your games are not affected.',
+                                        confirmLabel: 'Delete list',
+                                        tone: 'danger'
+                                    })) &&
                                     del.mutate(undefined, { onSuccess: () => navigate('/lists') })
                                 }
                             >

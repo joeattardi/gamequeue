@@ -3,6 +3,7 @@ import { useState, type FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import { useAllPlatforms, useDeleteEntry, useEntry, usePatchEntry } from '../api/collection';
 import { ApiRequestError } from '../api/client';
+import { useConfirm } from '../components/Confirm';
 import { Cover } from '../components/Cover';
 import { ListsPanel } from '../components/ListsPanel';
 import { ScoreGauge } from '../components/ScoreGauge';
@@ -30,6 +31,7 @@ function EntryDetail({ entry }: { entry: EntryDto }) {
     const navigate = useNavigate();
     const patch = usePatchEntry(entry.id);
     const del = useDeleteEntry(entry.id);
+    const confirm = useConfirm();
     const [error, setError] = useState<string>();
     const save = (body: Parameters<typeof patch.mutate>[0]) => {
         setError(undefined);
@@ -107,8 +109,14 @@ function EntryDetail({ entry }: { entry: EntryDto }) {
                     <div>
                         <button
                             className="btn btn--danger"
-                            onClick={() =>
-                                confirm(`Remove ${game.name} from your collection?`) &&
+                            onClick={async () =>
+                                (await confirm({
+                                    title: `Remove ${game.name}?`,
+                                    message:
+                                        'It leaves your collection, your queue and your lists, and its playthrough history and notes are deleted.',
+                                    confirmLabel: 'Remove game',
+                                    tone: 'danger'
+                                })) &&
                                 del.mutate(undefined, { onSuccess: () => navigate('/collection') })
                             }
                             disabled={del.isPending}

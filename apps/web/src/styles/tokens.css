@@ -15,6 +15,7 @@
     --accent-ink: #fff8ee;
     --accent-soft: #fde6d3;
     --danger: #b42318;
+    --danger-ink: #fff;
     --focus: #1d4ed8;
 
     /* Score status colours: contrast >= 3:1 on the page and panel surfaces (measured), see ScoreGauge */
@@ -41,6 +42,7 @@
         --accent-ink: #1c1109;
         --accent-soft: #3a2314;
         --danger: #f97066;
+        --danger-ink: #2a0a07;
         --focus: #93c5fd;
         --status-bad: #e5584f;
         --status-mid: #d99a1e;

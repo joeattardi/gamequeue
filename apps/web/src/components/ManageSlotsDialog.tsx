@@ -8,6 +8,7 @@ import {
     useReorderSlots,
     useSlots
 } from '../api/slots';
+import { useConfirm } from './Confirm';
 import { useModalDialog } from './useModalDialog';
 
 export function ManageSlotsDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -114,6 +115,7 @@ function SlotRow({
 }) {
     const rename = useRenameSlot();
     const del = useDeleteSlot();
+    const confirm = useConfirm();
     const [name, setName] = useState(slot.name);
     const commit = () => {
         const next = name.trim();
@@ -155,12 +157,15 @@ function SlotRow({
                 <button
                     className="btn btn--ghost btn--danger"
                     disabled={del.isPending}
-                    onClick={() =>
-                        confirm(
-                            slot.entry
-                                ? `Delete ${slot.name}? ${slot.entry.game.name} will be paused.`
-                                : `Delete ${slot.name}?`
-                        ) && del.mutate(slot.id, { onError })
+                    onClick={async () =>
+                        (await confirm({
+                            title: `Delete ${slot.name}?`,
+                            message: slot.entry
+                                ? `${slot.entry.game.name} will be paused, not removed from your collection.`
+                                : 'The slot is empty, so nothing else changes.',
+                            confirmLabel: 'Delete slot',
+                            tone: 'danger'
+                        })) && del.mutate(slot.id, { onError })
                     }
                 >
                     Delete
