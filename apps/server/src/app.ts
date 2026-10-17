@@ -5,11 +5,17 @@ import type { Config } from "./config.js";
 import type { Db } from "./db/client.js";
 import { FailureLimiter } from "./auth/rate-limit.js";
 import { authRoutes } from "./routes/auth.js";
+import { entryRoutes } from "./routes/entries.js";
+import { igdbRoutes } from "./routes/igdb.js";
+import { HttpError } from "./errors.js";
+import type { IgdbClient } from "./igdb/types.js";
 import type { AuthVars } from "./auth/middleware.js";
 
 export interface AppDeps {
   db: Db;
   config: Config;
+  /** Undefined when IGDB credentials aren't configured; IGDB-backed routes then return 503 */
+  igdb?: IgdbClient;
   /** Overridable for tests */
   limiters?: { loginByAccount: FailureLimiter; loginByIp: FailureLimiter };
 }
@@ -52,9 +58,13 @@ export function createApp(deps: AppDeps) {
     }),
   );
 
+  app.route("/api/igdb", igdbRoutes(deps));
+  app.route("/api/entries", entryRoutes(deps));
+
   app.notFound((c) => c.json({ error: "Not found" }, 404));
   app.onError((err, c) => {
     if (err instanceof HTTPException) return err.getResponse();
+    if (err instanceof HttpError) return c.json({ error: err.message, ...err.extra }, err.status);
     console.error(err);
     return c.json({ error: "Internal server error" }, 500);
   });

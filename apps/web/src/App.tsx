@@ -2,6 +2,8 @@ import { Navigate, Route, Routes } from "react-router";
 import { useMe } from "./api/auth";
 import { Shell } from "./components/Shell";
 import { AuthPage } from "./routes/AuthPage";
+import { CollectionPage } from "./routes/CollectionPage";
+import { EntryPage } from "./routes/EntryPage";
 import { Home } from "./routes/Home";
 
 export function App() {
@@ -22,6 +24,9 @@ export function App() {
     <Routes>
       <Route element={<Shell user={me.data} />}>
         <Route index element={<Home />} />
+        <Route path="collection" element={<CollectionPage view="all" />} />
+        <Route path="backlog" element={<CollectionPage view="backlog" />} />
+        <Route path="games/:id" element={<EntryPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>

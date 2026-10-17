@@ -11,7 +11,7 @@ import type { FailureLimiter } from "../auth/rate-limit.js";
 import { createSession, destroySession, SESSION_COOKIE } from "../auth/sessions.js";
 import { slots, users } from "../db/schema.js";
 
-type Deps = Required<AppDeps>;
+type Deps = Pick<AppDeps, "db" | "config"> & Required<Pick<AppDeps, "limiters">>;
 
 function clientIp(c: Context, trustProxy: boolean): string {
   if (trustProxy) {

@@ -2,12 +2,13 @@ import { createApp } from "../src/app.js";
 import { FailureLimiter } from "../src/auth/rate-limit.js";
 import { loadConfig, type Config } from "../src/config.js";
 import { openDb } from "../src/db/client.js";
+import type { GameRecord, IgdbClient } from "../src/igdb/types.js";
 
-export function makeApp(overrides: Partial<Config> = {}) {
+export function makeApp(overrides: Partial<Config> = {}, igdb?: IgdbClient) {
   const db = openDb(":memory:");
   const config = { ...loadConfig({}), ...overrides };
   const limiters = { loginByAccount: new FailureLimiter(5, 60_000), loginByIp: new FailureLimiter(30, 60_000) };
-  const app = createApp({ db, config, limiters });
+  const app = createApp({ db, config, limiters, igdb });
   return { app, db, config };
 }
 
@@ -23,4 +24,49 @@ export const cookieFrom = (res: Response) => res.headers.get("set-cookie")?.spli
 
 export async function register(app: App, email = "me@example.com", password = "correct horse battery") {
   return app.request("/api/auth/register", json({ email, password }));
+}
+
+export const PS5 = { id: 167, name: "PlayStation 5", abbreviation: "PS5" };
+export const PC = { id: 6, name: "PC (Microsoft Windows)", abbreviation: "PC" };
+export const SWITCH = { id: 130, name: "Nintendo Switch", abbreviation: "Switch" };
+
+export function fakeGame(id: number, name: string, extra: Partial<GameRecord> = {}): GameRecord {
+  return {
+    id,
+    name,
+    slug: name.toLowerCase().replace(/\W+/g, "-"),
+    summary: `${name} summary`,
+    releaseDate: "2020-05-01",
+    coverImageId: `co${id}`,
+    igdbRating: 80,
+    igdbRatingCount: 100,
+    gameType: "Main Game",
+    platforms: [PC, PS5],
+    genres: [{ id: 12, name: "Role-playing (RPG)" }],
+    themes: [{ id: 1, name: "Fantasy" }],
+    ttb: { hastilySeconds: 36000, normallySeconds: 72000, completelySeconds: 144000, count: 10 },
+    ...extra,
+  };
+}
+
+/** In-memory IGDB stand-in that counts calls, so tests can prove caching. */
+export function fakeIgdb(catalog: GameRecord[]) {
+  const calls = { search: 0, fetchGame: 0, fetchPlatforms: 0 };
+  const client: IgdbClient = {
+    async search(q) {
+      calls.search++;
+      return catalog
+        .filter((g) => g.name.toLowerCase().includes(q.toLowerCase()))
+        .map((g) => ({ id: g.id, name: g.name, year: g.releaseDate ? Number(g.releaseDate.slice(0, 4)) : null, coverImageId: g.coverImageId, platforms: g.platforms }));
+    },
+    async fetchGame(id) {
+      calls.fetchGame++;
+      return catalog.find((g) => g.id === id) ?? null;
+    },
+    async fetchPlatforms() {
+      calls.fetchPlatforms++;
+      return [PC, PS5, SWITCH];
+    },
+  };
+  return { client, calls };
 }

@@ -7,10 +7,16 @@ import { createApp } from "./app.js";
 import { purgeExpiredSessions } from "./auth/sessions.js";
 import { loadConfig } from "./config.js";
 import { openDb } from "./db/client.js";
+import { createIgdbClient } from "./igdb/client.js";
 
 const config = loadConfig();
 const db = openDb(config.databasePath);
-const app = createApp({ db, config });
+const igdb =
+  config.igdbClientId && config.igdbClientSecret
+    ? createIgdbClient({ clientId: config.igdbClientId, clientSecret: config.igdbClientSecret })
+    : undefined;
+if (!igdb) console.warn("IGDB_CLIENT_ID / IGDB_CLIENT_SECRET not set: search and add-game are disabled.");
+const app = createApp({ db, config, igdb });
 
 // Production: serve the built web app from the same process/port, with SPA fallback.
 const webDist = resolve(process.env.WEB_DIST ?? "../web/dist");
