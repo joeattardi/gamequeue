@@ -5,6 +5,7 @@ import { useAllPlatforms, useDeleteEntry, useEntry, usePatchEntry } from '../api
 import { ApiRequestError } from '../api/client';
 import { Cover } from '../components/Cover';
 import { ListsPanel } from '../components/ListsPanel';
+import { ScoreGauge } from '../components/ScoreGauge';
 import { HistoryPanel, StatusPanel } from '../components/PlaythroughPanels';
 import { formatMinutes, platformLabel, yearOf } from '../lib';
 
@@ -47,17 +48,18 @@ function EntryDetail({ entry }: { entry: EntryDto }) {
                     <Cover imageId={game.coverImageId} name={game.name} size="720p" />
                 </div>
                 <div className="stack">
-                    <header>
-                        <h1>{game.name}</h1>
-                        <p className="muted">
-                            {[
-                                yearOf(game.releaseDate),
-                                game.genres.join(', '),
-                                game.igdbRating !== null ? `IGDB ${game.igdbRating}/100` : null
-                            ]
-                                .filter(Boolean)
-                                .join(' · ')}
-                        </p>
+                    <header className="entry__head">
+                        <div>
+                            <h1>{game.name}</h1>
+                            <p className="muted">
+                                {[yearOf(game.releaseDate), game.genres.join(', ')]
+                                    .filter(Boolean)
+                                    .join(' · ')}
+                            </p>
+                        </div>
+                        {game.igdbRating !== null && (
+                            <ScoreGauge value={game.igdbRating} label="IGDB" />
+                        )}
                     </header>
                     {game.summary && <p className="summary">{game.summary}</p>}
 

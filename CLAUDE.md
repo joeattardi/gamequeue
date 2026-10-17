@@ -20,6 +20,8 @@ Full design (data model, API surface, rationale): `/Users/joe/.claude/plans/floa
 - M4 export/import: **done** (merge, not replace). v1 is complete.
 - M5 (post-v1) smart lists, stats, CSV export of lists: next, when the user asks
 
+**Visual checks are possible without a browser tool:** Chrome is installed, so bundle a scratch page with esbuild (`NODE_PATH=node_modules npx esbuild entry.tsx --bundle --jsx=automatic`, built CSS from `apps/web/dist/assets`) and run `"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless=new --user-data-dir=<tmp> --allow-file-access-from-files --window-size=W,H --virtual-time-budget=5000 --force-prefers-reduced-motion --blink-settings=preferredColorScheme=0|1 --screenshot=out.png file://page.html`, then read the PNG. Keep scratch files in the scratchpad, not the repo. `--force-prefers-reduced-motion` matters: headless virtual time sometimes stalls CSS transitions and captures a half-animated state.
+
 Verified against live IGDB (Oct 2026, via a script using `apps/server/.env`): token flow, search, and the game + time-to-beat multiquery. Not verified by Claude: the web UI in a browser (no browser tool in sessions so far). Tests use a fake IGDB client / fake fetch.
 
 ## Product decisions (confirmed by the user)
@@ -34,6 +36,7 @@ Verified against live IGDB (Oct 2026, via a script using `apps/server/.env`): to
 - **Random pick:** candidates are `unplayed` games (plus `paused` if `includePaused`) from the backlog or a list, whatever the list holds. Filters: platform/tag/genre are any-of within a group and AND across groups; a max time-to-beat excludes games with unknown time. Re-roll sends `excludeEntryIds`; when all were shown it wraps, never repeating the last pick. Logic is pure in `packages/shared/src/pick.ts` with an injectable RNG.
 - **Import = merge** (decided by the user; no replace mode). Match games by `igdb_id`, lists/slots by name (case-insensitive), playthroughs by platform+dates+outcome. Your existing values win; empty ones are filled; platforms and tags are unioned; playthroughs/list items/slots are added, never removed. An in-progress playthrough is skipped if one is already open; slots are only filled when empty and the game is playing/paused and not slotted elsewhere. Importing the same file twice changes nothing.
 - **Status rules:** start (unplayed/finished/abandoned → playing, opens playthrough), pause, resume, finish/abandon (closes playthrough, empties its slot), log past playthrough. At most one open playthrough per entry (partial unique index).
+- **Score gauge** (`apps/web/src/components/ScoreGauge.tsx`, geometry in `src/gauge.ts`): 270° arc, one accent hue on a tinted track (never red/green, which are reserved for status), number as real text, animated draw-in that respects reduced motion. Props: `value`, `max`, `label`, `size`. Used for the IGDB score on the game page; also takes the user's own 1-10 rating (`max={10}`).
 - **Design:** flat modern look (hairline borders, no offset shadows), warm paper + orange palette, Bricolage Grotesque + Figtree, light/dark. Keep it responsive and keyboard accessible.
 
 ## Technical notes worth knowing

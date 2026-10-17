@@ -1016,3 +1016,75 @@ input[type='file'] {
     font: inherit;
     padding: 10px 0;
 }
+
+/* ---- Score gauge ---- */
+.gauge {
+    position: relative;
+    flex: none;
+    /* The ring around the end marker matches whatever the gauge sits on */
+    --gauge-surface: var(--bg);
+    --gauge-track: color-mix(in srgb, var(--accent) 20%, var(--gauge-surface));
+}
+.panel .gauge {
+    --gauge-surface: var(--surface);
+}
+.gauge svg {
+    display: block;
+}
+.gauge__track {
+    stroke: var(--gauge-track);
+}
+.gauge__fill {
+    stroke: var(--accent);
+    transition: stroke-dashoffset 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.gauge__marker {
+    transform-box: view-box;
+    transform-origin: 50% 50%;
+    transition: transform 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.gauge__knob {
+    fill: var(--accent);
+    stroke: var(--gauge-surface);
+}
+.gauge__text {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    /* nudge up so the label sits in the gap at the bottom of the arc */
+    padding-bottom: 4%;
+    gap: 0;
+    line-height: 1;
+    pointer-events: none;
+}
+.gauge__value {
+    font-family: var(--font-body);
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.02em;
+}
+.gauge__label {
+    margin-top: 2px;
+    color: var(--ink-muted);
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+@media (prefers-reduced-motion: reduce) {
+    .gauge__fill,
+    .gauge__marker {
+        transition: none;
+    }
+}
+.entry__head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+}
+.entry__head h1 {
+    overflow-wrap: anywhere;
+}
