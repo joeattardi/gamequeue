@@ -110,9 +110,9 @@ export function PublicGameList({
 /** Loading placeholders built on the real list's own classes, so sizes match. */
 function Skeleton({ layout, numbered }: { layout: Layout; numbered: boolean }) {
     return (
-        <div role="status" aria-label="Loading games">
+        <>
             {layout === 'grid' ? (
-                <ul className="public-grid" aria-hidden="true">
+                <ul className="public-grid" role="status" aria-label="Loading games">
                     {Array.from({ length: 12 }, (_, i) => (
                         <li key={i}>
                             <div className="skeleton skeleton--cover" />
@@ -120,7 +120,7 @@ function Skeleton({ layout, numbered }: { layout: Layout; numbered: boolean }) {
                     ))}
                 </ul>
             ) : (
-                <ul className="public-games" aria-hidden="true">
+                <ul className="public-games" role="status" aria-label="Loading games">
                     {Array.from({ length: 8 }, (_, i) => (
                         <li key={i}>
                             {numbered && <span className="public-games__pos">&nbsp;</span>}
@@ -136,6 +136,6 @@ function Skeleton({ layout, numbered }: { layout: Layout; numbered: boolean }) {
                     ))}
                 </ul>
             )}
-        </div>
+        </>
     );
 }
