@@ -1,6 +1,7 @@
 import { and, count, eq } from 'drizzle-orm';
 import {
     ENTRY_STATUSES,
+    FINISHED_UNKNOWN_YEAR,
     entryQuerySchema,
     type EntryDto,
     type EntryStatus,
@@ -10,7 +11,7 @@ import {
     type PublicEntryDto
 } from '@gamequeue/shared';
 import type { Db } from '../db/client.js';
-import { entries, listItems, lists, users } from '../db/schema.js';
+import { entries, listItems, lists, playthroughs, users } from '../db/schema.js';
 import { HttpError } from '../errors.js';
 import { listEntries } from './entries.js';
 import { getList, listLists } from './lists.js';
@@ -76,8 +77,14 @@ export function getProfile(db: Db, username: string): ProfileDto {
  * Read-only: a user who never queued anything has no queue row yet, which reads as empty.
  * Only the queue is ordered by the user; everything else is sorted by title.
  */
-export function getProfileGames(db: Db, username: string, view: ProfileView): ProfileGamesDto {
+export function getProfileGames(
+    db: Db,
+    username: string,
+    view: ProfileView,
+    year?: string
+): ProfileGamesDto {
     const user = requireUser(db, username);
+    if (view === 'finished') return getFinishedGames(db, user, year);
     let list: EntryDto[];
     if (view === 'queue') {
         const queue = db
@@ -96,4 +103,86 @@ export function getProfileGames(db: Db, username: string, view: ProfileView): Pr
         );
     }
     return { username: user.username, view, entries: list.map(toPublic) };
+}
+
+/**
+ * Finished games, by playthrough: a game finished in 2023 and 2026 is on both year pages (once
+ * each), even if it has been restarted since. The all-time page lists games whose status is
+ * finished, newest finish first and unknown dates last; a year page is oldest finish first.
+ */
+function getFinishedGames(
+    db: Db,
+    user: { id: number; username: string },
+    year?: string
+): ProfileGamesDto {
+    const finishes = db
+        .select({
+            id: playthroughs.id,
+            entryId: playthroughs.entryId,
+            endedOn: playthroughs.endedOn
+        })
+        .from(playthroughs)
+        .where(and(eq(playthroughs.userId, user.id), eq(playthroughs.outcome, 'finished')))
+        .all();
+    const yearOf = (endedOn: string | null) => endedOn?.slice(0, 4) ?? FINISHED_UNKNOWN_YEAR;
+
+    const gamesPerYear = new Map<string, Set<number>>();
+    for (const f of finishes) {
+        const y = yearOf(f.endedOn);
+        gamesPerYear.set(y, (gamesPerYear.get(y) ?? new Set()).add(f.entryId));
+    }
+    const years = [...gamesPerYear]
+        .map(([y, ids]) => ({ year: y, count: ids.size }))
+        .sort((a, b) =>
+            a.year === FINISHED_UNKNOWN_YEAR
+                ? 1
+                : b.year === FINISHED_UNKNOWN_YEAR
+                  ? -1
+                  : b.year.localeCompare(a.year)
+        );
+
+    const all = listEntries(db, user.id, entryQuerySchema.parse({}));
+    if (year === undefined) {
+        const finished = all
+            .filter((e) => e.status === 'finished')
+            .sort(
+                (a, b) =>
+                    (b.lastFinishedOn ?? '').localeCompare(a.lastFinishedOn ?? '') ||
+                    a.game.name.localeCompare(b.game.name)
+            );
+        return {
+            username: user.username,
+            view: 'finished',
+            entries: finished.map(toPublic),
+            years
+        };
+    }
+
+    // The last finish within the year decides a game's place; ties keep the order they were logged.
+    const lastFinish = new Map<number, { endedOn: string; id: number }>();
+    for (const f of finishes) {
+        if (yearOf(f.endedOn) !== year) continue;
+        const prev = lastFinish.get(f.entryId);
+        const next = { endedOn: f.endedOn ?? '', id: f.id };
+        if (
+            !prev ||
+            next.endedOn > prev.endedOn ||
+            (next.endedOn === prev.endedOn && next.id > prev.id)
+        )
+            lastFinish.set(f.entryId, next);
+    }
+    const inYear = all
+        .filter((e) => lastFinish.has(e.id))
+        .sort((a, b) => {
+            const x = lastFinish.get(a.id)!;
+            const y = lastFinish.get(b.id)!;
+            return x.endedOn.localeCompare(y.endedOn) || x.id - y.id;
+        });
+    return {
+        username: user.username,
+        view: 'finished',
+        year,
+        entries: inYear.map(toPublic),
+        years
+    };
 }

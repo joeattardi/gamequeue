@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { lists } from '../src/db/schema.js';
+import { eq } from 'drizzle-orm';
+import { lists, playthroughs } from '../src/db/schema.js';
 import { cookieFrom, fakeGame, fakeIgdb, json, makeApp, register } from './helpers.js';
 
 async function setup() {
@@ -123,5 +124,89 @@ describe('public profile', () => {
         expect((await app.request('/api/profiles/a')).status).toBe(404);
         expect((await app.request('/api/profiles/nobody/queue')).status).toBe(404);
         expect((await app.request('/api/profiles/joe/nonsense')).status).toBe(404);
+    });
+
+    describe('finished by year', () => {
+        async function finishedSetup() {
+            const { client } = fakeIgdb([
+                fakeGame(1, 'Hades'),
+                fakeGame(2, 'Celeste'),
+                fakeGame(3, 'Hollow Knight')
+            ]);
+            const { app, db } = makeApp({}, client);
+            const cookie = cookieFrom(await register(app, 'me@example.com', undefined, 'joe'));
+            const call = (path: string, body: unknown) =>
+                app.request(`/api${path}`, json(body, { cookie, origin: 'http://localhost' }));
+            const finish = async (igdbId: number, started: string, ended: string) => {
+                const e = (await (await call('/entries', { igdbId, platformIds: [6] })).json())
+                    .entry;
+                await call(`/entries/${e.id}/start`, { date: started });
+                await call(`/entries/${e.id}/finish`, { date: ended });
+                return e;
+            };
+            const get = async (path: string) => app.request(`/api/profiles/joe/${path}`);
+            const names = async (path: string) =>
+                (await (await get(path)).json()).games.entries.map(
+                    (e: { game: { name: string } }) => e.game.name
+                );
+            return { app, db, call, finish, get, names };
+        }
+
+        it('lists years with counts and the all-time page newest first', async () => {
+            const { finish, get, names } = await finishedSetup();
+            await finish(1, '2025-01-01', '2025-02-01');
+            await finish(2, '2026-01-01', '2026-03-01');
+            await finish(3, '2026-01-15', '2026-02-01');
+            expect(await names('finished')).toEqual(['Celeste', 'Hollow Knight', 'Hades']);
+            expect((await (await get('finished')).json()).games.years).toEqual([
+                { year: '2026', count: 2 },
+                { year: '2025', count: 1 }
+            ]);
+        });
+
+        it('shows a year oldest finish first, and the game once per year', async () => {
+            const { call, finish, get, names } = await finishedSetup();
+            const hades = await finish(1, '2026-01-01', '2026-05-01');
+            await finish(2, '2026-01-01', '2026-03-01');
+            await finish(3, '2025-01-01', '2025-02-01');
+            // a replay in the same year, finished earlier than the other 2026 games
+            await call(`/entries/${hades.id}/start`, { date: '2026-01-02' });
+            await call(`/entries/${hades.id}/finish`, { date: '2026-06-01' });
+            expect(await names('finished/2026')).toEqual(['Celeste', 'Hades']);
+            expect(await names('finished/2025')).toEqual(['Hollow Knight']);
+            expect(await names('finished/2024')).toEqual([]);
+            const body = (await (await get('finished/2026')).json()).games;
+            expect(body.year).toBe('2026');
+            expect(body.years).toHaveLength(2);
+        });
+
+        it('keeps a game on an old year page after it is restarted', async () => {
+            const { call, finish, names } = await finishedSetup();
+            const hades = await finish(1, '2023-01-01', '2023-02-01');
+            await call(`/entries/${hades.id}/start`, { date: '2026-01-01' });
+            expect(await names('finished')).toEqual([]);
+            expect(await names('finished/2023')).toEqual(['Hades']);
+        });
+
+        it('puts finishes without a date under "unknown", last in the years', async () => {
+            const { db, finish, get, names } = await finishedSetup();
+            await finish(1, '2025-01-01', '2025-02-01');
+            await finish(2, '2025-01-01', '2025-03-01');
+            db.update(playthroughs).set({ endedOn: null }).where(eq(playthroughs.id, 2)).run();
+            expect((await (await get('finished')).json()).games.years).toEqual([
+                { year: '2025', count: 1 },
+                { year: 'unknown', count: 1 }
+            ]);
+            expect(await names('finished/unknown')).toEqual(['Celeste']);
+            expect(await names('finished')).toEqual(['Hades', 'Celeste']);
+        });
+
+        it('rejects a malformed year and years on other views', async () => {
+            const { get } = await finishedSetup();
+            expect((await get('finished/abc')).status).toBe(404);
+            expect((await get('finished/26')).status).toBe(404);
+            expect((await get('backlog/2026')).status).toBe(404);
+            expect((await get('finished/2026')).status).toBe(200);
+        });
     });
 });

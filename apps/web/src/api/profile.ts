@@ -9,11 +9,21 @@ export const useProfile = (username: string) =>
         retry: false
     });
 
-export const useProfileGames = (username: string, view: ProfileView, enabled = true) =>
+/** `year` only applies to the finished view (`/finished/:year`). */
+export const useProfileGames = (
+    username: string,
+    view: ProfileView,
+    enabled = true,
+    year?: string
+) =>
     useQuery({
-        queryKey: ['profile', username, view],
+        queryKey: ['profile', username, view, year ?? null],
         queryFn: async () =>
-            (await api<{ games: ProfileGamesDto }>(`/profiles/${username}/${view}`)).games,
+            (
+                await api<{ games: ProfileGamesDto }>(
+                    `/profiles/${username}/${view}${year ? `/${year}` : ''}`
+                )
+            ).games,
         retry: false,
         enabled
     });

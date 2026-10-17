@@ -34,6 +34,8 @@ export function App() {
                 <Route path="/register" element={<AuthPage mode="register" />} />
                 <Route path="/u/:username" element={<ProfilePage />} />
                 <Route path="/u/:username/:view" element={<ProfileGamesPage />} />
+                <Route path="/u/:username/:view/:year" element={<ProfileGamesPage />} />
+                <Route path="/u/:username/:view/:year" element={<ProfileGamesPage />} />
                 <Route path="*" element={<Navigate to="/login" replace />} />
             </Routes>
         );

@@ -1,5 +1,11 @@
-import { PROFILE_VIEWS, type ProfileView } from '@gamequeue/shared';
+import {
+    FINISHED_UNKNOWN_YEAR,
+    isFinishedYear,
+    PROFILE_VIEWS,
+    type ProfileView
+} from '@gamequeue/shared';
 import { ArrowLeft } from 'lucide-react';
+import { useRef } from 'react';
 import { Link, useParams } from 'react-router';
 import { ApiRequestError } from '../api/client';
 import { useProfileGames } from '../api/profile';
@@ -16,12 +22,21 @@ const VIEWS: Record<ProfileView, { title: string; empty: string; numbered?: bool
     abandoned: { title: 'Abandoned', empty: 'No abandoned games.' }
 };
 
+const yearLabel = (year: string) => (year === FINISHED_UNKNOWN_YEAR ? 'unknown date' : year);
+
 /** Public: a read-only list of someone's games for one profile counter, e.g. `/u/joe/finished`. */
 export function ProfileGamesPage() {
-    const { username = '', view = '' } = useParams();
-    const known = PROFILE_VIEWS.includes(view as ProfileView);
+    const { username = '', view = '', year } = useParams();
+    // Only the finished view has year pages.
+    const known =
+        PROFILE_VIEWS.includes(view as ProfileView) &&
+        (year === undefined || (view === 'finished' && isFinishedYear(year)));
     // The query only runs for a known view; an unknown one is a plain not-found page.
-    const games = useProfileGames(username, known ? (view as ProfileView) : 'queue', known);
+    const games = useProfileGames(username, known ? (view as ProfileView) : 'queue', known, year);
+    // Keep the year links while another year loads.
+    const lastYears = useRef<NonNullable<typeof games.data>['years']>(undefined);
+    if (games.data) lastYears.current = games.data.years;
+    const years = games.data?.years ?? lastYears.current;
     const notFound =
         !known || (games.error instanceof ApiRequestError && games.error.status === 404);
     const meta = known ? VIEWS[view as ProfileView] : undefined;
@@ -30,8 +45,8 @@ export function ProfileGamesPage() {
         <>
             <PublicHeader />
             <main className="page">
-                <Link to={`/u/${username}`} className="back">
-                    <ArrowLeft aria-hidden="true" /> {username}
+                <Link to={year ? `/u/${username}/finished` : `/u/${username}`} className="back">
+                    <ArrowLeft aria-hidden="true" /> {year ? 'All finished' : username}
                 </Link>
                 {notFound && <p role="alert">There is nothing here.</p>}
                 {!notFound && games.isError && <p role="alert">Couldn't load.</p>}
@@ -39,11 +54,28 @@ export function ProfileGamesPage() {
                     <>
                         <h1>
                             {games.data?.username ?? username}: {meta.title.toLowerCase()}
+                            {year && ` in ${yearLabel(year)}`}
                         </h1>
+                        {view === 'finished' && years && years.length > 0 && (
+                            <nav className="year-nav" aria-label="Finished by year">
+                                <Link to={`/u/${username}/finished`} aria-current={!year && 'page'}>
+                                    All
+                                </Link>
+                                {years.map((y) => (
+                                    <Link
+                                        key={y.year}
+                                        to={`/u/${username}/finished/${y.year}`}
+                                        aria-current={y.year === year && 'page'}
+                                    >
+                                        {yearLabel(y.year)} <span>{y.count}</span>
+                                    </Link>
+                                ))}
+                            </nav>
+                        )}
                         <PublicGameList
                             entries={games.data?.entries}
                             numbered={meta.numbered}
-                            empty={meta.empty}
+                            empty={year ? 'No games finished then.' : meta.empty}
                         />
                     </>
                 )}

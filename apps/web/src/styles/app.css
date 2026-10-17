@@ -1633,6 +1633,36 @@ fieldset.stars:disabled .stars__star {
     width: 18px;
     height: 18px;
 }
+.year-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 12px;
+}
+.year-nav a {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    color: var(--ink-muted);
+    text-decoration: none;
+    font-weight: 600;
+}
+.year-nav a span {
+    font-weight: 400;
+    font-size: 0.85em;
+}
+.year-nav a:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+.year-nav a[aria-current='page'] {
+    background: var(--accent-soft);
+    border-color: var(--accent);
+    color: var(--accent);
+}
 .layout-toggle + .public-games,
 .layout-toggle + .public-grid {
     margin-top: 10px;
