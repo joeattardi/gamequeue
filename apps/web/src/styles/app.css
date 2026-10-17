@@ -1021,9 +1021,19 @@ input[type='file'] {
 .gauge {
     position: relative;
     flex: none;
-    /* The ring around the end marker matches whatever the gauge sits on */
+    --gauge-color: var(--accent);
+    /* The ring around the end marker (and the notches) match whatever the gauge sits on */
     --gauge-surface: var(--bg);
-    --gauge-track: color-mix(in srgb, var(--accent) 20%, var(--gauge-surface));
+    --gauge-track: color-mix(in srgb, var(--gauge-color) 22%, var(--gauge-surface));
+}
+.gauge--favorable {
+    --gauge-color: var(--status-good);
+}
+.gauge--mixed {
+    --gauge-color: var(--status-mid);
+}
+.gauge--unfavorable {
+    --gauge-color: var(--status-bad);
 }
 .panel .gauge {
     --gauge-surface: var(--surface);
@@ -1035,7 +1045,7 @@ input[type='file'] {
     stroke: var(--gauge-track);
 }
 .gauge__fill {
-    stroke: var(--accent);
+    stroke: var(--gauge-color);
     transition: stroke-dashoffset 0.9s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .gauge__marker {
@@ -1044,8 +1054,12 @@ input[type='file'] {
     transition: transform 0.9s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .gauge__knob {
-    fill: var(--accent);
+    fill: var(--gauge-color);
     stroke: var(--gauge-surface);
+}
+.gauge__notch {
+    stroke: var(--gauge-surface);
+    stroke-linecap: butt;
 }
 .gauge__text {
     position: absolute;

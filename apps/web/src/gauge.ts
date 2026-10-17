@@ -31,3 +31,20 @@ export const markerRotation = (percent: number) => (percent / 100) * GAUGE_SWEEP
 /** "93", "7.5": whole numbers stay whole, others get one decimal. */
 export const formatScore = (value: number) =>
     Number.isInteger(value) ? String(value) : value.toFixed(1);
+
+/**
+ * Score tiers, using the familiar Metacritic cut-offs: 75+ is favorable, 50-74 mixed, below 50
+ * unfavorable. Applied to the percentage so a 7.5/10 rating reads the same as a 75/100 score.
+ */
+export const GAUGE_THRESHOLDS = { mixed: 50, favorable: 75 } as const;
+
+export type GaugeTier = 'unfavorable' | 'mixed' | 'favorable';
+
+export function gaugeTier(percent: number): GaugeTier {
+    if (percent >= GAUGE_THRESHOLDS.favorable) return 'favorable';
+    if (percent >= GAUGE_THRESHOLDS.mixed) return 'mixed';
+    return 'unfavorable';
+}
+
+/** Where a threshold falls around the circle, in SVG degrees. */
+export const thresholdAngle = (percent: number) => GAUGE_START + (percent / 100) * GAUGE_SWEEP;

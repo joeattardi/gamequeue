@@ -1,10 +1,20 @@
 import { useEffect, useState } from 'react';
-import { arcPath, formatScore, gaugePercent, markerRotation, polar } from '../gauge';
+import {
+    GAUGE_THRESHOLDS,
+    arcPath,
+    formatScore,
+    gaugePercent,
+    gaugeTier,
+    markerRotation,
+    polar,
+    thresholdAngle
+} from '../gauge';
 
 /**
- * A small arc gauge for a score. One hue (the accent) on a lighter track of the same hue, so it
- * never borrows red/green status colours. The number is real text in the middle, so the value
- * never depends on reading the arc. The arc draws itself in on load.
+ * A small arc gauge for a score. The arc is red, yellow or green by tier (75+ / 50-74 / below 50,
+ * see `gaugeTier`) on a lighter track of the same colour. Colour is never the only cue: the number
+ * is real text, notches cut into the arc at the tier boundaries show which zone the end marker is
+ * in, and the tier is in the accessible label and tooltip. The arc draws itself in on load.
  */
 export function ScoreGauge({
     value,
@@ -33,15 +43,17 @@ export function ScoreGauge({
     const c = size / 2;
     const start = polar(c, c, r, 135);
     const text = formatScore(value);
+    const tier = gaugeTier(percent);
     // Three characters (100, 10.5...) need a smaller face to clear the arc
     const valueScale = text.length >= 3 ? 0.27 : 0.34;
 
     return (
         <div
-            className="gauge"
+            className={`gauge gauge--${tier}`}
             style={{ width: size, height: size }}
             role="img"
-            aria-label={`${label} score: ${formatScore(value)} out of ${max}`}
+            aria-label={`${label} score: ${text} out of ${max}, ${tier}`}
+            title={`${label} ${text}/${max}: ${tier}`}
         >
             <svg viewBox={`0 0 ${size} ${size}`} width={size} height={size} aria-hidden="true">
                 <path
@@ -52,31 +64,48 @@ export function ScoreGauge({
                     fill="none"
                 />
                 {percent > 0 && (
-                    <>
-                        <path
-                            className="gauge__fill"
-                            d={arcPath(c, c, r)}
-                            pathLength={100}
-                            strokeDasharray={100}
-                            strokeDashoffset={100 - shown}
-                            strokeWidth={stroke}
-                            strokeLinecap="round"
-                            fill="none"
+                    <path
+                        className="gauge__fill"
+                        d={arcPath(c, c, r)}
+                        pathLength={100}
+                        strokeDasharray={100}
+                        strokeDashoffset={100 - shown}
+                        strokeWidth={stroke}
+                        strokeLinecap="round"
+                        fill="none"
+                    />
+                )}
+                {/* Notches at the tier boundaries cut across the arc, so the zone reads without colour.
+                    They sit above the arc but below the marker. */}
+                {Object.values(GAUGE_THRESHOLDS).map((t) => {
+                    const inner = polar(c, c, r - stroke / 2 - 1, thresholdAngle(t));
+                    const outer = polar(c, c, r + stroke / 2 + 1, thresholdAngle(t));
+                    return (
+                        <line
+                            key={t}
+                            className="gauge__notch"
+                            x1={inner.x}
+                            y1={inner.y}
+                            x2={outer.x}
+                            y2={outer.y}
+                            strokeWidth={2.5}
                         />
-                        {/* The end marker sits at the arc's start and rotates to the value */}
-                        <g
-                            className="gauge__marker"
-                            style={{ transform: `rotate(${markerRotation(shown)}deg)` }}
-                        >
-                            <circle
-                                className="gauge__knob"
-                                cx={start.x}
-                                cy={start.y}
-                                r={knob}
-                                strokeWidth={2}
-                            />
-                        </g>
-                    </>
+                    );
+                })}
+                {percent > 0 && (
+                    // The end marker sits at the arc's start and rotates to the value
+                    <g
+                        className="gauge__marker"
+                        style={{ transform: `rotate(${markerRotation(shown)}deg)` }}
+                    >
+                        <circle
+                            className="gauge__knob"
+                            cx={start.x}
+                            cy={start.y}
+                            r={knob}
+                            strokeWidth={2}
+                        />
+                    </g>
                 )}
             </svg>
             <div className="gauge__text" aria-hidden="true">

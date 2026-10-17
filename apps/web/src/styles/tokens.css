@@ -17,6 +17,11 @@
     --danger: #b42318;
     --focus: #1d4ed8;
 
+    /* Score status colours: contrast >= 3:1 on the page and panel surfaces (measured), see ScoreGauge */
+    --status-bad: #c62f2f;
+    --status-mid: #b87a00;
+    --status-good: #1a8f3a;
+
     --radius: 16px;
     --radius-sm: 10px;
     --shadow: 0 1px 2px rgb(40 25 5 / 0.08), 0 4px 16px -6px rgb(40 25 5 / 0.12);
@@ -37,6 +42,9 @@
         --accent-soft: #3a2314;
         --danger: #f97066;
         --focus: #93c5fd;
+        --status-bad: #e5584f;
+        --status-mid: #d99a1e;
+        --status-good: #34b055;
         --shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 4px 16px -6px rgb(0 0 0 / 0.5);
     }
 }

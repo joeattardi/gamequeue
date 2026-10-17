@@ -2,11 +2,14 @@ import { describe, expect, it } from 'vitest';
 import {
     GAUGE_START,
     GAUGE_SWEEP,
+    GAUGE_THRESHOLDS,
     arcPath,
     formatScore,
     gaugePercent,
+    gaugeTier,
     markerRotation,
-    polar
+    polar,
+    thresholdAngle
 } from './gauge';
 
 describe('gaugePercent', () => {
@@ -61,5 +64,30 @@ describe('formatScore', () => {
         expect(formatScore(93)).toBe('93');
         expect(formatScore(7.5)).toBe('7.5');
         expect(formatScore(7.25)).toBe('7.3');
+    });
+});
+
+describe('gaugeTier', () => {
+    it('uses 75 and 50 as the cut-offs, inclusive at the lower bound', () => {
+        expect(gaugeTier(100)).toBe('favorable');
+        expect(gaugeTier(75)).toBe('favorable');
+        expect(gaugeTier(74.9)).toBe('mixed');
+        expect(gaugeTier(50)).toBe('mixed');
+        expect(gaugeTier(49.9)).toBe('unfavorable');
+        expect(gaugeTier(0)).toBe('unfavorable');
+    });
+
+    it('treats a rating out of 10 the same as the equivalent out of 100', () => {
+        expect(gaugeTier(gaugePercent(7.5, 10))).toBe(gaugeTier(gaugePercent(75, 100)));
+        expect(gaugeTier(gaugePercent(5, 10))).toBe('mixed');
+        expect(gaugeTier(gaugePercent(4, 10))).toBe('unfavorable');
+        expect(gaugeTier(gaugePercent(9, 10))).toBe('favorable');
+    });
+
+    it('puts the notches at 12 o clock (50) and past 3 o clock (75)', () => {
+        const half = polar(50, 50, 40, thresholdAngle(GAUGE_THRESHOLDS.mixed));
+        expect(half.x).toBeCloseTo(50);
+        expect(half.y).toBeCloseTo(10);
+        expect(thresholdAngle(GAUGE_THRESHOLDS.favorable)).toBeCloseTo(135 + 202.5);
     });
 });
