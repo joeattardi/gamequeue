@@ -1461,10 +1461,15 @@ fieldset.stars:disabled .stars__star {
     padding: 0;
     display: flex;
     flex-wrap: wrap;
-    gap: 20px 40px;
+    gap: 12px;
 }
 .counter {
     --tone: var(--accent);
+    position: relative;
+    padding: 12px 18px;
+    border: 1px solid color-mix(in srgb, var(--line) 55%, var(--surface));
+    border-radius: var(--radius-sm);
+    background: var(--surface);
     display: grid;
     grid-template-columns: auto auto;
     grid-template-areas: 'icon value' 'label label';
@@ -1481,6 +1486,12 @@ fieldset.stars:disabled .stars__star {
     gap: 2px 8px;
     color: inherit;
     text-decoration: none;
+}
+.counter__link::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
 }
 .counter__link:hover .counter__label {
     color: var(--accent);
