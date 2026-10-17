@@ -1,10 +1,11 @@
 import type { EntryDto, SlotDto } from '@gamequeue/shared';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useEntries } from '../api/collection';
 import { needsPlatform, useSlots } from '../api/slots';
 import { platformLabel, yearOf } from '../lib';
 import { Cover } from './Cover';
 import { useAssign } from './useAssign';
+import { useModalDialog } from './useModalDialog';
 
 const BACKLOG = new URLSearchParams({ view: 'backlog' });
 const PAUSED = new URLSearchParams({ view: 'all', status: 'paused' });
@@ -12,13 +13,7 @@ const PLAYING = new URLSearchParams({ view: 'all', status: 'playing' });
 
 /** Choose a game for one slot: anything in progress first, then the backlog. */
 export function AssignDialog({ slot, onClose }: { slot: SlotDto | null; onClose: () => void }) {
-    const ref = useRef<HTMLDialogElement>(null);
-    useEffect(() => {
-        const d = ref.current;
-        if (!d) return;
-        if (slot && !d.open) d.showModal();
-        if (!slot && d.open) d.close();
-    }, [slot]);
+    const ref = useModalDialog(slot !== null);
     return (
         <dialog
             ref={ref}
@@ -120,6 +115,7 @@ function AssignBody({ slot, onDone }: { slot: SlotDto; onDone: () => void }) {
                             value={text}
                             onChange={(e) => setText(e.target.value)}
                             autoFocus
+                            data-autofocus
                             autoComplete="off"
                         />
                     </label>

@@ -1,20 +1,15 @@
 import type { SearchResultDto } from '@gamequeue/shared';
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { useAddEntry, useAllPlatforms, useGameSearch } from '../api/collection';
 import { ApiRequestError } from '../api/client';
 import { platformLabel, useDebounced } from '../lib';
 import { Cover } from './Cover';
+import { useModalDialog } from './useModalDialog';
 import { ScoreGauge } from './ScoreGauge';
 
 export function AddGameDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
-    const ref = useRef<HTMLDialogElement>(null);
-    useEffect(() => {
-        const d = ref.current;
-        if (!d) return;
-        if (open && !d.open) d.showModal();
-        if (!open && d.open) d.close();
-    }, [open]);
+    const ref = useModalDialog(open);
 
     return (
         <dialog
@@ -56,6 +51,7 @@ function AddGameBody({ onDone }: { onDone: () => void }) {
                             value={text}
                             onChange={(e) => setText(e.target.value)}
                             autoFocus
+                            data-autofocus
                             autoComplete="off"
                             placeholder="e.g. Hades"
                         />

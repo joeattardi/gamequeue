@@ -1,5 +1,5 @@
 import { MAX_SLOTS, type SlotDto } from '@gamequeue/shared';
-import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { useState, type FormEvent } from 'react';
 import { ApiRequestError } from '../api/client';
 import {
     useCreateSlot,
@@ -8,15 +8,10 @@ import {
     useReorderSlots,
     useSlots
 } from '../api/slots';
+import { useModalDialog } from './useModalDialog';
 
 export function ManageSlotsDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
-    const ref = useRef<HTMLDialogElement>(null);
-    useEffect(() => {
-        const d = ref.current;
-        if (!d) return;
-        if (open && !d.open) d.showModal();
-        if (!open && d.open) d.close();
-    }, [open]);
+    const ref = useModalDialog(open);
     return (
         <dialog
             ref={ref}
