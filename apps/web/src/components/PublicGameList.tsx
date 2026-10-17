@@ -1,6 +1,6 @@
 import type { PublicEntryDto } from '@gamequeue/shared';
 import { LayoutGrid, List } from 'lucide-react';
-import { useState } from 'react';
+import { useState, type CSSProperties } from 'react';
 import { Cover } from './Cover';
 import { StarDisplay } from './StarRating';
 
@@ -13,6 +13,11 @@ function loadLayout(): Layout {
     } catch {
         return 'grid';
     }
+}
+
+/** Fade-in delay for the item at `index`; capped so long lists don't take long to appear. */
+function staggerStyle(index: number): CSSProperties {
+    return { '--i': Math.min(index, 14) } as CSSProperties;
 }
 
 /** The one layout shared by every public profile sub-page (`/u/:username/:view`). */
@@ -67,7 +72,7 @@ export function PublicGameList({
         content = (
             <ol className="public-grid">
                 {entries.map((e, i) => (
-                    <li key={e.id} tabIndex={0}>
+                    <li key={e.id} tabIndex={0} style={staggerStyle(i)}>
                         <Cover imageId={e.game.coverImageId} name={e.game.name} />
                         <div className="public-grid__info">
                             <strong>{e.game.name}</strong>
@@ -85,7 +90,7 @@ export function PublicGameList({
         content = (
             <ol className="public-games">
                 {entries.map((e, i) => (
-                    <li key={e.id}>
+                    <li key={e.id} style={staggerStyle(i)}>
                         {numbered && <span className="public-games__pos">{i + 1}</span>}
                         <Cover imageId={e.game.coverImageId} name={e.game.name} />
                         <div>
