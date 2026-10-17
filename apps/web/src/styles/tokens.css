@@ -1,0 +1,40 @@
+:root {
+  color-scheme: light dark;
+  --font-display: "Bricolage Grotesque Variable", system-ui, sans-serif;
+  --font-body: "Figtree Variable", system-ui, sans-serif;
+
+  /* warm paper + ember orange; text/bg pairs all clear WCAG AA */
+  --bg: #fbf6ec;
+  --surface: #fffdf8;
+  --surface-2: #f3ebdb;
+  --ink: #241c14;
+  --ink-muted: #6a5d4d;
+  --line: #dfd2bb;
+  --accent: #c2410c;
+  --accent-ink: #fff8ee;
+  --accent-soft: #fde6d3;
+  --danger: #b42318;
+  --focus: #1d4ed8;
+
+  --radius: 14px;
+  --radius-sm: 8px;
+  --shadow: 0 1px 0 var(--line), 0 8px 24px -12px rgb(60 40 10 / 0.25);
+  --gutter: clamp(16px, 4vw, 32px);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #17120d;
+    --surface: #211a13;
+    --surface-2: #2c231a;
+    --ink: #f6ecdc;
+    --ink-muted: #b5a68f;
+    --line: #3b2f22;
+    --accent: #fb923c;
+    --accent-ink: #1c1109;
+    --accent-soft: #3a2314;
+    --danger: #f97066;
+    --focus: #93c5fd;
+    --shadow: 0 1px 0 var(--line), 0 8px 24px -12px rgb(0 0 0 / 0.6);
+  }
+}

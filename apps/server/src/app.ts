@@ -1,0 +1,62 @@
+import { Hono } from "hono";
+import { csrf } from "hono/csrf";
+import { HTTPException } from "hono/http-exception";
+import type { Config } from "./config.js";
+import type { Db } from "./db/client.js";
+import { FailureLimiter } from "./auth/rate-limit.js";
+import { authRoutes } from "./routes/auth.js";
+import type { AuthVars } from "./auth/middleware.js";
+
+export interface AppDeps {
+  db: Db;
+  config: Config;
+  /** Overridable for tests */
+  limiters?: { loginByAccount: FailureLimiter; loginByIp: FailureLimiter };
+}
+
+const MUTATING = new Set(["POST", "PUT", "PATCH", "DELETE"]);
+
+export function createApp(deps: AppDeps) {
+  const { config } = deps;
+  const app = new Hono<{ Variables: AuthVars }>();
+
+  const sameOrAllowed = (origin: string, requestUrl: string) =>
+    origin === new URL(requestUrl).origin || config.allowedOrigins.includes(origin);
+
+  app.use("/api/*", csrf({ origin: (origin, c) => sameOrAllowed(origin, c.req.url) }));
+
+  // Hono's csrf only inspects form-style content types, so on top of it: any mutation that carries an
+  // Origin header must come from an allowed origin, and bodies must be JSON (which forces a CORS preflight).
+  app.use("/api/*", async (c, next) => {
+    if (MUTATING.has(c.req.method)) {
+      const origin = c.req.header("origin");
+      if (origin && !sameOrAllowed(origin, c.req.url)) return c.json({ error: "Forbidden origin" }, 403);
+      const type = c.req.header("content-type");
+      // No content-type means no body; anything else must be JSON.
+      if (type && !type.toLowerCase().startsWith("application/json")) {
+        return c.json({ error: "Content-Type must be application/json" }, 415);
+      }
+    }
+    await next();
+  });
+
+  app.get("/api/health", (c) => c.json({ ok: true }));
+  app.route(
+    "/api/auth",
+    authRoutes({
+      ...deps,
+      limiters: deps.limiters ?? {
+        loginByAccount: new FailureLimiter(5, 15 * 60_000),
+        loginByIp: new FailureLimiter(30, 15 * 60_000),
+      },
+    }),
+  );
+
+  app.notFound((c) => c.json({ error: "Not found" }, 404));
+  app.onError((err, c) => {
+    if (err instanceof HTTPException) return err.getResponse();
+    console.error(err);
+    return c.json({ error: "Internal server error" }, 500);
+  });
+  return app;
+}
