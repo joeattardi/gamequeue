@@ -35,7 +35,6 @@ export function App() {
                 <Route path="/u/:username" element={<ProfilePage />} />
                 <Route path="/u/:username/:view" element={<ProfileGamesPage />} />
                 <Route path="/u/:username/:view/:year" element={<ProfileGamesPage />} />
-                <Route path="/u/:username/:view/:year" element={<ProfileGamesPage />} />
                 <Route path="*" element={<Navigate to="/login" replace />} />
             </Routes>
         );
@@ -44,6 +43,7 @@ export function App() {
         <Routes>
             <Route path="/u/:username" element={<ProfilePage />} />
             <Route path="/u/:username/:view" element={<ProfileGamesPage />} />
+            <Route path="/u/:username/:view/:year" element={<ProfileGamesPage />} />
             <Route element={<Shell user={me.data} />}>
                 <Route index element={<Home />} />
                 <Route path="collection" element={<CollectionPage view="all" />} />
