@@ -1,9 +1,9 @@
 export class HttpError extends Error {
-  constructor(
-    public status: 400 | 404 | 409 | 502 | 503,
-    message: string,
-    public extra?: Record<string, unknown>,
-  ) {
-    super(message);
-  }
+    constructor(
+        public status: 400 | 404 | 409 | 502 | 503,
+        message: string,
+        public extra?: Record<string, unknown>
+    ) {
+        super(message);
+    }
 }
