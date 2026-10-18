@@ -4,7 +4,9 @@ import { Link, useSearchParams } from 'react-router';
 import { useEntries, useFacets } from '../api/collection';
 import { AddGameDialog } from '../components/AddGameDialog';
 import { Cover } from '../components/Cover';
-import { formatMinutes, platformLabel, useDebounced, yearOf } from '../lib';
+import { MetaLine } from '../components/MetaLine';
+import { PlatformTags } from '../components/PlatformIcon';
+import { formatMinutes, useDebounced, yearOf } from '../lib';
 import { Library, ListTodo, Plus, Star } from 'lucide-react';
 
 const SORT_LABELS: Record<(typeof ENTRY_SORTS)[number], string> = {
@@ -209,9 +211,12 @@ function Card({ entry }: { entry: EntryDto }) {
                 <div className="card__meta">
                     <strong className="card__title">{game.name}</strong>
                     <span className="muted card__sub">
-                        {[yearOf(game.releaseDate), entry.platforms.map(platformLabel).join(', ')]
-                            .filter(Boolean)
-                            .join(' · ')}
+                        <MetaLine
+                            parts={[
+                                yearOf(game.releaseDate),
+                                <PlatformTags key="p" platforms={entry.platforms} />
+                            ]}
+                        />
                     </span>
                     <span className="card__chips">
                         {entry.status !== 'unplayed' && (

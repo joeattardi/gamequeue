@@ -3,7 +3,9 @@ import { useMemo, useState } from 'react';
 import { useEntries } from '../api/collection';
 import { useQueue } from '../api/queue';
 import { needsPlatform, useSlots } from '../api/slots';
-import { platformLabel, yearOf } from '../lib';
+import { yearOf } from '../lib';
+import { MetaLine } from './MetaLine';
+import { PlatformTags } from './PlatformIcon';
 import { Cover } from './Cover';
 import { useAssign } from './useAssign';
 import { useModalDialog } from './useModalDialog';
@@ -155,12 +157,15 @@ function AssignBody({ slot, onDone }: { slot: SlotDto; onDone: () => void }) {
                                         <span className="result__text">
                                             <strong>{e.game.name}</strong>
                                             <span className="muted">
-                                                {[
-                                                    yearOf(e.game.releaseDate),
-                                                    e.platforms.map(platformLabel).join(', ')
-                                                ]
-                                                    .filter(Boolean)
-                                                    .join(' · ')}
+                                                <MetaLine
+                                                    parts={[
+                                                        yearOf(e.game.releaseDate),
+                                                        <PlatformTags
+                                                            key="p"
+                                                            platforms={e.platforms}
+                                                        />
+                                                    ]}
+                                                />
                                             </span>
                                         </span>
                                         {e.queued && <span className="badge">queued</span>}

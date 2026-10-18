@@ -3,7 +3,9 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { useAddEntry, useAllPlatforms, useGameSearch } from '../api/collection';
 import { ApiRequestError } from '../api/client';
-import { platformLabel, useDebounced } from '../lib';
+import { useDebounced } from '../lib';
+import { MetaLine } from './MetaLine';
+import { PlatformIcon, PlatformTags } from './PlatformIcon';
 import { Cover } from './Cover';
 import { ResultSkeletons } from './ResultSkeletons';
 import { useModalDialog } from './useModalDialog';
@@ -107,15 +109,15 @@ function AddGameBody({ onDone }: { onDone: () => void }) {
                                         <span className="result__text">
                                             <strong>{r.name}</strong>
                                             <span className="muted">
-                                                {[
-                                                    r.year,
-                                                    r.platforms
-                                                        .slice(0, 4)
-                                                        .map(platformLabel)
-                                                        .join(', ')
-                                                ]
-                                                    .filter(Boolean)
-                                                    .join(' · ')}
+                                                <MetaLine
+                                                    parts={[
+                                                        r.year,
+                                                        <PlatformTags
+                                                            key="p"
+                                                            platforms={r.platforms.slice(0, 4)}
+                                                        />
+                                                    ]}
+                                                />
                                             </span>
                                         </span>
                                         {r.entryId !== null && (
@@ -199,7 +201,7 @@ function PlatformStep({
                             checked={chosen.has(p.id)}
                             onChange={() => toggle(p.id)}
                         />{' '}
-                        {p.name}
+                        <PlatformIcon platform={p} /> {p.name}
                     </label>
                 ))}
             </fieldset>

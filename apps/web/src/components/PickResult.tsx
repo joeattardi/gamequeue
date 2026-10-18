@@ -2,7 +2,9 @@ import type { EntryDto } from '@gamequeue/shared';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
 import { needsPlatform, useSlots } from '../api/slots';
-import { formatMinutes, platformLabel, yearOf } from '../lib';
+import { formatMinutes, yearOf } from '../lib';
+import { MetaLine } from './MetaLine';
+import { PlatformTags } from './PlatformIcon';
 import { Cover } from './Cover';
 import { useAssign } from './useAssign';
 import { ArrowRight, Dices, RefreshCw, SlidersHorizontal } from 'lucide-react';
@@ -58,17 +60,17 @@ export function PickResult({
                 <p className="muted">{note}</p>
                 <h2 className="pick-result__title">{game.name}</h2>
                 <p className="muted">
-                    {[
-                        yearOf(game.releaseDate),
-                        game.genres.join(', '),
-                        entry.platforms.map(platformLabel).join(', '),
-                        entry.ttbMinutes !== null
-                            ? `~${formatMinutes(entry.ttbMinutes)} to beat`
-                            : null,
-                        game.igdbRating !== null ? `IGDB ${game.igdbRating}` : null
-                    ]
-                        .filter(Boolean)
-                        .join(' · ')}
+                    <MetaLine
+                        parts={[
+                            yearOf(game.releaseDate),
+                            game.genres.join(', '),
+                            <PlatformTags key="p" platforms={entry.platforms} />,
+                            entry.ttbMinutes !== null
+                                ? `~${formatMinutes(entry.ttbMinutes)} to beat`
+                                : null,
+                            game.igdbRating !== null ? `IGDB ${game.igdbRating}` : null
+                        ]}
+                    />
                 </p>
                 {entry.status === 'paused' && <span className="badge badge--paused">paused</span>}
                 {game.summary && <p className="summary summary--clamp">{game.summary}</p>}

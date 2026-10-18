@@ -32,7 +32,9 @@ import { useQueue } from '../api/queue';
 import { useConfirm } from '../components/Confirm';
 import { Cover } from '../components/Cover';
 import { ResultSkeletons } from '../components/ResultSkeletons';
-import { formatMinutes, platformLabel, useDebounced, yearOf } from '../lib';
+import { MetaLine } from '../components/MetaLine';
+import { PlatformTags } from '../components/PlatformIcon';
+import { formatMinutes, useDebounced, yearOf } from '../lib';
 import {
     ArrowLeft,
     ChevronDown,
@@ -266,13 +268,13 @@ function Row({
                     {game.name}
                 </Link>
                 <span className="muted">
-                    {[
-                        yearOf(game.releaseDate),
-                        entry.platforms.map(platformLabel).join(', '),
-                        entry.ttbMinutes !== null ? formatMinutes(entry.ttbMinutes) : null
-                    ]
-                        .filter(Boolean)
-                        .join(' · ')}
+                    <MetaLine
+                        parts={[
+                            yearOf(game.releaseDate),
+                            <PlatformTags key="p" platforms={entry.platforms} />,
+                            entry.ttbMinutes !== null ? formatMinutes(entry.ttbMinutes) : null
+                        ]}
+                    />
                 </span>
                 {entry.status !== 'unplayed' && (
                     <span className={`badge badge--${entry.status}`}>{entry.status}</span>
@@ -424,12 +426,12 @@ function AddResults({ listId, q, inList }: { listId: number; q: string; inList: 
                         <span className="result__text">
                             <strong>{e.game.name}</strong>
                             <span className="muted">
-                                {[
-                                    yearOf(e.game.releaseDate),
-                                    e.platforms.map(platformLabel).join(', ')
-                                ]
-                                    .filter(Boolean)
-                                    .join(' · ')}
+                                <MetaLine
+                                    parts={[
+                                        yearOf(e.game.releaseDate),
+                                        <PlatformTags key="p" platforms={e.platforms} />
+                                    ]}
+                                />
                             </span>
                         </span>
                         <span className="badge">+ Add</span>

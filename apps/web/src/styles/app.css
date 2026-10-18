@@ -2059,3 +2059,22 @@ fieldset.stars:disabled .stars__star {
         transition: none;
     }
 }
+
+.platform-tags {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 2px 10px;
+    vertical-align: middle;
+}
+.platform-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+}
+.platform-icon {
+    width: 1.05em;
+    height: 1.05em;
+    flex: none;
+}

@@ -9,7 +9,8 @@ import { Cover } from '../components/Cover';
 import { ListsPanel } from '../components/ListsPanel';
 import { ScoreGauge } from '../components/ScoreGauge';
 import { HistoryPanel, StatusPanel } from '../components/PlaythroughPanels';
-import { formatMinutes, platformLabel, yearOf } from '../lib';
+import { PlatformTag } from '../components/PlatformIcon';
+import { formatMinutes, yearOf } from '../lib';
 import { ArrowLeft, Trash2, X } from 'lucide-react';
 
 export function EntryPage() {
@@ -197,7 +198,7 @@ function PlatformsEditor({ entry, onSave }: { entry: EntryDto; onSave: (ids: num
                             checked={chosen.has(p.id)}
                             onChange={() => toggle(p.id)}
                         />{' '}
-                        {platformLabel(p)}
+                        <PlatformTag platform={p} />
                     </label>
                 ))}
             </fieldset>

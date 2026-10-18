@@ -3,7 +3,8 @@ import { useState } from 'react';
 import { Link } from 'react-router';
 import { useEntryAction } from '../api/collection';
 import { useClearSlot } from '../api/slots';
-import { formatDate, platformLabel } from '../lib';
+import { formatDate } from '../lib';
+import { PlatformTags } from './PlatformIcon';
 import { Cover } from './Cover';
 import { CloseForm } from './PlaythroughPanels';
 import { ArrowLeftRight, Ban, Check, Dices, Eraser, Gamepad2, Pause, Play } from 'lucide-react';
@@ -54,7 +55,12 @@ export function SlotBay({ slot, onChoose }: { slot: SlotDto; onChoose: (slot: Sl
                         <p className="muted bay__meta">
                             <span className={`badge badge--${entry.status}`}>{entry.status}</span>{' '}
                             {open && `since ${formatDate(open.startedOn)}`}
-                            {open?.platform && ` · ${platformLabel(open.platform)}`}
+                            {open?.platform && (
+                                <>
+                                    {' · '}
+                                    <PlatformTags platforms={[open.platform]} />
+                                </>
+                            )}
                         </p>
                     </div>
                     <div className="row">

@@ -7,7 +7,9 @@ import { useList, useLists } from '../api/lists';
 import { useQueue } from '../api/queue';
 import { Cover } from '../components/Cover';
 import { PickResult } from '../components/PickResult';
-import { platformLabel, useDebounced, yearOf } from '../lib';
+import { MetaLine } from '../components/MetaLine';
+import { PlatformTags } from '../components/PlatformIcon';
+import { useDebounced, yearOf } from '../lib';
 import { ChevronLeft, Dices, ListChecks, Plus, RefreshCw, X } from 'lucide-react';
 
 const MIN_GAMES = 2;
@@ -262,12 +264,12 @@ function Search({ chosen, onAdd }: { chosen: EntryDto[]; onAdd: (e: EntryDto) =>
                                     <span className="result__text">
                                         <strong>{e.game.name}</strong>
                                         <span className="muted">
-                                            {[
-                                                yearOf(e.game.releaseDate),
-                                                e.platforms.map(platformLabel).join(', ')
-                                            ]
-                                                .filter(Boolean)
-                                                .join(' · ')}
+                                            <MetaLine
+                                                parts={[
+                                                    yearOf(e.game.releaseDate),
+                                                    <PlatformTags key="p" platforms={e.platforms} />
+                                                ]}
+                                            />
                                         </span>
                                     </span>
                                     <span className="badge">+ Add</span>

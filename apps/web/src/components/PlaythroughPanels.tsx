@@ -16,6 +16,8 @@ import { ApiRequestError } from '../api/client';
 import { useConfirm } from './Confirm';
 import { StarRating } from './StarRating';
 import { daysBetween, formatDate, platformLabel, todayLocal } from '../lib';
+import { MetaLine } from './MetaLine';
+import { PlatformTags } from './PlatformIcon';
 
 const errorText = (e: unknown) =>
     e instanceof ApiRequestError ? e.message : 'Something went wrong.';
@@ -71,8 +73,12 @@ export function StatusPanel({ entry }: { entry: EntryDto }) {
             {entry.openPlaythrough && (
                 <p className="muted">
                     Started {formatDate(entry.openPlaythrough.startedOn)}
-                    {entry.openPlaythrough.platform &&
-                        ` on ${platformLabel(entry.openPlaythrough.platform)}`}
+                    {entry.openPlaythrough.platform && (
+                        <>
+                            {' on '}
+                            <PlatformTags platforms={[entry.openPlaythrough.platform]} />
+                        </>
+                    )}
                 </p>
             )}
             {entry.status === 'finished' && entry.lastFinishedOn && (
@@ -280,13 +286,13 @@ function HistoryRow({ p, entry }: { p: PlaythroughDto; entry: EntryDto }) {
                     {p.outcome ? ` → ${formatDate(p.endedOn)}` : ' → now'}
                 </span>
                 <span className="muted">
-                    {[
-                        p.platform && platformLabel(p.platform),
-                        days !== null && `${days} ${days === 1 ? 'day' : 'days'}`,
-                        p.rating !== null && `★ ${p.rating}/${RATING_MAX}`
-                    ]
-                        .filter(Boolean)
-                        .join(' · ')}
+                    <MetaLine
+                        parts={[
+                            p.platform && <PlatformTags key="p" platforms={[p.platform]} />,
+                            days !== null && `${days} ${days === 1 ? 'day' : 'days'}`,
+                            p.rating !== null && `★ ${p.rating}/${RATING_MAX}`
+                        ]}
+                    />
                 </span>
             </div>
             <div className="row">
