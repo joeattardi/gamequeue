@@ -2564,6 +2564,9 @@ fieldset.stars:disabled .stars__star {
 @media (max-width: 899px) {
     .app-shell {
         grid-template-columns: minmax(0, 1fr);
+        /* Without this the spare height of a short page is shared out among the rows, which
+           stretches the bar */
+        grid-template-rows: auto 1fr;
     }
     .mobile-bar {
         display: flex;
