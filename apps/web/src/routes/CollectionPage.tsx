@@ -4,6 +4,7 @@ import { Link, useSearchParams } from 'react-router';
 import { useEntries, useFacets } from '../api/collection';
 import { AddGameDialog } from '../components/AddGameDialog';
 import { Cover } from '../components/Cover';
+import { GridSkeletons } from '../components/GridSkeletons';
 import { MetaLine } from '../components/MetaLine';
 import { PlatformTags } from '../components/PlatformIcon';
 import { formatMinutes, useDebounced, yearOf } from '../lib';
@@ -129,6 +130,8 @@ export function CollectionPage({ view }: { view: 'all' | 'backlog' }) {
                 <p className="form-error" role="alert">
                     Couldn't load your games.
                 </p>
+            ) : entries.isPending ? (
+                <GridSkeletons />
             ) : entries.data?.length === 0 ? (
                 <Empty view={view} filtered={filtered} onAdd={() => setAdding(true)} />
             ) : (

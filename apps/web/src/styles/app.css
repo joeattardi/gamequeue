@@ -736,6 +736,14 @@ select:disabled {
     flex: none;
     border-radius: 6px;
 }
+.skeleton--card-cover {
+    width: 100%;
+    aspect-ratio: 3 / 4;
+    border-radius: 10px;
+}
+.card--skeleton {
+    animation: skeleton-in 0.35s ease-out both;
+}
 .skeleton--tiny {
     width: 14px;
     height: 0.75rem;
@@ -775,6 +783,7 @@ select:disabled {
 @media (prefers-reduced-motion: reduce) {
     .skeleton,
     .bay--skeleton,
+    .card--skeleton,
     .upnext__item--skeleton {
         animation: none;
     }
