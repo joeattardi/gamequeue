@@ -73,9 +73,6 @@ export function Shell({ user }: { user: UserDto }) {
                     >
                         <Menu />
                     </button>
-                    <Link to="/">
-                        <Logo />
-                    </Link>
                 </header>
                 <div
                     className={drawerOpen ? 'drawer-backdrop is-open' : 'drawer-backdrop'}
