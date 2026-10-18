@@ -100,6 +100,13 @@ export function FacetSidebar({
                     <FacetSkeletons />
                 ) : (
                     groups
+                        .map((g) => ({
+                            ...g,
+                            // Options that would match nothing are hidden unless ticked
+                            options: g.options.filter(
+                                (o) => o.count > 0 || selected(g.key).includes(o.value)
+                            )
+                        }))
                         .filter((g) => g.options.length > 0)
                         .map((g) => (
                             <FacetGroup
@@ -128,11 +135,9 @@ function FacetGroup({
     onToggle: (value: string) => void;
 }) {
     const [expanded, setExpanded] = useState(false);
-    // Selected options and ones that would match something come first so nothing useful hides
+    // Ticked options first so they stay visible when the list is collapsed
     const ranked = [...options].sort(
-        (a, b) =>
-            Number(selected.includes(b.value)) - Number(selected.includes(a.value)) ||
-            Number(b.count > 0) - Number(a.count > 0)
+        (a, b) => Number(selected.includes(b.value)) - Number(selected.includes(a.value))
     );
     const shown = expanded ? ranked : ranked.slice(0, COLLAPSED_LIMIT);
     return (
@@ -141,14 +146,12 @@ function FacetGroup({
             <ul>
                 {shown.map((o) => {
                     const checked = selected.includes(o.value);
-                    const dead = o.count === 0 && !checked;
                     return (
                         <li key={o.value}>
-                            <label className={dead ? 'facet__option is-empty' : 'facet__option'}>
+                            <label className="facet__option">
                                 <input
                                     type="checkbox"
                                     checked={checked}
-                                    disabled={dead}
                                     onChange={() => onToggle(o.value)}
                                 />
                                 <span className="facet__label">{o.label}</span>

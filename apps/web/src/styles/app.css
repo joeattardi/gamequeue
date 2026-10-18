@@ -2493,11 +2493,6 @@ fieldset.stars:disabled .stars__star {
     accent-color: var(--accent);
     margin: 0;
 }
-.facet__option.is-empty {
-    color: var(--ink-muted);
-    opacity: 0.55;
-    cursor: default;
-}
 .facet__label {
     flex: 1;
     min-width: 0;
