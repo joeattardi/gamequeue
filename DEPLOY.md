@@ -22,7 +22,7 @@ Internet :443 -> Caddy (automatic Let's Encrypt cert) -> Node on 127.0.0.1:3000 
 Caddyfile:
 
 ```
-games.example.com {
+gamequeue.app {
     reverse_proxy 127.0.0.1:3000
 }
 ```
@@ -31,15 +31,15 @@ games.example.com {
 
 Defined in `apps/server/src/config.ts`.
 
-| Variable                               | Value in production                                                                              |
-| -------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| `NODE_ENV`                             | `production`                                                                                     |
-| `PORT`                                 | `3000`                                                                                           |
-| `DATABASE_PATH`                        | e.g. `/srv/gamequeue/data/gamequeue.db`                                                          |
-| `ALLOWED_ORIGINS`                      | `https://games.example.com` (must match the real URL; the CSRF check rejects any other `Origin`) |
-| `TRUST_PROXY`                          | `true`, only because Caddy is in front; makes the login rate limit see the real client IP        |
-| `IGDB_CLIENT_ID`, `IGDB_CLIENT_SECRET` | Twitch credentials                                                                               |
-| `SIGNUPS_ENABLED`                      | `false` once the wanted accounts exist                                                           |
+| Variable                               | Value in production                                                                          |
+| -------------------------------------- | -------------------------------------------------------------------------------------------- |
+| `NODE_ENV`                             | `production`                                                                                 |
+| `PORT`                                 | `3000`                                                                                       |
+| `DATABASE_PATH`                        | e.g. `/srv/gamequeue/data/gamequeue.db`                                                      |
+| `ALLOWED_ORIGINS`                      | `https://gamequeue.app` (must match the real URL; the CSRF check rejects any other `Origin`) |
+| `TRUST_PROXY`                          | `true`, only because Caddy is in front; makes the login rate limit see the real client IP    |
+| `IGDB_CLIENT_ID`, `IGDB_CLIENT_SECRET` | Twitch credentials                                                                           |
+| `SIGNUPS_ENABLED`                      | `false` once the wanted accounts exist                                                       |
 
 Keep these in a root-owned `.env` file that the systemd unit reads.
 
