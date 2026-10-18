@@ -210,36 +210,38 @@ function Card({ entry }: { entry: EntryDto }) {
     return (
         <li className="card">
             <Link to={`/games/${entry.id}`} className="card__link">
-                <Cover imageId={game.coverImageId} name={game.name} />
-                <div className="card__meta">
-                    <strong className="card__title">{game.name}</strong>
-                    <span className="muted card__sub">
-                        <MetaLine
-                            parts={[
-                                yearOf(game.releaseDate),
-                                <PlatformTags key="p" platforms={entry.platforms} />
-                            ]}
-                        />
-                    </span>
-                    <span className="card__chips">
-                        {entry.status !== 'unplayed' && (
-                            <span className={`badge badge--${entry.status}`}>
-                                {entry.status === 'finished' && entry.lastFinishedOn
-                                    ? `finished ${entry.lastFinishedOn.slice(0, 4)}`
-                                    : entry.status}
-                            </span>
-                        )}
-                        {entry.rating !== null && (
-                            <span className="badge">
-                                <Star /> {entry.rating}
-                            </span>
-                        )}
-                        {entry.ttbMinutes !== null && (
-                            <span className="badge badge--quiet">
-                                {formatMinutes(entry.ttbMinutes)}
-                            </span>
-                        )}
-                    </span>
+                <div className="card__art">
+                    <Cover imageId={game.coverImageId} name={game.name} />
+                    <div className="card__info">
+                        <strong className="card__title">{game.name}</strong>
+                        <span className="muted card__sub">
+                            <MetaLine
+                                parts={[
+                                    yearOf(game.releaseDate),
+                                    <PlatformTags key="p" platforms={entry.platforms} />
+                                ]}
+                            />
+                        </span>
+                        <span className="card__chips">
+                            {entry.status !== 'unplayed' && (
+                                <span className={`badge badge--${entry.status}`}>
+                                    {entry.status === 'finished' && entry.lastFinishedOn
+                                        ? `finished ${entry.lastFinishedOn.slice(0, 4)}`
+                                        : entry.status}
+                                </span>
+                            )}
+                            {entry.rating !== null && (
+                                <span className="badge">
+                                    <Star /> {entry.rating}
+                                </span>
+                            )}
+                            {entry.ttbMinutes !== null && (
+                                <span className="badge badge--quiet">
+                                    {formatMinutes(entry.ttbMinutes)}
+                                </span>
+                            )}
+                        </span>
+                    </div>
                 </div>
             </Link>
         </li>

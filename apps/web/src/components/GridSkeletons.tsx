@@ -11,20 +11,6 @@ export function GridSkeletons({ count = 12 }: { count?: number }) {
                 >
                     <div className="card__link">
                         <span className="skeleton skeleton--card-cover" />
-                        <div className="card__meta">
-                            <span
-                                className="skeleton skeleton--line"
-                                style={{ width: `${86 - (i % 3) * 14}%` }}
-                            />
-                            <span
-                                className="skeleton skeleton--line skeleton--sub"
-                                style={{ width: `${52 - (i % 2) * 12}%` }}
-                            />
-                            <span className="card__chips">
-                                <span className="skeleton skeleton--badge" />
-                                {i % 2 === 0 && <span className="skeleton skeleton--badge" />}
-                            </span>
-                        </div>
                     </div>
                 </li>
             ))}
