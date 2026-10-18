@@ -1,5 +1,6 @@
 import type { UserDto } from '@gamequeue/shared';
-import { Link, NavLink, Outlet } from 'react-router';
+import { useEffect, useRef, useState } from 'react';
+import { Link, NavLink, Outlet, useLocation } from 'react-router';
 import { useLogout } from '../api/auth';
 import { Logo } from './Logo';
 import {
@@ -11,21 +12,101 @@ import {
     List,
     ListOrdered,
     ListTodo,
-    LogOut
+    LogOut,
+    Menu,
+    X
 } from 'lucide-react';
+
+const NARROW = '(max-width: 899px)';
+
+/** Whether the viewport is narrow enough for the nav to be a slide-in drawer. */
+function useNarrow() {
+    const [narrow, setNarrow] = useState(() => window.matchMedia(NARROW).matches);
+    useEffect(() => {
+        const mq = window.matchMedia(NARROW);
+        const onChange = () => setNarrow(mq.matches);
+        mq.addEventListener('change', onChange);
+        return () => mq.removeEventListener('change', onChange);
+    }, []);
+    return narrow;
+}
 
 export function Shell({ user }: { user: UserDto }) {
     const logout = useLogout();
+    const narrow = useNarrow();
+    const [open, setOpen] = useState(false);
+    const menuButton = useRef<HTMLButtonElement>(null);
+    const closeButton = useRef<HTMLButtonElement>(null);
+    const { pathname } = useLocation();
+    // The drawer only exists on narrow screens; while it is open the rest of the page is inert
+    const drawerOpen = narrow && open;
+
+    useEffect(() => setOpen(false), [pathname]);
+    useEffect(() => {
+        if (!drawerOpen) return;
+        closeButton.current?.focus();
+        const onKey = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') {
+                setOpen(false);
+                menuButton.current?.focus();
+            }
+        };
+        document.addEventListener('keydown', onKey);
+        return () => document.removeEventListener('keydown', onKey);
+    }, [drawerOpen]);
+
     return (
         <>
             <a className="skip-link" href="#main">
                 Skip to content
             </a>
             <div className="app-shell">
-                <aside className="sidebar">
+                <header className="mobile-bar" inert={drawerOpen}>
+                    <button
+                        ref={menuButton}
+                        type="button"
+                        className="btn btn--ghost mobile-bar__menu"
+                        aria-label="Open menu"
+                        aria-expanded={drawerOpen}
+                        aria-controls="main-nav"
+                        onClick={() => setOpen(true)}
+                    >
+                        <Menu />
+                    </button>
                     <Link to="/">
                         <Logo />
                     </Link>
+                </header>
+                <div
+                    className={drawerOpen ? 'drawer-backdrop is-open' : 'drawer-backdrop'}
+                    onClick={() => {
+                        setOpen(false);
+                        menuButton.current?.focus();
+                    }}
+                    aria-hidden="true"
+                />
+                <aside
+                    id="main-nav"
+                    className={drawerOpen ? 'sidebar is-open' : 'sidebar'}
+                    inert={narrow && !open}
+                >
+                    <div className="sidebar__head">
+                        <Link to="/">
+                            <Logo />
+                        </Link>
+                        <button
+                            ref={closeButton}
+                            type="button"
+                            className="btn btn--ghost sidebar__close"
+                            aria-label="Close menu"
+                            onClick={() => {
+                                setOpen(false);
+                                menuButton.current?.focus();
+                            }}
+                        >
+                            <X />
+                        </button>
+                    </div>
                     <nav className="nav" aria-label="Main">
                         <NavLink to="/" end>
                             <Play />
@@ -74,7 +155,7 @@ export function Shell({ user }: { user: UserDto }) {
                         </button>
                     </div>
                 </aside>
-                <main id="main" className="page" tabIndex={-1}>
+                <main id="main" className="page" tabIndex={-1} inert={drawerOpen}>
                     <Outlet />
                 </main>
             </div>
