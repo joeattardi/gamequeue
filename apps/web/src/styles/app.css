@@ -1398,12 +1398,18 @@ a.game-row:hover {
 }
 .list-card__covers:not(.skeleton) ~ .list-card__text {
     /* Covers are artwork, so the text sits on a dark scrim in both themes */
-    padding-top: 48px;
-    background: linear-gradient(to top, rgb(0 0 0 / 0.85), rgb(0 0 0 / 0));
+    padding-top: 40px;
+    background: linear-gradient(
+        to top,
+        rgb(0 0 0 / 0.92) 0%,
+        rgb(0 0 0 / 0.85) 55%,
+        rgb(0 0 0 / 0) 100%
+    );
     color: #fff;
+    text-shadow: 0 1px 2px rgb(0 0 0 / 0.6);
 }
 .list-card__covers:not(.skeleton) ~ .list-card__text .list-card__count {
-    color: rgb(255 255 255 / 0.8);
+    color: rgb(255 255 255 / 0.85);
 }
 .list-card:hover .list-card__covers img {
     filter: brightness(1.08);
