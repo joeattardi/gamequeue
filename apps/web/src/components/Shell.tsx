@@ -23,11 +23,13 @@ export function Shell({ user }: { user: UserDto }) {
             </a>
             <div className="app-shell">
                 <aside className="sidebar">
-                    <Logo />
+                    <Link to="/">
+                        <Logo />
+                    </Link>
                     <nav className="nav" aria-label="Main">
                         <NavLink to="/" end>
                             <Gamepad2 />
-                            Home
+                            Now playing
                         </NavLink>
                         <NavLink to="/collection">
                             <Library />
