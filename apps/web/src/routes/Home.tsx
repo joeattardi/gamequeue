@@ -2,6 +2,7 @@ import type { SlotDto } from '@gamequeue/shared';
 import { useState } from 'react';
 import { AssignDialog } from '../components/AssignDialog';
 import { ManageSlotsDialog } from '../components/ManageSlotsDialog';
+import { SlotSkeletons } from '../components/HomeSkeletons';
 import { UpNext } from '../components/UpNext';
 import { SlotBay } from '../components/SlotBay';
 import { useSlots } from '../api/slots';
@@ -31,6 +32,8 @@ export function Home() {
                 <p className="form-error" role="alert">
                     Couldn't load your slots.
                 </p>
+            ) : slots.isPending ? (
+                <SlotSkeletons />
             ) : (
                 <ul className="bays" aria-busy={slots.isFetching}>
                     {slots.data?.map((slot) => (

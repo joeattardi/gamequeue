@@ -1,6 +1,7 @@
 import { Link } from 'react-router';
 import { useQueue } from '../api/queue';
 import { formatMinutes } from '../lib';
+import { UpNextSkeletons } from './HomeSkeletons';
 import { Cover } from './Cover';
 
 const SHOWN = 4;
@@ -16,7 +17,7 @@ export function UpNext() {
                     <h2 id="upnext-h">Up next</h2>
                     <p className="muted">
                         {queue.isPending
-                            ? 'Loading…'
+                            ? 'Checking your queue…'
                             : entries.length === 0
                               ? 'Nothing queued yet.'
                               : `${entries.length} in your queue`}
@@ -26,6 +27,7 @@ export function UpNext() {
                     {entries.length === 0 ? 'Build your queue' : 'View queue'}
                 </Link>
             </div>
+            {queue.isPending && <UpNextSkeletons />}
             {entries.length > 0 && (
                 <ol className="upnext__list">
                     {entries.slice(0, SHOWN).map((e, i) => (

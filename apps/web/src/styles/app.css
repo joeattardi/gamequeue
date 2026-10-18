@@ -702,6 +702,68 @@ select:disabled {
     height: 56px;
     border-radius: 50%;
 }
+.skeleton--bay-name {
+    width: 72px;
+    height: 0.8rem;
+}
+.skeleton--bay-cover {
+    width: 100%;
+    aspect-ratio: 3 / 4;
+    border-radius: 10px;
+}
+.skeleton--bay-title {
+    height: 1.25rem;
+}
+.skeleton--bay-meta {
+    width: 55%;
+}
+.skeleton--btn {
+    width: 84px;
+    height: 36px;
+    border-radius: var(--radius);
+}
+.skeleton--btn-wide {
+    width: 104px;
+}
+.skeleton--btn-ghost {
+    width: 92px;
+    height: 32px;
+    opacity: 0.6;
+}
+.skeleton--upnext-cover {
+    width: 48px;
+    aspect-ratio: 3 / 4;
+    flex: none;
+    border-radius: 6px;
+}
+.skeleton--tiny {
+    width: 14px;
+    height: 0.75rem;
+}
+.upnext__item--skeleton {
+    pointer-events: none;
+}
+.bay--skeleton,
+.upnext__item--skeleton {
+    animation: skeleton-in 0.35s ease-out both;
+}
+.bays > .bay--skeleton:nth-child(2),
+.upnext__list > li:nth-child(2) .upnext__item--skeleton {
+    animation-delay: 60ms;
+}
+.bays > .bay--skeleton:nth-child(3),
+.upnext__list > li:nth-child(3) .upnext__item--skeleton {
+    animation-delay: 120ms;
+}
+.upnext__list > li:nth-child(4) .upnext__item--skeleton {
+    animation-delay: 180ms;
+}
+@keyframes skeleton-in {
+    from {
+        opacity: 0;
+        transform: translateY(6px);
+    }
+}
 @keyframes skeleton-shimmer {
     from {
         background-position: 100% 0;
@@ -711,7 +773,9 @@ select:disabled {
     }
 }
 @media (prefers-reduced-motion: reduce) {
-    .skeleton {
+    .skeleton,
+    .bay--skeleton,
+    .upnext__item--skeleton {
         animation: none;
     }
 }
