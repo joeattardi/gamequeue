@@ -10,6 +10,7 @@ import type {
     EntryDto,
     FacetCountsDto,
     FacetsDto,
+    GameDetailDto,
     PatchEntryInput,
     PlatformDto,
     SearchResultDto
@@ -64,7 +65,16 @@ export function useGameSearch(q: string) {
     });
 }
 
+/** A game by IGDB id with the user's state; fetched from IGDB on the server only if never seen. */
+export const useGameDetail = (igdbId: number) =>
+    useQuery({
+        queryKey: ['game', igdbId],
+        queryFn: () => api<GameDetailDto>(`/igdb/games/${igdbId}`),
+        retry: false
+    });
+
 const COLLECTION_KEYS = [
+    'game',
     'entries',
     'entry',
     'facets',

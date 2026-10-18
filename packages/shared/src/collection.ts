@@ -52,6 +52,15 @@ export interface GameDto {
     } | null;
 }
 
+/** A game seen from outside the collection: its metadata plus what the user has done with it */
+export interface GameDetailDto {
+    game: GameDto;
+    /** Set when the game is in the user's collection */
+    entryId: number | null;
+    /** On the user's wishlist */
+    wishlisted: boolean;
+}
+
 export interface EntryDto {
     id: number;
     status: EntryStatus;

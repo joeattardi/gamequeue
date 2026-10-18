@@ -22,6 +22,7 @@ Full design (data model, API surface, rationale): `/Users/joe/.claude/plans/floa
 - M5 queue: **done** (post-v1)
 - Usernames + public profile: **done** (post-v1; existing databases must be recreated, no backfill)
 - Wishlist: **done** (post-v1; separate tables, not entries/lists; see the product decision below)
+- Search page + game-by-IGDB-id page: **done** (post-v1)
 - M6 (post-v1) smart lists, stats, CSV export of lists: next, when the user asks
 
 **Visual checks are possible without a browser tool:** Chrome is installed, so bundle a scratch page with esbuild (`NODE_PATH=node_modules npx esbuild entry.tsx --bundle --jsx=automatic`, built CSS from `apps/web/dist/assets`) and run `"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless=new --user-data-dir=<tmp> --allow-file-access-from-files --window-size=W,H --virtual-time-budget=5000 --force-prefers-reduced-motion --blink-settings=preferredColorScheme=0|1 --screenshot=out.png file://page.html`, then read the PNG. Keep scratch files in the scratchpad, not the repo. `--force-prefers-reduced-motion` matters: headless virtual time sometimes stalls CSS transitions and captures a half-animated state.

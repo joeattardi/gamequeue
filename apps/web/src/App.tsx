@@ -6,6 +6,8 @@ import { AuthPage } from './routes/AuthPage';
 import { CollectionPage } from './routes/CollectionPage';
 import { DataPage } from './routes/DataPage';
 import { EntryPage } from './routes/EntryPage';
+import { GameDetailPage } from './routes/GameDetailPage';
+import { SearchPage } from './routes/SearchPage';
 import { Home } from './routes/Home';
 import { ListPage, QueuePage } from './routes/ListPage';
 import { ListsPage } from './routes/ListsPage';
@@ -50,7 +52,9 @@ export function App() {
                 <Route index element={<Home />} />
                 <Route path="collection" element={<CollectionPage view="all" />} />
                 <Route path="backlog" element={<CollectionPage view="backlog" />} />
+                <Route path="search" element={<SearchPage />} />
                 <Route path="games/:id" element={<EntryPage />} />
+                <Route path="games/igdb/:igdbId" element={<GameDetailPage />} />
                 <Route path="queue" element={<QueuePage />} />
                 <Route path="wishlist" element={<WishlistPage />} />
                 <Route path="lists" element={<ListsPage />} />

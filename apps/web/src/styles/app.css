@@ -840,6 +840,9 @@ a.game-row:hover {
     cursor: pointer;
     min-height: 44px;
 }
+.result:is(a) {
+    text-decoration: none;
+}
 .result:hover:not(:disabled) {
     background: var(--surface-2);
 }
@@ -2665,4 +2668,19 @@ fieldset.stars:disabled .stars__star {
     .drawer-backdrop {
         transition: none;
     }
+}
+
+/* ---- Search page and the not-yet-owned game page ---- */
+.search-page {
+    max-width: 760px;
+}
+.search-page .results {
+    overflow: visible;
+    margin-top: 16px;
+}
+.game-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
 }

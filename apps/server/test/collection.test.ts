@@ -159,6 +159,24 @@ describe('search', () => {
         expect((await call('/igdb/search?q=h')).status).toBe(400);
     });
 
+    it('serves a game by IGDB id, calling IGDB only the first time', async () => {
+        const { call, post, add, igdb } = await setup();
+        const first = await (await call('/igdb/games/1')).json();
+        expect(first).toMatchObject({ entryId: null, wishlisted: false });
+        expect(first.game).toMatchObject({ id: 1, name: 'Hades' });
+        expect(igdb.calls.fetchGame).toBe(1);
+
+        await post('/wishlist/items', { igdbId: 1 });
+        expect((await (await call('/igdb/games/1')).json()).wishlisted).toBe(true);
+        const e = await add(1); // adding reuses the cached game and leaves the wishlist
+        const owned = await (await call('/igdb/games/1')).json();
+        expect(owned).toMatchObject({ entryId: e.id, wishlisted: false });
+        expect(igdb.calls.fetchGame).toBe(1);
+
+        expect((await call('/igdb/games/999')).status).toBe(404);
+        expect((await call('/igdb/games/abc')).status).toBe(400);
+    });
+
     it('syncs the platform list from IGDB once', async () => {
         const { call, igdb } = await setup();
         const a = await (await call('/igdb/platforms')).json();

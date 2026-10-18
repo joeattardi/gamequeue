@@ -7,6 +7,7 @@ import {
     Database,
     Dices,
     Play,
+    Search,
     Gift,
     Library,
     List,
@@ -108,6 +109,10 @@ export function Shell({ user }: { user: UserDto }) {
                         <NavLink to="/" end>
                             <Play />
                             Now playing
+                        </NavLink>
+                        <NavLink to="/search">
+                            <Search />
+                            Search
                         </NavLink>
                         <NavLink to="/collection">
                             <Library />

@@ -1,13 +1,14 @@
 import { and, eq, inArray } from 'drizzle-orm';
 import { Hono } from 'hono';
-import { searchQuerySchema, type SearchResultDto } from '@gamequeue/shared';
+import { searchQuerySchema, type GameDetailDto, type SearchResultDto } from '@gamequeue/shared';
 import type { AppDeps } from '../app.js';
 import { requireAuth, type AuthVars } from '../auth/middleware.js';
 import { entries, wishlistItems, wishlists } from '../db/schema.js';
 import { validate } from '../http.js';
 import { TtlCache } from '../igdb/search-cache.js';
 import type { IgdbSearchHit } from '../igdb/types.js';
-import { callIgdb, listPlatforms, requireIgdb } from '../services/games.js';
+import { HttpError } from '../errors.js';
+import { callIgdb, ensureGame, listPlatforms, loadGames, requireIgdb } from '../services/games.js';
 
 export function igdbRoutes({ db, config, igdb }: AppDeps) {
     const r = new Hono<{ Variables: AuthVars }>();
@@ -71,6 +72,32 @@ export function igdbRoutes({ db, config, igdb }: AppDeps) {
             wishlisted: wished.has(h.id)
         }));
         return c.json({ results });
+    });
+
+    // One game by IGDB id, for the detail page. IGDB is only called if we have never cached it.
+    r.get('/games/:igdbId', async (c) => {
+        const igdbId = Number(c.req.param('igdbId'));
+        if (!Number.isInteger(igdbId) || igdbId <= 0) throw new HttpError(400, 'Invalid game id');
+        const userId = c.get('user').id;
+        await ensureGame(db, igdb, igdbId);
+        const game = loadGames(db, [igdbId]).get(igdbId)!;
+        const entry = db
+            .select({ id: entries.id })
+            .from(entries)
+            .where(and(eq(entries.userId, userId), eq(entries.gameId, igdbId)))
+            .get();
+        const wished = db
+            .select({ gameId: wishlistItems.gameId })
+            .from(wishlistItems)
+            .innerJoin(wishlists, eq(wishlists.id, wishlistItems.wishlistId))
+            .where(and(eq(wishlists.userId, userId), eq(wishlistItems.gameId, igdbId)))
+            .get();
+        const detail: GameDetailDto = {
+            game,
+            entryId: entry?.id ?? null,
+            wishlisted: wished !== undefined
+        };
+        return c.json(detail);
     });
 
     r.get('/platforms', async (c) => c.json({ platforms: await listPlatforms(db, igdb) }));
