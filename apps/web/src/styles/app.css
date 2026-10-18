@@ -541,11 +541,11 @@ select:disabled {
     align-content: start;
 }
 .dialog__body--fill:has(.results) {
-    grid-template-rows: auto auto minmax(0, 1fr);
+    grid-template-rows: auto auto auto minmax(0, 1fr);
     overflow-y: hidden;
 }
 .dialog__body--fill:has(.results):has(.search-status) {
-    grid-template-rows: auto auto auto minmax(0, 1fr);
+    grid-template-rows: auto auto auto auto minmax(0, 1fr);
 }
 .dialog__head {
     display: flex;
