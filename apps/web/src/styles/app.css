@@ -2016,61 +2016,7 @@ fieldset.stars:disabled .stars__star {
     margin-top: 12px;
 }
 
-.pick-reel {
-    display: grid;
-    justify-items: center;
-    gap: 24px;
-    padding: 32px 0 40px;
-    overflow: hidden;
-}
-.pick-reel__viewport {
-    --reel-item: 132px;
-    --reel-gap: 12px;
-    position: relative;
-    width: 100%;
-    overflow: hidden;
-    mask-image: linear-gradient(90deg, transparent, #000 18%, #000 82%, transparent);
-}
-.pick-reel__strip {
-    list-style: none;
-    margin: 0;
-    padding: 12px 0;
-    display: flex;
-    gap: var(--reel-gap);
-    width: max-content;
-    will-change: transform;
-}
-.pick-reel__item {
-    flex: none;
-    width: var(--reel-item);
-}
-.pick-reel__item .cover {
-    width: 100%;
-    height: auto;
-}
-.pick-reel__marker {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    left: 50%;
-    width: 3px;
-    margin-left: -1.5px;
-    background: var(--accent);
-    border-radius: 2px;
-    pointer-events: none;
-}
-.pick-reel__spin {
-    width: 20px;
-    height: 20px;
-    margin-right: 8px;
-    vertical-align: -3px;
-    color: var(--accent);
-    animation: pick-spin 1.1s linear infinite;
-}
 @media (prefers-reduced-motion: reduce) {
-    .pick-reel__spin {
-        animation: none;
-    }
     .pick-mode,
     .pick-mode__go {
         transition: none;

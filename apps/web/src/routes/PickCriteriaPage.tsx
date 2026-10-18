@@ -5,7 +5,7 @@ import { useFacets } from '../api/collection';
 import { useLists, usePick } from '../api/lists';
 import { useQueue } from '../api/queue';
 import { ApiRequestError } from '../api/client';
-import { PickResult, Rolling } from '../components/PickResult';
+import { PickResult, Rolling, rollDelay } from '../components/PickResult';
 import { ChevronLeft, Dices } from 'lucide-react';
 
 const MAX_TIMES = [
@@ -16,11 +16,6 @@ const MAX_TIMES = [
     { label: 'Up to 20 hours', minutes: 1200 },
     { label: 'Up to 40 hours', minutes: 2400 }
 ];
-
-const ROLL_MS = 2200;
-const ROLL_MS_REDUCED = 600;
-
-const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
 const toggle = <T,>(set: Set<T>, v: T) => {
     const n = new Set(set);
@@ -55,8 +50,7 @@ export function PickCriteriaPage() {
     function run(exclude: number[]) {
         setError(undefined);
         setRolling(true);
-        const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-        const minimum = wait(reduced ? ROLL_MS_REDUCED : ROLL_MS);
+        const minimum = rollDelay();
         const input: PickInput = {
             source: source.startsWith('list:')
                 ? { type: 'list', listId: Number(source.slice(5)) }

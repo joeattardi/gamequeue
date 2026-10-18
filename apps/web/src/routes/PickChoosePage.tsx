@@ -1,43 +1,27 @@
 import type { EntryDto } from '@gamequeue/shared';
 import { pickRandom, toCandidate } from '@gamequeue/shared';
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router';
 import { useEntries } from '../api/collection';
 import { useList, useLists } from '../api/lists';
 import { useQueue } from '../api/queue';
 import { Cover } from '../components/Cover';
-import { PickResult } from '../components/PickResult';
+import { PickResult, Rolling, rollDelay } from '../components/PickResult';
 import { MetaLine } from '../components/MetaLine';
 import { PlatformTags } from '../components/PlatformIcon';
 import { useDebounced, yearOf } from '../lib';
-import { ChevronLeft, Dices, ListChecks, Plus, RefreshCw, X } from 'lucide-react';
+import { ChevronLeft, Dices, ListChecks, Plus, X } from 'lucide-react';
 
 const MIN_GAMES = 2;
-const REEL_MS = 4200;
-const REEL_MS_REDUCED = 600;
-/** Must match --reel-item and --reel-gap in app.css */
-const REEL_ITEM = 132;
-const REEL_GAP = 12;
-const REEL_WINNER_INDEX = 34;
-
-/** Fisher-Yates; the reel's filler order shouldn't follow the order games were added in. */
-function shuffled<T>(xs: T[]): T[] {
-    const a = [...xs];
-    for (let i = a.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [a[i], a[j]] = [a[j]!, a[i]!];
-    }
-    return a;
-}
 
 export function PickChoosePage() {
     const [chosen, setChosen] = useState<EntryDto[]>([]);
     const [seen, setSeen] = useState<number[]>([]);
     const [winner, setWinner] = useState<EntryDto>();
     const [wrapped, setWrapped] = useState(false);
-    const [spinning, setSpinning] = useState<{ winner: EntryDto; strip: EntryDto[] }>();
+    const [rolling, setRolling] = useState(false);
 
-    const building = !spinning && !winner;
+    const building = !rolling && !winner;
 
     function add(entries: EntryDto[]) {
         setChosen((cur) => {
@@ -50,17 +34,12 @@ export function PickChoosePage() {
         const outcome = pickRandom(chosen.map(toCandidate), { excludeIds: exclude });
         const entry = chosen.find((e) => e.id === outcome.id);
         if (!entry) return;
-        const order = shuffled(chosen);
-        const at = order.findIndex((e) => e.id === entry.id);
-        const strip = Array.from(
-            { length: REEL_WINNER_INDEX + 6 },
-            (_, i) =>
-                order[
-                    (((i - REEL_WINNER_INDEX + at) % order.length) + order.length) % order.length
-                ]!
-        );
         setWinner(undefined);
-        setSpinning({ winner: entry, strip });
+        setRolling(true);
+        void rollDelay().then(() => {
+            setWinner(entry);
+            setRolling(false);
+        });
         setWrapped(outcome.wrapped);
         setSeen(outcome.wrapped ? [entry.id] : [...exclude, entry.id]);
     }
@@ -111,15 +90,7 @@ export function PickChoosePage() {
             )}
 
             <div aria-live="polite">
-                {spinning && (
-                    <Reel
-                        strip={spinning.strip}
-                        onDone={() => {
-                            setWinner(spinning.winner);
-                            setSpinning(undefined);
-                        }}
-                    />
-                )}
+                {rolling && <Rolling />}
                 {winner && (
                     <PickResult
                         key={winner.id}
@@ -284,82 +255,6 @@ function Search({ chosen, onAdd }: { chosen: EntryDto[]; onAdd: (e: EntryDto) =>
                     )}
                 </>
             )}
-        </div>
-    );
-}
-
-/**
- * A slot-machine style reel of covers that scrolls past a marker and eases to a stop on the
- * winner. With reduced motion the strip isn't shown; a short pause stands in for it.
- */
-function Reel({ strip, onDone }: { strip: EntryDto[]; onDone: () => void }) {
-    const reduced = useRef(window.matchMedia('(prefers-reduced-motion: reduce)').matches).current;
-    const viewport = useRef<HTMLDivElement>(null);
-    const [offset, setOffset] = useState(0);
-    const [running, setRunning] = useState(false);
-    const done = useRef(onDone);
-    done.current = onDone;
-
-    useEffect(() => {
-        if (reduced) {
-            const t = setTimeout(() => done.current(), REEL_MS_REDUCED);
-            return () => clearTimeout(t);
-        }
-        const width = viewport.current?.clientWidth ?? 0;
-        // Land on the winner's centre, with a small random nudge so it doesn't always stop dead
-        // centre on the marker's exact pixel.
-        const nudge = (Math.random() - 0.5) * REEL_ITEM * 0.5;
-        const target =
-            REEL_WINNER_INDEX * (REEL_ITEM + REEL_GAP) + REEL_ITEM / 2 - width / 2 + nudge;
-        const frame = requestAnimationFrame(() => {
-            setRunning(true);
-            setOffset(target);
-        });
-        const t = setTimeout(() => done.current(), REEL_MS + 400);
-        return () => {
-            cancelAnimationFrame(frame);
-            clearTimeout(t);
-        };
-    }, [reduced]);
-
-    return (
-        <div className="pick-reel panel" role="status">
-            <span className="sr-only">Choosing between your games…</span>
-            {reduced ? (
-                <div className="pick-rolling__deck" aria-hidden="true">
-                    <Dices className="pick-rolling__dice" />
-                </div>
-            ) : (
-                <div className="pick-reel__viewport" ref={viewport} aria-hidden="true">
-                    <ul
-                        className="pick-reel__strip"
-                        style={{
-                            transform: `translateX(${-offset}px)`,
-                            transition: running
-                                ? `transform ${REEL_MS}ms cubic-bezier(0.12, 0.6, 0.1, 1)`
-                                : 'none'
-                        }}
-                    >
-                        {strip.map((e, i) => (
-                            <li
-                                key={i}
-                                className={
-                                    i === REEL_WINNER_INDEX
-                                        ? 'pick-reel__item pick-reel__item--winner'
-                                        : 'pick-reel__item'
-                                }
-                            >
-                                <Cover imageId={e.game.coverImageId} name={e.game.name} />
-                            </li>
-                        ))}
-                    </ul>
-                    <span className="pick-reel__marker" />
-                </div>
-            )}
-            <p className="pick-rolling__text">
-                <RefreshCw className="pick-reel__spin" aria-hidden="true" />
-                {reduced ? 'Choosing…' : 'And the winner is…'}
-            </p>
         </div>
     );
 }

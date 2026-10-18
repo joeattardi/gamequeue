@@ -9,6 +9,15 @@ import { Cover } from './Cover';
 import { useAssign } from './useAssign';
 import { ArrowRight, Dices, RefreshCw, SlidersHorizontal } from 'lucide-react';
 
+const ROLL_MS = 2200;
+const ROLL_MS_REDUCED = 600;
+
+/** How long the shuffle shows before a result appears; shorter with reduced motion. */
+export function rollDelay(): Promise<void> {
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    return new Promise((resolve) => setTimeout(resolve, reduced ? ROLL_MS_REDUCED : ROLL_MS));
+}
+
 export const ROLL_LINES = ['Shuffling your games…', 'Weighing the options…', 'Consulting fate…'];
 
 export function Rolling() {
