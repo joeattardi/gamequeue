@@ -11,6 +11,7 @@ import { ApiRequestError } from '../api/client';
 import { useProfileGames } from '../api/profile';
 import { PublicGameList } from '../components/PublicGameList';
 import { PublicHeader } from '../components/PublicHeader';
+import { usePageTitle } from '../lib';
 
 const VIEWS: Record<ProfileView, { title: string; empty: string; numbered?: boolean }> = {
     queue: { title: 'Queue', empty: 'Nothing queued up.', numbered: true },
@@ -40,6 +41,9 @@ export function ProfileGamesPage() {
     const notFound =
         !known || (games.error instanceof ApiRequestError && games.error.status === 404);
     const meta = known ? VIEWS[view as ProfileView] : undefined;
+    usePageTitle(
+        `${games.data?.username ?? username}'s ${meta?.title ?? 'Games'}${year ? ` in ${yearLabel(year)}` : ''}`
+    );
 
     return (
         <>

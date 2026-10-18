@@ -4,8 +4,10 @@ import { Link, useNavigate } from 'react-router';
 import { ApiRequestError } from '../api/client';
 import { useCreateList, useLists } from '../api/lists';
 import { List, Plus } from 'lucide-react';
+import { usePageTitle } from '../lib';
 
 export function ListsPage() {
+    usePageTitle('Lists');
     const lists = useLists();
     const create = useCreateList();
     const navigate = useNavigate();

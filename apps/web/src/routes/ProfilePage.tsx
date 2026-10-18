@@ -24,6 +24,7 @@ import { useProfile } from '../api/profile';
 import { Cover } from '../components/Cover';
 import { ProfileSkeleton } from '../components/PageSkeletons';
 import { PublicHeader } from '../components/PublicHeader';
+import { usePageTitle } from '../lib';
 
 function Games({ entries }: { entries: PublicEntryDto[] }) {
     if (entries.length === 0) return <p className="muted">Nothing here yet.</p>;
@@ -148,6 +149,7 @@ function Stats({ username, summary }: { username: string; summary: ProfileDto['s
 export function ProfilePage() {
     const { username = '' } = useParams();
     const profile = useProfile(username);
+    usePageTitle(`${profile.data?.username ?? username}'s Profile`);
     const notFound =
         profile.error instanceof ApiRequestError ? profile.error.status === 404 : false;
 

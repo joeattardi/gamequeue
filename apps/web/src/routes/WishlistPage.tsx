@@ -28,12 +28,13 @@ import { Cover } from '../components/Cover';
 import { LayoutToggle, useLayout } from '../components/LayoutToggle';
 import { ListLoading } from '../components/ListLoading';
 import { MetaLine } from '../components/MetaLine';
-import { yearOf } from '../lib';
+import { yearOf, usePageTitle } from '../lib';
 import { ChevronDown, ChevronUp, Gift, Plus, ShoppingCart, X } from 'lucide-react';
 
 const LAYOUT_KEY = 'gq_wishlist_layout';
 
 export function WishlistPage() {
+    usePageTitle('Wishlist');
     const wishlist = useWishlist();
     if (wishlist.isPending)
         return (

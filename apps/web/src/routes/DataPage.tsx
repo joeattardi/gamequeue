@@ -4,6 +4,7 @@ import { Link } from 'react-router';
 import { ApiRequestError } from '../api/client';
 import { useImport } from '../api/data';
 import { Database } from 'lucide-react';
+import { usePageTitle } from '../lib';
 
 interface Problem {
     path: string;
@@ -11,6 +12,7 @@ interface Problem {
 }
 
 export function DataPage() {
+    usePageTitle('Your data');
     const imp = useImport();
     const input = useRef<HTMLInputElement>(null);
     const [file, setFile] = useState<{ name: string; data: unknown }>();

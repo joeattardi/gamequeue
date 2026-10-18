@@ -11,12 +11,13 @@ import { Cover } from '../components/Cover';
 import { PickResult, Rolling, rollDelay } from '../components/PickResult';
 import { MetaLine } from '../components/MetaLine';
 import { PlatformTags } from '../components/PlatformIcon';
-import { useDebounced, yearOf } from '../lib';
+import { useDebounced, yearOf, usePageTitle } from '../lib';
 import { ChevronLeft, Dices, ListChecks, Plus, X } from 'lucide-react';
 
 const MIN_GAMES = 2;
 
 export function PickChoosePage() {
+    usePageTitle('Choose between games');
     const [chosen, setChosen] = useState<EntryDto[]>([]);
     const [seen, setSeen] = useState<number[]>([]);
     const [winner, setWinner] = useState<EntryDto>();

@@ -1,5 +1,6 @@
 import { Link } from 'react-router';
 import { ArrowRight, Dices, ListChecks, SlidersHorizontal } from 'lucide-react';
+import { usePageTitle } from '../lib';
 
 const MODES = [
     {
@@ -17,6 +18,7 @@ const MODES = [
 ];
 
 export function PickPage() {
+    usePageTitle('Random pick');
     return (
         <section>
             <div className="page-head">

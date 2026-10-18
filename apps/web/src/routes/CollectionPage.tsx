@@ -7,7 +7,7 @@ import { Cover } from '../components/Cover';
 import { GridSkeletons } from '../components/GridSkeletons';
 import { LayoutToggle, useLayout } from '../components/LayoutToggle';
 import { EntryChips, EntrySub, GameCard } from '../components/GameCard';
-import { useDebounced } from '../lib';
+import { useDebounced, usePageTitle } from '../lib';
 import { Library, ListTodo, Plus } from 'lucide-react';
 
 const SORT_LABELS: Record<(typeof ENTRY_SORTS)[number], string> = {
@@ -22,6 +22,7 @@ const LAYOUT_KEY = 'gq_collection_layout';
 
 export function CollectionPage({ view }: { view: 'all' | 'backlog' }) {
     const [params, setParams] = useSearchParams();
+    usePageTitle(view === 'backlog' ? 'Backlog' : 'Collection');
     const [adding, setAdding] = useState(false);
     const facets = useFacets();
     const [layout, setLayout] = useLayout(LAYOUT_KEY);

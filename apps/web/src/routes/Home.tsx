@@ -7,8 +7,10 @@ import { UpNext } from '../components/UpNext';
 import { SlotBay } from '../components/SlotBay';
 import { useSlots } from '../api/slots';
 import { Gamepad2, SlidersHorizontal } from 'lucide-react';
+import { usePageTitle } from '../lib';
 
 export function Home() {
+    usePageTitle('Now playing');
     const slots = useSlots();
     const [assigning, setAssigning] = useState<SlotDto | null>(null);
     const [managing, setManaging] = useState(false);

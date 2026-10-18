@@ -8,6 +8,7 @@ import { useQueue } from '../api/queue';
 import { ApiRequestError } from '../api/client';
 import { PickResult, Rolling, rollDelay } from '../components/PickResult';
 import { ChevronLeft, Dices } from 'lucide-react';
+import { usePageTitle } from '../lib';
 
 const MAX_TIMES = [
     { label: 'Any length', minutes: 0 },
@@ -25,6 +26,7 @@ const toggle = <T,>(set: Set<T>, v: T) => {
 };
 
 export function PickCriteriaPage() {
+    usePageTitle('Pick by criteria');
     const [params] = useSearchParams();
     const facets = useFacets();
     const lists = useLists();

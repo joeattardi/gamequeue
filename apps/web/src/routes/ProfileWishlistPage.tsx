@@ -4,12 +4,13 @@ import { ApiRequestError } from '../api/client';
 import { useProfileWishlist } from '../api/profile';
 import { PublicGameList } from '../components/PublicGameList';
 import { PublicHeader } from '../components/PublicHeader';
-import { platformLabel } from '../lib';
+import { platformLabel, usePageTitle } from '../lib';
 
 /** Public: someone's wishlist in their order, without their notes (`/u/:username/wishlist`). */
 export function ProfileWishlistPage() {
     const { username = '' } = useParams();
     const wishlist = useProfileWishlist(username);
+    usePageTitle(`${wishlist.data?.username ?? username}'s Wishlist`);
     const notFound = wishlist.error instanceof ApiRequestError && wishlist.error.status === 404;
 
     return (

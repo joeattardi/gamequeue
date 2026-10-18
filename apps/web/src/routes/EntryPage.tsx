@@ -11,12 +11,13 @@ import { ScoreGauge } from '../components/ScoreGauge';
 import { HistoryPanel, StatusPanel } from '../components/PlaythroughPanels';
 import { EntrySkeleton, SelectSkeleton } from '../components/PageSkeletons';
 import { PlatformTag } from '../components/PlatformIcon';
-import { formatMinutes, yearOf } from '../lib';
+import { formatMinutes, yearOf, usePageTitle } from '../lib';
 import { ArrowLeft, Trash2, X } from 'lucide-react';
 
 export function EntryPage() {
     const id = Number(useParams().id);
     const entry = useEntry(id);
+    usePageTitle(entry.data?.game.name);
     if (entry.isPending) return <EntrySkeleton />;
     if (entry.isError || !entry.data)
         return (

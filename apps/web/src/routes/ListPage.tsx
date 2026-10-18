@@ -37,7 +37,7 @@ import { ListLoading } from '../components/ListLoading';
 import { ResultSkeletons } from '../components/ResultSkeletons';
 import { MetaLine } from '../components/MetaLine';
 import { PlatformTags } from '../components/PlatformIcon';
-import { formatMinutes, useDebounced, yearOf } from '../lib';
+import { formatMinutes, useDebounced, yearOf, usePageTitle } from '../lib';
 import {
     ArrowLeft,
     ChevronDown,
@@ -54,6 +54,7 @@ const LAYOUT_KEY = 'gq_list_layout';
 export function ListPage() {
     const id = Number(useParams().id);
     const list = useList(id);
+    usePageTitle(list.data?.name);
     if (list.isPending)
         return <ListLoading icon={<List aria-hidden="true" />} layoutKey={LAYOUT_KEY} />;
     if (list.isError || !list.data)
@@ -70,6 +71,7 @@ export function ListPage() {
 
 export function QueuePage() {
     const queue = useQueue();
+    usePageTitle('Queue');
     if (queue.isPending)
         return (
             <ListLoading

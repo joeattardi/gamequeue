@@ -4,6 +4,7 @@ import { Link } from 'react-router';
 import { useLogin, useRegister } from '../api/auth';
 import { ApiRequestError } from '../api/client';
 import { Logo } from '../components/Logo';
+import { usePageTitle } from '../lib';
 
 export function AuthPage({ mode }: { mode: 'login' | 'register' }) {
     const isLogin = mode === 'login';
@@ -11,6 +12,7 @@ export function AuthPage({ mode }: { mode: 'login' | 'register' }) {
     const register = useRegister();
     const mutation = isLogin ? login : register;
     const [error, setError] = useState<string>();
+    usePageTitle(isLogin ? 'Sign in' : 'Create account');
 
     function onSubmit(e: FormEvent<HTMLFormElement>) {
         e.preventDefault();

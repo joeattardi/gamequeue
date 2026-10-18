@@ -46,3 +46,12 @@ export function daysBetween(from: string | null, to: string | null): number | nu
         (Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / 86_400_000
     );
 }
+
+const APP_NAME = 'GameQueue';
+
+/** Sets the tab title to "<title> | GameQueue" (plain "GameQueue" while there is no title yet). */
+export function usePageTitle(title?: string | null) {
+    useEffect(() => {
+        document.title = title ? `${title} | ${APP_NAME}` : APP_NAME;
+    }, [title]);
+}
