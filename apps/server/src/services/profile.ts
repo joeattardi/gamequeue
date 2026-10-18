@@ -8,14 +8,16 @@ import {
     type ProfileDto,
     type ProfileGamesDto,
     type ProfileView,
+    type ProfileWishlistDto,
     type PublicEntryDto
 } from '@gamequeue/shared';
 import type { Db } from '../db/client.js';
-import { entries, listItems, lists, playthroughs, users } from '../db/schema.js';
+import { entries, listItems, lists, playthroughs, users, wishlistItems } from '../db/schema.js';
 import { HttpError } from '../errors.js';
 import { listEntries } from './entries.js';
 import { getList, listLists } from './lists.js';
 import { listSlots } from './slots.js';
+import { findWishlist, wishlistItemsOf } from './wishlist.js';
 
 const toPublic = (e: EntryDto): PublicEntryDto => ({
     id: e.id,
@@ -57,6 +59,15 @@ export function getProfile(db: Db, username: string): ProfileDto {
             .where(and(eq(lists.userId, user.id), eq(lists.kind, 'queue')))
             .get()?.n ?? 0;
 
+    const wl = findWishlist(db, user.id);
+    const wishlisted = wl
+        ? (db
+              .select({ n: count() })
+              .from(wishlistItems)
+              .where(eq(wishlistItems.wishlistId, wl.id))
+              .get()?.n ?? 0)
+        : 0;
+
     return {
         username: user.username,
         joinedAt: user.createdAt,
@@ -64,11 +75,25 @@ export function getProfile(db: Db, username: string): ProfileDto {
             name: s.name,
             entry: s.entry ? toPublic(s.entry) : null
         })),
-        summary: { total: statuses.length, queued, byStatus },
+        summary: { total: statuses.length, queued, wishlisted, byStatus },
         lists: listLists(db, user.id).map((l) => ({
             id: l.id,
             name: l.name,
             entries: getList(db, user.id, l.id).entries.map(toPublic)
+        }))
+    };
+}
+
+/** Read-only like the rest: a user who never wishlisted anything has no wishlist row, which reads as empty. Notes stay private. */
+export function getProfileWishlist(db: Db, username: string): ProfileWishlistDto {
+    const user = requireUser(db, username);
+    const wl = findWishlist(db, user.id);
+    return {
+        username: user.username,
+        items: (wl ? wishlistItemsOf(db, wl.id) : []).map((i) => ({
+            igdbId: i.igdbId,
+            game: i.game,
+            platform: i.platform
         }))
     };
 }

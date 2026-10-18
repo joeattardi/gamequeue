@@ -4,6 +4,7 @@ import type {
     EntryDto,
     EntryQuery,
     FacetsDto,
+    GameDto,
     PatchEntryInput,
     PlatformDto,
     PlaythroughDto
@@ -28,8 +29,9 @@ import {
 } from '../db/schema.js';
 import { HttpError } from '../errors.js';
 import type { IgdbClient } from '../igdb/types.js';
-import { ensureGame, existingPlatformIds } from './games.js';
+import { ensureGame, existingPlatformIds, loadGames } from './games.js';
 import { toDto } from './playthrough-dto.js';
+import { dropFromWishlists } from './wishlist.js';
 
 const dedupeTags = (names: string[]) => {
     const seen = new Map<string, string>();
@@ -112,6 +114,8 @@ export async function addEntry(
                     .all()
             ].map((r) => r.name.toLowerCase());
         setTags(t, userId, row.id, input.tags ?? fromIgdb());
+        // Owning it ends the wish
+        dropFromWishlists(t, userId, input.igdbId);
         return row.id;
     });
     return getEntry(db, userId, id)!;
@@ -339,49 +343,13 @@ export function hydrate(db: Db, userId: number, ids: number[]): EntryDto[] {
         }
     }
 
-    const gameChunks: number[][] = [];
-    const gids = [...gameIds];
-    for (let i = 0; i < gids.length; i += 500) gameChunks.push(gids.slice(i, i + 500));
-    const gPlatforms = new Map<number, PlatformDto[]>();
-    const gGenres = new Map<number, string[]>();
-    const gThemes = new Map<number, string[]>();
-    const push = <K, V>(m: Map<K, V[]>, k: K, v: V) => (m.get(k) ?? m.set(k, []).get(k)!).push(v);
-    for (const chunk of gameChunks) {
-        for (const r of db
-            .select({ gameId: gamePlatforms.gameId, p: platforms })
-            .from(gamePlatforms)
-            .innerJoin(platforms, eq(platforms.id, gamePlatforms.platformId))
-            .where(inArray(gamePlatforms.gameId, chunk))
-            .orderBy(asc(platforms.name))
-            .all())
-            push(gPlatforms, r.gameId, r.p);
-        for (const r of db
-            .select({ gameId: gameGenres.gameId, name: genres.name })
-            .from(gameGenres)
-            .innerJoin(genres, eq(genres.id, gameGenres.genreId))
-            .where(inArray(gameGenres.gameId, chunk))
-            .orderBy(asc(genres.name))
-            .all())
-            push(gGenres, r.gameId, r.name);
-        for (const r of db
-            .select({ gameId: gameThemes.gameId, name: themes.name })
-            .from(gameThemes)
-            .innerJoin(themes, eq(themes.id, gameThemes.themeId))
-            .where(inArray(gameThemes.gameId, chunk))
-            .orderBy(asc(themes.name))
-            .all())
-            push(gThemes, r.gameId, r.name);
-    }
+    const gameDtos = loadGames(db, [...gameIds]);
 
     const minutes = (s: number | null) => (s === null ? null : Math.round(s / 60));
     return ids.flatMap((id) => {
         const r = rows.get(id);
         if (!r) return [];
         const { e, g } = r;
-        const hasTtb =
-            g.ttbHastilySeconds !== null ||
-            g.ttbNormallySeconds !== null ||
-            g.ttbCompletelySeconds !== null;
         return [
             {
                 id: e.id,
@@ -404,26 +372,7 @@ export function hydrate(db: Db, userId: number, ids: number[]): EntryDto[] {
                         .at(-1) ?? null,
                 platforms: owned.get(e.id) ?? [],
                 tags: tagMap.get(e.id) ?? [],
-                game: {
-                    id: g.id,
-                    name: g.name,
-                    slug: g.slug,
-                    summary: g.summary,
-                    releaseDate: g.releaseDate,
-                    coverImageId: g.coverImageId,
-                    igdbRating: g.igdbRating,
-                    genres: gGenres.get(g.id) ?? [],
-                    themes: gThemes.get(g.id) ?? [],
-                    platforms: gPlatforms.get(g.id) ?? [],
-                    ttb: hasTtb
-                        ? {
-                              hastily: minutes(g.ttbHastilySeconds),
-                              normally: minutes(g.ttbNormallySeconds),
-                              completely: minutes(g.ttbCompletelySeconds),
-                              count: g.ttbCount ?? 0
-                          }
-                        : null
-                }
+                game: gameDtos.get(g.id)!
             }
         ];
     });

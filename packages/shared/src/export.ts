@@ -86,6 +86,16 @@ export const exportEntrySchema = z
         }
     });
 
+/** A wishlisted game carries its own metadata snapshot: it isn't in `games`, so nothing else has it. */
+export const exportWishlistItemSchema = z.object({
+    igdbId: id,
+    game: exportGameSchema,
+    /** The platform the user means to buy it on */
+    platform: platformRef.nullable(),
+    note: z.string().max(1000),
+    addedAt: z.number().int().min(0)
+});
+
 export const exportFileSchema = z
     .object({
         format: z.literal(EXPORT_FORMAT),
@@ -115,7 +125,12 @@ export const exportFileSchema = z
          * IGDB ids in queue order. Added after v1 shipped: files without it are still valid v1,
          * and an older reader just ignores it.
          */
-        queue: z.array(id).max(50_000).default([])
+        queue: z.array(id).max(50_000).default([]),
+        /**
+         * The wishlist, in order. Also added after v1 shipped, so optional in the same way as `queue`.
+         * Only the first (today: only) wishlist is exported.
+         */
+        wishlist: z.array(exportWishlistItemSchema).max(50_000).default([])
     })
     .superRefine((f, ctx) => {
         const ids = new Set<number>();
@@ -147,6 +162,17 @@ export const exportFileSchema = z
                 });
             }
         });
+        const wished = new Set<number>();
+        f.wishlist.forEach((w, i) => {
+            if (wished.has(w.igdbId)) {
+                ctx.addIssue({
+                    code: 'custom',
+                    path: ['wishlist', i, 'igdbId'],
+                    message: `Game ${w.igdbId} appears twice`
+                });
+            }
+            wished.add(w.igdbId);
+        });
         f.lists.forEach((l, i) =>
             l.games.forEach((g, j) => {
                 if (!ids.has(g)) {
@@ -162,6 +188,7 @@ export const exportFileSchema = z
 
 export type ExportFile = z.infer<typeof exportFileSchema>;
 export type ExportEntry = z.infer<typeof exportEntrySchema>;
+export type ExportWishlistItem = z.infer<typeof exportWishlistItemSchema>;
 
 export interface ImportReport {
     /** True when nothing was written: this is a preview of what importing would do */
@@ -171,6 +198,8 @@ export interface ImportReport {
     lists: { created: number; itemsAdded: number };
     /** Games added to the end of the queue */
     queue: { added: number };
+    /** Games added to the end of the wishlist */
+    wishlist: { added: number };
     slots: { created: number; filled: number };
     /** Things worth knowing, e.g. values of yours that were kept over the file's */
     notes: string[];

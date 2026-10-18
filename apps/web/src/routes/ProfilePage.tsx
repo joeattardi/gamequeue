@@ -9,6 +9,7 @@ import {
     Ban,
     CalendarDays,
     Gamepad2,
+    Gift,
     Library,
     ListOrdered,
     ListTodo,
@@ -113,6 +114,13 @@ function Stats({ username, summary }: { username: string; summary: ProfileDto['s
                     icon={<ListOrdered aria-hidden="true" />}
                     value={summary.queued}
                     label="In queue"
+                />
+                <Counter
+                    className="counter--wishlisted"
+                    to={`/u/${username}/wishlist`}
+                    icon={<Gift aria-hidden="true" />}
+                    value={summary.wishlisted}
+                    label="On wishlist"
                 />
             </ul>
             {summary.total > 0 && (

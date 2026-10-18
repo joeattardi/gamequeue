@@ -27,6 +27,8 @@ export interface SearchResultDto {
     platforms: PlatformDto[];
     /** Set when the game is already in the user's collection */
     entryId: number | null;
+    /** On the user's wishlist */
+    wishlisted: boolean;
 }
 
 export interface GameDto {

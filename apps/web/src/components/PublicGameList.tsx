@@ -1,8 +1,18 @@
-import type { PublicEntryDto } from '@gamequeue/shared';
+import type { EntryStatus, GameDto } from '@gamequeue/shared';
 import { LayoutGrid, List } from 'lucide-react';
 import { useState, type CSSProperties } from 'react';
 import { Cover } from './Cover';
 import { StarDisplay } from './StarRating';
+
+/** What this list shows of a game; a `PublicEntryDto` fits, and so does a wishlist item. */
+export interface PublicListItem {
+    id: number;
+    game: GameDto;
+    status?: EntryStatus;
+    rating?: number | null;
+    /** A short line under the title, e.g. the platform a wishlisted game is wanted on */
+    caption?: string;
+}
 
 type Layout = 'grid' | 'list';
 const LAYOUT_KEY = 'gq_public_layout';
@@ -27,7 +37,7 @@ export function PublicGameList({
     empty
 }: {
     /** Undefined while loading: the selector stays, the list shows skeletons */
-    entries: PublicEntryDto[] | undefined;
+    entries: PublicListItem[] | undefined;
     /** Show each game's position, for ordered lists such as the queue */
     numbered?: boolean;
     empty: string;
@@ -76,10 +86,7 @@ export function PublicGameList({
                         <Cover imageId={e.game.coverImageId} name={e.game.name} />
                         <div className="public-grid__info">
                             <strong>{e.game.name}</strong>
-                            <div>
-                                <span className={`badge badge--${e.status}`}>{e.status}</span>
-                                {e.rating !== null && <StarDisplay value={e.rating} />}
-                            </div>
+                            <Details item={e} />
                         </div>
                         {numbered && <span className="public-grid__pos">{i + 1}</span>}
                     </li>
@@ -95,10 +102,7 @@ export function PublicGameList({
                         <Cover imageId={e.game.coverImageId} name={e.game.name} />
                         <div>
                             <strong>{e.game.name}</strong>
-                            <div>
-                                <span className={`badge badge--${e.status}`}>{e.status}</span>
-                                {e.rating !== null && <StarDisplay value={e.rating} />}
-                            </div>
+                            <Details item={e} />
                         </div>
                     </li>
                 ))}
@@ -109,6 +113,16 @@ export function PublicGameList({
             {toggle}
             {content}
         </>
+    );
+}
+
+function Details({ item }: { item: PublicListItem }) {
+    return (
+        <div>
+            {item.status && <span className={`badge badge--${item.status}`}>{item.status}</span>}
+            {item.rating != null && <StarDisplay value={item.rating} />}
+            {item.caption && <span className="muted">{item.caption}</span>}
+        </div>
     );
 }
 

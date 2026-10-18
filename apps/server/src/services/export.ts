@@ -1,9 +1,10 @@
-import { asc, eq, sql } from 'drizzle-orm';
+import { asc, eq, inArray, sql } from 'drizzle-orm';
 import {
     EXPORT_FORMAT,
     EXPORT_VERSION,
     type ExportEntry,
-    type ExportFile
+    type ExportFile,
+    type ExportWishlistItem
 } from '@gamequeue/shared';
 import type { Db } from '../db/client.js';
 import {
@@ -21,8 +22,10 @@ import {
     playthroughs,
     slots,
     tags,
-    themes
+    themes,
+    wishlistItems
 } from '../db/schema.js';
+import { findWishlist } from './wishlist.js';
 
 const group = <K, V>(rows: { key: K; value: V }[]) => {
     const m = new Map<K, V[]>();
@@ -42,13 +45,29 @@ export function buildExport(db: Db, userId: number, now = new Date()): ExportFil
         .orderBy(asc(entries.id))
         .all();
 
+    const wishlist = findWishlist(db, userId);
+    const wished = wishlist
+        ? db
+              .select({ item: wishlistItems, g: games, platform: platforms })
+              .from(wishlistItems)
+              .innerJoin(games, eq(games.id, wishlistItems.gameId))
+              .leftJoin(platforms, eq(platforms.id, wishlistItems.platformId))
+              .where(eq(wishlistItems.wishlistId, wishlist.id))
+              .orderBy(asc(wishlistItems.position))
+              .all()
+        : [];
+    // Game metadata is snapshotted for everything in the file: owned games and wishlisted ones.
+    // A subquery rather than an id list, so there is nothing to chunk.
+    const wantedGames = sql`(select game_id from entries where user_id = ${userId}
+        union select wi.game_id from wishlist_items wi
+            join wishlists w on w.id = wi.wishlist_id where w.user_id = ${userId})`;
+
     const gamePlats = group(
         db
             .select({ key: gamePlatforms.gameId, value: platforms })
             .from(gamePlatforms)
-            .innerJoin(entries, eq(entries.gameId, gamePlatforms.gameId))
             .innerJoin(platforms, eq(platforms.id, gamePlatforms.platformId))
-            .where(mine)
+            .where(inArray(gamePlatforms.gameId, wantedGames))
             .orderBy(asc(platforms.id))
             .all()
     );
@@ -56,9 +75,8 @@ export function buildExport(db: Db, userId: number, now = new Date()): ExportFil
         db
             .select({ key: gameGenres.gameId, value: genres })
             .from(gameGenres)
-            .innerJoin(entries, eq(entries.gameId, gameGenres.gameId))
             .innerJoin(genres, eq(genres.id, gameGenres.genreId))
-            .where(mine)
+            .where(inArray(gameGenres.gameId, wantedGames))
             .orderBy(asc(genres.id))
             .all()
     );
@@ -66,9 +84,8 @@ export function buildExport(db: Db, userId: number, now = new Date()): ExportFil
         db
             .select({ key: gameThemes.gameId, value: themes })
             .from(gameThemes)
-            .innerJoin(entries, eq(entries.gameId, gameThemes.gameId))
             .innerJoin(themes, eq(themes.id, gameThemes.themeId))
-            .where(mine)
+            .where(inArray(gameThemes.gameId, wantedGames))
             .orderBy(asc(themes.id))
             .all()
     );
@@ -110,32 +127,34 @@ export function buildExport(db: Db, userId: number, now = new Date()): ExportFil
     });
     const igdbIdOfEntry = new Map(rows.map(({ e }) => [e.id, e.gameId]));
 
+    const snapshot = (g: typeof games.$inferSelect) => ({
+        name: g.name,
+        slug: g.slug,
+        summary: g.summary,
+        releaseDate: g.releaseDate,
+        coverImageId: g.coverImageId,
+        igdbRating: g.igdbRating,
+        igdbRatingCount: g.igdbRatingCount,
+        gameType: g.gameType,
+        platforms: (gamePlats.get(g.id) ?? []).map(ref),
+        genres: (gameGen.get(g.id) ?? []).map((x) => ({ id: x.id, name: x.name })),
+        themes: (gameThem.get(g.id) ?? []).map((x) => ({ id: x.id, name: x.name })),
+        ttb:
+            g.ttbHastilySeconds === null &&
+            g.ttbNormallySeconds === null &&
+            g.ttbCompletelySeconds === null
+                ? null
+                : {
+                      hastilySeconds: g.ttbHastilySeconds,
+                      normallySeconds: g.ttbNormallySeconds,
+                      completelySeconds: g.ttbCompletelySeconds,
+                      count: g.ttbCount ?? 0
+                  }
+    });
+
     const gameEntries: ExportEntry[] = rows.map(({ e, g }) => ({
         igdbId: g.id,
-        game: {
-            name: g.name,
-            slug: g.slug,
-            summary: g.summary,
-            releaseDate: g.releaseDate,
-            coverImageId: g.coverImageId,
-            igdbRating: g.igdbRating,
-            igdbRatingCount: g.igdbRatingCount,
-            gameType: g.gameType,
-            platforms: (gamePlats.get(g.id) ?? []).map(ref),
-            genres: (gameGen.get(g.id) ?? []).map((x) => ({ id: x.id, name: x.name })),
-            themes: (gameThem.get(g.id) ?? []).map((x) => ({ id: x.id, name: x.name })),
-            ttb:
-                g.ttbHastilySeconds === null &&
-                g.ttbNormallySeconds === null &&
-                g.ttbCompletelySeconds === null
-                    ? null
-                    : {
-                          hastilySeconds: g.ttbHastilySeconds,
-                          normallySeconds: g.ttbNormallySeconds,
-                          completelySeconds: g.ttbCompletelySeconds,
-                          count: g.ttbCount ?? 0
-                      }
-        },
+        game: snapshot(g),
         status: e.status,
         rating: e.rating,
         notes: e.notes,
@@ -193,6 +212,13 @@ export function buildExport(db: Db, userId: number, now = new Date()): ExportFil
         lists: listRows
             .filter((l) => l.kind === 'list')
             .map((l) => ({ name: l.name, games: igdbIds(items.get(l.id)) })),
-        queue: igdbIds(queueRow && items.get(queueRow.id))
+        queue: igdbIds(queueRow && items.get(queueRow.id)),
+        wishlist: wished.map(({ item, g, platform }): ExportWishlistItem => ({
+            igdbId: g.id,
+            game: snapshot(g),
+            platform: platform ? ref(platform) : null,
+            note: item.note,
+            addedAt: item.addedAt
+        }))
     };
 }

@@ -3,7 +3,7 @@ import { Hono } from 'hono';
 import { searchQuerySchema, type SearchResultDto } from '@gamequeue/shared';
 import type { AppDeps } from '../app.js';
 import { requireAuth, type AuthVars } from '../auth/middleware.js';
-import { entries } from '../db/schema.js';
+import { entries, wishlistItems, wishlists } from '../db/schema.js';
 import { validate } from '../http.js';
 import { TtlCache } from '../igdb/search-cache.js';
 import type { IgdbSearchHit } from '../igdb/types.js';
@@ -22,7 +22,7 @@ export function igdbRoutes({ db, config, igdb }: AppDeps) {
             hits = await callIgdb(() => requireIgdb(igdb).search(q));
             cache.set(key, hits);
         }
-        // Flag games already collected (per user, so never cached)
+        // Flag games already collected (per user, so never cached), and wishlisted ones
         const owned = hits.length
             ? new Map(
                   db
@@ -41,6 +41,25 @@ export function igdbRoutes({ db, config, igdb }: AppDeps) {
                       .map((e) => [e.gameId, e.id])
               )
             : new Map<number, number>();
+        const wished = new Set(
+            hits.length
+                ? db
+                      .select({ gameId: wishlistItems.gameId })
+                      .from(wishlistItems)
+                      .innerJoin(wishlists, eq(wishlists.id, wishlistItems.wishlistId))
+                      .where(
+                          and(
+                              eq(wishlists.userId, c.get('user').id),
+                              inArray(
+                                  wishlistItems.gameId,
+                                  hits.map((h) => h.id)
+                              )
+                          )
+                      )
+                      .all()
+                      .map((r) => r.gameId)
+                : []
+        );
         const results: SearchResultDto[] = hits.map((h) => ({
             igdbId: h.id,
             name: h.name,
@@ -48,7 +67,8 @@ export function igdbRoutes({ db, config, igdb }: AppDeps) {
             coverImageId: h.coverImageId,
             igdbRating: h.rating,
             platforms: h.platforms,
-            entryId: owned.get(h.id) ?? null
+            entryId: owned.get(h.id) ?? null,
+            wishlisted: wished.has(h.id)
         }));
         return c.json({ results });
     });

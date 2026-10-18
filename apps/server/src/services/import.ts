@@ -10,12 +10,14 @@ import {
     lists,
     playthroughs,
     slots,
-    tags
+    tags,
+    wishlistItems
 } from '../db/schema.js';
 import { saveGame, upsertPlatforms } from './games.js';
 import { setTags } from './entries.js';
 import { ensureQueue } from './lists.js';
 import { syncStatus } from './playthroughs.js';
+import { dropFromWishlists, ensureWishlist } from './wishlist.js';
 
 const MAX_NOTES = 50;
 
@@ -45,6 +47,7 @@ export function importData(
         playthroughs: { added: 0, duplicates: 0, skipped: 0 },
         lists: { created: 0, itemsAdded: 0 },
         queue: { added: 0 },
+        wishlist: { added: 0 },
         slots: { created: 0, filled: 0 },
         notes: [],
         moreNotes: 0
@@ -109,6 +112,7 @@ function merge(
 
     mergeLists(db, userId, file, entryIdByGame, report);
     mergeSlots(db, userId, file, entryIdByGame, nameByGame, report, note);
+    mergeWishlist(db, userId, file, cached, report, note, now);
 }
 
 /** Returns the entry id. */
@@ -146,6 +150,8 @@ function mergeGame(
             .values(platformIds.map((platformId) => ({ entryId, platformId })))
             .run();
         setTags(db, userId, entryId, g.tags);
+        // Owning it ends the wish
+        dropFromWishlists(db, userId, g.igdbId);
         report.games.added++;
     } else {
         entryId = existing.id;
@@ -405,5 +411,87 @@ function mergeSlots(
         }
         db.update(slots).set({ entryId }).where(eq(slots.id, slot.id)).run();
         report.slots.filled++;
+    }
+}
+
+/**
+ * Adds wishlisted games you don't have to the end of your wishlist. Games you own are skipped
+ * (owning ends the wish), ones already wishlisted keep their place, and only empty platform/note
+ * fields are filled in.
+ */
+function mergeWishlist(
+    db: Db,
+    userId: number,
+    file: ExportFile,
+    cached: Set<number>,
+    report: ImportReport,
+    note: (m: string) => void,
+    now: number
+) {
+    if (file.wishlist.length === 0) return;
+    const owned = new Set(
+        db
+            .select({ gameId: entries.gameId })
+            .from(entries)
+            .where(eq(entries.userId, userId))
+            .all()
+            .map((r) => r.gameId)
+    );
+    const wishlistId = ensureWishlist(db, userId).id;
+    const present = new Map(
+        db
+            .select()
+            .from(wishlistItems)
+            .where(eq(wishlistItems.wishlistId, wishlistId))
+            .all()
+            .map((r) => [r.gameId, r])
+    );
+    let position =
+        (db
+            .select({ n: max(wishlistItems.position) })
+            .from(wishlistItems)
+            .where(eq(wishlistItems.wishlistId, wishlistId))
+            .get()!.n ?? -1) + 1;
+
+    for (const w of file.wishlist) {
+        if (owned.has(w.igdbId)) {
+            note(`${w.game.name} is in your collection, so it wasn't added to your wishlist`);
+            continue;
+        }
+        if (!cached.has(w.igdbId)) {
+            saveGame(db, { id: w.igdbId, ...w.game }, now, { keepExistingPlatforms: true });
+            cached.add(w.igdbId);
+        }
+        if (w.platform) upsertPlatforms(db, [w.platform], { keepExisting: true });
+
+        const have = present.get(w.igdbId);
+        if (have) {
+            const set: Partial<typeof wishlistItems.$inferInsert> = {};
+            if (have.platformId === null && w.platform) set.platformId = w.platform.id;
+            if (have.note === '' && w.note !== '') set.note = w.note;
+            if (Object.keys(set).length > 0)
+                db.update(wishlistItems)
+                    .set(set)
+                    .where(
+                        and(
+                            eq(wishlistItems.wishlistId, wishlistId),
+                            eq(wishlistItems.gameId, w.igdbId)
+                        )
+                    )
+                    .run();
+            continue;
+        }
+        db.insert(wishlistItems)
+            .values({
+                wishlistId,
+                gameId: w.igdbId,
+                position: position++,
+                platformId: w.platform?.id ?? null,
+                note: w.note,
+                addedAt: w.addedAt || now
+            })
+            .run();
+        present.set(w.igdbId, {} as never);
+        report.wishlist.added++;
     }
 }

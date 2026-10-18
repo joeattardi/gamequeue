@@ -1,5 +1,5 @@
-import { eq, inArray, sql } from 'drizzle-orm';
-import type { PlatformDto } from '@gamequeue/shared';
+import { asc, eq, inArray, sql } from 'drizzle-orm';
+import type { GameDto, PlatformDto } from '@gamequeue/shared';
 import type { Db } from '../db/client.js';
 import {
     gameGenres,
@@ -147,3 +147,71 @@ export const existingPlatformIds = (db: Db, ids: number[]) =>
             .all()
             .map((r) => r.id)
     );
+
+const minutes = (s: number | null) => (s === null ? null : Math.round(s / 60));
+
+/** Loads the shared-cache `GameDto` for each given game id (a few queries, however many games). */
+export function loadGames(db: Db, gameIds: number[]): Map<number, GameDto> {
+    const out = new Map<number, GameDto>();
+    if (gameIds.length === 0) return out;
+    const gPlatforms = new Map<number, PlatformDto[]>();
+    const gGenres = new Map<number, string[]>();
+    const gThemes = new Map<number, string[]>();
+    const push = <K, V>(m: Map<K, V[]>, k: K, v: V) => (m.get(k) ?? m.set(k, []).get(k)!).push(v);
+    const rows: (typeof games.$inferSelect)[] = [];
+    for (let i = 0; i < gameIds.length; i += 500) {
+        const chunk = gameIds.slice(i, i + 500);
+        rows.push(...db.select().from(games).where(inArray(games.id, chunk)).all());
+        for (const r of db
+            .select({ gameId: gamePlatforms.gameId, p: platforms })
+            .from(gamePlatforms)
+            .innerJoin(platforms, eq(platforms.id, gamePlatforms.platformId))
+            .where(inArray(gamePlatforms.gameId, chunk))
+            .orderBy(asc(platforms.name))
+            .all())
+            push(gPlatforms, r.gameId, r.p);
+        for (const r of db
+            .select({ gameId: gameGenres.gameId, name: genres.name })
+            .from(gameGenres)
+            .innerJoin(genres, eq(genres.id, gameGenres.genreId))
+            .where(inArray(gameGenres.gameId, chunk))
+            .orderBy(asc(genres.name))
+            .all())
+            push(gGenres, r.gameId, r.name);
+        for (const r of db
+            .select({ gameId: gameThemes.gameId, name: themes.name })
+            .from(gameThemes)
+            .innerJoin(themes, eq(themes.id, gameThemes.themeId))
+            .where(inArray(gameThemes.gameId, chunk))
+            .orderBy(asc(themes.name))
+            .all())
+            push(gThemes, r.gameId, r.name);
+    }
+    for (const g of rows) {
+        const hasTtb =
+            g.ttbHastilySeconds !== null ||
+            g.ttbNormallySeconds !== null ||
+            g.ttbCompletelySeconds !== null;
+        out.set(g.id, {
+            id: g.id,
+            name: g.name,
+            slug: g.slug,
+            summary: g.summary,
+            releaseDate: g.releaseDate,
+            coverImageId: g.coverImageId,
+            igdbRating: g.igdbRating,
+            genres: gGenres.get(g.id) ?? [],
+            themes: gThemes.get(g.id) ?? [],
+            platforms: gPlatforms.get(g.id) ?? [],
+            ttb: hasTtb
+                ? {
+                      hastily: minutes(g.ttbHastilySeconds),
+                      normally: minutes(g.ttbNormallySeconds),
+                      completely: minutes(g.ttbCompletelySeconds),
+                      count: g.ttbCount ?? 0
+                  }
+                : null
+        });
+    }
+    return out;
+}

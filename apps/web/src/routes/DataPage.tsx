@@ -83,8 +83,8 @@ export function DataPage() {
                 <section aria-labelledby="export-h" className="panel">
                     <h2 id="export-h">Export</h2>
                     <p>
-                        One JSON file with your collection, playthroughs, slots, lists and tags,
-                        plus the game details needed to restore it without IGDB.
+                        One JSON file with your collection, playthroughs, slots, lists, queue,
+                        wishlist and tags, plus the game details needed to restore it without IGDB.
                     </p>
                     <div>
                         <a className="btn btn--primary" href="/api/data/export" download>
@@ -180,7 +180,7 @@ export function DataPage() {
 }
 
 function ReportSummary({ report }: { report: ImportReport }) {
-    const { games, playthroughs, lists, queue, slots } = report;
+    const { games, playthroughs, lists, queue, wishlist, slots } = report;
     const verb = report.dryRun ? 'Will add' : 'Added';
     const nothing =
         games.added +
@@ -189,6 +189,7 @@ function ReportSummary({ report }: { report: ImportReport }) {
             lists.created +
             lists.itemsAdded +
             queue.added +
+            wishlist.added +
             slots.created +
             slots.filled ===
         0;
@@ -209,6 +210,7 @@ function ReportSummary({ report }: { report: ImportReport }) {
                 <Stat label={`${verb} lists`} value={lists.created} />
                 <Stat label={`${verb} list entries`} value={lists.itemsAdded} />
                 <Stat label={`${verb} to queue`} value={queue.added} />
+                <Stat label={`${verb} to wishlist`} value={wishlist.added} />
                 <Stat label={`${verb} slots`} value={slots.created} />
                 <Stat label="Slots filled" value={slots.filled} />
             </dl>

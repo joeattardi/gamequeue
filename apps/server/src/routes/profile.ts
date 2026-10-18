@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 import { isFinishedYear, PROFILE_VIEWS, usernameSchema, type ProfileView } from '@gamequeue/shared';
 import type { AppDeps } from '../app.js';
 import { HttpError } from '../errors.js';
-import { getProfile, getProfileGames } from '../services/profile.js';
+import { getProfile, getProfileGames, getProfileWishlist } from '../services/profile.js';
 
 /** Public: deliberately has no requireAuth. */
 export function profileRoutes({ db }: AppDeps) {
@@ -14,6 +14,10 @@ export function profileRoutes({ db }: AppDeps) {
     };
     r.get('/:username', (c) =>
         c.json({ profile: getProfile(db, parseUsername(c.req.param('username'))) })
+    );
+    // Registered before "/:username/:view" so "wishlist" isn't read as a view
+    r.get('/:username/wishlist', (c) =>
+        c.json({ wishlist: getProfileWishlist(db, parseUsername(c.req.param('username'))) })
     );
     r.get('/:username/:view', (c) => {
         const view = c.req.param('view') as ProfileView;

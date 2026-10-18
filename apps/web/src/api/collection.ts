@@ -62,7 +62,8 @@ const COLLECTION_KEYS = [
     'slots',
     'lists',
     'list',
-    'queue'
+    'queue',
+    'wishlist'
 ];
 
 export function useInvalidateCollection() {

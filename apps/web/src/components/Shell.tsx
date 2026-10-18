@@ -2,7 +2,17 @@ import type { UserDto } from '@gamequeue/shared';
 import { Link, NavLink, Outlet } from 'react-router';
 import { useLogout } from '../api/auth';
 import { Logo } from './Logo';
-import { Database, Dices, House, Library, List, ListOrdered, ListTodo, LogOut } from 'lucide-react';
+import {
+    Database,
+    Dices,
+    Gift,
+    House,
+    Library,
+    List,
+    ListOrdered,
+    ListTodo,
+    LogOut
+} from 'lucide-react';
 
 export function Shell({ user }: { user: UserDto }) {
     const logout = useLogout();
@@ -33,6 +43,10 @@ export function Shell({ user }: { user: UserDto }) {
                     <NavLink to="/lists">
                         <List />
                         Lists
+                    </NavLink>
+                    <NavLink to="/wishlist">
+                        <Gift />
+                        Wishlist
                     </NavLink>
                     <NavLink to="/pick">
                         <Dices />

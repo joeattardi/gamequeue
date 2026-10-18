@@ -1137,6 +1137,23 @@ select:disabled {
 .row-item__actions .btn {
     padding: 8px 12px;
 }
+.wish-fields {
+    min-width: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    width: 100%;
+}
+.wish-fields .field {
+    min-width: 0;
+    max-width: 100%;
+}
+.wish-fields select {
+    max-width: 100%;
+}
+.wish-fields .field:last-child {
+    flex: 1 1 14rem;
+}
 .handle {
     all: unset;
     cursor: grab;

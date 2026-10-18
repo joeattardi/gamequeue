@@ -2,6 +2,7 @@ import type { SearchResultDto } from '@gamequeue/shared';
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { useAddEntry, useAllPlatforms, useGameSearch } from '../api/collection';
+import { useAddToWishlist } from '../api/wishlist';
 import { ApiRequestError } from '../api/client';
 import { useDebounced } from '../lib';
 import { MetaLine } from './MetaLine';
@@ -12,7 +13,24 @@ import { useModalDialog } from './useModalDialog';
 import { ScoreGauge } from './ScoreGauge';
 import { SearchX, X } from 'lucide-react';
 
-export function AddGameDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
+export type AddGameMode = 'collection' | 'wishlist';
+
+/**
+ * Searches IGDB and adds a game. In `wishlist` mode a click wishlists the game and the dialog
+ * stays open for more. `initial` skips the search and goes straight to choosing platforms, for
+ * moving a wishlisted game into the collection.
+ */
+export function AddGameDialog({
+    open,
+    onClose,
+    mode = 'collection',
+    initial
+}: {
+    open: boolean;
+    onClose: () => void;
+    mode?: AddGameMode;
+    initial?: { game: SearchResultDto; platformId: number | null };
+}) {
     const ref = useModalDialog(open);
 
     return (
@@ -23,16 +41,27 @@ export function AddGameDialog({ open, onClose }: { open: boolean; onClose: () =>
             aria-labelledby="add-title"
             onClick={(e) => e.target === ref.current && onClose()}
         >
-            {open && <AddGameBody onDone={onClose} />}
+            {open && <AddGameBody onDone={onClose} mode={mode} initial={initial} />}
         </dialog>
     );
 }
 
-function AddGameBody({ onDone }: { onDone: () => void }) {
+function AddGameBody({
+    onDone,
+    mode,
+    initial
+}: {
+    onDone: () => void;
+    mode: AddGameMode;
+    initial?: { game: SearchResultDto; platformId: number | null };
+}) {
+    const wishlisting = mode === 'wishlist';
+    const addToWishlist = useAddToWishlist();
+    const [wishError, setWishError] = useState<string>();
     const [text, setText] = useState('');
     const q = useDebounced(text.trim(), 300);
     const search = useGameSearch(q);
-    const [picked, setPicked] = useState<SearchResultDto>();
+    const [picked, setPicked] = useState<SearchResultDto | undefined>(initial?.game);
     const searching = text.trim().length >= 2 && (search.isFetching || q !== text.trim());
 
     const status =
@@ -54,14 +83,23 @@ function AddGameBody({ onDone }: { onDone: () => void }) {
         <div className="dialog__body dialog__body--fill">
             <div className="dialog__head">
                 <h2 id="add-title">
-                    {picked ? 'Which platforms do you own it on?' : 'Add a game'}
+                    {picked
+                        ? 'Which platforms do you own it on?'
+                        : wishlisting
+                          ? 'Add to wishlist'
+                          : 'Add a game'}
                 </h2>
                 <button className="btn btn--ghost" onClick={onDone} aria-label="Close">
                     <X />
                 </button>
             </div>
             {picked ? (
-                <PlatformStep game={picked} onBack={() => setPicked(undefined)} onDone={onDone} />
+                <PlatformStep
+                    game={picked}
+                    initialPlatformId={initial?.platformId ?? null}
+                    onBack={initial ? onDone : () => setPicked(undefined)}
+                    onDone={onDone}
+                />
             ) : (
                 <>
                     <label className="field">
@@ -80,6 +118,9 @@ function AddGameBody({ onDone }: { onDone: () => void }) {
                     <div aria-live="polite" className={visible ? 'search-status muted' : 'sr-only'}>
                         {status}
                     </div>
+                    <p className="form-error" role="alert">
+                        {wishError}
+                    </p>
                     <ul className="results" aria-busy={searching}>
                         {searching && <ResultSkeletons />}
                         {noResults && (
@@ -98,8 +139,26 @@ function AddGameBody({ onDone }: { onDone: () => void }) {
                                 <li key={r.igdbId}>
                                     <button
                                         className="result"
-                                        disabled={r.entryId !== null}
-                                        onClick={() => setPicked(r)}
+                                        disabled={
+                                            r.entryId !== null ||
+                                            (wishlisting &&
+                                                (r.wishlisted || addToWishlist.isPending))
+                                        }
+                                        onClick={() => {
+                                            if (!wishlisting) return setPicked(r);
+                                            setWishError(undefined);
+                                            addToWishlist.mutate(
+                                                { igdbId: r.igdbId },
+                                                {
+                                                    onError: (e) =>
+                                                        setWishError(
+                                                            e instanceof ApiRequestError
+                                                                ? e.message
+                                                                : "Couldn't add the game."
+                                                        )
+                                                }
+                                            );
+                                        }}
                                     >
                                         <Cover
                                             imageId={r.coverImageId}
@@ -120,8 +179,12 @@ function AddGameBody({ onDone }: { onDone: () => void }) {
                                                 />
                                             </span>
                                         </span>
-                                        {r.entryId !== null && (
+                                        {r.entryId !== null ? (
                                             <span className="badge">In collection</span>
+                                        ) : r.wishlisted ? (
+                                            <span className="badge">On wishlist</span>
+                                        ) : (
+                                            wishlisting && <span className="badge">+ Add</span>
                                         )}
                                         {/* A fixed-width slot keeps the scores lined up, rated or not */}
                                         <span className="result__score">
@@ -145,10 +208,13 @@ function AddGameBody({ onDone }: { onDone: () => void }) {
 
 function PlatformStep({
     game,
+    initialPlatformId,
     onBack,
     onDone
 }: {
     game: SearchResultDto;
+    /** A platform to tick up front, e.g. the one a wishlisted game was meant for */
+    initialPlatformId: number | null;
     onBack: () => void;
     onDone: () => void;
 }) {
@@ -156,7 +222,14 @@ function PlatformStep({
     const add = useAddEntry();
     const all = useAllPlatforms();
     const [chosen, setChosen] = useState<Set<number>>(
-        () => new Set(game.platforms.length === 1 ? [game.platforms[0]!.id] : [])
+        () =>
+            new Set(
+                initialPlatformId !== null
+                    ? [initialPlatformId]
+                    : game.platforms.length === 1
+                      ? [game.platforms[0]!.id]
+                      : []
+            )
     );
     const [error, setError] = useState<string>();
     const known = new Map(game.platforms.map((p) => [p.id, p]));

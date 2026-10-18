@@ -1,5 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
-import type { ProfileDto, ProfileGamesDto, ProfileView } from '@gamequeue/shared';
+import type {
+    ProfileDto,
+    ProfileGamesDto,
+    ProfileView,
+    ProfileWishlistDto
+} from '@gamequeue/shared';
 import { api } from './client';
 
 export const useProfile = (username: string) =>
@@ -26,4 +31,13 @@ export const useProfileGames = (
             ).games,
         retry: false,
         enabled
+    });
+
+export const useProfileWishlist = (username: string) =>
+    useQuery({
+        queryKey: ['profile', username, 'wishlist'],
+        queryFn: async () =>
+            (await api<{ wishlist: ProfileWishlistDto }>(`/profiles/${username}/wishlist`))
+                .wishlist,
+        retry: false
     });
