@@ -1567,6 +1567,47 @@ a.game-row:hover {
     padding: 0;
     margin-bottom: 4px;
 }
+.chip-group {
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+}
+.chip-group__summary {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    min-height: 44px;
+    cursor: pointer;
+    list-style: none;
+}
+.chip-group__summary::-webkit-details-marker {
+    display: none;
+}
+.chip-group__summary svg {
+    width: 18px;
+    height: 18px;
+    transition: transform 0.15s;
+}
+.chip-group[open] > .chip-group__summary svg {
+    transform: rotate(90deg);
+}
+.chip-group__summary .field-legend {
+    width: auto;
+    margin: 0;
+}
+.chip-group__count {
+    margin-left: auto;
+    font-size: 0.85rem;
+    color: var(--accent);
+}
+.chip-group > .checks {
+    padding: 0 12px 12px;
+}
+@media (prefers-reduced-motion: reduce) {
+    .chip-group__summary svg {
+        transition: none;
+    }
+}
 .pick-result {
     grid-template-columns: 1fr;
     margin-top: 8px;

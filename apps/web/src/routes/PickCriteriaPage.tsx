@@ -7,7 +7,7 @@ import { useLists, usePick } from '../api/lists';
 import { useQueue } from '../api/queue';
 import { ApiRequestError } from '../api/client';
 import { PickResult, Rolling, rollDelay } from '../components/PickResult';
-import { ChevronLeft, Dices } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Dices } from 'lucide-react';
 import { usePageTitle } from '../lib';
 
 const MAX_TIMES = [
@@ -240,18 +240,27 @@ function Chips({
 }) {
     if (!items?.length) return null;
     return (
-        <fieldset className="checks">
-            <legend className="field-legend">{legend}</legend>
-            {items.map((i) => (
-                <label key={i.key} className="check">
-                    <input
-                        type="checkbox"
-                        checked={(selected as Set<number | string>).has(i.key)}
-                        onChange={() => onToggle(i.key)}
-                    />
-                    {i.label}
-                </label>
-            ))}
-        </fieldset>
+        <details className="chip-group">
+            <summary className="chip-group__summary">
+                <ChevronRight aria-hidden="true" />
+                <span className="field-legend">{legend}</span>
+                {selected.size > 0 && (
+                    <span className="chip-group__count">{selected.size} selected</span>
+                )}
+            </summary>
+            <fieldset className="checks">
+                <legend className="sr-only">{legend}</legend>
+                {items.map((i) => (
+                    <label key={i.key} className="check">
+                        <input
+                            type="checkbox"
+                            checked={(selected as Set<number | string>).has(i.key)}
+                            onChange={() => onToggle(i.key)}
+                        />
+                        {i.label}
+                    </label>
+                ))}
+            </fieldset>
+        </details>
     );
 }
