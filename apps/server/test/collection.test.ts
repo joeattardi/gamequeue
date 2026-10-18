@@ -219,6 +219,35 @@ describe('listing, filters and sorting', () => {
         ]);
     });
 
+    it('combines repeated facet values as any-of, and different facets as AND', async () => {
+        const { list } = await seeded();
+        expect(names(await list(`?platform=${SWITCH.id}&platform=${PS5.id}`))).toEqual([
+            'Celeste',
+            'Hades'
+        ]);
+        expect(names(await list(`?platform=${SWITCH.id}&platform=${PC.id}&tag=short`))).toEqual([
+            'Alan Wake'
+        ]);
+        expect(names(await list('?status=playing&status=finished'))).toEqual([]);
+    });
+
+    it('counts facet options against the other active facets only', async () => {
+        const { call } = await seeded();
+        const counts = async (qs = '') => (await call(`/entries/facet-counts${qs}`)).json();
+        const plat = (f: { platforms: { id: number; count: number }[] }) =>
+            Object.fromEntries(f.platforms.map((p) => [p.id, p.count]));
+
+        expect(plat(await counts())).toEqual({ [PC.id]: 3, [PS5.id]: 1, [SWITCH.id]: 1 });
+        // Selecting a platform doesn't zero out the other platforms, but narrows other facets
+        const f = await counts(`?platform=${SWITCH.id}`);
+        expect(plat(f)).toEqual({ [PC.id]: 3, [PS5.id]: 1, [SWITCH.id]: 1 });
+        expect(f.statuses.find((s: { value: string }) => s.value === 'unplayed').count).toBe(1);
+        expect(f.tags.find((t: { name: string }) => t.name === 'short').count).toBe(0);
+        // The backlog view only offers its own status
+        const b = await counts('?view=backlog');
+        expect(b.statuses.map((s: { value: string }) => s.value)).toEqual(['unplayed']);
+    });
+
     it('derives the backlog from status rather than storing it', async () => {
         const { list, db } = await seeded();
         const { entries } = await import('../src/db/schema.js');

@@ -24,7 +24,7 @@ export function pick(
         pool = listEntries(db, userId, { view: 'backlog', sort: 'title' });
         if (input.filters.includePaused) {
             pool = pool.concat(
-                listEntries(db, userId, { view: 'all', status: 'paused', sort: 'title' })
+                listEntries(db, userId, { view: 'all', status: ['paused'], sort: 'title' })
             );
         }
     }

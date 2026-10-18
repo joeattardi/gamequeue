@@ -8,6 +8,7 @@ import type {
     StartInput,
     StatusAction,
     EntryDto,
+    FacetCountsDto,
     FacetsDto,
     PatchEntryInput,
     PlatformDto,
@@ -21,6 +22,16 @@ export function useEntries(params: URLSearchParams) {
         queryKey: ['entries', qs],
         queryFn: async () =>
             (await api<{ entries: EntryDto[] }>(`/entries${qs ? `?${qs}` : ''}`)).entries,
+        placeholderData: keepPreviousData
+    });
+}
+
+/** Facet options with counts under the current filters (the view and search text included). */
+export function useFacetCounts(params: URLSearchParams) {
+    const qs = params.toString();
+    return useQuery({
+        queryKey: ['facets', 'counts', qs],
+        queryFn: () => api<FacetCountsDto>(`/entries/facet-counts${qs ? `?${qs}` : ''}`),
         placeholderData: keepPreviousData
     });
 }

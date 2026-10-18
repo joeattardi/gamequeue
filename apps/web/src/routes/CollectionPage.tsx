@@ -1,8 +1,9 @@
-import { ENTRY_SORTS, ENTRY_STATUSES, type EntryDto } from '@gamequeue/shared';
+import { ENTRY_SORTS, type EntryDto } from '@gamequeue/shared';
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
-import { useEntries, useFacets } from '../api/collection';
+import { useEntries, useFacetCounts } from '../api/collection';
 import { AddGameDialog } from '../components/AddGameDialog';
+import { FACET_KEYS, FacetSidebar, type FacetKey } from '../components/FacetSidebar';
 import { Cover } from '../components/Cover';
 import { GridSkeletons } from '../components/GridSkeletons';
 import { LayoutToggle, useLayout } from '../components/LayoutToggle';
@@ -24,7 +25,6 @@ export function CollectionPage({ view }: { view: 'all' | 'backlog' }) {
     const [params, setParams] = useSearchParams();
     usePageTitle(view === 'backlog' ? 'Backlog' : 'Collection');
     const [adding, setAdding] = useState(false);
-    const facets = useFacets();
     const [layout, setLayout] = useLayout(LAYOUT_KEY);
 
     const [text, setText] = useState(params.get('q') ?? '');
@@ -43,10 +43,36 @@ export function CollectionPage({ view }: { view: 'all' | 'backlog' }) {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [q]);
 
+    const selected = (key: FacetKey) => params.getAll(key);
+    const toggle = (key: FacetKey, value: string) =>
+        setParams(
+            (p) => {
+                const n = new URLSearchParams(p);
+                const values = n.getAll(key);
+                n.delete(key);
+                (values.includes(value)
+                    ? values.filter((v) => v !== value)
+                    : [...values, value]
+                ).forEach((v) => n.append(key, v));
+                return n;
+            },
+            { replace: true }
+        );
+    const clearFacets = () =>
+        setParams(
+            (p) => {
+                const n = new URLSearchParams(p);
+                FACET_KEYS.forEach((k) => n.delete(k));
+                return n;
+            },
+            { replace: true }
+        );
+
     const query = new URLSearchParams(params);
     query.set('view', view);
     const entries = useEntries(query);
-    const filtered = ['status', 'platform', 'genre', 'tag', 'q'].some((k) => params.get(k));
+    const facets = useFacetCounts(query);
+    const filtered = [...FACET_KEYS, 'q'].some((k) => params.get(k));
 
     return (
         <section>
@@ -83,107 +109,61 @@ export function CollectionPage({ view }: { view: 'all' | 'backlog' }) {
                         placeholder="Title…"
                     />
                 </label>
-                {view === 'all' && (
-                    <Select
-                        label="Status"
-                        value={params.get('status') ?? ''}
-                        onChange={(v) => set('status', v)}
-                        options={ENTRY_STATUSES.map((s) => [s, s[0]!.toUpperCase() + s.slice(1)])}
-                    />
-                )}
-                <Select
-                    label="Platform"
-                    value={params.get('platform') ?? ''}
-                    onChange={(v) => set('platform', v)}
-                    options={(facets.data?.platforms ?? []).map((p) => [String(p.id), p.name])}
-                />
-                <Select
-                    label="Genre"
-                    value={params.get('genre') ?? ''}
-                    onChange={(v) => set('genre', v)}
-                    options={(facets.data?.genres ?? []).map((g) => [String(g.id), g.name])}
-                />
-                <Select
-                    label="Tag"
-                    value={params.get('tag') ?? ''}
-                    onChange={(v) => set('tag', v)}
-                    options={(facets.data?.tags ?? []).map((t) => [t, t])}
-                />
-                <Select
-                    label="Sort by"
-                    value={params.get('sort') ?? 'title'}
-                    onChange={(v) => set('sort', v === 'title' ? '' : v)}
-                    options={ENTRY_SORTS.map((s) => [s, SORT_LABELS[s]])}
-                    all={false}
-                />
-                {filtered && (
-                    <button
-                        type="button"
-                        className="btn btn--ghost"
-                        onClick={() => {
-                            setText('');
-                            setParams({}, { replace: true });
-                        }}
+                <label className="field">
+                    <span>Sort by</span>
+                    <select
+                        value={params.get('sort') ?? 'title'}
+                        onChange={(e) =>
+                            set('sort', e.target.value === 'title' ? '' : e.target.value)
+                        }
                     >
-                        Clear
-                    </button>
-                )}
+                        {ENTRY_SORTS.map((s) => (
+                            <option key={s} value={s}>
+                                {SORT_LABELS[s]}
+                            </option>
+                        ))}
+                    </select>
+                </label>
             </form>
 
-            <LayoutToggle layout={layout} onChange={setLayout} />
+            <div className="browse">
+                <div className="browse__main">
+                    <LayoutToggle layout={layout} onChange={setLayout} />
 
-            {entries.isError ? (
-                <p className="form-error" role="alert">
-                    Couldn't load your games.
-                </p>
-            ) : entries.isPending ? (
-                <GridSkeletons layout={layout} />
-            ) : entries.data?.length === 0 ? (
-                <Empty view={view} filtered={filtered} onAdd={() => setAdding(true)} />
-            ) : layout === 'list' ? (
-                <ul className="game-rows" aria-busy={entries.isFetching}>
-                    {entries.data?.map((e) => (
-                        <Row key={e.id} entry={e} />
-                    ))}
-                </ul>
-            ) : (
-                <ul className="grid" aria-busy={entries.isFetching}>
-                    {entries.data?.map((e) => (
-                        <GameCard key={e.id} entry={e} />
-                    ))}
-                </ul>
-            )}
+                    {entries.isError ? (
+                        <p className="form-error" role="alert">
+                            Couldn't load your games.
+                        </p>
+                    ) : entries.isPending ? (
+                        <GridSkeletons layout={layout} />
+                    ) : entries.data?.length === 0 ? (
+                        <Empty view={view} filtered={filtered} onAdd={() => setAdding(true)} />
+                    ) : layout === 'list' ? (
+                        <ul className="game-rows" aria-busy={entries.isFetching}>
+                            {entries.data?.map((e) => (
+                                <Row key={e.id} entry={e} />
+                            ))}
+                        </ul>
+                    ) : (
+                        <ul className="grid" aria-busy={entries.isFetching}>
+                            {entries.data?.map((e) => (
+                                <GameCard key={e.id} entry={e} />
+                            ))}
+                        </ul>
+                    )}
+                </div>
+                <aside className="browse__side" aria-label="Filters">
+                    <FacetSidebar
+                        facets={facets.data}
+                        selected={selected}
+                        onToggle={toggle}
+                        onClear={clearFacets}
+                        showStatus={view === 'all'}
+                    />
+                </aside>
+            </div>
             <AddGameDialog open={adding} onClose={() => setAdding(false)} />
         </section>
-    );
-}
-
-function Select({
-    label,
-    value,
-    onChange,
-    options,
-    all = true
-}: {
-    label: string;
-    value: string;
-    onChange: (v: string) => void;
-    options: [string, string][];
-    all?: boolean;
-}) {
-    if (all && options.length === 0) return null;
-    return (
-        <label className="field">
-            <span>{label}</span>
-            <select value={value} onChange={(e) => onChange(e.target.value)}>
-                {all && <option value="">All</option>}
-                {options.map(([v, l]) => (
-                    <option key={v} value={v}>
-                        {l}
-                    </option>
-                ))}
-            </select>
-        </label>
     );
 }
 

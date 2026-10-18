@@ -84,6 +84,14 @@ export interface FacetsDto {
     genres: { id: number; name: string }[];
 }
 
+/** Facet sidebar: every option the user has, with how many games match the other active facets */
+export interface FacetCountsDto {
+    statuses: { value: EntryStatus; count: number }[];
+    platforms: (PlatformDto & { count: number })[];
+    genres: { id: number; name: string; count: number }[];
+    tags: { name: string; count: number }[];
+}
+
 const tagSchema = z.string().trim().min(1).max(40);
 export const tagsSchema = z.array(tagSchema).max(50);
 
@@ -110,13 +118,16 @@ export const patchEntrySchema = z
     .refine((v) => Object.keys(v).length > 0, 'Nothing to update');
 export type PatchEntryInput = z.infer<typeof patchEntrySchema>;
 
-const csvNumber = z.coerce.number().int().positive();
+/** A facet: repeatable query param (`?tag=a&tag=b`), any-of within the facet. A lone value is fine. */
+const multi = <T extends z.ZodType>(item: T) =>
+    z.preprocess((v) => (v === undefined || Array.isArray(v) ? v : [v]), z.array(item).max(100));
+const positiveInt = z.coerce.number().int().positive();
 export const entryQuerySchema = z.object({
     view: z.enum(['all', 'backlog']).default('all'),
-    status: z.enum(ENTRY_STATUSES).optional(),
-    platform: csvNumber.optional(),
-    genre: csvNumber.optional(),
-    tag: z.string().trim().min(1).optional(),
+    status: multi(z.enum(ENTRY_STATUSES)).optional(),
+    platform: multi(positiveInt).optional(),
+    genre: multi(positiveInt).optional(),
+    tag: multi(z.string().trim().min(1)).optional(),
     q: z.string().trim().min(1).max(100).optional(),
     sort: z.enum(ENTRY_SORTS).default('title'),
     dir: z.enum(['asc', 'desc']).optional()

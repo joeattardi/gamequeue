@@ -2423,3 +2423,131 @@ fieldset.stars:disabled .stars__star {
     height: 1.05em;
     flex: none;
 }
+
+/* Faceted browsing: results on the left, filter sidebar on the right (above the results on narrow screens) */
+.browse {
+    display: grid;
+    gap: 16px;
+}
+.browse__main {
+    min-width: 0;
+}
+.browse__side {
+    order: -1;
+}
+.facets__summary {
+    cursor: pointer;
+    list-style: none;
+}
+.facets__summary::-webkit-details-marker {
+    display: none;
+}
+.facets__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+.facets__head h2 {
+    margin: 0;
+    font-size: 1.05rem;
+}
+.facets__body {
+    display: grid;
+    gap: 14px;
+    margin-top: 10px;
+    padding: 14px;
+    background: var(--surface-2);
+    border-radius: var(--radius);
+}
+.facet {
+    border: 0;
+    margin: 0;
+    padding: 0;
+    min-width: 0;
+}
+.facet legend {
+    padding: 0;
+    margin-bottom: 6px;
+    font-weight: 700;
+    font-size: 0.85rem;
+    color: var(--ink-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+.facet ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 2px;
+}
+.facet__option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 32px;
+    cursor: pointer;
+}
+.facet__option input {
+    accent-color: var(--accent);
+    margin: 0;
+}
+.facet__option.is-empty {
+    color: var(--ink-muted);
+    opacity: 0.55;
+    cursor: default;
+}
+.facet__label {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.facet__count {
+    color: var(--ink-muted);
+    font-size: 0.85rem;
+    font-variant-numeric: tabular-nums;
+}
+.facet__more {
+    margin-top: 4px;
+    padding: 4px 0;
+    background: none;
+    border: 0;
+    color: var(--accent);
+    font: inherit;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+.facet--skeleton ul {
+    gap: 8px;
+}
+.skeleton--facet-title {
+    width: 40%;
+    height: 0.8rem;
+    margin-bottom: 8px;
+}
+.skeleton--facet-option {
+    height: 0.95rem;
+}
+@media (min-width: 900px) {
+    .browse {
+        grid-template-columns: minmax(0, 1fr) 260px;
+        align-items: start;
+    }
+    .browse__side {
+        order: 0;
+        position: sticky;
+        top: 72px;
+        max-height: calc(100vh - 88px);
+        overflow-y: auto;
+    }
+    .facets__summary {
+        display: none;
+    }
+    .facets__body {
+        margin-top: 0;
+    }
+}

@@ -3,12 +3,14 @@ import type {
     AddEntryInput,
     EntryDto,
     EntryQuery,
+    FacetCountsDto,
     FacetsDto,
     GameDto,
     PatchEntryInput,
     PlatformDto,
     PlaythroughDto
 } from '@gamequeue/shared';
+import { ENTRY_STATUSES } from '@gamequeue/shared';
 import type { Db } from '../db/client.js';
 import {
     entries,
@@ -195,11 +197,14 @@ function buildOrder(q: EntryQuery): SQL[] {
     return [sql`${k} IS NULL`, d(k), asc(sql`lower(${games.name})`), asc(entries.id)];
 }
 
-export function listEntries(db: Db, userId: number, q: EntryQuery): EntryDto[] {
-    const where: (SQL | undefined)[] = [eq(entries.userId, userId)];
+type Facet = 'status' | 'platform' | 'genre' | 'tag';
+
+/** Conditions for a query. `omit` leaves one facet out, which is how facet counts are computed. */
+function filterWhere(db: Db, userId: number, q: EntryQuery, omit?: Facet): SQL[] {
+    const where: SQL[] = [eq(entries.userId, userId)];
     if (q.view === 'backlog') where.push(eq(entries.status, 'unplayed'));
-    else if (q.status) where.push(eq(entries.status, q.status));
-    if (q.platform)
+    else if (q.status?.length && omit !== 'status') where.push(inArray(entries.status, q.status));
+    if (q.platform?.length && omit !== 'platform')
         where.push(
             exists(
                 db
@@ -208,23 +213,26 @@ export function listEntries(db: Db, userId: number, q: EntryQuery): EntryDto[] {
                     .where(
                         and(
                             eq(entryPlatforms.entryId, entries.id),
-                            eq(entryPlatforms.platformId, q.platform)
+                            inArray(entryPlatforms.platformId, q.platform)
                         )
                     )
             )
         );
-    if (q.genre)
+    if (q.genre?.length && omit !== 'genre')
         where.push(
             exists(
                 db
                     .select({ x: sql`1` })
                     .from(gameGenres)
                     .where(
-                        and(eq(gameGenres.gameId, entries.gameId), eq(gameGenres.genreId, q.genre))
+                        and(
+                            eq(gameGenres.gameId, entries.gameId),
+                            inArray(gameGenres.genreId, q.genre)
+                        )
                     )
             )
         );
-    if (q.tag)
+    if (q.tag?.length && omit !== 'tag')
         where.push(
             exists(
                 db
@@ -234,12 +242,20 @@ export function listEntries(db: Db, userId: number, q: EntryQuery): EntryDto[] {
                     .where(
                         and(
                             eq(entryTags.entryId, entries.id),
-                            sql`lower(${tags.name}) = lower(${q.tag})`
+                            inArray(
+                                sql`lower(${tags.name})`,
+                                q.tag.map((t) => t.toLowerCase())
+                            )
                         )
                     )
             )
         );
     if (q.q) where.push(sql`instr(lower(${games.name}), lower(${q.q})) > 0`);
+    return where;
+}
+
+export function listEntries(db: Db, userId: number, q: EntryQuery): EntryDto[] {
+    const where = filterWhere(db, userId, q);
 
     const ids = db
         .select({ id: entries.id })
@@ -408,5 +424,69 @@ export function getFacets(db: Db, userId: number): FacetsDto {
             .where(eq(entries.userId, userId))
             .orderBy(asc(genres.name))
             .all()
+    };
+}
+
+/**
+ * Facet options with counts. Each facet's counts apply every other active filter but not its own
+ * selection, so picking a value shows what the alternatives would add rather than collapsing to 0.
+ */
+export function getFacetCounts(db: Db, userId: number, q: EntryQuery): FacetCountsDto {
+    const base = getFacets(db, userId);
+    const count = <K extends string | number>(rows: { key: K; n: number }[]) =>
+        new Map(rows.map((r) => [r.key, r.n]));
+    const n = sql<number>`count(distinct ${entries.id})`;
+    const scoped = (omit: Facet) => and(...filterWhere(db, userId, q, omit));
+
+    const byStatus = count(
+        db
+            .select({ key: entries.status, n })
+            .from(entries)
+            .innerJoin(games, eq(games.id, entries.gameId))
+            .where(scoped('status'))
+            .groupBy(entries.status)
+            .all()
+    );
+    const byPlatform = count(
+        db
+            .select({ key: entryPlatforms.platformId, n })
+            .from(entries)
+            .innerJoin(games, eq(games.id, entries.gameId))
+            .innerJoin(entryPlatforms, eq(entryPlatforms.entryId, entries.id))
+            .where(scoped('platform'))
+            .groupBy(entryPlatforms.platformId)
+            .all()
+    );
+    const byGenre = count(
+        db
+            .select({ key: gameGenres.genreId, n })
+            .from(entries)
+            .innerJoin(games, eq(games.id, entries.gameId))
+            .innerJoin(gameGenres, eq(gameGenres.gameId, entries.gameId))
+            .where(scoped('genre'))
+            .groupBy(gameGenres.genreId)
+            .all()
+    );
+    const byTag = count(
+        db
+            .select({ key: sql<string>`lower(${tags.name})`, n })
+            .from(entries)
+            .innerJoin(games, eq(games.id, entries.gameId))
+            .innerJoin(entryTags, eq(entryTags.entryId, entries.id))
+            .innerJoin(tags, eq(tags.id, entryTags.tagId))
+            .where(scoped('tag'))
+            .groupBy(sql`lower(${tags.name})`)
+            .all()
+    );
+
+    return {
+        // The backlog view is already "unplayed only", so other statuses would be dead options
+        statuses: ENTRY_STATUSES.filter((s) => q.view === 'all' || s === 'unplayed').map((s) => ({
+            value: s,
+            count: byStatus.get(s) ?? 0
+        })),
+        platforms: base.platforms.map((p) => ({ ...p, count: byPlatform.get(p.id) ?? 0 })),
+        genres: base.genres.map((g) => ({ ...g, count: byGenre.get(g.id) ?? 0 })),
+        tags: base.tags.map((name) => ({ name, count: byTag.get(name.toLowerCase()) ?? 0 }))
     };
 }

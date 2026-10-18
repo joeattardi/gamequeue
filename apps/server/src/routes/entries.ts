@@ -8,10 +8,23 @@ import {
     addEntry,
     deleteEntry,
     getEntry,
+    getFacetCounts,
     getFacets,
     listEntries,
     patchEntry
 } from '../services/entries.js';
+
+const FACET_KEYS = ['status', 'platform', 'genre', 'tag'];
+
+/** Facet params may repeat; everything else is single-valued. */
+function parseEntryQuery(raw: Record<string, string[]>) {
+    return validate(
+        entryQuerySchema,
+        Object.fromEntries(
+            Object.entries(raw).map(([k, v]) => [k, FACET_KEYS.includes(k) ? v : v[0]])
+        )
+    );
+}
 
 export function entryRoutes({ db, config, igdb }: AppDeps) {
     const r = new Hono<{ Variables: AuthVars }>();
@@ -19,12 +32,16 @@ export function entryRoutes({ db, config, igdb }: AppDeps) {
 
     r.get('/', (c) =>
         c.json({
-            entries: listEntries(db, c.get('user').id, validate(entryQuerySchema, c.req.query()))
+            entries: listEntries(db, c.get('user').id, parseEntryQuery(c.req.queries()))
         })
     );
 
     // Registered before "/:id" so "facets" isn't read as an id
     r.get('/facets', (c) => c.json(getFacets(db, c.get('user').id)));
+
+    r.get('/facet-counts', (c) =>
+        c.json(getFacetCounts(db, c.get('user').id, parseEntryQuery(c.req.queries())))
+    );
 
     r.post('/', async (c) => {
         const input = validate(addEntrySchema, await c.req.json().catch(() => undefined));
