@@ -23,8 +23,8 @@
     --status-mid: #b87a00;
     --status-good: #1a8f3a;
 
-    --radius: 16px;
-    --radius-sm: 10px;
+    --radius: 8px;
+    --radius-sm: 5px;
     --shadow: 0 1px 2px rgb(10 25 60 / 0.08), 0 4px 16px -6px rgb(10 25 60 / 0.12);
     --gutter: clamp(16px, 4vw, 32px);
 }

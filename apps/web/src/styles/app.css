@@ -38,7 +38,7 @@ a {
 :focus-visible {
     outline: 3px solid var(--focus);
     outline-offset: 2px;
-    border-radius: 4px;
+    border-radius: 2px;
 }
 .skip-link {
     position: absolute;
@@ -47,7 +47,7 @@ a {
     background: var(--ink);
     color: var(--bg);
     padding: 8px 12px;
-    border-radius: 8px;
+    border-radius: 4px;
     z-index: 10;
 }
 .skip-link:focus {
@@ -131,7 +131,7 @@ a {
     place-items: center;
     width: 32px;
     height: 32px;
-    border-radius: 10px;
+    border-radius: 6px;
     background: var(--accent);
     color: var(--accent-ink);
 }
@@ -467,7 +467,7 @@ select:disabled {
 }
 .card__art {
     position: relative;
-    border-radius: 10px;
+    border-radius: 6px;
     transition: transform 0.2s ease-out;
 }
 .card__art .cover {
@@ -485,7 +485,7 @@ select:disabled {
     display: grid;
     gap: 4px;
     padding: 28px 10px 10px;
-    border-radius: 0 0 10px 10px;
+    border-radius: 0 0 6px 6px;
     background: linear-gradient(to top, rgb(0 0 0 / 0.92) 70%, rgb(0 0 0 / 0));
     color: #fff;
     font-size: 0.85rem;
@@ -528,7 +528,7 @@ select:disabled {
     object-fit: cover;
     display: block;
     border: 0;
-    border-radius: 10px;
+    border-radius: 6px;
     background: var(--surface-2);
     box-shadow: var(--shadow);
     transition:
@@ -598,7 +598,7 @@ a.game-row:hover {
     width: 220px;
     max-width: 60vw;
     height: 1.7rem;
-    border-radius: 8px;
+    border-radius: 4px;
 }
 .skeleton--subtitle {
     width: 150px;
@@ -613,12 +613,12 @@ a.game-row:hover {
 .skeleton--pos {
     width: 1.5ch;
     height: 0.9rem;
-    border-radius: 4px;
+    border-radius: 2px;
 }
 .skeleton--row-cover {
     width: 100%;
     aspect-ratio: 3 / 4;
-    border-radius: 6px;
+    border-radius: 3px;
 }
 .skeleton--row-sub {
     width: 120px;
@@ -672,12 +672,12 @@ a.game-row:hover {
 .skeleton--counter-icon {
     width: 22px;
     height: 22px;
-    border-radius: 6px;
+    border-radius: 3px;
 }
 .skeleton--counter-value {
     width: 2.2ch;
     height: 2.4rem;
-    border-radius: 8px;
+    border-radius: 4px;
 }
 .skeleton--counter-label {
     width: 72px;
@@ -699,7 +699,7 @@ a.game-row:hover {
 .skeleton--check {
     width: 18px;
     height: 18px;
-    border-radius: 4px;
+    border-radius: 2px;
     flex: none;
 }
 .skeleton--check-label {
@@ -712,7 +712,7 @@ a.game-row:hover {
     width: 48px;
     aspect-ratio: 3 / 4;
     flex: none;
-    border-radius: 6px;
+    border-radius: 3px;
 }
 .card__title {
     font-family: var(--font-display);
@@ -875,7 +875,7 @@ a.game-row:hover {
     width: 88px;
     height: auto;
     flex: none;
-    border-radius: 8px;
+    border-radius: 4px;
     box-shadow: none;
 }
 .result__text {
@@ -930,11 +930,11 @@ a.game-row:hover {
     width: 88px;
     aspect-ratio: 3 / 4;
     flex: none;
-    border-radius: 8px;
+    border-radius: 4px;
 }
 .skeleton--line {
     height: 1.05rem;
-    border-radius: 6px;
+    border-radius: 3px;
 }
 .skeleton--sub {
     height: 0.8rem;
@@ -957,7 +957,7 @@ a.game-row:hover {
 .skeleton--bay-cover {
     width: 100%;
     aspect-ratio: 3 / 4;
-    border-radius: 10px;
+    border-radius: 6px;
 }
 .skeleton--bay-title {
     height: 1.25rem;
@@ -982,13 +982,13 @@ a.game-row:hover {
     width: 48px;
     aspect-ratio: 3 / 4;
     flex: none;
-    border-radius: 6px;
+    border-radius: 3px;
 }
 .skeleton--card-cover {
     width: 100%;
     aspect-ratio: 3 / 4;
     border: 1px solid var(--line);
-    border-radius: 10px;
+    border-radius: 6px;
 }
 .card--skeleton {
     animation: skeleton-in 0.35s ease-out both;
@@ -1506,7 +1506,7 @@ a.game-row:hover {
     font-variant-numeric: tabular-nums;
 }
 .row-item__cover .cover {
-    border-radius: 6px;
+    border-radius: 3px;
     box-shadow: none;
 }
 .row-item__main {
@@ -1671,7 +1671,7 @@ a.game-row:hover {
     font-size: 0.85em;
     background: var(--surface-2);
     padding: 1px 6px;
-    border-radius: 6px;
+    border-radius: 3px;
 }
 .report {
     margin: 0;
@@ -2147,7 +2147,7 @@ fieldset.stars:disabled .stars__star {
     text-align: center;
 }
 .public-grid li {
-    border-radius: 10px;
+    border-radius: 6px;
 }
 .public-grid__info {
     position: absolute;
@@ -2156,7 +2156,7 @@ fieldset.stars:disabled .stars__star {
     align-content: end;
     gap: 4px;
     padding: 8px;
-    border-radius: 10px;
+    border-radius: 6px;
     background: linear-gradient(to top, rgb(0 0 0 / 0.92), rgb(0 0 0 / 0.7));
     color: #fff;
     font-size: 0.85rem;
@@ -2198,7 +2198,7 @@ fieldset.stars:disabled .stars__star {
 }
 .public-skeleton--cover {
     aspect-ratio: 3 / 4;
-    border-radius: 10px;
+    border-radius: 6px;
 }
 .public-skeleton--thumb {
     width: 48px;
