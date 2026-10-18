@@ -19,8 +19,8 @@ describe('lists', () => {
         const e = await add(1);
         await call(`/lists/${id}/items`, 'POST', { entryId: e.id });
         expect((await call('/lists')).lists).toEqual([
-            { id: expect.any(Number), name: 'cozy games', count: 0 },
-            { id, name: 'Up next', count: 1 }
+            { id: expect.any(Number), name: 'cozy games', count: 0, covers: [] },
+            { id, name: 'Up next', count: 1, covers: [expect.any(String)] }
         ]);
 
         expect((await call(`/lists/${id}`, 'PATCH', { name: 'Queue' })).list.name).toBe('Queue');

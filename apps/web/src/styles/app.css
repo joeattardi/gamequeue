@@ -241,7 +241,7 @@ a {
     display: grid;
     gap: 4px;
     padding: 18px;
-    min-height: 140px;
+    min-height: 170px;
     align-content: space-between;
     border: 1px dashed var(--line);
     border-radius: var(--radius);
@@ -1361,9 +1361,11 @@ a.game-row:hover {
     grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
 }
 .list-card {
+    position: relative;
     display: grid;
-    gap: 4px;
-    padding: 16px;
+    align-content: end;
+    min-height: 170px;
+    overflow: hidden;
     border: 1px solid var(--line);
     border-radius: var(--radius);
     background: var(--surface);
@@ -1372,6 +1374,39 @@ a.game-row:hover {
 }
 .list-card:hover {
     background: var(--surface-2);
+}
+.list-card__text {
+    position: relative;
+    display: grid;
+    gap: 4px;
+    padding: 16px;
+}
+.list-card__count {
+    color: var(--ink-muted);
+}
+/* The first few covers as equal vertical slices filling the tile */
+.list-card__covers {
+    position: absolute;
+    inset: 0;
+    display: flex;
+}
+.list-card__covers img {
+    flex: 1 1 0;
+    min-width: 0;
+    height: 100%;
+    object-fit: cover;
+}
+.list-card__covers:not(.skeleton) ~ .list-card__text {
+    /* Covers are artwork, so the text sits on a dark scrim in both themes */
+    padding-top: 48px;
+    background: linear-gradient(to top, rgb(0 0 0 / 0.85), rgb(0 0 0 / 0));
+    color: #fff;
+}
+.list-card__covers:not(.skeleton) ~ .list-card__text .list-card__count {
+    color: rgb(255 255 255 / 0.8);
+}
+.list-card:hover .list-card__covers img {
+    filter: brightness(1.08);
 }
 
 .upnext {

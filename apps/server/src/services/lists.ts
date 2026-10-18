@@ -1,7 +1,7 @@
-import { and, asc, eq, max, sql } from 'drizzle-orm';
+import { and, asc, eq, isNotNull, max, sql } from 'drizzle-orm';
 import type { EntryDto, ListDetailDto, ListSummaryDto } from '@gamequeue/shared';
 import type { Db } from '../db/client.js';
-import { entries, listItems, lists } from '../db/schema.js';
+import { entries, games, listItems, lists } from '../db/schema.js';
 import { HttpError } from '../errors.js';
 import { hydrate } from './entries.js';
 
@@ -43,8 +43,11 @@ function assertPlainList(list: { kind: string }, action: string) {
     if (list.kind === 'queue') throw new HttpError(400, `The queue can't be ${action}`);
 }
 
+/** How many covers a list tile shows. */
+const TILE_COVERS = 4;
+
 export function listLists(db: Db, userId: number): ListSummaryDto[] {
-    return db
+    const rows = db
         .select({
             id: lists.id,
             name: lists.name,
@@ -54,6 +57,22 @@ export function listLists(db: Db, userId: number): ListSummaryDto[] {
         .where(and(eq(lists.userId, userId), eq(lists.kind, 'list')))
         .orderBy(asc(sql`lower(${lists.name})`), asc(lists.id))
         .all();
+    const covers = new Map<number, string[]>();
+    const items = db
+        .select({ listId: listItems.listId, coverImageId: games.coverImageId })
+        .from(listItems)
+        .innerJoin(lists, eq(lists.id, listItems.listId))
+        .innerJoin(entries, eq(entries.id, listItems.entryId))
+        .innerJoin(games, eq(games.id, entries.gameId))
+        .where(and(eq(lists.userId, userId), eq(lists.kind, 'list'), isNotNull(games.coverImageId)))
+        .orderBy(asc(listItems.listId), asc(listItems.position))
+        .all();
+    for (const { listId, coverImageId } of items) {
+        const have = covers.get(listId) ?? [];
+        if (have.length < TILE_COVERS && coverImageId) have.push(coverImageId);
+        covers.set(listId, have);
+    }
+    return rows.map((r) => ({ ...r, covers: covers.get(r.id) ?? [] }));
 }
 
 export function getList(db: Db, userId: number, id: number): ListDetailDto {
@@ -72,7 +91,7 @@ export function getList(db: Db, userId: number, id: number): ListDetailDto {
 
 export function createList(db: Db, userId: number, name: string): ListSummaryDto {
     const row = db.insert(lists).values({ userId, name }).returning().get();
-    return { id: row.id, name: row.name, count: 0 };
+    return { id: row.id, name: row.name, count: 0, covers: [] };
 }
 
 export function renameList(db: Db, userId: number, id: number, name: string) {

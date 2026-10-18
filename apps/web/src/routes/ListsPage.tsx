@@ -1,3 +1,4 @@
+import { coverSrcSet, coverUrl } from '@gamequeue/shared';
 import { ListCardSkeletons } from '../components/PageSkeletons';
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router';
@@ -77,9 +78,24 @@ export function ListsPage() {
                     {lists.data?.map((l) => (
                         <li key={l.id}>
                             <Link to={`/lists/${l.id}`} className="list-card">
-                                <strong>{l.name}</strong>
-                                <span className="muted">
-                                    {l.count} {l.count === 1 ? 'game' : 'games'}
+                                {l.covers.length > 0 && (
+                                    <span className="list-card__covers" aria-hidden="true">
+                                        {l.covers.map((id) => (
+                                            <img
+                                                key={id}
+                                                src={coverUrl(id, 'cover_big')}
+                                                srcSet={coverSrcSet(id, 'cover_big')}
+                                                alt=""
+                                                loading="lazy"
+                                            />
+                                        ))}
+                                    </span>
+                                )}
+                                <span className="list-card__text">
+                                    <strong>{l.name}</strong>
+                                    <span className="list-card__count">
+                                        {l.count} {l.count === 1 ? 'game' : 'games'}
+                                    </span>
                                 </span>
                             </Link>
                         </li>

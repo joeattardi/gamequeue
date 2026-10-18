@@ -109,11 +109,14 @@ export function ListCardSkeletons({ count = 4 }: { count?: number }) {
             {Array.from({ length: count }, (_, i) => (
                 <li key={i} aria-hidden="true">
                     <div className="list-card">
-                        <span
-                            className="skeleton skeleton--line"
-                            style={{ width: `${70 - (i % 3) * 14}%` }}
-                        />
-                        <span className="skeleton skeleton--line skeleton--sub skeleton--row-sub" />
+                        <span className="list-card__covers skeleton" />
+                        <span className="list-card__text">
+                            <span
+                                className="skeleton skeleton--line"
+                                style={{ width: `${70 - (i % 3) * 14}%` }}
+                            />
+                            <span className="skeleton skeleton--line skeleton--sub skeleton--row-sub" />
+                        </span>
                     </div>
                 </li>
             ))}

@@ -5,6 +5,8 @@ export interface ListSummaryDto {
     id: number;
     name: string;
     count: number;
+    /** Cover image ids of the first few games (in list order) that have one, for the list tile */
+    covers: string[];
 }
 
 export interface ListDetailDto {
