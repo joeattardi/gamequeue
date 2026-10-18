@@ -23,6 +23,7 @@ import { ApiRequestError } from '../api/client';
 import { useProfile } from '../api/profile';
 import { Cover } from '../components/Cover';
 import { ProfileSkeleton } from '../components/PageSkeletons';
+import { Footer } from '../components/Footer';
 import { PublicHeader } from '../components/PublicHeader';
 import { usePageTitle } from '../lib';
 

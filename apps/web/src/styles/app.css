@@ -95,6 +95,28 @@ a {
 .page:focus {
     outline: none;
 }
+/* Main column of the app shell: the footer sits at the bottom even on short pages */
+.content {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+.content > .page {
+    flex: 1;
+}
+.site-footer {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 4px 16px;
+    max-width: 1100px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 16px var(--gutter) 20px;
+    border-top: 1px solid var(--line);
+    color: var(--ink-muted);
+    font-size: 0.85rem;
+}
 
 .logo {
     display: inline-flex;
@@ -332,13 +354,12 @@ a {
     border-top: 1px solid var(--line);
 }
 .sidebar__username {
-    color: var(--ink-muted);
-    font-size: 0.9rem;
-    padding: 0 12px;
+    min-width: 0;
+}
+.sidebar__username span {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    text-decoration: none;
 }
 .sidebar__user .btn {
     justify-content: flex-start;

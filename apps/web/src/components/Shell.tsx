@@ -2,6 +2,7 @@ import type { UserDto } from '@gamequeue/shared';
 import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router';
 import { useLogout } from '../api/auth';
+import { Footer } from './Footer';
 import { Logo } from './Logo';
 import {
     Database,
@@ -15,6 +16,7 @@ import {
     ListTodo,
     LogOut,
     Menu,
+    User,
     X
 } from 'lucide-react';
 
@@ -144,8 +146,12 @@ export function Shell({ user }: { user: UserDto }) {
                         </NavLink>
                     </nav>
                     <div className="sidebar__user">
-                        <Link className="sidebar__username" to={`/u/${user.username}`}>
-                            {user.username}
+                        <Link
+                            className="btn btn--ghost sidebar__username"
+                            to={`/u/${user.username}`}
+                        >
+                            <User aria-hidden="true" />
+                            <span>{user.username}</span>
                         </Link>
                         <button
                             className="btn btn--ghost"
@@ -157,9 +163,12 @@ export function Shell({ user }: { user: UserDto }) {
                         </button>
                     </div>
                 </aside>
-                <main id="main" className="page" tabIndex={-1} inert={drawerOpen}>
-                    <Outlet />
-                </main>
+                <div className="content" inert={drawerOpen}>
+                    <main id="main" className="page" tabIndex={-1}>
+                        <Outlet />
+                    </main>
+                    <Footer />
+                </div>
             </div>
         </>
     );

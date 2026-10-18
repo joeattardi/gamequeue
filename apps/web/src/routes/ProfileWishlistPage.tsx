@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router';
 import { ApiRequestError } from '../api/client';
 import { useProfileWishlist } from '../api/profile';
 import { PublicGameList } from '../components/PublicGameList';
+import { Footer } from '../components/Footer';
 import { PublicHeader } from '../components/PublicHeader';
 import { platformLabel, usePageTitle } from '../lib';
 

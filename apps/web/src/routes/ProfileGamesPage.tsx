@@ -10,6 +10,7 @@ import { Link, useParams } from 'react-router';
 import { ApiRequestError } from '../api/client';
 import { useProfileGames } from '../api/profile';
 import { PublicGameList } from '../components/PublicGameList';
+import { Footer } from '../components/Footer';
 import { PublicHeader } from '../components/PublicHeader';
 import { usePageTitle } from '../lib';
 
