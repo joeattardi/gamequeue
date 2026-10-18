@@ -2569,15 +2569,13 @@ fieldset.stars:disabled .stars__star {
         display: flex;
         align-items: center;
         gap: 8px;
-        padding: 6px var(--gutter);
+        padding: 2px var(--gutter);
         border-bottom: 1px solid var(--line);
         background: var(--surface);
-        position: sticky;
-        top: 0;
-        z-index: 10;
     }
     .mobile-bar__menu {
         padding: 0 10px;
+        margin-left: -10px;
     }
     .sidebar {
         position: fixed;
