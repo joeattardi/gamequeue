@@ -90,7 +90,14 @@ export function PickChoosePage() {
             )}
 
             <div aria-live="polite">
-                {rolling && <Rolling />}
+                {rolling && (
+                    <Rolling
+                        covers={chosen.map((e) => ({
+                            imageId: e.game.coverImageId,
+                            name: e.game.name
+                        }))}
+                    />
+                )}
                 {winner && (
                     <PickResult
                         key={winner.id}

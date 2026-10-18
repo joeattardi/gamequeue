@@ -20,19 +20,50 @@ export function rollDelay(): Promise<void> {
 
 export const ROLL_LINES = ['Shuffling your games…', 'Weighing the options…', 'Consulting fate…'];
 
-export function Rolling() {
+/** Fisher-Yates, so the covers don't flash by in the order the games were added. */
+function shuffled<T>(xs: T[]): T[] {
+    const a = [...xs];
+    for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j]!, a[i]!];
+    }
+    return a;
+}
+
+/** How often the covers on the shuffling cards change. */
+const COVER_SWAP_MS = 450;
+
+/**
+ * The shuffling-cards wait. With `covers` (the games in the running) the cards show their art,
+ * changing as they shuffle; without, they're blank and the dice spins on top.
+ */
+export function Rolling({ covers }: { covers?: { imageId: string | null; name: string }[] }) {
     const [line, setLine] = useState(0);
+    const [tick, setTick] = useState(0);
+    const [order] = useState(() => (covers ? shuffled(covers) : []));
+    // With reduced motion the cards hold still, so the art isn't flashing either
+    const [reduced] = useState(() => window.matchMedia('(prefers-reduced-motion: reduce)').matches);
     useEffect(() => {
         const t = setInterval(() => setLine((l) => (l + 1) % ROLL_LINES.length), 750);
         return () => clearInterval(t);
     }, []);
+    useEffect(() => {
+        if (order.length === 0 || reduced) return;
+        const t = setInterval(() => setTick((n) => n + 1), COVER_SWAP_MS);
+        return () => clearInterval(t);
+    }, [order.length, reduced]);
     return (
         <div className="pick-rolling panel" role="status">
             <div className="pick-rolling__deck" aria-hidden="true">
-                <span className="pick-rolling__card" />
-                <span className="pick-rolling__card" />
-                <span className="pick-rolling__card" />
-                <Dices className="pick-rolling__dice" />
+                {[0, 1, 2].map((i) => {
+                    const game = order.length ? order[(tick * 3 + i) % order.length] : undefined;
+                    return (
+                        <span key={i} className="pick-rolling__card">
+                            {game && <Cover imageId={game.imageId} name={game.name} />}
+                        </span>
+                    );
+                })}
+                {order.length === 0 && <Dices className="pick-rolling__dice" />}
             </div>
             <p className="pick-rolling__text">{ROLL_LINES[line]}</p>
         </div>
