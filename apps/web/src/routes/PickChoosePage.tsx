@@ -1,3 +1,5 @@
+import { SelectSkeleton } from '../components/PageSkeletons';
+import { ResultListSkeleton } from '../components/ResultSkeletons';
 import type { EntryDto } from '@gamequeue/shared';
 import { pickRandom, toCandidate } from '@gamequeue/shared';
 import { useState } from 'react';
@@ -174,14 +176,18 @@ function FromList({ onAdd }: { onAdd: (entries: EntryDto[]) => void }) {
         <div className="panel">
             <label className="field">
                 <span>Load games from a list</span>
-                <select value={listId} onChange={(e) => setListId(Number(e.target.value))}>
-                    <option value={0}>Choose a list or the queue…</option>
-                    {options.map((o) => (
-                        <option key={o.id} value={o.id}>
-                            {o.name}
-                        </option>
-                    ))}
-                </select>
+                {lists.isPending || queue.isPending ? (
+                    <SelectSkeleton label="Loading your lists" />
+                ) : (
+                    <select value={listId} onChange={(e) => setListId(Number(e.target.value))}>
+                        <option value={0}>Choose a list or the queue…</option>
+                        {options.map((o) => (
+                            <option key={o.id} value={o.id}>
+                                {o.name}
+                            </option>
+                        ))}
+                    </select>
+                )}
             </label>
             {listId > 0 && <LoadList key={listId} id={listId} onAdd={onAdd} />}
         </div>
@@ -190,7 +196,14 @@ function FromList({ onAdd }: { onAdd: (entries: EntryDto[]) => void }) {
 
 function LoadList({ id, onAdd }: { id: number; onAdd: (entries: EntryDto[]) => void }) {
     const list = useList(id);
-    if (list.isPending) return <p className="muted">Loading…</p>;
+    if (list.isPending)
+        return (
+            <span
+                className="skeleton skeleton--btn skeleton--btn-wide"
+                role="status"
+                aria-label="Loading list"
+            />
+        );
     if (!list.data) return <p className="muted">Couldn't load that list.</p>;
     const { entries } = list.data;
     if (entries.length === 0) return <p className="muted">That list is empty.</p>;
@@ -223,9 +236,7 @@ function Search({ chosen, onAdd }: { chosen: EntryDto[]; onAdd: (e: EntryDto) =>
                 />
             </label>
             {results.isPending ? (
-                <p className="muted" role="status">
-                    Searching…
-                </p>
+                <ResultListSkeleton label="Searching…" />
             ) : matches.length === 0 ? (
                 <p className="muted">
                     {results.data?.length

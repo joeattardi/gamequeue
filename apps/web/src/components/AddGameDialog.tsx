@@ -1,3 +1,4 @@
+import { SelectSkeleton } from './PageSkeletons';
 import type { SearchResultDto } from '@gamequeue/shared';
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
@@ -280,16 +281,23 @@ function PlatformStep({
             </fieldset>
             <label className="field">
                 <span>Another platform</span>
-                <select value="" onChange={(e) => e.target.value && toggle(Number(e.target.value))}>
-                    <option value="">{all.isPending ? 'Loading…' : 'Choose…'}</option>
-                    {(all.data ?? [])
-                        .filter((p) => !chosen.has(p.id) && !known.has(p.id))
-                        .map((p) => (
-                            <option key={p.id} value={p.id}>
-                                {p.name}
-                            </option>
-                        ))}
-                </select>
+                {all.isPending ? (
+                    <SelectSkeleton label="Loading platforms" />
+                ) : (
+                    <select
+                        value=""
+                        onChange={(e) => e.target.value && toggle(Number(e.target.value))}
+                    >
+                        <option value="">Choose…</option>
+                        {(all.data ?? [])
+                            .filter((p) => !chosen.has(p.id) && !known.has(p.id))
+                            .map((p) => (
+                                <option key={p.id} value={p.id}>
+                                    {p.name}
+                                </option>
+                            ))}
+                    </select>
+                )}
             </label>
             <p className="form-error" role="alert">
                 {error}

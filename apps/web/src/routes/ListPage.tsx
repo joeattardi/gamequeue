@@ -31,6 +31,9 @@ import {
 import { useQueue } from '../api/queue';
 import { useConfirm } from '../components/Confirm';
 import { Cover } from '../components/Cover';
+import { GameCard } from '../components/GameCard';
+import { LayoutToggle, useLayout } from '../components/LayoutToggle';
+import { ListLoading } from '../components/ListLoading';
 import { ResultSkeletons } from '../components/ResultSkeletons';
 import { MetaLine } from '../components/MetaLine';
 import { PlatformTags } from '../components/PlatformIcon';
@@ -46,10 +49,13 @@ import {
     X
 } from 'lucide-react';
 
+const LAYOUT_KEY = 'gq_list_layout';
+
 export function ListPage() {
     const id = Number(useParams().id);
     const list = useList(id);
-    if (list.isPending) return <p role="status">Loading…</p>;
+    if (list.isPending)
+        return <ListLoading icon={<List aria-hidden="true" />} layoutKey={LAYOUT_KEY} />;
     if (list.isError || !list.data)
         return (
             <div className="empty">
@@ -64,7 +70,14 @@ export function ListPage() {
 
 export function QueuePage() {
     const queue = useQueue();
-    if (queue.isPending) return <p role="status">Loading…</p>;
+    if (queue.isPending)
+        return (
+            <ListLoading
+                icon={<ListOrdered aria-hidden="true" />}
+                title="Queue"
+                layoutKey={LAYOUT_KEY}
+            />
+        );
     if (queue.isError || !queue.data)
         return (
             <p className="form-error" role="alert">
@@ -90,6 +103,8 @@ function ListView({
     const remove = useRemoveFromList();
     const del = useDeleteList(id);
     const confirm = useConfirm();
+    // Reordering and removing only exist in the list layout; tiles are for browsing
+    const [layout, setLayout] = useLayout(LAYOUT_KEY, 'list');
     const [order, setOrder] = useState(entries);
     const [error, setError] = useState<string>();
     useEffect(() => setOrder(entries), [entries]);
@@ -181,32 +196,43 @@ function ListView({
                     </p>
                 </div>
             ) : (
-                <DndContext
-                    sensors={sensors}
-                    collisionDetection={closestCenter}
-                    onDragEnd={onDragEnd}
-                >
-                    <SortableContext
-                        items={order.map((e) => e.id)}
-                        strategy={verticalListSortingStrategy}
-                    >
-                        <ol className="rows">
+                <>
+                    <LayoutToggle layout={layout} onChange={setLayout} />
+                    {layout === 'grid' ? (
+                        <ol className="grid">
                             {order.map((entry, i) => (
-                                <Row
-                                    key={entry.id}
-                                    entry={entry}
-                                    index={i}
-                                    last={i === order.length - 1}
-                                    isQueue={isQueue}
-                                    onMove={(by) => move(i, by)}
-                                    onRemove={() =>
-                                        remove.mutate({ listId: id, entryId: entry.id })
-                                    }
-                                />
+                                <GameCard key={entry.id} entry={entry} position={i + 1} />
                             ))}
                         </ol>
-                    </SortableContext>
-                </DndContext>
+                    ) : (
+                        <DndContext
+                            sensors={sensors}
+                            collisionDetection={closestCenter}
+                            onDragEnd={onDragEnd}
+                        >
+                            <SortableContext
+                                items={order.map((e) => e.id)}
+                                strategy={verticalListSortingStrategy}
+                            >
+                                <ol className="rows">
+                                    {order.map((entry, i) => (
+                                        <Row
+                                            key={entry.id}
+                                            entry={entry}
+                                            index={i}
+                                            last={i === order.length - 1}
+                                            isQueue={isQueue}
+                                            onMove={(by) => move(i, by)}
+                                            onRemove={() =>
+                                                remove.mutate({ listId: id, entryId: entry.id })
+                                            }
+                                        />
+                                    ))}
+                                </ol>
+                            </SortableContext>
+                        </DndContext>
+                    )}
+                </>
             )}
         </section>
     );

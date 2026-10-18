@@ -1,3 +1,4 @@
+import { HistorySkeletons } from './PageSkeletons';
 import {
     availableActions,
     RATING_MAX,
@@ -245,9 +246,7 @@ export function HistoryPanel({ entry }: { entry: EntryDto }) {
         <section aria-labelledby="history-h" className="panel">
             <h2 id="history-h">Playthroughs</h2>
             {history.isPending ? (
-                <p className="muted" role="status">
-                    Loading…
-                </p>
+                <HistorySkeletons />
             ) : history.data?.length === 0 ? (
                 <p className="muted">No playthroughs yet.</p>
             ) : (

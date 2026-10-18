@@ -1,5 +1,6 @@
 import { Navigate, Route, Routes } from 'react-router';
 import { useMe } from './api/auth';
+import { BootSkeleton } from './components/PageSkeletons';
 import { Shell } from './components/Shell';
 import { AuthPage } from './routes/AuthPage';
 import { CollectionPage } from './routes/CollectionPage';
@@ -18,12 +19,7 @@ import { WishlistPage } from './routes/WishlistPage';
 
 export function App() {
     const me = useMe();
-    if (me.isPending)
-        return (
-            <p className="boot" role="status">
-                Loading…
-            </p>
-        );
+    if (me.isPending) return <BootSkeleton />;
     if (me.isError)
         return (
             <p className="boot" role="alert">

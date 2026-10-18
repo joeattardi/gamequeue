@@ -1,3 +1,4 @@
+import { SelectSkeleton } from '../components/PageSkeletons';
 import type { PickInput, PickResultDto } from '@gamequeue/shared';
 import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
@@ -112,15 +113,21 @@ export function PickCriteriaPage() {
                 >
                     <label className="field">
                         <span>Pick from</span>
-                        <select value={source} onChange={(e) => setSource(e.target.value)}>
-                            <option value="backlog">Backlog (unplayed games)</option>
-                            {queue.data && <option value={`list:${queue.data.id}`}>Queue</option>}
-                            {lists.data?.map((l) => (
-                                <option key={l.id} value={`list:${l.id}`}>
-                                    List: {l.name}
-                                </option>
-                            ))}
-                        </select>
+                        {lists.isPending || queue.isPending ? (
+                            <SelectSkeleton label="Loading your lists" />
+                        ) : (
+                            <select value={source} onChange={(e) => setSource(e.target.value)}>
+                                <option value="backlog">Backlog (unplayed games)</option>
+                                {queue.data && (
+                                    <option value={`list:${queue.data.id}`}>Queue</option>
+                                )}
+                                {lists.data?.map((l) => (
+                                    <option key={l.id} value={`list:${l.id}`}>
+                                        List: {l.name}
+                                    </option>
+                                ))}
+                            </select>
+                        )}
                     </label>
 
                     <Chips

@@ -1,3 +1,4 @@
+import { ResultListSkeleton } from './ResultSkeletons';
 import type { EntryDto, SlotDto } from '@gamequeue/shared';
 import { useMemo, useState } from 'react';
 import { useEntries } from '../api/collection';
@@ -133,9 +134,7 @@ function AssignBody({ slot, onDone }: { slot: SlotDto; onDone: () => void }) {
                     paused.isPending ||
                     playing.isPending ||
                     queue.isPending ? (
-                        <p className="muted" role="status">
-                            Loading…
-                        </p>
+                        <ResultListSkeleton />
                     ) : candidates.length === 0 ? (
                         <p className="muted">
                             {text ? 'No matches.' : 'Nothing to choose from. Add some games first.'}

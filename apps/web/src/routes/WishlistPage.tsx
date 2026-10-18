@@ -25,13 +25,24 @@ import {
 } from '../api/wishlist';
 import { AddGameDialog } from '../components/AddGameDialog';
 import { Cover } from '../components/Cover';
+import { LayoutToggle, useLayout } from '../components/LayoutToggle';
+import { ListLoading } from '../components/ListLoading';
 import { MetaLine } from '../components/MetaLine';
 import { yearOf } from '../lib';
 import { ChevronDown, ChevronUp, Gift, Plus, ShoppingCart, X } from 'lucide-react';
 
+const LAYOUT_KEY = 'gq_wishlist_layout';
+
 export function WishlistPage() {
     const wishlist = useWishlist();
-    if (wishlist.isPending) return <p role="status">Loading…</p>;
+    if (wishlist.isPending)
+        return (
+            <ListLoading
+                icon={<Gift aria-hidden="true" />}
+                title="Wishlist"
+                layoutKey={LAYOUT_KEY}
+            />
+        );
     if (wishlist.isError || !wishlist.data)
         return (
             <p className="form-error" role="alert">
@@ -60,6 +71,8 @@ function WishlistView({ items }: { items: WishlistItemDto[] }) {
     const [error, setError] = useState<string>();
     const [adding, setAdding] = useState(false);
     const [acquiring, setAcquiring] = useState<WishlistItemDto>();
+    // Reordering, notes and the other actions only exist in the list layout; tiles are for browsing
+    const [layout, setLayout] = useLayout(LAYOUT_KEY, 'list');
     useEffect(() => setOrder(items), [items]);
 
     const sensors = useSensors(
@@ -119,30 +132,41 @@ function WishlistView({ items }: { items: WishlistItemDto[] }) {
                     </p>
                 </div>
             ) : (
-                <DndContext
-                    sensors={sensors}
-                    collisionDetection={closestCenter}
-                    onDragEnd={onDragEnd}
-                >
-                    <SortableContext
-                        items={order.map((i) => i.igdbId)}
-                        strategy={verticalListSortingStrategy}
-                    >
-                        <ol className="rows">
+                <>
+                    <LayoutToggle layout={layout} onChange={setLayout} />
+                    {layout === 'grid' ? (
+                        <ol className="grid">
                             {order.map((item, i) => (
-                                <Row
-                                    key={item.igdbId}
-                                    item={item}
-                                    index={i}
-                                    last={i === order.length - 1}
-                                    onMove={(by) => commit(arrayMove(order, i, i + by))}
-                                    onAcquire={() => setAcquiring(item)}
-                                    onRemove={() => remove.mutate(item.igdbId)}
-                                />
+                                <WishlistTile key={item.igdbId} item={item} position={i + 1} />
                             ))}
                         </ol>
-                    </SortableContext>
-                </DndContext>
+                    ) : (
+                        <DndContext
+                            sensors={sensors}
+                            collisionDetection={closestCenter}
+                            onDragEnd={onDragEnd}
+                        >
+                            <SortableContext
+                                items={order.map((i) => i.igdbId)}
+                                strategy={verticalListSortingStrategy}
+                            >
+                                <ol className="rows">
+                                    {order.map((item, i) => (
+                                        <Row
+                                            key={item.igdbId}
+                                            item={item}
+                                            index={i}
+                                            last={i === order.length - 1}
+                                            onMove={(by) => commit(arrayMove(order, i, i + by))}
+                                            onAcquire={() => setAcquiring(item)}
+                                            onRemove={() => remove.mutate(item.igdbId)}
+                                        />
+                                    ))}
+                                </ol>
+                            </SortableContext>
+                        </DndContext>
+                    )}
+                </>
             )}
 
             <AddGameDialog open={adding} onClose={() => setAdding(false)} mode="wishlist" />
@@ -161,6 +185,28 @@ function WishlistView({ items }: { items: WishlistItemDto[] }) {
                 }
             />
         </section>
+    );
+}
+
+/** Box art for a wishlisted game; it isn't owned, so there's no game page to open. */
+function WishlistTile({ item, position }: { item: WishlistItemDto; position: number }) {
+    const { game } = item;
+    return (
+        <li className="card">
+            <div className="card__link" tabIndex={0}>
+                <div className="card__art">
+                    <Cover imageId={game.coverImageId} name={game.name} />
+                    <div className="card__info">
+                        <strong className="card__title">{game.name}</strong>
+                        <span className="muted card__sub">
+                            <MetaLine parts={[yearOf(game.releaseDate), item.platform?.name]} />
+                        </span>
+                        {item.note && <span className="muted card__note">{item.note}</span>}
+                    </div>
+                    <span className="card__pos">{position}</span>
+                </div>
+            </div>
+        </li>
     );
 }
 

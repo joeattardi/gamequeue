@@ -3,6 +3,7 @@ import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router';
 import { ApiRequestError } from '../api/client';
 import { useAddToQueue, useRemoveFromQueue } from '../api/queue';
+import { CheckSkeletons } from './PageSkeletons';
 import { useAddToList, useCreateList, useLists, useRemoveFromList } from '../api/lists';
 
 /** Which lists a game is on, with quick add/remove and a way to start a new list. */
@@ -51,7 +52,9 @@ export function ListsPanel({ entry }: { entry: EntryDto }) {
                 <input type="checkbox" checked={entry.queued} onChange={toggleQueue} />
                 On my <Link to="/queue">queue</Link>
             </label>
-            {lists.data?.length ? (
+            {lists.isPending ? (
+                <CheckSkeletons label="Loading your lists" />
+            ) : lists.data?.length ? (
                 <fieldset className="checks">
                     <legend className="sr-only">Lists this game is on</legend>
                     {lists.data.map((l) => (

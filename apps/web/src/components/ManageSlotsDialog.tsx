@@ -1,3 +1,4 @@
+import { SlotEditSkeletons } from './PageSkeletons';
 import { MAX_SLOTS, type SlotDto } from '@gamequeue/shared';
 import { useState, type FormEvent } from 'react';
 import { ApiRequestError } from '../api/client';
@@ -60,18 +61,22 @@ function Body({ onDone }: { onDone: () => void }) {
                     <X />
                 </button>
             </div>
-            <ul className="slot-edit">
-                {list.map((slot, i) => (
-                    <SlotRow
-                        key={slot.id}
-                        slot={slot}
-                        canUp={i > 0}
-                        canDown={i < list.length - 1}
-                        onMove={(by) => move(i, by)}
-                        onError={fail}
-                    />
-                ))}
-            </ul>
+            {slots.isPending ? (
+                <SlotEditSkeletons />
+            ) : (
+                <ul className="slot-edit">
+                    {list.map((slot, i) => (
+                        <SlotRow
+                            key={slot.id}
+                            slot={slot}
+                            canUp={i > 0}
+                            canDown={i < list.length - 1}
+                            onMove={(by) => move(i, by)}
+                            onError={fail}
+                        />
+                    ))}
+                </ul>
+            )}
             <form className="inline-form" onSubmit={add}>
                 <label className="field field--grow">
                     <span>New slot</span>

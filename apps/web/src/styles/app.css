@@ -473,6 +473,26 @@ select:disabled {
 .card__link:focus-visible .card__info {
     opacity: 1;
 }
+.card__pos {
+    position: absolute;
+    top: 6px;
+    left: 6px;
+    min-width: 22px;
+    padding: 1px 6px;
+    border-radius: 999px;
+    background: var(--accent);
+    color: #fff;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-align: center;
+}
+.card__note {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    overflow-wrap: anywhere;
+}
 .card__info .muted {
     color: rgb(255 255 255 / 0.72);
 }
@@ -499,6 +519,175 @@ select:disabled {
     font-weight: 700;
     background: var(--accent-soft);
     overflow: hidden;
+}
+.game-rows {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 8px;
+}
+.game-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 10px 14px;
+    border: 1px solid color-mix(in srgb, var(--line) 55%, var(--surface));
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: inherit;
+    text-decoration: none;
+}
+a.game-row:hover {
+    background: var(--surface-2);
+}
+.game-row .cover {
+    width: 48px;
+    flex: none;
+}
+.game-row__text {
+    display: grid;
+    gap: 2px;
+    flex: 1;
+    min-width: 0;
+}
+.game-row .card__chips {
+    margin: 0 0 0 auto;
+    justify-content: flex-end;
+}
+@media (max-width: 560px) {
+    .game-row {
+        flex-wrap: wrap;
+    }
+    .game-row .card__chips {
+        margin-left: 62px;
+        justify-content: flex-start;
+        flex-basis: 100%;
+    }
+}
+.game-row--skeleton .skeleton--sub {
+    width: 25%;
+}
+.skeleton--title {
+    display: inline-block;
+    width: 220px;
+    max-width: 60vw;
+    height: 1.7rem;
+    border-radius: 8px;
+}
+.skeleton--subtitle {
+    width: 150px;
+    height: 0.9rem;
+}
+.skeleton--handle {
+    width: 44px;
+    height: 44px;
+    border-radius: var(--radius-sm);
+    opacity: 0.5;
+}
+.skeleton--pos {
+    width: 1.5ch;
+    height: 0.9rem;
+    border-radius: 4px;
+}
+.skeleton--row-cover {
+    width: 100%;
+    aspect-ratio: 3 / 4;
+    border-radius: 6px;
+}
+.skeleton--row-sub {
+    width: 120px;
+}
+.skeleton--action {
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-sm);
+    opacity: 0.6;
+}
+.row-item--skeleton {
+    animation: skeleton-in 0.35s ease-out both;
+}
+.skeleton--gap {
+    margin-top: 10px;
+}
+.skeleton--block {
+    height: 90px;
+    border-radius: var(--radius);
+}
+.boot__blocks {
+    display: grid;
+    gap: 12px;
+    margin-top: 24px;
+    max-width: 720px;
+}
+.skeleton--back {
+    width: 110px;
+    height: 0.95rem;
+    margin-bottom: 14px;
+}
+.skeleton--entry-title {
+    width: min(360px, 70vw);
+    height: 2.2rem;
+}
+.skeleton--panel-title {
+    width: 140px;
+    height: 1.1rem;
+}
+.skeleton--gauge-lg {
+    width: 88px;
+    height: 88px;
+    flex: none;
+    border-radius: 50%;
+}
+.skeleton--section {
+    width: 150px;
+    height: 1.4rem;
+    margin: 8px 0 12px;
+}
+.skeleton--counter-icon {
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+}
+.skeleton--counter-value {
+    width: 2.2ch;
+    height: 2.4rem;
+    border-radius: 8px;
+}
+.skeleton--counter-label {
+    width: 72px;
+    height: 0.9rem;
+}
+.skeleton--statbar {
+    width: 100%;
+    height: 100%;
+}
+.skeleton--select {
+    width: 100%;
+    min-width: 160px;
+    height: 44px;
+    border-radius: var(--radius-sm);
+}
+.skeleton--slot-name {
+    flex: 1;
+}
+.skeleton--check {
+    width: 18px;
+    height: 18px;
+    border-radius: 4px;
+    flex: none;
+}
+.skeleton--check-label {
+    height: 0.95rem;
+}
+.check--skeleton {
+    pointer-events: none;
+}
+.skeleton--row-thumb {
+    width: 48px;
+    aspect-ratio: 3 / 4;
+    flex: none;
+    border-radius: 6px;
 }
 .card__title {
     font-family: var(--font-display);
@@ -816,6 +1005,7 @@ select:disabled {
     .skeleton,
     .bay--skeleton,
     .card--skeleton,
+    .row-item--skeleton,
     .upnext__item--skeleton {
         animation: none;
     }
@@ -1816,7 +2006,10 @@ fieldset.stars:disabled .stars__star {
     color: var(--accent);
 }
 .layout-toggle + .public-games,
-.layout-toggle + .public-grid {
+.layout-toggle + .public-grid,
+.layout-toggle + .game-rows,
+.layout-toggle + .rows,
+.layout-toggle + .grid {
     margin-top: 10px;
 }
 .public-grid {

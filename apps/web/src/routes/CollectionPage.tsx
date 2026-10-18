@@ -5,10 +5,10 @@ import { useEntries, useFacets } from '../api/collection';
 import { AddGameDialog } from '../components/AddGameDialog';
 import { Cover } from '../components/Cover';
 import { GridSkeletons } from '../components/GridSkeletons';
-import { MetaLine } from '../components/MetaLine';
-import { PlatformTags } from '../components/PlatformIcon';
-import { formatMinutes, useDebounced, yearOf } from '../lib';
-import { Library, ListTodo, Plus, Star } from 'lucide-react';
+import { LayoutToggle, useLayout } from '../components/LayoutToggle';
+import { EntryChips, EntrySub, GameCard } from '../components/GameCard';
+import { useDebounced } from '../lib';
+import { Library, ListTodo, Plus } from 'lucide-react';
 
 const SORT_LABELS: Record<(typeof ENTRY_SORTS)[number], string> = {
     title: 'Title',
@@ -18,10 +18,13 @@ const SORT_LABELS: Record<(typeof ENTRY_SORTS)[number], string> = {
     ttb: 'Time to beat'
 };
 
+const LAYOUT_KEY = 'gq_collection_layout';
+
 export function CollectionPage({ view }: { view: 'all' | 'backlog' }) {
     const [params, setParams] = useSearchParams();
     const [adding, setAdding] = useState(false);
     const facets = useFacets();
+    const [layout, setLayout] = useLayout(LAYOUT_KEY);
 
     const [text, setText] = useState(params.get('q') ?? '');
     const q = useDebounced(text, 250);
@@ -126,18 +129,26 @@ export function CollectionPage({ view }: { view: 'all' | 'backlog' }) {
                 )}
             </form>
 
+            <LayoutToggle layout={layout} onChange={setLayout} />
+
             {entries.isError ? (
                 <p className="form-error" role="alert">
                     Couldn't load your games.
                 </p>
             ) : entries.isPending ? (
-                <GridSkeletons />
+                <GridSkeletons layout={layout} />
             ) : entries.data?.length === 0 ? (
                 <Empty view={view} filtered={filtered} onAdd={() => setAdding(true)} />
+            ) : layout === 'list' ? (
+                <ul className="game-rows" aria-busy={entries.isFetching}>
+                    {entries.data?.map((e) => (
+                        <Row key={e.id} entry={e} />
+                    ))}
+                </ul>
             ) : (
                 <ul className="grid" aria-busy={entries.isFetching}>
                     {entries.data?.map((e) => (
-                        <Card key={e.id} entry={e} />
+                        <GameCard key={e.id} entry={e} />
                     ))}
                 </ul>
             )}
@@ -205,44 +216,17 @@ function Empty({
     );
 }
 
-function Card({ entry }: { entry: EntryDto }) {
+function Row({ entry }: { entry: EntryDto }) {
     const { game } = entry;
     return (
-        <li className="card">
-            <Link to={`/games/${entry.id}`} className="card__link">
-                <div className="card__art">
-                    <Cover imageId={game.coverImageId} name={game.name} />
-                    <div className="card__info">
-                        <strong className="card__title">{game.name}</strong>
-                        <span className="muted card__sub">
-                            <MetaLine
-                                parts={[
-                                    yearOf(game.releaseDate),
-                                    <PlatformTags key="p" platforms={entry.platforms} />
-                                ]}
-                            />
-                        </span>
-                        <span className="card__chips">
-                            {entry.status !== 'unplayed' && (
-                                <span className={`badge badge--${entry.status}`}>
-                                    {entry.status === 'finished' && entry.lastFinishedOn
-                                        ? `finished ${entry.lastFinishedOn.slice(0, 4)}`
-                                        : entry.status}
-                                </span>
-                            )}
-                            {entry.rating !== null && (
-                                <span className="badge">
-                                    <Star /> {entry.rating}
-                                </span>
-                            )}
-                            {entry.ttbMinutes !== null && (
-                                <span className="badge badge--quiet">
-                                    {formatMinutes(entry.ttbMinutes)}
-                                </span>
-                            )}
-                        </span>
-                    </div>
-                </div>
+        <li>
+            <Link to={`/games/${entry.id}`} className="game-row">
+                <Cover imageId={game.coverImageId} name={game.name} size="cover_small" />
+                <span className="game-row__text">
+                    <strong className="card__title">{game.name}</strong>
+                    <EntrySub entry={entry} />
+                </span>
+                <EntryChips entry={entry} />
             </Link>
         </li>
     );

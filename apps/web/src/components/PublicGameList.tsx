@@ -1,7 +1,7 @@
 import type { EntryStatus, GameDto } from '@gamequeue/shared';
-import { LayoutGrid, List } from 'lucide-react';
-import { useState, type CSSProperties } from 'react';
+import type { CSSProperties } from 'react';
 import { Cover } from './Cover';
+import { LayoutToggle, useLayout, type Layout } from './LayoutToggle';
 import { StarDisplay } from './StarRating';
 
 /** What this list shows of a game; a `PublicEntryDto` fits, and so does a wishlist item. */
@@ -14,16 +14,7 @@ export interface PublicListItem {
     caption?: string;
 }
 
-type Layout = 'grid' | 'list';
 const LAYOUT_KEY = 'gq_public_layout';
-
-function loadLayout(): Layout {
-    try {
-        return localStorage.getItem(LAYOUT_KEY) === 'list' ? 'list' : 'grid';
-    } catch {
-        return 'grid';
-    }
-}
 
 /** Fade-in delay for the item at `index`; capped so long lists don't take long to appear. */
 function staggerStyle(index: number): CSSProperties {
@@ -42,38 +33,7 @@ export function PublicGameList({
     numbered?: boolean;
     empty: string;
 }) {
-    const [layout, setLayout] = useState<Layout>(loadLayout);
-
-    const choose = (next: Layout) => {
-        setLayout(next);
-        try {
-            localStorage.setItem(LAYOUT_KEY, next);
-        } catch {
-            // Not persisted (private window, blocked storage); the choice still applies.
-        }
-    };
-    const toggle = (
-        <div className="layout-toggle" role="group" aria-label="Layout">
-            <button
-                type="button"
-                aria-pressed={layout === 'grid'}
-                aria-label="Grid"
-                title="Grid"
-                onClick={() => choose('grid')}
-            >
-                <LayoutGrid aria-hidden="true" />
-            </button>
-            <button
-                type="button"
-                aria-pressed={layout === 'list'}
-                aria-label="List"
-                title="List"
-                onClick={() => choose('list')}
-            >
-                <List aria-hidden="true" />
-            </button>
-        </div>
-    );
+    const [layout, setLayout] = useLayout(LAYOUT_KEY);
 
     let content;
     if (!entries) content = <Skeleton layout={layout} numbered={numbered} />;
@@ -110,7 +70,7 @@ export function PublicGameList({
         );
     return (
         <>
-            {toggle}
+            <LayoutToggle layout={layout} onChange={setLayout} />
             {content}
         </>
     );

@@ -9,6 +9,7 @@ import { Cover } from '../components/Cover';
 import { ListsPanel } from '../components/ListsPanel';
 import { ScoreGauge } from '../components/ScoreGauge';
 import { HistoryPanel, StatusPanel } from '../components/PlaythroughPanels';
+import { EntrySkeleton, SelectSkeleton } from '../components/PageSkeletons';
 import { PlatformTag } from '../components/PlatformIcon';
 import { formatMinutes, yearOf } from '../lib';
 import { ArrowLeft, Trash2, X } from 'lucide-react';
@@ -16,7 +17,7 @@ import { ArrowLeft, Trash2, X } from 'lucide-react';
 export function EntryPage() {
     const id = Number(useParams().id);
     const entry = useEntry(id);
-    if (entry.isPending) return <p role="status">Loading…</p>;
+    if (entry.isPending) return <EntrySkeleton />;
     if (entry.isError || !entry.data)
         return (
             <div className="empty">
@@ -205,26 +206,30 @@ function PlatformsEditor({ entry, onSave }: { entry: EntryDto; onSave: (ids: num
             <div className="inline-form">
                 <label className="field">
                     <span>Another platform</span>
-                    <select
-                        value=""
-                        onChange={(e) => {
-                            const id = Number(e.target.value);
-                            const p = all.data?.find((x) => x.id === id);
-                            if (p) {
-                                setExtras((x) => [...x, p]);
-                                toggle(id);
-                            }
-                        }}
-                    >
-                        <option value="">{all.isPending ? 'Loading…' : 'Choose…'}</option>
-                        {(all.data ?? [])
-                            .filter((p) => !options.has(p.id))
-                            .map((p) => (
-                                <option key={p.id} value={p.id}>
-                                    {p.name}
-                                </option>
-                            ))}
-                    </select>
+                    {all.isPending ? (
+                        <SelectSkeleton label="Loading platforms" />
+                    ) : (
+                        <select
+                            value=""
+                            onChange={(e) => {
+                                const id = Number(e.target.value);
+                                const p = all.data?.find((x) => x.id === id);
+                                if (p) {
+                                    setExtras((x) => [...x, p]);
+                                    toggle(id);
+                                }
+                            }}
+                        >
+                            <option value="">Choose…</option>
+                            {(all.data ?? [])
+                                .filter((p) => !options.has(p.id))
+                                .map((p) => (
+                                    <option key={p.id} value={p.id}>
+                                        {p.name}
+                                    </option>
+                                ))}
+                        </select>
+                    )}
                 </label>
                 <button
                     className="btn"

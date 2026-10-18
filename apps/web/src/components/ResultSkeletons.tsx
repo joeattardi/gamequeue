@@ -29,3 +29,18 @@ export function ResultSkeletons({ trailing = 'gauge' }: { trailing?: 'gauge' | '
         </>
     );
 }
+
+/** A whole `.results` list of placeholders, announced as loading. */
+export function ResultListSkeleton({
+    trailing = 'badge',
+    label = 'Loading games'
+}: {
+    trailing?: 'gauge' | 'badge';
+    label?: string;
+}) {
+    return (
+        <ul className="results" role="status" aria-label={label}>
+            <ResultSkeletons trailing={trailing} />
+        </ul>
+    );
+}

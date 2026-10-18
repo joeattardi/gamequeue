@@ -22,6 +22,7 @@ import { Link, useParams } from 'react-router';
 import { ApiRequestError } from '../api/client';
 import { useProfile } from '../api/profile';
 import { Cover } from '../components/Cover';
+import { ProfileSkeleton } from '../components/PageSkeletons';
 import { PublicHeader } from '../components/PublicHeader';
 
 function Games({ entries }: { entries: PublicEntryDto[] }) {
@@ -154,7 +155,7 @@ export function ProfilePage() {
         <>
             <PublicHeader />
             <main className="page">
-                {profile.isPending && <p role="status">Loading…</p>}
+                {profile.isPending && <ProfileSkeleton />}
                 {profile.isError && (
                     <p role="alert">
                         {notFound ? `There is no user called "${username}".` : "Couldn't load."}

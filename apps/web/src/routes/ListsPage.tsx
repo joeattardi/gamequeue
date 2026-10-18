@@ -1,3 +1,4 @@
+import { ListCardSkeletons } from '../components/PageSkeletons';
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { ApiRequestError } from '../api/client';
@@ -58,6 +59,8 @@ export function ListsPage() {
                 <p className="form-error" role="alert">
                     Couldn't load your lists.
                 </p>
+            ) : lists.isPending ? (
+                <ListCardSkeletons />
             ) : lists.data?.length === 0 ? (
                 <div className="empty">
                     <p>
