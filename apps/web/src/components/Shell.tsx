@@ -5,8 +5,8 @@ import { Logo } from './Logo';
 import {
     Database,
     Dices,
+    Gamepad2,
     Gift,
-    House,
     Library,
     List,
     ListOrdered,
@@ -26,7 +26,7 @@ export function Shell({ user }: { user: UserDto }) {
                     <Logo />
                     <nav className="nav" aria-label="Main">
                         <NavLink to="/" end>
-                            <House />
+                            <Gamepad2 />
                             Home
                         </NavLink>
                         <NavLink to="/collection">

@@ -6,12 +6,101 @@
         <meta name="color-scheme" content="light dark" />
         <link
             rel="icon"
-            href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23e8590c'/%3E%3Cpath d='M9 22V10h6a4 4 0 010 8h-3' stroke='%23fff8ee' stroke-width='3' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"
+            href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='10' fill='%231d4ed8'/%3E%3Cg transform='translate%284 4%29' fill='none' stroke='%23f5f8ff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cline x1='6' x2='10' y1='11' y2='11'/%3E%3Cline x1='8' x2='8' y1='9' y2='13'/%3E%3Cline x1='15' x2='15.01' y1='12' y2='12'/%3E%3Cline x1='18' x2='18.01' y1='10' y2='10'/%3E%3Cpath d='M17.32 5H6.68a4 4 0 0 0-3.978 3.59c-.006.052-.01.101-.017.152C2.604 9.416 2 14.456 2 16a3 3 0 0 0 3 3c1 0 1.5-.5 2-1l1.414-1.414A2 2 0 0 1 9.828 16h4.344a2 2 0 0 1 1.414.586L17 18c.5.5 1 1 2 1a3 3 0 0 0 3-3c0-1.545-.604-6.584-.685-7.258-.007-.05-.011-.1-.017-.151A4 4 0 0 0 17.32 5z'/%3E%3C/g%3E%3C/svg%3E"
         />
         <title>GameQueue</title>
+        <style>
+            /* Splash shown until the app mounts; React replaces #root's contents. Inline so it
+               paints before any script or stylesheet arrives. Colours mirror tokens.css. */
+            html {
+                background: #f3f6fb;
+                --splash-accent: #1d4ed8;
+            }
+            @media (prefers-color-scheme: dark) {
+                html {
+                    background: #0d1320;
+                    --splash-accent: #6ea0ff;
+                }
+            }
+            body {
+                margin: 0;
+            }
+            .splash {
+                min-height: 100vh;
+                display: grid;
+                place-content: center;
+                color: var(--splash-accent);
+                /* Stay invisible for a moment so a fast load never flashes it */
+                opacity: 0;
+                animation: splash-in 0.6s ease-out 0.25s forwards;
+            }
+            .splash svg {
+                width: clamp(140px, 22vmin, 200px);
+                height: clamp(140px, 22vmin, 200px);
+                fill: none;
+                stroke: currentColor;
+                stroke-width: 1;
+                stroke-linecap: round;
+                stroke-linejoin: round;
+                opacity: 0.5;
+                animation: splash-pulse 2.4s ease-in-out infinite;
+            }
+            .splash .btn-a,
+            .splash .btn-b {
+                stroke-width: 1.8;
+                animation: splash-blink 2.4s ease-in-out infinite;
+            }
+            .splash .btn-b {
+                animation-delay: 0.6s;
+            }
+            @keyframes splash-in {
+                to {
+                    opacity: 1;
+                }
+            }
+            @keyframes splash-pulse {
+                0%,
+                100% {
+                    transform: scale(1);
+                    opacity: 0.35;
+                }
+                50% {
+                    transform: scale(1.04);
+                    opacity: 0.7;
+                }
+            }
+            @keyframes splash-blink {
+                0%,
+                100% {
+                    opacity: 0.3;
+                }
+                40% {
+                    opacity: 1;
+                }
+            }
+            @media (prefers-reduced-motion: reduce) {
+                .splash svg,
+                .splash .btn-a,
+                .splash .btn-b {
+                    animation: none;
+                }
+            }
+        </style>
     </head>
     <body>
-        <div id="root"></div>
+        <div id="root">
+            <div class="splash" role="status" aria-label="Loading GameQueue">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <line x1="6" x2="10" y1="11" y2="11" />
+                    <line x1="8" x2="8" y1="9" y2="13" />
+                    <line class="btn-a" x1="15" x2="15.01" y1="12" y2="12" />
+                    <line class="btn-b" x1="18" x2="18.01" y1="10" y2="10" />
+                    <path
+                        d="M17.32 5H6.68a4 4 0 0 0-3.978 3.59c-.006.052-.01.101-.017.152C2.604 9.416 2 14.456 2 16a3 3 0 0 0 3 3c1 0 1.5-.5 2-1l1.414-1.414A2 2 0 0 1 9.828 16h4.344a2 2 0 0 1 1.414.586L17 18c.5.5 1 1 2 1a3 3 0 0 0 3-3c0-1.545-.604-6.584-.685-7.258-.007-.05-.011-.1-.017-.151A4 4 0 0 0 17.32 5z"
+                    />
+                </svg>
+            </div>
+        </div>
         <script type="module" src="/src/main.tsx"></script>
     </body>
 </html>

@@ -6,7 +6,7 @@ import { SlotSkeletons } from '../components/HomeSkeletons';
 import { UpNext } from '../components/UpNext';
 import { SlotBay } from '../components/SlotBay';
 import { useSlots } from '../api/slots';
-import { House, SlidersHorizontal } from 'lucide-react';
+import { Gamepad2, SlidersHorizontal } from 'lucide-react';
 
 export function Home() {
     const slots = useSlots();
@@ -18,7 +18,7 @@ export function Home() {
             <div className="page-head">
                 <div>
                     <h1>
-                        <House aria-hidden="true" />
+                        <Gamepad2 aria-hidden="true" />
                         Now playing
                     </h1>
                     <p className="muted">What's in each slot right now.</p>

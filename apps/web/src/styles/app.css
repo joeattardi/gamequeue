@@ -113,6 +113,10 @@ a {
     background: var(--accent);
     color: var(--accent-ink);
 }
+.logo__mark .lucide {
+    width: 24px;
+    height: 24px;
+}
 
 /* Lucide icons: sized to the text they sit beside, inheriting its colour */
 .lucide {
