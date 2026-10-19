@@ -1,3 +1,4 @@
+import { ListOrdered } from 'lucide-react';
 import { Link } from 'react-router';
 import { useQueue } from '../api/queue';
 import { UpNextSkeletons } from './HomeSkeletons';
@@ -27,6 +28,7 @@ export function UpNext() {
                     )}
                 </div>
                 <Link className="btn" to="/queue">
+                    <ListOrdered aria-hidden="true" />
                     {entries.length === 0 ? 'Build your queue' : 'View queue'}
                 </Link>
             </div>
