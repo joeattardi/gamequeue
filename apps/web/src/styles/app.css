@@ -3347,3 +3347,14 @@ fieldset.stars:disabled .stars__star {
         animation: none;
     }
 }
+
+.share {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+.share__status {
+    font-size: 0.9rem;
+    overflow-wrap: anywhere;
+}
