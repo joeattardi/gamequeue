@@ -153,6 +153,20 @@ describe('evaluateSmartList', () => {
         expect(input).toEqual([x, y]);
     });
 
+    it('sorts by date completed, newest first, with never-finished games last', () => {
+        const old = entry({ lastFinishedOn: '2024-01-05' }, { name: 'Old' });
+        const recent = entry({ lastFinishedOn: '2026-03-01' }, { name: 'Recent' });
+        const never = entry({}, { name: 'Never' });
+        const rules: SmartRule[] = [{ field: 'ttb', op: 'unknown' }];
+        const names = (dir: 'asc' | 'desc') =>
+            evaluateSmartList([old, never, recent], rules, 'finished', dir, NOW).map(
+                (e) => e.game.name
+            );
+        expect(names('desc')).toEqual(['Recent', 'Old', 'Never']);
+        expect(names('asc')).toEqual(['Old', 'Recent', 'Never']);
+        expect(defaultSmartDir('finished')).toBe('desc');
+    });
+
     it('has a natural direction per sort', () => {
         expect(defaultSmartDir('title')).toBe('asc');
         expect(defaultSmartDir('score')).toBe('desc');

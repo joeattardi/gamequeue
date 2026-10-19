@@ -83,7 +83,8 @@ export const SMART_SORTS = [
     'rating',
     'score',
     'ttb',
-    'changed'
+    'changed',
+    'finished'
 ] as const;
 export type SmartSort = (typeof SMART_SORTS)[number];
 export const SMART_SORT_LABELS: Record<SmartSort, string> = {
@@ -93,7 +94,8 @@ export const SMART_SORT_LABELS: Record<SmartSort, string> = {
     rating: 'Your rating',
     score: 'IGDB score',
     ttb: 'Time to beat',
-    changed: 'Last changed'
+    changed: 'Last changed',
+    finished: 'Date completed'
 };
 
 export type SortDir = 'asc' | 'desc';
@@ -230,6 +232,8 @@ const sortKey = (e: Sortable, sort: SmartSort): string | number | null => {
             return e.ttbMinutes;
         case 'changed':
             return e.updatedAt;
+        case 'finished':
+            return e.lastFinishedOn;
     }
 };
 
