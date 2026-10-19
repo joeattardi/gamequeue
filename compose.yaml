@@ -1,0 +1,26 @@
+# GameQueue + Cloudflare Tunnel. See DEPLOYMENT.md. Settings come from .env next to this file.
+services:
+    gamequeue:
+        image: gamequeue:latest
+        build: .
+        restart: unless-stopped
+        environment:
+            NODE_ENV: production
+            # Only cloudflared can reach the app (no published ports), so X-Forwarded-For comes from the tunnel
+            TRUST_PROXY: 'true'
+            ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:?set ALLOWED_ORIGINS in .env}
+            SIGNUPS_ENABLED: ${SIGNUPS_ENABLED:-true}
+            IGDB_CLIENT_ID: ${IGDB_CLIENT_ID:-}
+            IGDB_CLIENT_SECRET: ${IGDB_CLIENT_SECRET:-}
+        volumes:
+            - ./data:/data
+
+    cloudflared:
+        image: cloudflare/cloudflared:latest
+        restart: unless-stopped
+        command: tunnel --no-autoupdate run
+        environment:
+            TUNNEL_TOKEN: ${TUNNEL_TOKEN:?set TUNNEL_TOKEN in .env}
+        depends_on:
+            gamequeue:
+                condition: service_healthy

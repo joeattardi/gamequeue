@@ -1,0 +1,400 @@
+# Deployment
+
+GameQueue runs as a Docker container on a Raspberry Pi on the home network, exposed to the internet through a Cloudflare Tunnel. This file records the decisions and the full procedure: preparing the Pi, building the image, going live, updating and backing up.
+
+## Decisions
+
+- **Host: Raspberry Pi at home**, running Docker. The app is for the owner and maybe a couple of friends, and its resource needs are tiny (a Node process and a SQLite file).
+- **Exposure: Cloudflare Tunnel.** A `cloudflared` container on the Pi makes an _outbound_ connection to Cloudflare, and Cloudflare forwards requests for `gamequeue.app` through it. No router port forwarding, no public IP or dynamic DNS, and the home IP address stays hidden.
+- **SSL: handled by Cloudflare.** Visitors get HTTPS from Cloudflare's edge certificate (issued and renewed automatically). The hop from Cloudflare to the Pi travels inside the tunnel's own encrypted connection, so the Pi needs **no certificate, no Caddy/nginx and no Let's Encrypt**. Details in "How HTTPS works" below.
+- **Domain: `gamequeue.app`**, registered. The DNS zone must be on Cloudflare (step 3). `.app` domains are HTTPS-only (HSTS preload), which suits this setup.
+- **Deploy early**, while still developing. Production-only behaviour (`Secure` cookies, the `Origin`-based CSRF check, `TRUST_PROXY`) and mobile layout are best tested on a real URL. The ground rules are in "Developing while deployed".
+- **Likely a single user.** Lock signups once the account exists, and treat backups as essential: losing the database means losing the whole collection.
+- **Trade-off to accept:** the site is only as available as the home internet connection and power. If either drops, public profile pages go offline until it returns. The Cloudflare edge answers with an error page in the meantime; nothing is lost.
+
+## Layout
+
+```
+Browser --HTTPS--> Cloudflare edge --tunnel--> cloudflared (container) --http--> gamequeue (container, :3000) --> /data/gamequeue.db
+```
+
+Both containers are defined in `compose.yaml` and share Docker's private network. **The app publishes no ports** (nothing is reachable at `<pi-ip>:3000`), so the only way in is the tunnel. That matters because with `TRUST_PROXY=true` the login rate limit trusts `X-Forwarded-For`, which anyone could spoof if they could reach the app directly.
+
+Files in the repo that make this work:
+
+| File            | Purpose                                                                                                       |
+| --------------- | ------------------------------------------------------------------------------------------------------------- |
+| `Dockerfile`    | Multi-stage build (Node 22, Debian slim), runs as the unprivileged `node` user, health check on `/api/health` |
+| `compose.yaml`  | The `gamequeue` and `cloudflared` services                                                                    |
+| `.env.example`  | Template for the `.env` file on the Pi                                                                        |
+| `.npmrc`        | `legacy-peer-deps=true`; the lockfile was generated with it, and `npm ci` inside the image fails without it   |
+| `.dockerignore` | Keeps `node_modules`, `dist`, databases and `.env` out of the build context                                   |
+
+On the Pi:
+
+```
+~/gamequeue/            git clone of the repo
+~/gamequeue/.env        settings and secrets (mode 600, never committed)
+~/gamequeue/data/       gamequeue.db (+ -wal and -shm files); mounted into the container at /data
+~/gamequeue/backups/    nightly snapshots
+~/gamequeue/backup.sh   backup script (run from cron)
+```
+
+## Configuration
+
+Defined in `apps/server/src/config.ts`. In Docker, `compose.yaml` sets the fixed values and reads the rest from `.env`.
+
+| Variable                               | Value in production                                                                                    |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| `NODE_ENV`                             | `production` (set in the image; makes the session cookie `Secure` and serves the web app on one port)  |
+| `PORT`                                 | `3000` (set in the image)                                                                              |
+| `DATABASE_PATH`                        | `/data/gamequeue.db` (set in the image; `/data` is the mounted `./data` directory)                     |
+| `TRUST_PROXY`                          | `true` (set in `compose.yaml`; the login rate limit then sees the client IP, see the caveat below)     |
+| `ALLOWED_ORIGINS`                      | `https://gamequeue.app` in `.env` (must match the real URL; the CSRF check rejects any other `Origin`) |
+| `SIGNUPS_ENABLED`                      | `true` for the first signup, then `false`                                                              |
+| `IGDB_CLIENT_ID`, `IGDB_CLIENT_SECRET` | Twitch credentials (see step 10)                                                                       |
+| `TUNNEL_TOKEN`                         | Cloudflare Tunnel token (see step 4); read by `cloudflared`, not by the app                            |
+
+Without the IGDB credentials the app starts but search and add-game are disabled.
+
+**Rate-limit caveat.** The login limiter keys on the _first_ entry of `X-Forwarded-For`. Cloudflare appends the real client IP to whatever the client sent, so a client that sends its own `X-Forwarded-For` can pick the key and sidestep the per-IP limit. Passwords are argon2id and login errors are generic, so the risk is modest for a personal app, but a fix is to read `CF-Connecting-IP` (which Cloudflare always sets to the true client address) in `clientIp` in `apps/server/src/routes/auth.ts`.
+
+## Step-by-step setup
+
+### 1. Hardware and Raspberry Pi OS
+
+- **Pi 4 (2 GB or more) or Pi 5**, a proper power supply, and wired Ethernet if at all possible. A 32-bit-only board (Pi Zero, Pi 1) is not supported.
+- **Storage:** SQLite writes constantly enough to wear out a cheap SD card over time. Prefer booting from a USB SSD (supported on Pi 4 and 5) or at least a high-endurance SD card, and keep the backups from step 11 regardless.
+- Optional but cheap insurance: a small UPS or UPS HAT. A power cut mid-write is survivable (SQLite WAL is crash-safe), but a corrupted filesystem is not.
+
+Flash the OS with Raspberry Pi Imager:
+
+1. Choose **Raspberry Pi OS Lite (64-bit)**. No desktop is needed.
+2. In the OS customisation settings, set a hostname (for example `gamequeue`), create your user (the first user is normally UID 1000, which step 6 relies on), enable **SSH with public-key authentication** and paste your `~/.ssh/id_ed25519.pub`. Set Wi-Fi only if you cannot use Ethernet, and set your locale and time zone.
+3. Boot the Pi and connect: `ssh <user>@gamequeue.local`.
+
+### 2. Secure and update the Pi
+
+```sh
+sudo apt update && sudo apt full-upgrade -y
+sudo apt install -y git sqlite3 ufw unattended-upgrades
+sudo dpkg-reconfigure -plow unattended-upgrades
+
+# firewall: SSH only. The tunnel needs no inbound ports.
+sudo ufw allow OpenSSH
+sudo ufw enable
+```
+
+In a **second terminal**, confirm you can still SSH in. Then disable password logins (Imager's key setup usually already does):
+
+```sh
+sudo sed -i 's/^#\?PasswordAuthentication.*/PasswordAuthentication no/' /etc/ssh/sshd_config
+sudo systemctl restart ssh
+```
+
+Check `/etc/ssh/sshd_config.d/*.conf` too: a drop-in file can override that setting.
+
+**Do not forward any ports on your router.** The tunnel is outbound-only; nothing needs to reach the Pi from the internet. Optionally give the Pi a fixed address with a DHCP reservation on your router so SSH always finds it, but the site does not depend on it.
+
+The Pi has no battery-backed clock. It syncs time on boot via `systemd-timesyncd` (enabled by default), which the Twitch token flow and session expiry rely on; check `timedatectl` says `System clock synchronized: yes`.
+
+### 3. Put the domain on Cloudflare
+
+A tunnel's public hostname needs the domain's DNS to be served by Cloudflare.
+
+1. Create a free Cloudflare account and **Add a site**: `gamequeue.app`, on the Free plan.
+2. Cloudflare shows two nameservers. At the registrar where `gamequeue.app` is registered, replace the existing nameservers with those two.
+3. Wait until Cloudflare shows the site as **Active** (minutes to a few hours). Check with `dig +short NS gamequeue.app`.
+4. Remove any old DNS records for the domain (for example an A record pointing at a previous host). The tunnel creates the one it needs in step 4.
+
+### 4. Create the tunnel
+
+In the Cloudflare dashboard open **Zero Trust** (the menu may be labelled "Networks > Tunnels" or "Networks > Connectors" depending on the dashboard version; Cloudflare reorganises it from time to time). Zero Trust asks you to pick a team name on first use and may ask for a payment method even for the free plan; the free plan has no charge for tunnels.
+
+1. **Create a tunnel**, type **Cloudflared**, name it `gamequeue`.
+2. On the "install connector" screen, pick any OS and copy the **token**: the long string after `--token` or `service install` in the command shown. Do not run that command; the container does this job. Treat the token like a password: anyone holding it can run a connector for your tunnel.
+3. Go to the tunnel's **Published application routes** (or "Public Hostname") tab and add a route:
+    - Hostname: `gamequeue.app` (leave the subdomain empty)
+    - Service type: **HTTP**
+    - URL: `gamequeue:3000` (the compose service name and port, not `localhost`)
+4. Optional: add a second route for `www.gamequeue.app` with the same service, and later a redirect rule from `www` to the apex. Skip it if you do not need `www`.
+
+Cloudflare creates the proxied DNS record (`gamequeue.app` CNAME to `<id>.cfargotunnel.com`) for you. The apex works because Cloudflare flattens CNAMEs at the root.
+
+### 5. Install Docker on the Pi
+
+```sh
+curl -fsSL https://get.docker.com | sudo sh
+sudo usermod -aG docker $USER
+```
+
+Log out and back in so the group applies, then check:
+
+```sh
+docker run --rm hello-world
+docker compose version
+```
+
+Docker starts on boot (`systemctl is-enabled docker` should print `enabled`) and brings the containers back up thanks to `restart: unless-stopped`.
+
+Docker's default logging never rotates, so a chatty container can eventually fill the disk. Cap it:
+
+```sh
+sudo tee /etc/docker/daemon.json >/dev/null <<'EOF'
+{ "log-driver": "json-file", "log-opts": { "max-size": "10m", "max-file": "3" } }
+EOF
+sudo systemctl restart docker
+```
+
+### 6. Get the code and configure it
+
+```sh
+git clone https://github.com/joeattardi/gamequeue.git ~/gamequeue
+cd ~/gamequeue
+```
+
+For a private repository, create a read-only deploy key (`ssh-keygen -t ed25519 -N '' -f ~/.ssh/gamequeue_deploy`), add the `.pub` file in GitHub under the repo's **Settings > Deploy keys** (leave write access off), and clone with the SSH URL (using `GIT_SSH_COMMAND='ssh -i ~/.ssh/gamequeue_deploy'` or an `~/.ssh/config` entry). Deploy from `main`, never a feature branch.
+
+Create the settings file and the data directory:
+
+```sh
+cp .env.example .env
+chmod 600 .env
+nano .env      # set TUNNEL_TOKEN (step 4); IGDB credentials come in step 10
+
+mkdir -p data backups
+sudo chown 1000:1000 data    # the container runs as UID 1000 ("node")
+```
+
+The `chown` matters: if the directory does not exist or belongs to root, the app cannot create `gamequeue.db` and exits with `SQLITE_CANTOPEN`. If your Pi user is not UID 1000, still chown to 1000.
+
+### 7. Build the image
+
+Pick one.
+
+**A. Build on the Pi** (simplest, nothing else needed):
+
+```sh
+cd ~/gamequeue
+docker compose build
+```
+
+Expect around 10 minutes on a Pi 4 the first time (later builds reuse cached layers). If the build dies with `Killed`, it ran out of memory: add swap (`sudo dphys-swapfile swapoff && sudo sed -i 's/^CONF_SWAPSIZE=.*/CONF_SWAPSIZE=2048/' /etc/dphys-swapfile && sudo dphys-swapfile setup && sudo dphys-swapfile swapon`) and retry.
+
+**B. Build on your Mac and send it over** (much faster; an Apple-silicon Mac builds arm64 natively, an Intel Mac emulates and is slow):
+
+```sh
+# on the Mac, in the repo
+docker buildx build --platform linux/arm64 -t gamequeue:latest --load .
+docker save gamequeue:latest | gzip | ssh <user>@gamequeue.local 'docker load'
+```
+
+Either way the image is tagged `gamequeue:latest`, which is what `compose.yaml` expects.
+
+### 8. Start it
+
+```sh
+cd ~/gamequeue
+docker compose up -d --no-build
+docker compose ps          # both services Up; gamequeue shows (healthy) after ~20 s
+docker compose logs -f     # Ctrl-C to stop following
+```
+
+Migrations run at startup. A healthy start logs `GameQueue listening on http://localhost:3000` (and a warning about IGDB credentials until step 10). In the Cloudflare dashboard the tunnel's status turns **Healthy**, and `cloudflared` logs `Registered tunnel connection`.
+
+From any computer:
+
+```sh
+curl -s https://gamequeue.app/api/health      # {"ok":true}
+curl -I https://gamequeue.app
+```
+
+If you see Cloudflare error 1033 or 502, see Troubleshooting.
+
+### 9. First login and lock signups
+
+1. Open `https://gamequeue.app` and create your account.
+2. Set `SIGNUPS_ENABLED=false` in `~/gamequeue/.env`, then `docker compose up -d` (this recreates the app container with the new value). Registration now returns 403. Flip it on briefly if a friend needs an account.
+
+### 10. IGDB credentials
+
+1. Create a Twitch account with two-factor authentication enabled and open the Twitch developer console.
+2. Register an application: OAuth redirect URL `http://localhost`, category "Application Integration", client type **Confidential**.
+3. Copy the Client ID and generate a Client Secret. Put them in `~/gamequeue/.env`, then `docker compose up -d`.
+4. Try searching for a game in the app to confirm.
+
+IGDB is free for non-commercial use under Twitch's terms, with rate limits and attribution requirements.
+
+### 11. Set up backups
+
+See the Backups section below, and do it before entering much data.
+
+### 12. Cloudflare settings worth checking
+
+In the Cloudflare dashboard for `gamequeue.app` (all available on the free plan):
+
+- **SSL/TLS > Overview:** the encryption mode is irrelevant for tunnel traffic, but set it to **Full (strict)** so nothing ever falls back to a weaker mode.
+- **SSL/TLS > Edge Certificates:** enable **Always Use HTTPS** and **Automatic HTTPS Rewrites**. HSTS is optional here since `.app` is already on the browser preload list.
+- **Security > WAF > Rate limiting rules:** optionally add one rule limiting `POST /api/auth/login` per IP. This also covers the `X-Forwarded-For` caveat above, because Cloudflare keys it on the real client IP.
+- Do not put Cloudflare Access (login wall) in front of the whole site: the public profile pages (`/u/:username`) must stay reachable by everyone.
+
+## How HTTPS works
+
+- **Browser to Cloudflare:** a certificate for `gamequeue.app` that Cloudflare issues and renews itself (Universal SSL). Nothing to buy or install. A brand-new zone can take several minutes to get its first certificate; until then browsers show a certificate error.
+- **Cloudflare to the Pi:** `cloudflared` keeps an outbound, encrypted connection to Cloudflare, and requests flow back through it. Because that tunnel is the encryption, the `http://gamequeue:3000` hop inside Docker is not exposed to any network, and no origin certificate is needed.
+- **Why it matters for the app:** in production the session cookie is `Secure`. Browsers see HTTPS on `gamequeue.app`, so login works. Reaching the app by plain HTTP some other way (for example `http://<pi-ip>:3000` after publishing the port for debugging) makes login silently fail.
+
+## Updating
+
+On the Pi:
+
+```sh
+cd ~/gamequeue
+./backup.sh                                  # snapshot first
+docker tag gamequeue:latest gamequeue:previous
+git pull --ff-only
+docker compose build                         # or load a new image built on the Mac (step 7B)
+docker compose up -d --no-build
+docker compose logs --tail 30 gamequeue
+docker image prune -f                        # remove dangling old layers
+```
+
+Run `npm test` and `npm run typecheck` before pushing to `main`: a bad push goes straight to the live site. The restart takes a few seconds.
+
+`cloudflared:latest` is pulled only when missing. Refresh it now and then (monthly is plenty): `docker compose pull cloudflared && docker compose up -d`.
+
+**Rollback:** `docker tag gamequeue:previous gamequeue:latest && docker compose up -d --no-build`. Migrations are forward-only, so if a migration was the problem, also restore the pre-update backup (see Restoring).
+
+## Developing while deployed
+
+- Deploy only from `main` (or a `release` branch); never track a feature branch.
+- Treat the production database as real data. Schema changes need proper migrations (`npm run db:generate`, committed under `apps/server/drizzle/`). Do not expect to recreate the database as was acceptable earlier in development. Check generated SQL for added foreign-key columns, since drizzle-kit drops `ON DELETE` from `ALTER TABLE ... ADD COLUMN ... REFERENCES` on SQLite.
+- Keep a separate local dev database; never point a laptop at the Pi's file.
+- Each finished milestone becomes a deploy.
+- To try the production image locally: `docker build -t gamequeue:test . && docker run --rm -p 3000:3000 -v "$PWD/data-test:/data" -e ALLOWED_ORIGINS=http://localhost:3000 gamequeue:test`. Over plain HTTP the `Secure` cookie is dropped by most browsers, so log in via `http://localhost` (browsers treat localhost as secure) rather than a LAN IP.
+
+## SQLite and concurrency
+
+The app uses `better-sqlite3` in WAL mode (`apps/server/src/db/client.ts`). Readers never block writers, writes are tiny and serialized, and the synchronous driver means requests in one process cannot interleave mid-transaction. That is plenty for a small multi-user app.
+
+- No `busy_timeout` is set. That is fine with a single process. If a second process ever writes to the same file, add `sqlite.pragma('busy_timeout = 5000')`.
+- SQLite needs one process on one machine and does not work over network filesystems. Keep `./data` on the Pi's local disk, not an NFS/SMB share. Never run two copies of the app container against the same directory.
+
+## Backups
+
+Never copy the `.db` file while the app runs: in WAL mode recent data lives in a separate `-wal` file, so a plain copy can be inconsistent. Use `sqlite3 ... ".backup"` (or `VACUUM INTO`), which is safe on a live database. The `sqlite3` CLI installed on the Pi host (step 2) works directly on the bind-mounted `./data` directory, so nothing extra is needed in the image.
+
+Approach: a nightly snapshot kept locally for 14 days, plus a copy off the machine. A local-only backup does not survive loss of the Pi or its disk, and a home Pi is exactly the kind of machine that gets unplugged, spilled on or hit by a power surge.
+
+### Backup script
+
+Save as `~/gamequeue/backup.sh` and `chmod 755` it:
+
+```sh
+#!/bin/bash
+set -euo pipefail
+
+DIR=$(cd "$(dirname "$0")" && pwd)
+DB="$DIR/data/gamequeue.db"
+OUT="$DIR/backups"
+STAMP=$(date +%F)
+FILE="$OUT/gamequeue-$STAMP.db"
+
+mkdir -p "$OUT"
+sqlite3 "$DB" ".backup '$FILE'"
+
+# refuse to keep (or upload) a damaged snapshot
+if [ "$(sqlite3 "$FILE" 'PRAGMA integrity_check;')" != "ok" ]; then
+    echo "integrity check failed for $FILE" >&2
+    rm -f "$FILE"
+    exit 1
+fi
+
+gzip -f "$FILE"
+find "$OUT" -name 'gamequeue-*.db.gz' -mtime +14 -delete
+
+# off-machine copy, if an rclone remote named "offsite" is configured
+if command -v rclone >/dev/null && rclone listremotes | grep -q '^offsite:'; then
+    rclone copy "$FILE.gz" offsite:gamequeue-backups/
+fi
+```
+
+The data directory is owned by UID 1000, so run the script as that user (your normal Pi user, normally). Schedule it nightly with `crontab -e`:
+
+```
+0 3 * * * /home/<user>/gamequeue/backup.sh >> /home/<user>/gamequeue/backup.log 2>&1
+```
+
+Run it once by hand and confirm a `.db.gz` file appears in `~/gamequeue/backups`.
+
+### Off-machine copy
+
+Pick one:
+
+- **Backblaze B2, S3 or similar via rclone** (cheap, recommended): `sudo apt install -y rclone`, then `rclone config` and create a remote named `offsite`. Set a lifecycle rule on the bucket to expire old files.
+- **rsync or SFTP to another machine** you own (a NAS, a desktop that is on at night).
+- A second USB drive with a weekly copy is better than nothing, but it sits in the same house.
+
+Alternatives considered:
+
+- Backup inside the app via `better-sqlite3`'s `db.backup(path)`. Works on a live database, but adds code for something cron does well.
+- Litestream: continuous WAL streaming to S3-compatible storage. Strongest (loses seconds, not up to a day), but another service and overkill for a personal app.
+
+The app's own JSON export (`/api/data/export`) is a good second layer: it is portable across schema changes, and import is a merge into any instance. Also consider making an image of the SD card/SSD after the setup is working, so rebuilding the Pi is quick.
+
+### Restoring
+
+```sh
+cd ~/gamequeue
+docker compose stop gamequeue
+mkdir -p data/old && mv data/gamequeue.db* data/old/
+gunzip -c backups/gamequeue-YYYY-MM-DD.db.gz > data/gamequeue.db
+sudo chown 1000:1000 data/gamequeue.db
+docker compose start gamequeue
+```
+
+Try a restore on a scratch machine once, so the first time is not during an emergency.
+
+## Troubleshooting
+
+| Symptom                                                   | Likely cause                                                                                                                                                         |
+| --------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Cloudflare error 1033 ("Argo Tunnel error")               | `cloudflared` is not connected: container stopped, wrong `TUNNEL_TOKEN`, or the Pi has no internet. Check `docker compose logs cloudflared`.                         |
+| Cloudflare 502 Bad Gateway                                | Tunnel is up but the app is not answering: crashed or still starting, or the route's URL is not exactly `http://gamequeue:3000`. Check `docker compose ps` and logs. |
+| Browser certificate error on a brand-new domain           | Cloudflare is still issuing the edge certificate; wait a few minutes. Also confirm the zone is Active (step 3).                                                      |
+| Site loads but login fails / "forbidden" on writes        | `ALLOWED_ORIGINS` doesn't exactly match `https://gamequeue.app` (scheme, no trailing slash), or you are on plain HTTP.                                               |
+| App container restarts, logs show `SQLITE_CANTOPEN`       | `./data` is missing or not owned by UID 1000: `sudo chown 1000:1000 data`.                                                                                           |
+| Everyone shares one login rate limit                      | `TRUST_PROXY` is not `true` (it is set in `compose.yaml`), so every request appears to come from the tunnel container.                                               |
+| `docker compose` complains about `TUNNEL_TOKEN` / origins | `.env` is missing or incomplete; compose refuses to start without `TUNNEL_TOKEN` and `ALLOWED_ORIGINS`.                                                              |
+| Search and add-game disabled                              | IGDB credentials missing or wrong in `.env`; after editing, run `docker compose up -d` (a plain restart does not re-read `.env`).                                    |
+| `curl` DELETE/logout returns 403                          | Body-less mutations need an `Origin` header (browsers send it; curl must add it).                                                                                    |
+| Build dies with `Killed`                                  | Out of memory while building on the Pi; add swap (step 7A) or build on the Mac (step 7B).                                                                            |
+| `npm ci` in the build reports the lockfile is out of sync | `.npmrc` (`legacy-peer-deps=true`) is missing from the build context.                                                                                                |
+| Site went down after a power cut                          | Check the Pi booted and `docker compose ps`; if the filesystem is damaged, restore from a backup onto a fresh card/SSD.                                              |
+
+Useful commands: `docker compose ps`, `docker compose logs -f gamequeue`, `docker compose logs -f cloudflared`, `docker stats`, `docker compose exec gamequeue sh`.
+
+## Moving to PostgreSQL later
+
+Not planned, and not needed at this scale. Moderate effort if it ever is (a few days plus a data migration):
+
+- About 167 synchronous `.get()` / `.all()` / `.run()` calls become async, touching most of the 23 service and route files. This is the bulk of the work.
+- The 19 `db.transaction((tx) => ...)` blocks become async callbacks.
+- `schema.ts` moves from `sqlite-core` to `pg-core` (identity columns, `bigint` for the millisecond timestamps), and migrations are regenerated from scratch.
+- About 26 raw SQL spots need equivalents: `unixepoch() * 1000` defaults, `instr(lower(...))` search (becomes `strpos` or `ILIKE`), `res.changes` (becomes `rowCount`).
+- Tests currently use in-memory SQLite; they would need a Postgres test database (Testcontainers or PGlite).
+- Data moves via the existing export/import feature.
+
+Partial unique indexes and the Drizzle query-builder code carry over largely unchanged. Reasons to actually switch would be multiple app servers, heavy concurrent writes, or wanting managed backups and replicas.
+
+## IGDB request volume
+
+For one to a few users, IGDB's limit (4 requests/second) is not a concern. What already keeps requests down:
+
+- Game metadata is fetched once per game and shared across users (`ensureGame` in `services/games.ts`); cached metadata is never re-fetched.
+- The platform list is synced once, then served from the database.
+- Search results are cached in memory for 5 minutes (`routes/igdb.ts`, `TtlCache`), and the search box is debounced by 300 ms.
+- Requests are throttled by `RequestLimiter`, and the Twitch token is cached.
+- Import never calls IGDB; the export file carries a metadata snapshot per game.
+
+If it ever matters: raise the search cache TTL (search results barely change), or persist the cache in SQLite so it survives restarts.
