@@ -2889,8 +2889,28 @@ fieldset.stars:disabled .stars__star {
 }
 .sv-bar__fill {
     width: 100%;
-    background: var(--accent);
+    background: var(--bar, var(--accent));
     border-radius: 4px 4px 0 0;
+    transform-origin: bottom;
+    animation: sv-grow-y 600ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation-delay: calc(var(--i, 0) * 40ms);
+}
+@keyframes sv-grow-y {
+    from {
+        transform: scaleY(0);
+    }
+}
+@keyframes sv-grow-x {
+    from {
+        transform: scaleX(0);
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .sv-bar__fill,
+    .sv-hbar__all,
+    .sv-hbar__done {
+        animation: none;
+    }
 }
 .sv-bar:hover .sv-bar__fill {
     filter: brightness(1.15);
@@ -2915,10 +2935,10 @@ fieldset.stars:disabled .stars__star {
     display: inline-block;
 }
 .sv-key--finished {
-    background: var(--accent);
+    background: var(--ink-muted);
 }
 .sv-key--all {
-    background: color-mix(in srgb, var(--accent) 28%, var(--surface));
+    background: color-mix(in srgb, var(--ink-muted) 30%, var(--surface));
     margin-left: 10px;
 }
 .sv-hbars {
@@ -2947,14 +2967,20 @@ fieldset.stars:disabled .stars__star {
 .sv-hbar__all {
     display: block;
     height: 100%;
-    background: color-mix(in srgb, var(--accent) 28%, var(--surface));
+    background: color-mix(in srgb, var(--bar) 28%, var(--surface));
     border-radius: 0 4px 4px 0;
     overflow: hidden;
+    transform-origin: left;
+    animation: sv-grow-x 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation-delay: calc(var(--i, 0) * 50ms);
 }
 .sv-hbar__done {
     display: block;
     height: 100%;
-    background: var(--accent);
+    background: var(--bar);
+    transform-origin: left;
+    animation: sv-grow-x 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation-delay: calc(var(--i, 0) * 50ms + 250ms);
 }
 .sv-hbar__num {
     color: var(--ink-muted);

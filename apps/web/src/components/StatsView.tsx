@@ -1,4 +1,5 @@
 import { STATS_UNKNOWN_YEAR, type BreakdownRow, type StatsDto } from '@gamequeue/shared';
+import type { CSSProperties } from 'react';
 import { Star } from 'lucide-react';
 import { formatMinutes } from '../lib';
 import { Cover } from './Cover';
@@ -66,6 +67,7 @@ export function StatsView({ stats }: { stats: StatsDto }) {
                         <BarChart
                             title="Last 12 months"
                             unit="game"
+                            hue="var(--viz-1)"
                             data={finished.months.map((m) => ({
                                 label: monthLabel(m.month),
                                 full: `${monthLabel(m.month)} ${m.month.slice(0, 4)}`,
@@ -75,6 +77,7 @@ export function StatsView({ stats }: { stats: StatsDto }) {
                         <BarChart
                             title="By year"
                             unit="game"
+                            hue="var(--viz-2)"
                             data={finished.years.map((y) => ({
                                 label: y.year === STATS_UNKNOWN_YEAR ? '?' : y.year,
                                 full: y.year === STATS_UNKNOWN_YEAR ? 'Unknown date' : y.year,
@@ -92,9 +95,9 @@ export function StatsView({ stats }: { stats: StatsDto }) {
                     <span className="sv-key sv-key--all" /> All games
                 </p>
                 <div className="sv-charts">
-                    <Breakdown title="Platforms" rows={breakdowns.platforms} />
-                    <Breakdown title="Genres" rows={breakdowns.genres} />
-                    <Breakdown title="Tags" rows={breakdowns.tags} />
+                    <Breakdown title="Platforms" rows={breakdowns.platforms} hue="var(--viz-1)" />
+                    <Breakdown title="Genres" rows={breakdowns.genres} hue="var(--viz-3)" />
+                    <Breakdown title="Tags" rows={breakdowns.tags} hue="var(--viz-4)" />
                 </div>
             </section>
 
@@ -110,7 +113,13 @@ export function StatsView({ stats }: { stats: StatsDto }) {
                             data={ratings.distribution.map((d) => ({
                                 label: `${d.rating}★`,
                                 full: plural(d.rating, 'star'),
-                                value: d.count
+                                value: d.count,
+                                color:
+                                    d.rating >= 4
+                                        ? 'var(--status-good)'
+                                        : d.rating === 3
+                                          ? 'var(--status-mid)'
+                                          : 'var(--status-bad)'
                             }))}
                         />
                         <div>
@@ -154,19 +163,32 @@ interface Bar {
     /** Spelled out for the tooltip and the screen-reader table */
     full: string;
     value: number;
+    /** Overrides the chart's colour for this bar */
+    color?: string;
 }
 
 /** Vertical bars from a zero baseline. Values show over non-empty bars; a hidden table mirrors them. */
-function BarChart({ title, unit, data }: { title: string; unit: string; data: Bar[] }) {
+function BarChart({
+    title,
+    unit,
+    data,
+    hue = 'var(--viz-1)'
+}: {
+    title: string;
+    unit: string;
+    data: Bar[];
+    hue?: string;
+}) {
     const max = Math.max(1, ...data.map((d) => d.value));
     return (
         <figure className="sv-chart">
             <figcaption className="sv-subtitle">{title}</figcaption>
             <div className="sv-bars" aria-hidden="true">
-                {data.map((d) => (
+                {data.map((d, i) => (
                     <div
                         key={d.full}
                         className="sv-bar"
+                        style={{ '--bar': d.color ?? hue, '--i': i } as CSSProperties}
                         title={`${d.full}: ${plural(d.value, unit)}`}
                     >
                         <span className="sv-bar__value">{d.value > 0 ? d.value : ''}</span>
@@ -199,7 +221,7 @@ function BarChart({ title, unit, data }: { title: string; unit: string; data: Ba
 }
 
 /** Horizontal bars: the full track is every game, the solid part the finished ones. */
-function Breakdown({ title, rows }: { title: string; rows: BreakdownRow[] }) {
+function Breakdown({ title, rows, hue }: { title: string; rows: BreakdownRow[]; hue: string }) {
     const max = Math.max(1, ...rows.map((r) => r.total));
     return (
         <div>
@@ -208,9 +230,10 @@ function Breakdown({ title, rows }: { title: string; rows: BreakdownRow[] }) {
                 <p className="muted">None yet.</p>
             ) : (
                 <ul className="sv-hbars">
-                    {rows.map((r) => (
+                    {rows.map((r, i) => (
                         <li
                             key={r.name}
+                            style={{ '--bar': hue, '--i': i } as CSSProperties}
                             title={`${r.name}: ${plural(r.total, 'game')}, ${r.finished} finished, ${r.unplayed} unplayed`}
                         >
                             <span className="sv-hbar__name">{r.name}</span>
