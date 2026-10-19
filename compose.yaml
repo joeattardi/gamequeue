@@ -1,7 +1,7 @@
 # GameQueue + Cloudflare Tunnel. See DEPLOYMENT.md. Settings come from .env next to this file.
 services:
     gamequeue:
-        image: gamequeue:latest
+        image: ghcr.io/joeattardi/gamequeue:latest
         build: .
         restart: unless-stopped
         environment:

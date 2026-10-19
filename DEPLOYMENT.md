@@ -8,6 +8,7 @@ GameQueue runs as a Docker container on a Raspberry Pi on the home network, expo
 - **Exposure: Cloudflare Tunnel.** A `cloudflared` container on the Pi makes an _outbound_ connection to Cloudflare, and Cloudflare forwards requests for `gamequeue.app` through it. No router port forwarding, no public IP or dynamic DNS, and the home IP address stays hidden.
 - **SSL: handled by Cloudflare.** Visitors get HTTPS from Cloudflare's edge certificate (issued and renewed automatically). The hop from Cloudflare to the Pi travels inside the tunnel's own encrypted connection, so the Pi needs **no certificate, no Caddy/nginx and no Let's Encrypt**. Details in "How HTTPS works" below.
 - **Domain: `gamequeue.app`**, registered. The DNS zone must be on Cloudflare (step 3). `.app` domains are HTTPS-only (HSTS preload), which suits this setup.
+- **Updates: push to `main`.** GitHub Actions checks the code and publishes an arm64 image to GitHub's container registry (GHCR); a cron job on the Pi notices the new image, backs up the database and restarts the app. The Pi only makes outbound connections. The repo is public, so GitHub's native arm64 runners are free.
 - **Deploy early**, while still developing. Production-only behaviour (`Secure` cookies, the `Origin`-based CSRF check, `TRUST_PROXY`) and mobile layout are best tested on a real URL. The ground rules are in "Developing while deployed".
 - **Likely a single user.** Lock signups once the account exists, and treat backups as essential: losing the database means losing the whole collection.
 - **Trade-off to accept:** the site is only as available as the home internet connection and power. If either drops, public profile pages go offline until it returns. The Cloudflare edge answers with an error page in the meantime; nothing is lost.
@@ -22,13 +23,16 @@ Both containers are defined in `compose.yaml` and share Docker's private network
 
 Files in the repo that make this work:
 
-| File            | Purpose                                                                                                       |
-| --------------- | ------------------------------------------------------------------------------------------------------------- |
-| `Dockerfile`    | Multi-stage build (Node 22, Debian slim), runs as the unprivileged `node` user, health check on `/api/health` |
-| `compose.yaml`  | The `gamequeue` and `cloudflared` services                                                                    |
-| `.env.example`  | Template for the `.env` file on the Pi                                                                        |
-| `.npmrc`        | `legacy-peer-deps=true`; the lockfile was generated with it, and `npm ci` inside the image fails without it   |
-| `.dockerignore` | Keeps `node_modules`, `dist`, databases and `.env` out of the build context                                   |
+| File                           | Purpose                                                                                                                             |
+| ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `Dockerfile`                   | Multi-stage build (Node 22, Debian slim), runs as the unprivileged `node` user, health check on `/api/health`                       |
+| `compose.yaml`                 | The `gamequeue` and `cloudflared` services                                                                                          |
+| `.env.example`                 | Template for the `.env` file on the Pi                                                                                              |
+| `.npmrc`                       | `legacy-peer-deps=true`; the lockfile was generated with it, and `npm ci` inside the image fails without it                         |
+| `.dockerignore`                | Keeps `node_modules`, `dist`, databases and `.env` out of the build context                                                         |
+| `.github/workflows/deploy.yml` | On every push/PR: format check, typecheck, tests. On `main`: builds the arm64 image and pushes it to `ghcr.io/joeattardi/gamequeue` |
+| `scripts/update.sh`            | Run by cron on the Pi: pulls the repo and image, and if either changed, backs up, restarts and rolls back on failure                |
+| `scripts/backup.sh`            | Safe snapshot of the live SQLite file, 14-day retention, optional off-machine copy                                                  |
 
 On the Pi:
 
@@ -36,8 +40,7 @@ On the Pi:
 ~/gamequeue/            git clone of the repo
 ~/gamequeue/.env        settings and secrets (mode 600, never committed)
 ~/gamequeue/data/       gamequeue.db (+ -wal and -shm files); mounted into the container at /data
-~/gamequeue/backups/    nightly snapshots
-~/gamequeue/backup.sh   backup script (run from cron)
+~/gamequeue/backups/    nightly and pre-update snapshots
 ```
 
 ## Configuration
@@ -168,34 +171,31 @@ sudo chown 1000:1000 data    # the container runs as UID 1000 ("node")
 
 The `chown` matters: if the directory does not exist or belongs to root, the app cannot create `gamequeue.db` and exits with `SQLITE_CANTOPEN`. If your Pi user is not UID 1000, still chown to 1000.
 
-### 7. Build the image
+### 7. Get the image
 
-Pick one.
+`compose.yaml` runs `ghcr.io/joeattardi/gamequeue:latest`, which GitHub Actions builds and publishes on every push to `main` (`.github/workflows/deploy.yml`).
 
-**A. Build on the Pi** (simplest, nothing else needed):
+**Once, from your Mac:**
+
+1. Push to `main` and watch the run under the repo's **Actions** tab. When it finishes, the package appears on your GitHub profile under **Packages**.
+2. Open the package, **Package settings**, and set visibility to **Public**. New packages start private, and the Pi pulls anonymously. (If you prefer to keep it private, run `docker login ghcr.io` on the Pi with a personal access token that has only `read:packages`.)
+
+The image is then pulled automatically when you start it (step 8).
+
+**Fallback: build on the Pi** if the image is not available, for example before the first workflow run:
 
 ```sh
 cd ~/gamequeue
 docker compose build
 ```
 
-Expect around 10 minutes on a Pi 4 the first time (later builds reuse cached layers). If the build dies with `Killed`, it ran out of memory: add swap (`sudo dphys-swapfile swapoff && sudo sed -i 's/^CONF_SWAPSIZE=.*/CONF_SWAPSIZE=2048/' /etc/dphys-swapfile && sudo dphys-swapfile setup && sudo dphys-swapfile swapon`) and retry.
-
-**B. Build on your Mac and send it over** (much faster; an Apple-silicon Mac builds arm64 natively, an Intel Mac emulates and is slow):
-
-```sh
-# on the Mac, in the repo
-docker buildx build --platform linux/arm64 -t gamequeue:latest --load .
-docker save gamequeue:latest | gzip | ssh <user>@gamequeue.local 'docker load'
-```
-
-Either way the image is tagged `gamequeue:latest`, which is what `compose.yaml` expects.
+Expect around 10 minutes on a Pi 4 the first time. If the build dies with `Killed`, it ran out of memory: add swap (`sudo dphys-swapfile swapoff && sudo sed -i 's/^CONF_SWAPSIZE=.*/CONF_SWAPSIZE=2048/' /etc/dphys-swapfile && sudo dphys-swapfile setup && sudo dphys-swapfile swapon`) and retry. The locally built image gets the same tag, and `scripts/update.sh` replaces it with the published one as soon as there is a newer one.
 
 ### 8. Start it
 
 ```sh
 cd ~/gamequeue
-docker compose up -d --no-build
+docker compose up -d
 docker compose ps          # both services Up; gamequeue shows (healthy) after ~20 s
 docker compose logs -f     # Ctrl-C to stop following
 ```
@@ -225,9 +225,9 @@ If you see Cloudflare error 1033 or 502, see Troubleshooting.
 
 IGDB is free for non-commercial use under Twitch's terms, with rate limits and attribution requirements.
 
-### 11. Set up backups
+### 11. Automatic updates and backups
 
-See the Backups section below, and do it before entering much data.
+Install the two cron lines from the Updating section, and see Backups below for the off-machine copy. Do this before entering much data.
 
 ### 12. Cloudflare settings worth checking
 
@@ -246,28 +246,51 @@ In the Cloudflare dashboard for `gamequeue.app` (all available on the free plan)
 
 ## Updating
 
-On the Pi:
+Updates are automatic: **push to `main` and wait a few minutes.**
+
+1. GitHub Actions runs the format check, typecheck and tests, and only if they pass builds the arm64 image and publishes it as `ghcr.io/joeattardi/gamequeue:latest` (also tagged with the commit SHA). A failing check means nothing is deployed. Pull requests run the checks but never publish.
+2. `scripts/update.sh` runs on the Pi from cron every 2 minutes. It does a `git pull` (so changes to `compose.yaml` and the scripts apply too) and pulls the image. If nothing changed it exits at once.
+3. If something changed, it takes a database backup (`scripts/backup.sh`), tags the running image as `gamequeue:previous`, runs `docker compose up -d`, and waits up to a minute for the container's health check. If the new version is not healthy it switches back to the previous image and exits non-zero.
+
+### One-time setup on the Pi
+
+```sh
+chmod +x ~/gamequeue/scripts/*.sh
+crontab -e
+```
+
+Add these two lines (replace `<user>`):
+
+```
+*/2 * * * * /home/<user>/gamequeue/scripts/update.sh >> /home/<user>/gamequeue/update.log 2>&1
+0 3 * * * /home/<user>/gamequeue/scripts/backup.sh >> /home/<user>/gamequeue/backup.log 2>&1
+```
+
+The first line keeps the app current, the second is the nightly backup. Cron runs with a minimal environment; if `docker` is not found, add `PATH=/usr/local/bin:/usr/bin:/bin` as the first line of the crontab. Run `~/gamequeue/scripts/update.sh` by hand once and check `docker compose ps`.
+
+### Everyday use
+
+- **Deploy:** `git push` to `main`. Typically live within 5 to 8 minutes (build, then the next cron tick). Watch the Actions tab; `tail -f ~/gamequeue/update.log` on the Pi shows `update ok`.
+- **Deploy right now:** `ssh <user>@gamequeue.local ./gamequeue/scripts/update.sh` forces a check without waiting for cron.
+- **Hold deploys:** `crontab -e` and comment out the `update.sh` line, or work on a branch/PR (they never publish).
+- **cloudflared:** `cloudflared:latest` is pulled only when missing. Refresh it now and then (monthly is plenty): `docker compose pull cloudflared && docker compose up -d`.
+
+### Rollback
+
+A failed health check rolls back by itself. To go back manually:
 
 ```sh
 cd ~/gamequeue
-./backup.sh                                  # snapshot first
-docker tag gamequeue:latest gamequeue:previous
-git pull --ff-only
-docker compose build                         # or load a new image built on the Mac (step 7B)
+crontab -l | sed 's|^\(.*update.sh.*\)$|#\1|' | crontab -   # pause auto-updates, or edit by hand
+docker tag gamequeue:previous ghcr.io/joeattardi/gamequeue:latest
 docker compose up -d --no-build
-docker compose logs --tail 30 gamequeue
-docker image prune -f                        # remove dangling old layers
 ```
 
-Run `npm test` and `npm run typecheck` before pushing to `main`: a bad push goes straight to the live site. The restart takes a few seconds.
-
-`cloudflared:latest` is pulled only when missing. Refresh it now and then (monthly is plenty): `docker compose pull cloudflared && docker compose up -d`.
-
-**Rollback:** `docker tag gamequeue:previous gamequeue:latest && docker compose up -d --no-build`. Migrations are forward-only, so if a migration was the problem, also restore the pre-update backup (see Restoring).
+Migrations are forward-only: if a migration was the problem (or ran before the rollback), also restore the pre-update backup (see Restoring), because the older code may not understand the newer schema. Remember to re-enable the cron line, and fix `main` (revert the commit) so the next push does not redeploy the bad version.
 
 ## Developing while deployed
 
-- Deploy only from `main` (or a `release` branch); never track a feature branch.
+- Only `main` deploys. Use branches and pull requests for anything not ready; they get the checks but never go live.
 - Treat the production database as real data. Schema changes need proper migrations (`npm run db:generate`, committed under `apps/server/drizzle/`). Do not expect to recreate the database as was acceptable earlier in development. Check generated SQL for added foreign-key columns, since drizzle-kit drops `ON DELETE` from `ALTER TABLE ... ADD COLUMN ... REFERENCES` on SQLite.
 - Keep a separate local dev database; never point a laptop at the Pi's file.
 - Each finished milestone becomes a deploy.
@@ -288,44 +311,13 @@ Approach: a nightly snapshot kept locally for 14 days, plus a copy off the machi
 
 ### Backup script
 
-Save as `~/gamequeue/backup.sh` and `chmod 755` it:
+`scripts/backup.sh` (in the repo) does the snapshot: `sqlite3 .backup` into `~/gamequeue/backups/gamequeue-<date-time>.db.gz`, an integrity check that refuses to keep a damaged snapshot, deletion of snapshots older than 14 days, and an `rclone copy` to a remote named `offsite` if one is configured. `scripts/update.sh` runs it before every update, and the nightly cron line from "Updating" runs it at 03:00. Both run as your Pi user, who owns the data directory.
+
+Run it once by hand and confirm a `.db.gz` file appears in `~/gamequeue/backups`:
 
 ```sh
-#!/bin/bash
-set -euo pipefail
-
-DIR=$(cd "$(dirname "$0")" && pwd)
-DB="$DIR/data/gamequeue.db"
-OUT="$DIR/backups"
-STAMP=$(date +%F)
-FILE="$OUT/gamequeue-$STAMP.db"
-
-mkdir -p "$OUT"
-sqlite3 "$DB" ".backup '$FILE'"
-
-# refuse to keep (or upload) a damaged snapshot
-if [ "$(sqlite3 "$FILE" 'PRAGMA integrity_check;')" != "ok" ]; then
-    echo "integrity check failed for $FILE" >&2
-    rm -f "$FILE"
-    exit 1
-fi
-
-gzip -f "$FILE"
-find "$OUT" -name 'gamequeue-*.db.gz' -mtime +14 -delete
-
-# off-machine copy, if an rclone remote named "offsite" is configured
-if command -v rclone >/dev/null && rclone listremotes | grep -q '^offsite:'; then
-    rclone copy "$FILE.gz" offsite:gamequeue-backups/
-fi
+~/gamequeue/scripts/backup.sh && ls -l ~/gamequeue/backups
 ```
-
-The data directory is owned by UID 1000, so run the script as that user (your normal Pi user, normally). Schedule it nightly with `crontab -e`:
-
-```
-0 3 * * * /home/<user>/gamequeue/backup.sh >> /home/<user>/gamequeue/backup.log 2>&1
-```
-
-Run it once by hand and confirm a `.db.gz` file appears in `~/gamequeue/backups`.
 
 ### Off-machine copy
 
@@ -348,7 +340,7 @@ The app's own JSON export (`/api/data/export`) is a good second layer: it is por
 cd ~/gamequeue
 docker compose stop gamequeue
 mkdir -p data/old && mv data/gamequeue.db* data/old/
-gunzip -c backups/gamequeue-YYYY-MM-DD.db.gz > data/gamequeue.db
+gunzip -c backups/gamequeue-YYYY-MM-DD-HHMMSS.db.gz > data/gamequeue.db
 sudo chown 1000:1000 data/gamequeue.db
 docker compose start gamequeue
 ```
@@ -357,20 +349,22 @@ Try a restore on a scratch machine once, so the first time is not during an emer
 
 ## Troubleshooting
 
-| Symptom                                                   | Likely cause                                                                                                                                                         |
-| --------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Cloudflare error 1033 ("Argo Tunnel error")               | `cloudflared` is not connected: container stopped, wrong `TUNNEL_TOKEN`, or the Pi has no internet. Check `docker compose logs cloudflared`.                         |
-| Cloudflare 502 Bad Gateway                                | Tunnel is up but the app is not answering: crashed or still starting, or the route's URL is not exactly `http://gamequeue:3000`. Check `docker compose ps` and logs. |
-| Browser certificate error on a brand-new domain           | Cloudflare is still issuing the edge certificate; wait a few minutes. Also confirm the zone is Active (step 3).                                                      |
-| Site loads but login fails / "forbidden" on writes        | `ALLOWED_ORIGINS` doesn't exactly match `https://gamequeue.app` (scheme, no trailing slash), or you are on plain HTTP.                                               |
-| App container restarts, logs show `SQLITE_CANTOPEN`       | `./data` is missing or not owned by UID 1000: `sudo chown 1000:1000 data`.                                                                                           |
-| Everyone shares one login rate limit                      | `TRUST_PROXY` is not `true` (it is set in `compose.yaml`), so every request appears to come from the tunnel container.                                               |
-| `docker compose` complains about `TUNNEL_TOKEN` / origins | `.env` is missing or incomplete; compose refuses to start without `TUNNEL_TOKEN` and `ALLOWED_ORIGINS`.                                                              |
-| Search and add-game disabled                              | IGDB credentials missing or wrong in `.env`; after editing, run `docker compose up -d` (a plain restart does not re-read `.env`).                                    |
-| `curl` DELETE/logout returns 403                          | Body-less mutations need an `Origin` header (browsers send it; curl must add it).                                                                                    |
-| Build dies with `Killed`                                  | Out of memory while building on the Pi; add swap (step 7A) or build on the Mac (step 7B).                                                                            |
-| `npm ci` in the build reports the lockfile is out of sync | `.npmrc` (`legacy-peer-deps=true`) is missing from the build context.                                                                                                |
-| Site went down after a power cut                          | Check the Pi booted and `docker compose ps`; if the filesystem is damaged, restore from a backup onto a fresh card/SSD.                                              |
+| Symptom                                                           | Likely cause                                                                                                                                                         |
+| ----------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Cloudflare error 1033 ("Argo Tunnel error")                       | `cloudflared` is not connected: container stopped, wrong `TUNNEL_TOKEN`, or the Pi has no internet. Check `docker compose logs cloudflared`.                         |
+| Cloudflare 502 Bad Gateway                                        | Tunnel is up but the app is not answering: crashed or still starting, or the route's URL is not exactly `http://gamequeue:3000`. Check `docker compose ps` and logs. |
+| Browser certificate error on a brand-new domain                   | Cloudflare is still issuing the edge certificate; wait a few minutes. Also confirm the zone is Active (step 3).                                                      |
+| Site loads but login fails / "forbidden" on writes                | `ALLOWED_ORIGINS` doesn't exactly match `https://gamequeue.app` (scheme, no trailing slash), or you are on plain HTTP.                                               |
+| App container restarts, logs show `SQLITE_CANTOPEN`               | `./data` is missing or not owned by UID 1000: `sudo chown 1000:1000 data`.                                                                                           |
+| Everyone shares one login rate limit                              | `TRUST_PROXY` is not `true` (it is set in `compose.yaml`), so every request appears to come from the tunnel container.                                               |
+| `docker compose` complains about `TUNNEL_TOKEN` / origins         | `.env` is missing or incomplete; compose refuses to start without `TUNNEL_TOKEN` and `ALLOWED_ORIGINS`.                                                              |
+| Search and add-game disabled                                      | IGDB credentials missing or wrong in `.env`; after editing, run `docker compose up -d` (a plain restart does not re-read `.env`).                                    |
+| `curl` DELETE/logout returns 403                                  | Body-less mutations need an `Origin` header (browsers send it; curl must add it).                                                                                    |
+| `docker compose` says `denied` / `unauthorized` pulling the image | The GHCR package is still private: make it public (step 7) or `docker login ghcr.io`.                                                                                |
+| Pushed to `main` but nothing changed on the site                  | Check the Actions run passed (failed checks never publish), then `tail ~/gamequeue/update.log` and that the cron line is installed (`crontab -l`).                   |
+| Build dies with `Killed`                                          | Out of memory while building on the Pi; add swap (step 7), or use the published image instead of building on the Pi.                                                 |
+| `npm ci` in the build reports the lockfile is out of sync         | `.npmrc` (`legacy-peer-deps=true`) is missing from the build context.                                                                                                |
+| Site went down after a power cut                                  | Check the Pi booted and `docker compose ps`; if the filesystem is damaged, restore from a backup onto a fresh card/SSD.                                              |
 
 Useful commands: `docker compose ps`, `docker compose logs -f gamequeue`, `docker compose logs -f cloudflared`, `docker stats`, `docker compose exec gamequeue sh`.
 

@@ -1,0 +1,57 @@
+# Checks every push and PR; on main, builds the arm64 image and publishes it to GHCR.
+# The Raspberry Pi pulls it (scripts/update.sh), so the Pi needs no inbound access. See DEPLOYMENT.md.
+name: CI and publish
+
+on:
+    push:
+        branches: [main]
+    pull_request:
+
+permissions:
+    contents: read
+
+concurrency:
+    group: ${{ github.workflow }}-${{ github.ref }}
+    cancel-in-progress: true
+
+jobs:
+    check:
+        # Native arm64 runner (free for public repos), so the image is built without emulation
+        runs-on: ubuntu-24.04-arm
+        steps:
+            - uses: actions/checkout@v4
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: 22
+                  cache: npm
+            - run: npm ci
+            - run: npm run format:check
+            - run: npm run typecheck
+            - run: npm test
+
+    publish:
+        needs: check
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        runs-on: ubuntu-24.04-arm
+        permissions:
+            contents: read
+            packages: write
+        steps:
+            - uses: actions/checkout@v4
+            - uses: docker/setup-buildx-action@v3
+            - uses: docker/login-action@v3
+              with:
+                  registry: ghcr.io
+                  username: ${{ github.actor }}
+                  password: ${{ secrets.GITHUB_TOKEN }}
+            - uses: docker/build-push-action@v6
+              with:
+                  context: .
+                  platforms: linux/arm64
+                  push: true
+                  provenance: false
+                  tags: |
+                      ghcr.io/joeattardi/gamequeue:latest
+                      ghcr.io/joeattardi/gamequeue:${{ github.sha }}
+                  cache-from: type=gha
+                  cache-to: type=gha,mode=max
