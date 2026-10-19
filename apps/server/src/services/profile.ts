@@ -17,6 +17,7 @@ import { entries, listItems, lists, playthroughs, users, wishlistItems } from '.
 import { HttpError } from '../errors.js';
 import { listEntries } from './entries.js';
 import { getList, listLists } from './lists.js';
+import { getRecap } from './recap.js';
 import { getStats } from './stats.js';
 import { listSlots } from './slots.js';
 import { listSmartListDetails } from './smart-lists.js';
@@ -82,6 +83,11 @@ export function getProfile(db: Db, username: string): ProfileDto {
             entries: l.entries.map(toPublic)
         }))
     };
+}
+
+/** Read-only and public: the year in review, no notes (see `RecapDto`). */
+export function getProfileRecap(db: Db, username: string, year?: number) {
+    return getRecap(db, requireUser(db, username).id, year);
 }
 
 /** Read-only and public: counts and games without notes (see `StatsDto`). */

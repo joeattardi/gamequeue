@@ -7,6 +7,7 @@ import { Logo } from './Logo';
 import {
     Database,
     ChartColumn,
+    Sparkles,
     Dices,
     Play,
     Search,
@@ -144,6 +145,10 @@ export function Shell({ user }: { user: UserDto }) {
                         <NavLink to="/stats">
                             <ChartColumn />
                             Stats
+                        </NavLink>
+                        <NavLink to="/recap">
+                            <Sparkles />
+                            Recap
                         </NavLink>
                         <NavLink to="/data">
                             <Database />

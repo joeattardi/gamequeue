@@ -188,6 +188,8 @@ export function ProfilePage() {
                             <h2 id="p-collection">Collection</h2>
                             <p>
                                 <Link to={`/u/${profile.data.username}/stats`}>View stats</Link>
+                                {' · '}
+                                <Link to={`/u/${profile.data.username}/recap`}>Year in review</Link>
                             </p>
                             <Stats
                                 username={profile.data.username}

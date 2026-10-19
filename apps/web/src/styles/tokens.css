@@ -29,6 +29,15 @@
     --viz-3: #7c3aed;
     --viz-4: #c2570c;
 
+    /* Year-in-review card backgrounds: always carry white text, so the same in light and dark (>= 7:1) */
+    --recap-1: #1e3fae;
+    --recap-2: #0b5e6b;
+    --recap-3: #5b21b6;
+    --recap-4: #9a3f08;
+    --recap-5: #14633a;
+    --recap-ink: #fff;
+    --recap-ink-soft: rgb(255 255 255 / 0.82);
+
     --radius: 8px;
     --radius-sm: 5px;
     --shadow: 0 1px 2px rgb(10 25 60 / 0.08), 0 4px 16px -6px rgb(10 25 60 / 0.12);

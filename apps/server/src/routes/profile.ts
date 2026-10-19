@@ -2,8 +2,14 @@ import { Hono } from 'hono';
 import { isFinishedYear, PROFILE_VIEWS, usernameSchema, type ProfileView } from '@gamequeue/shared';
 import type { AppDeps } from '../app.js';
 import { HttpError } from '../errors.js';
-import { getProfileStats } from '../services/profile.js';
-import { getProfile, getProfileGames, getProfileWishlist } from '../services/profile.js';
+import {
+    getProfile,
+    getProfileGames,
+    getProfileRecap,
+    getProfileStats,
+    getProfileWishlist
+} from '../services/profile.js';
+import { parseRecapYear } from '../services/recap.js';
 
 /** Public: deliberately has no requireAuth. */
 export function profileRoutes({ db }: AppDeps) {
@@ -22,6 +28,15 @@ export function profileRoutes({ db }: AppDeps) {
     );
     r.get('/:username/stats', (c) =>
         c.json({ stats: getProfileStats(db, parseUsername(c.req.param('username'))) })
+    );
+    r.get('/:username/recap', (c) =>
+        c.json({
+            recap: getProfileRecap(
+                db,
+                parseUsername(c.req.param('username')),
+                parseRecapYear(c.req.query('year'))
+            )
+        })
     );
     r.get('/:username/:view', (c) => {
         const view = c.req.param('view') as ProfileView;

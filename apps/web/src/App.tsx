@@ -19,6 +19,7 @@ import { SmartListPage } from './routes/SmartListPage';
 import { ProfilePage } from './routes/ProfilePage';
 import { ProfileGamesPage } from './routes/ProfileGamesPage';
 import { ProfileWishlistPage } from './routes/ProfileWishlistPage';
+import { ProfileRecapPage, RecapPage } from './routes/RecapPage';
 import { ProfileStatsPage, StatsPage } from './routes/StatsPage';
 import { WishlistPage } from './routes/WishlistPage';
 
@@ -40,7 +41,8 @@ export function App() {
                 <Route path="/u/:username" element={<ProfilePage />} />
                 <Route path="/u/:username/wishlist" element={<ProfileWishlistPage />} />
                 <Route path="/u/:username/stats" element={<ProfileStatsPage />} />
-                <Route path="/u/:username/stats" element={<ProfileStatsPage />} />
+                <Route path="/u/:username/recap" element={<ProfileRecapPage />} />
+                <Route path="/u/:username/recap/:year" element={<ProfileRecapPage />} />
                 <Route path="/u/:username/:view" element={<ProfileGamesPage />} />
                 <Route path="/u/:username/:view/:year" element={<ProfileGamesPage />} />
                 <Route path="*" element={<Navigate to="/login" replace />} />
@@ -52,6 +54,8 @@ export function App() {
             <Route path="/u/:username" element={<ProfilePage />} />
             <Route path="/u/:username/wishlist" element={<ProfileWishlistPage />} />
             <Route path="/u/:username/stats" element={<ProfileStatsPage />} />
+            <Route path="/u/:username/recap" element={<ProfileRecapPage />} />
+            <Route path="/u/:username/recap/:year" element={<ProfileRecapPage />} />
             <Route path="/u/:username/:view" element={<ProfileGamesPage />} />
             <Route path="/u/:username/:view/:year" element={<ProfileGamesPage />} />
             <Route element={<Shell user={me.data} />}>
@@ -72,6 +76,8 @@ export function App() {
                 <Route path="pick/criteria" element={<PickCriteriaPage />} />
                 <Route path="pick/choose" element={<PickChoosePage />} />
                 <Route path="stats" element={<StatsPage />} />
+                <Route path="recap" element={<RecapPage />} />
+                <Route path="recap/:year" element={<RecapPage />} />
                 <Route path="data" element={<DataPage />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
             </Route>
