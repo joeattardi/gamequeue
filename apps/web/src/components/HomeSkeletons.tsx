@@ -45,7 +45,6 @@ export function UpNextSkeletons({ count = 4 }: { count?: number }) {
                                 className="skeleton skeleton--line"
                                 style={{ width: `${88 - (i % 3) * 16}%` }}
                             />
-                            <span className="skeleton skeleton--line skeleton--sub skeleton--tiny" />
                         </span>
                     </div>
                 </li>

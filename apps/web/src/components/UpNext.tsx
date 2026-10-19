@@ -1,6 +1,5 @@
 import { Link } from 'react-router';
 import { useQueue } from '../api/queue';
-import { formatMinutes } from '../lib';
 import { UpNextSkeletons } from './HomeSkeletons';
 import { Cover } from './Cover';
 
@@ -41,9 +40,6 @@ export function UpNext() {
                                 <span className="upnext__text">
                                     <span className="muted">{i + 1}</span>
                                     <strong>{e.game.name}</strong>
-                                    {e.ttbMinutes !== null && (
-                                        <span className="muted">{formatMinutes(e.ttbMinutes)}</span>
-                                    )}
                                 </span>
                             </Link>
                         </li>
