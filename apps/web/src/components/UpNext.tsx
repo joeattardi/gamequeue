@@ -13,14 +13,18 @@ export function UpNext() {
         <section aria-labelledby="upnext-h" className="upnext">
             <div className="page-head">
                 <div>
-                    <h2 id="upnext-h">Up next</h2>
-                    <p className="muted">
-                        {queue.isPending
-                            ? 'Checking your queue…'
-                            : entries.length === 0
-                              ? 'Nothing queued yet.'
-                              : `${entries.length} in your queue`}
-                    </p>
+                    <h2 id="upnext-h">
+                        Up next
+                        {entries.length > 0 && (
+                            <span className="badge upnext__count">
+                                {entries.length}
+                                <span className="sr-only"> in your queue</span>
+                            </span>
+                        )}
+                    </h2>
+                    {entries.length === 0 && !queue.isPending && (
+                        <p className="muted">Nothing queued yet.</p>
+                    )}
                 </div>
                 <Link className="btn" to="/queue">
                     {entries.length === 0 ? 'Build your queue' : 'View queue'}

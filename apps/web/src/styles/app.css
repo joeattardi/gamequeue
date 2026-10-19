@@ -1457,6 +1457,12 @@ a.game-row:hover {
 }
 .upnext h2 {
     margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.upnext__count {
+    vertical-align: middle;
 }
 .upnext__list {
     list-style: none;
