@@ -9,7 +9,7 @@ import { dataRoutes } from './routes/data.js';
 import { profileRoutes } from './routes/profile.js';
 import { entryRoutes } from './routes/entries.js';
 import { igdbRoutes } from './routes/igdb.js';
-import { listRoutes, pickRoutes, queueRoutes } from './routes/lists.js';
+import { listRoutes, pickRoutes, queueRoutes, smartListRoutes } from './routes/lists.js';
 import { slotRoutes } from './routes/slots.js';
 import { wishlistRoutes } from './routes/wishlist.js';
 import { entryActionRoutes, playthroughRoutes } from './routes/playthroughs.js';
@@ -71,6 +71,7 @@ export function createApp(deps: AppDeps) {
     app.route('/api/playthroughs', playthroughRoutes(deps));
     app.route('/api/slots', slotRoutes(deps));
     app.route('/api/lists', listRoutes(deps));
+    app.route('/api/smart-lists', smartListRoutes(deps));
     app.route('/api/queue', queueRoutes(deps));
     app.route('/api/wishlist', wishlistRoutes(deps));
     app.route('/api/pick', pickRoutes(deps));

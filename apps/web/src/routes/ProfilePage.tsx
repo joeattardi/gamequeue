@@ -15,7 +15,8 @@ import {
     ListTodo,
     Pause,
     Play,
-    Trophy
+    Trophy,
+    WandSparkles
 } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { Link, useParams } from 'react-router';
@@ -203,6 +204,23 @@ export function ProfilePage() {
                         {profile.data.lists.map((l) => (
                             <section key={l.id} aria-label={l.name}>
                                 <h2>{l.name}</h2>
+                                <Games entries={l.entries} />
+                            </section>
+                        ))}
+
+                        {profile.data.smartLists.map((l) => (
+                            <section key={`smart-${l.id}`} aria-label={l.name}>
+                                <h2>
+                                    <WandSparkles aria-hidden="true" />
+                                    {l.name}
+                                </h2>
+                                <ul className="rule-summary" aria-label="Rules">
+                                    {l.description.map((d) => (
+                                        <li key={d} className="badge">
+                                            {d}
+                                        </li>
+                                    ))}
+                                </ul>
                                 <Games entries={l.entries} />
                             </section>
                         ))}

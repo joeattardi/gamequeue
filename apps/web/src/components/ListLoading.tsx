@@ -9,12 +9,15 @@ import { useLayout } from './LayoutToggle';
 export function ListLoading({
     icon,
     title,
-    layoutKey
+    layoutKey,
+    readOnly = false
 }: {
     icon: ReactNode;
     /** Undefined when the title itself comes from the data (a user's list) */
     title?: string;
     layoutKey: string;
+    /** For lists that can't be reordered (smart lists): the same rows as the collection */
+    readOnly?: boolean;
 }) {
     const [layout] = useLayout(layoutKey, 'list');
     return (
@@ -30,7 +33,7 @@ export function ListLoading({
                     </p>
                 </div>
             </div>
-            {layout === 'grid' ? <GridSkeletons layout="grid" /> : <RowSkeletons />}
+            {layout === 'grid' || readOnly ? <GridSkeletons layout={layout} /> : <RowSkeletons />}
         </section>
     );
 }

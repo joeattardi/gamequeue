@@ -1,13 +1,13 @@
-import { ENTRY_SORTS, type EntryDto } from '@gamequeue/shared';
+import { ENTRY_SORTS } from '@gamequeue/shared';
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { useEntries, useFacetCounts } from '../api/collection';
 import { AddGameDialog } from '../components/AddGameDialog';
 import { FACET_KEYS, FacetSidebar, type FacetKey } from '../components/FacetSidebar';
-import { Cover } from '../components/Cover';
 import { GridSkeletons } from '../components/GridSkeletons';
 import { LayoutToggle, useLayout } from '../components/LayoutToggle';
-import { EntryChips, EntrySub, GameCard } from '../components/GameCard';
+import { GameCard } from '../components/GameCard';
+import { GameRow } from '../components/GameRow';
 import { useDebounced, usePageTitle } from '../lib';
 import { Library, ListTodo, Plus } from 'lucide-react';
 
@@ -141,7 +141,7 @@ export function CollectionPage({ view }: { view: 'all' | 'backlog' }) {
                     ) : layout === 'list' ? (
                         <ul className="game-rows" aria-busy={entries.isFetching}>
                             {entries.data?.map((e) => (
-                                <Row key={e.id} entry={e} />
+                                <GameRow key={e.id} entry={e} />
                             ))}
                         </ul>
                     ) : (
@@ -194,21 +194,5 @@ function Empty({
                 </button>
             )}
         </div>
-    );
-}
-
-function Row({ entry }: { entry: EntryDto }) {
-    const { game } = entry;
-    return (
-        <li>
-            <Link to={`/games/${entry.id}`} className="game-row">
-                <Cover imageId={game.coverImageId} name={game.name} size="cover_small" />
-                <span className="game-row__text">
-                    <strong className="card__title">{game.name}</strong>
-                    <EntrySub entry={entry} />
-                </span>
-                <EntryChips entry={entry} />
-            </Link>
-        </li>
     );
 }

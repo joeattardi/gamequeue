@@ -17,6 +17,7 @@ import { HttpError } from '../errors.js';
 import { listEntries } from './entries.js';
 import { getList, listLists } from './lists.js';
 import { listSlots } from './slots.js';
+import { listSmartListDetails } from './smart-lists.js';
 import { findWishlist, wishlistItemsOf } from './wishlist.js';
 
 const toPublic = (e: EntryDto): PublicEntryDto => ({
@@ -80,6 +81,12 @@ export function getProfile(db: Db, username: string): ProfileDto {
             id: l.id,
             name: l.name,
             entries: getList(db, user.id, l.id).entries.map(toPublic)
+        })),
+        smartLists: listSmartListDetails(db, user.id).map((l) => ({
+            id: l.id,
+            name: l.name,
+            description: l.description,
+            entries: l.entries.map(toPublic)
         }))
     };
 }

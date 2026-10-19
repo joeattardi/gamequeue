@@ -375,6 +375,7 @@ export function hydrate(db: Db, userId: number, ids: number[]): EntryDto[] {
                 ttbOverrideMinutes: e.ttbOverrideMinutes,
                 ttbMinutes: e.ttbOverrideMinutes ?? minutes(g.ttbNormallySeconds),
                 addedAt: e.addedAt,
+                updatedAt: e.updatedAt,
                 slotId: slotOf.get(e.id) ?? null,
                 lists: listsOf.get(e.id) ?? [],
                 queued: queued.has(e.id),

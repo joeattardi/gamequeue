@@ -83,6 +83,8 @@ const COLLECTION_KEYS = [
     'slots',
     'lists',
     'list',
+    'smartLists',
+    'smartList',
     'queue',
     'wishlist'
 ];

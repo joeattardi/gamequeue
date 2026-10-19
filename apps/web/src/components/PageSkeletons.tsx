@@ -181,3 +181,42 @@ export function HistorySkeletons({ count = 2 }: { count?: number }) {
         </ul>
     );
 }
+
+/** The smart list editor while an existing list loads: name, a couple of rules and the preview. */
+export function EditorSkeleton() {
+    return (
+        <section aria-busy="true" role="status" aria-label="Loading smart list">
+            <div className="page-head">
+                <div>
+                    <h1>
+                        <span className="skeleton skeleton--title" />
+                    </h1>
+                    <p className="muted">
+                        <span className="skeleton skeleton--line skeleton--subtitle" />
+                    </p>
+                </div>
+            </div>
+            <div className="stack" aria-hidden="true">
+                <span className="skeleton skeleton--select" />
+                {[0, 1].map((i) => (
+                    <div key={i} className="rule">
+                        <div className="rule__head">
+                            <span className="skeleton skeleton--select" />
+                        </div>
+                        <div className="checks">
+                            {[0, 1, 2].map((j) => (
+                                <span key={j} className="check check--skeleton">
+                                    <span className="skeleton skeleton--check" />
+                                    <span
+                                        className="skeleton skeleton--line skeleton--check-label"
+                                        style={{ width: `${56 + (((i + j) * 23) % 40)}px` }}
+                                    />
+                                </span>
+                            ))}
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </section>
+    );
+}

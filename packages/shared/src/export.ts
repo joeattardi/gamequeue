@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { ENTRY_STATUSES, ratingSchema, tagsSchema } from './collection.js';
 import { isoDateSchema } from './playthroughs.js';
 import { MAX_SLOTS } from './slots.js';
+import { SMART_SORTS, smartRulesSchema } from './smart-lists.js';
 
 export const EXPORT_FORMAT = 'gamequeue-export';
 export const EXPORT_VERSION = 1;
@@ -130,7 +131,22 @@ export const exportFileSchema = z
          * The wishlist, in order. Also added after v1 shipped, so optional in the same way as `queue`.
          * Only the first (today: only) wishlist is exported.
          */
-        wishlist: z.array(exportWishlistItemSchema).max(50_000).default([])
+        wishlist: z.array(exportWishlistItemSchema).max(50_000).default([]),
+        /**
+         * Smart lists (rules only: their games are computed). Also added after v1 shipped, so
+         * optional in the same way. Platform rules refer to IGDB platform ids.
+         */
+        smartLists: z
+            .array(
+                z.object({
+                    name: z.string().trim().min(1).max(60),
+                    rules: smartRulesSchema,
+                    sort: z.enum(SMART_SORTS),
+                    dir: z.enum(['asc', 'desc'])
+                })
+            )
+            .max(500)
+            .default([])
     })
     .superRefine((f, ctx) => {
         const ids = new Set<number>();
@@ -200,6 +216,7 @@ export interface ImportReport {
     queue: { added: number };
     /** Games added to the end of the wishlist */
     wishlist: { added: number };
+    smartLists: { created: number };
     slots: { created: number; filled: number };
     /** Things worth knowing, e.g. values of yours that were kept over the file's */
     notes: string[];

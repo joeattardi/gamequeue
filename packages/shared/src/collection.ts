@@ -70,6 +70,8 @@ export interface EntryDto {
     /** Override if set, otherwise IGDB "normally" */
     ttbMinutes: number | null;
     addedAt: number;
+    /** Last time its status, rating, notes, tags or platforms changed, ms since epoch */
+    updatedAt: number;
     game: GameDto;
     playthroughCount: number;
     /** The playthrough in progress (status playing or paused), if any */

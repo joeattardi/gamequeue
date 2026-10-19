@@ -26,6 +26,7 @@ import {
     wishlistItems
 } from '../db/schema.js';
 import { findWishlist } from './wishlist.js';
+import { listSmartListRows } from './smart-lists.js';
 
 const group = <K, V>(rows: { key: K; value: V }[]) => {
     const m = new Map<K, V[]>();
@@ -213,6 +214,7 @@ export function buildExport(db: Db, userId: number, now = new Date()): ExportFil
             .filter((l) => l.kind === 'list')
             .map((l) => ({ name: l.name, games: igdbIds(items.get(l.id)) })),
         queue: igdbIds(queueRow && items.get(queueRow.id)),
+        smartLists: listSmartListRows(db, userId),
         wishlist: wished.map(({ item, g, platform }): ExportWishlistItem => ({
             igdbId: g.id,
             game: snapshot(g),

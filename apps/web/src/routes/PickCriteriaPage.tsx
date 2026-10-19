@@ -4,10 +4,12 @@ import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { useFacets } from '../api/collection';
 import { useLists, usePick } from '../api/lists';
+import { useSmartLists } from '../api/smartLists';
 import { useQueue } from '../api/queue';
 import { ApiRequestError } from '../api/client';
+import { Chips } from '../components/Chips';
 import { PickResult, Rolling, rollDelay } from '../components/PickResult';
-import { ChevronLeft, ChevronRight, Dices } from 'lucide-react';
+import { ChevronLeft, Dices } from 'lucide-react';
 import { usePageTitle } from '../lib';
 
 const MAX_TIMES = [
@@ -31,10 +33,15 @@ export function PickCriteriaPage() {
     const facets = useFacets();
     const lists = useLists();
     const queue = useQueue();
+    const smartLists = useSmartLists();
     const pick = usePick();
 
     const [source, setSource] = useState(
-        params.get('list') ? `list:${params.get('list')}` : 'backlog'
+        params.get('list')
+            ? `list:${params.get('list')}`
+            : params.get('smart')
+              ? `smart:${params.get('smart')}`
+              : 'backlog'
     );
     const [platforms, setPlatforms] = useState(new Set<number>());
     const [genres, setGenres] = useState(new Set<string>());
@@ -57,7 +64,9 @@ export function PickCriteriaPage() {
         const input: PickInput = {
             source: source.startsWith('list:')
                 ? { type: 'list', listId: Number(source.slice(5)) }
-                : { type: 'backlog' },
+                : source.startsWith('smart:')
+                  ? { type: 'smart', smartListId: Number(source.slice(6)) }
+                  : { type: 'backlog' },
             filters: {
                 platformIds: [...platforms],
                 genres: [...genres],
@@ -100,7 +109,8 @@ export function PickCriteriaPage() {
                         Pick by criteria
                     </h1>
                     <p className="muted">
-                        Can't decide? Let fate choose from your backlog, queue or a list.
+                        Can't decide? Let fate choose from your backlog, queue, a list or a smart
+                        list.
                     </p>
                 </div>
             </div>
@@ -115,7 +125,7 @@ export function PickCriteriaPage() {
                 >
                     <label className="field">
                         <span>Pick from</span>
-                        {lists.isPending || queue.isPending ? (
+                        {lists.isPending || queue.isPending || smartLists.isPending ? (
                             <SelectSkeleton label="Loading your lists" />
                         ) : (
                             <select value={source} onChange={(e) => setSource(e.target.value)}>
@@ -126,6 +136,11 @@ export function PickCriteriaPage() {
                                 {lists.data?.map((l) => (
                                     <option key={l.id} value={`list:${l.id}`}>
                                         List: {l.name}
+                                    </option>
+                                ))}
+                                {smartLists.data?.map((l) => (
+                                    <option key={l.id} value={`smart:${l.id}`}>
+                                        Smart list: {l.name}
                                     </option>
                                 ))}
                             </select>
@@ -224,43 +239,5 @@ export function PickCriteriaPage() {
                     ))}
             </div>
         </section>
-    );
-}
-
-function Chips({
-    legend,
-    items,
-    selected,
-    onToggle
-}: {
-    legend: string;
-    items: { key: number | string; label: string }[] | undefined;
-    selected: Set<number | string> | Set<number> | Set<string>;
-    onToggle: (key: number | string) => void;
-}) {
-    if (!items?.length) return null;
-    return (
-        <details className="chip-group">
-            <summary className="chip-group__summary">
-                <ChevronRight aria-hidden="true" />
-                <span className="field-legend">{legend}</span>
-                {selected.size > 0 && (
-                    <span className="chip-group__count">{selected.size} selected</span>
-                )}
-            </summary>
-            <fieldset className="checks">
-                <legend className="sr-only">{legend}</legend>
-                {items.map((i) => (
-                    <label key={i.key} className="check">
-                        <input
-                            type="checkbox"
-                            checked={(selected as Set<number | string>).has(i.key)}
-                            onChange={() => onToggle(i.key)}
-                        />
-                        {i.label}
-                    </label>
-                ))}
-            </fieldset>
-        </details>
     );
 }

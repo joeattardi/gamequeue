@@ -10,6 +10,7 @@ import {
     lists,
     playthroughs,
     slots,
+    smartLists,
     tags,
     wishlistItems
 } from '../db/schema.js';
@@ -48,6 +49,7 @@ export function importData(
         lists: { created: 0, itemsAdded: 0 },
         queue: { added: 0 },
         wishlist: { added: 0 },
+        smartLists: { created: 0 },
         slots: { created: 0, filled: 0 },
         notes: [],
         moreNotes: 0
@@ -111,6 +113,7 @@ function merge(
     }
 
     mergeLists(db, userId, file, entryIdByGame, report);
+    mergeSmartLists(db, userId, file, report);
     mergeSlots(db, userId, file, entryIdByGame, nameByGame, report, note);
     mergeWishlist(db, userId, file, cached, report, note, now);
 }
@@ -341,6 +344,32 @@ function mergeLists(
             queued.add(entryId);
             report.queue.added++;
         }
+    }
+}
+
+/** Smart lists have no games of their own, so merging is by name: ones you have are left alone. */
+function mergeSmartLists(db: Db, userId: number, file: ExportFile, report: ImportReport) {
+    const have = new Set(
+        db
+            .select({ name: smartLists.name })
+            .from(smartLists)
+            .where(eq(smartLists.userId, userId))
+            .all()
+            .map((l) => lower(l.name))
+    );
+    for (const sl of file.smartLists) {
+        if (have.has(lower(sl.name))) continue;
+        db.insert(smartLists)
+            .values({
+                userId,
+                name: sl.name,
+                rules: JSON.stringify(sl.rules),
+                sort: sl.sort,
+                dir: sl.dir
+            })
+            .run();
+        have.add(lower(sl.name));
+        report.smartLists.created++;
     }
 }
 

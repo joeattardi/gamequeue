@@ -18,6 +18,8 @@ export interface ProfileDto {
         byStatus: Record<EntryStatus, number>;
     };
     lists: { id: number; name: string; entries: PublicEntryDto[] }[];
+    /** Smart lists as they match right now, with their rules in words */
+    smartLists: { id: number; name: string; description: string[]; entries: PublicEntryDto[] }[];
 }
 
 /** The sub-pages of a public profile, each a plain list of games (`/u/:username/:view`). */

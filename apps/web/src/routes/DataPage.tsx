@@ -3,7 +3,7 @@ import { useRef, useState, type ChangeEvent } from 'react';
 import { Link } from 'react-router';
 import { ApiRequestError } from '../api/client';
 import { useImport } from '../api/data';
-import { Database } from 'lucide-react';
+import { Database, FileSpreadsheet } from 'lucide-react';
 import { usePageTitle } from '../lib';
 
 interface Problem {
@@ -86,11 +86,24 @@ export function DataPage() {
                     <h2 id="export-h">Export</h2>
                     <p>
                         One JSON file with your collection, playthroughs, slots, lists, queue,
-                        wishlist and tags, plus the game details needed to restore it without IGDB.
+                        wishlist, smart lists and tags, plus the game details needed to restore it
+                        without IGDB.
                     </p>
                     <div>
                         <a className="btn btn--primary" href="/api/data/export" download>
                             Download export
+                        </a>
+                    </div>
+                    <p>
+                        Want a spreadsheet instead? The CSV has one row per game (status, platforms,
+                        tags, ratings, time to beat, notes and more). It's for reading and sharing;
+                        it can't be imported back. Each list, smart list and your queue also has its
+                        own Export CSV button.
+                    </p>
+                    <div>
+                        <a className="btn" href="/api/data/export.csv" download>
+                            <FileSpreadsheet />
+                            Download collection as CSV
                         </a>
                     </div>
                 </section>
@@ -182,7 +195,7 @@ export function DataPage() {
 }
 
 function ReportSummary({ report }: { report: ImportReport }) {
-    const { games, playthroughs, lists, queue, wishlist, slots } = report;
+    const { games, playthroughs, lists, queue, wishlist, smartLists, slots } = report;
     const verb = report.dryRun ? 'Will add' : 'Added';
     const nothing =
         games.added +
@@ -192,6 +205,7 @@ function ReportSummary({ report }: { report: ImportReport }) {
             lists.itemsAdded +
             queue.added +
             wishlist.added +
+            smartLists.created +
             slots.created +
             slots.filled ===
         0;
@@ -211,6 +225,7 @@ function ReportSummary({ report }: { report: ImportReport }) {
                 <Stat label="Playthroughs you already had" value={playthroughs.duplicates} />
                 <Stat label={`${verb} lists`} value={lists.created} />
                 <Stat label={`${verb} list entries`} value={lists.itemsAdded} />
+                <Stat label={`${verb} smart lists`} value={smartLists.created} />
                 <Stat label={`${verb} to queue`} value={queue.added} />
                 <Stat label={`${verb} to wishlist`} value={wishlist.added} />
                 <Stat label={`${verb} slots`} value={slots.created} />

@@ -295,6 +295,26 @@ export const wishlistItems = sqliteTable(
     ]
 );
 
+// A saved set of rules; its games are computed from the collection each time (see shared
+// smart-lists.ts), so there are no items. `rules` is validated JSON.
+export const smartLists = sqliteTable(
+    'smart_lists',
+    {
+        id: integer('id').primaryKey({ autoIncrement: true }),
+        userId: integer('user_id')
+            .notNull()
+            .references(() => users.id, { onDelete: 'cascade' }),
+        name: text('name').notNull(),
+        rules: text('rules').notNull(),
+        sort: text('sort').notNull().default('title'),
+        dir: text('dir', { enum: ['asc', 'desc'] })
+            .notNull()
+            .default('asc'),
+        createdAt: integer('created_at').notNull().default(now)
+    },
+    (t) => [index('smart_lists_user_idx').on(t.userId)]
+);
+
 export const listItems = sqliteTable(
     'list_items',
     {

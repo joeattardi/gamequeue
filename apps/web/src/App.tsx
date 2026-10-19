@@ -14,6 +14,8 @@ import { ListsPage } from './routes/ListsPage';
 import { PickChoosePage } from './routes/PickChoosePage';
 import { PickCriteriaPage } from './routes/PickCriteriaPage';
 import { PickPage } from './routes/PickPage';
+import { SmartListEditPage } from './routes/SmartListEditPage';
+import { SmartListPage } from './routes/SmartListPage';
 import { ProfilePage } from './routes/ProfilePage';
 import { ProfileGamesPage } from './routes/ProfileGamesPage';
 import { ProfileWishlistPage } from './routes/ProfileWishlistPage';
@@ -59,6 +61,9 @@ export function App() {
                 <Route path="wishlist" element={<WishlistPage />} />
                 <Route path="lists" element={<ListsPage />} />
                 <Route path="lists/:id" element={<ListPage />} />
+                <Route path="smart-lists/new" element={<SmartListEditPage />} />
+                <Route path="smart-lists/:id" element={<SmartListPage />} />
+                <Route path="smart-lists/:id/edit" element={<SmartListEditPage />} />
                 <Route path="pick" element={<PickPage />} />
                 <Route path="pick/criteria" element={<PickCriteriaPage />} />
                 <Route path="pick/choose" element={<PickChoosePage />} />

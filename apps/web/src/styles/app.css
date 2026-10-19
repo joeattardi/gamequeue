@@ -2705,3 +2705,96 @@ fieldset.stars:disabled .stars__star {
     gap: 8px;
     align-items: center;
 }
+
+/* Smart lists */
+.smart-lists {
+    margin-top: 32px;
+}
+.smart-lists h2 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+}
+.smart-lists h2 svg,
+.profile-hero ~ section h2 svg {
+    width: 1em;
+    height: 1em;
+    flex: none;
+}
+.suggestions {
+    margin-top: 16px;
+}
+.suggestions h3 {
+    margin: 0;
+    font-size: 1rem;
+}
+.suggestions__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 10px;
+}
+.suggestions__list li {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+}
+.suggestions__list li > span {
+    flex: 1 1 260px;
+}
+.rule-summary {
+    list-style: none;
+    margin: 0 0 16px;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+.rules__title {
+    margin: 0;
+    font-size: 1.1rem;
+}
+.rules__add {
+    max-width: 320px;
+}
+.rule {
+    margin: 0;
+    padding: 14px;
+    display: grid;
+    gap: 12px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--surface);
+}
+.rule__head {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    justify-content: space-between;
+}
+.rule__head .field {
+    min-width: 0;
+}
+.rule__hint {
+    margin: 0;
+    font-size: 0.9rem;
+}
+.rule__unit {
+    align-self: center;
+}
+.rule .inline-form .field input[type='number'] {
+    width: 120px;
+}
+.smart-lists .page-head {
+    margin-bottom: 0;
+}
+.rule .inline-form .rule__hint {
+    flex-basis: 100%;
+}
+.rule-summary .badge {
+    text-transform: none;
+}

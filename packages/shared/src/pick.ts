@@ -17,7 +17,8 @@ export type PickFilters = z.infer<typeof pickFiltersSchema>;
 export const pickSchema = z.object({
     source: z.discriminatedUnion('type', [
         z.object({ type: z.literal('backlog') }),
-        z.object({ type: z.literal('list'), listId: z.number().int().positive() })
+        z.object({ type: z.literal('list'), listId: z.number().int().positive() }),
+        z.object({ type: z.literal('smart'), smartListId: z.number().int().positive() })
     ]),
     filters: pickFiltersSchema.default({}),
     /** Entries already shown, oldest first; the last one is the most recent pick */

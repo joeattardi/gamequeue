@@ -9,6 +9,7 @@ import {
 import type { Db } from '../db/client.js';
 import { listEntries } from './entries.js';
 import { getList } from './lists.js';
+import { getSmartList } from './smart-lists.js';
 
 /** Random pick from the backlog or a list. `rng` is injectable for tests. */
 export function pick(
@@ -20,6 +21,8 @@ export function pick(
     let pool: EntryDto[];
     if (input.source.type === 'list') {
         pool = getList(db, userId, input.source.listId).entries;
+    } else if (input.source.type === 'smart') {
+        pool = getSmartList(db, userId, input.source.smartListId).entries;
     } else {
         pool = listEntries(db, userId, { view: 'backlog', sort: 'title' });
         if (input.filters.includePaused) {

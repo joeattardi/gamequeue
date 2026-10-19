@@ -42,6 +42,7 @@ import {
     ArrowLeft,
     ChevronDown,
     ChevronUp,
+    FileSpreadsheet,
     List,
     ListOrdered,
     Pencil,
@@ -156,6 +157,10 @@ function ListView({
                     <Link className="btn btn--primary" to={`/pick/criteria?list=${id}`}>
                         Random pick
                     </Link>
+                    <a className="btn" href={`/api/lists/${id}/export.csv`} download>
+                        <FileSpreadsheet />
+                        Export CSV
+                    </a>
                     {!isQueue && (
                         <>
                             <RenameButton id={id} name={name} />

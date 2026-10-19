@@ -3,12 +3,14 @@ import {
     addListItemSchema,
     createListSchema,
     patchListSchema,
+    entriesToCsv,
     pickSchema,
+    smartListInputSchema,
     reorderListSchema
 } from '@gamequeue/shared';
 import type { AppDeps } from '../app.js';
 import { requireAuth, type AuthVars } from '../auth/middleware.js';
-import { parseId, validate } from '../http.js';
+import { csvResponse, parseId, validate } from '../http.js';
 import {
     addToList,
     createList,
@@ -22,6 +24,13 @@ import {
     reorderList
 } from '../services/lists.js';
 import { pick } from '../services/pick.js';
+import {
+    createSmartList,
+    deleteSmartList,
+    getSmartList,
+    listSmartLists,
+    updateSmartList
+} from '../services/smart-lists.js';
 
 const body = (c: { req: { json(): Promise<unknown> } }) => c.req.json().catch(() => undefined);
 
@@ -38,6 +47,10 @@ export function listRoutes({ db, config }: AppDeps) {
         )
     );
     r.get('/:id', (c) => c.json({ list: getList(db, uid(c), parseId(c.req.param('id'))) }));
+    r.get('/:id/export.csv', (c) => {
+        const list = getList(db, uid(c), parseId(c.req.param('id')));
+        return csvResponse(c, list.name, entriesToCsv(list.entries));
+    });
     r.patch('/:id', async (c) => {
         const id = parseId(c.req.param('id'));
         renameList(db, uid(c), id, validate(patchListSchema, await body(c)).name);
@@ -122,5 +135,47 @@ export function queueRoutes({ db, config }: AppDeps) {
             )
         })
     );
+    return r;
+}
+
+export function smartListRoutes({ db, config }: AppDeps) {
+    const r = new Hono<{ Variables: AuthVars }>();
+    r.use('*', requireAuth(db, config));
+    const uid = (c: { get(k: 'user'): { id: number } }) => c.get('user').id;
+
+    r.get('/', (c) => c.json({ smartLists: listSmartLists(db, uid(c)) }));
+    r.post('/', async (c) =>
+        c.json(
+            {
+                smartList: createSmartList(
+                    db,
+                    uid(c),
+                    validate(smartListInputSchema, await body(c))
+                )
+            },
+            201
+        )
+    );
+    r.get('/:id', (c) =>
+        c.json({ smartList: getSmartList(db, uid(c), parseId(c.req.param('id'))) })
+    );
+    r.get('/:id/export.csv', (c) => {
+        const list = getSmartList(db, uid(c), parseId(c.req.param('id')));
+        return csvResponse(c, list.name, entriesToCsv(list.entries));
+    });
+    r.put('/:id', async (c) =>
+        c.json({
+            smartList: updateSmartList(
+                db,
+                uid(c),
+                parseId(c.req.param('id')),
+                validate(smartListInputSchema, await body(c))
+            )
+        })
+    );
+    r.delete('/:id', (c) => {
+        deleteSmartList(db, uid(c), parseId(c.req.param('id')));
+        return c.json({ ok: true });
+    });
     return r;
 }

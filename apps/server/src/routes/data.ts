@@ -1,9 +1,17 @@
 import { Hono } from 'hono';
 import { bodyLimit } from 'hono/body-limit';
-import { EXPORT_FORMAT, EXPORT_VERSION, exportFileSchema } from '@gamequeue/shared';
+import {
+    EXPORT_FORMAT,
+    EXPORT_VERSION,
+    entriesToCsv,
+    entryQuerySchema,
+    exportFileSchema
+} from '@gamequeue/shared';
 import type { AppDeps } from '../app.js';
 import { requireAuth, type AuthVars } from '../auth/middleware.js';
 import { HttpError } from '../errors.js';
+import { csvResponse } from '../http.js';
+import { listEntries } from '../services/entries.js';
 import { buildExport } from '../services/export.js';
 import { importData } from '../services/import.js';
 
@@ -23,6 +31,15 @@ export function dataRoutes({ db, config }: AppDeps) {
             'Cache-Control': 'no-store'
         });
     });
+
+    /** The whole collection as a spreadsheet: a one-way export for reading, not for restoring. */
+    r.get('/export.csv', (c) =>
+        csvResponse(
+            c,
+            'gamequeue-collection',
+            entriesToCsv(listEntries(db, c.get('user').id, entryQuerySchema.parse({})))
+        )
+    );
 
     /**
      * Merges an export file into the user's data. Without `?commit=true` this is a dry run that
