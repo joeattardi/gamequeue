@@ -59,6 +59,9 @@ export function RecapPage() {
                     </h1>
                     <p className="muted">Your games, year by year. Also on your public profile.</p>
                 </div>
+                {me.data && recap.data && (
+                    <ShareButton username={me.data.username} year={recap.data.year} />
+                )}
             </div>
             {recap.isError ? (
                 <p className="form-error" role="alert">
