@@ -3358,3 +3358,29 @@ fieldset.stars:disabled .stars__star {
     font-size: 0.9rem;
     overflow-wrap: anywhere;
 }
+
+/* Hero card: the most recent finishes as a slightly overlapping row of covers, newest first */
+.rc-recent {
+    list-style: none;
+    display: flex;
+    margin: 14px 0 0;
+    padding: 0;
+}
+.rc-recent li {
+    flex: 0 1 112px;
+    min-width: 0;
+}
+.rc-recent li + li {
+    margin-left: -14px;
+}
+.rc-recent .cover {
+    width: 100%;
+    border-radius: var(--radius-sm);
+    box-shadow: 0 8px 20px -6px rgb(0 0 0 / 0.6);
+    outline: 2px solid var(--recap-1);
+}
+@media (max-width: 560px) {
+    .rc-recent li:nth-child(n + 5) {
+        display: none;
+    }
+}

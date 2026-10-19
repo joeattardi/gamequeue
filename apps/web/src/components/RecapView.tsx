@@ -19,6 +19,7 @@ const MONTHS = [
     'November',
     'December'
 ];
+const RECENT_COVERS = 6;
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 const longDate = (iso: string) =>
     new Date(`${iso}T00:00:00`).toLocaleDateString(undefined, { month: 'long', day: 'numeric' });
@@ -139,6 +140,22 @@ export function RecapView({ recap, basePath }: { recap: RecapDto; basePath: stri
                     {r.abandonedGames > 0 && <li>{r.abandonedGames} dropped</li>}
                     {r.replays > 0 && <li>{plural(r.replays, 'replay')}</li>}
                 </ul>
+                {r.games.length > 0 && (
+                    <ol className="rc-recent" aria-label="Most recent finishes">
+                        {r.games
+                            .slice(-RECENT_COVERS)
+                            .reverse()
+                            .map((e) => (
+                                <li key={e.id} title={e.game.name}>
+                                    <Cover
+                                        imageId={e.game.coverImageId}
+                                        name={e.game.name}
+                                        size="cover_big"
+                                    />
+                                </li>
+                            ))}
+                    </ol>
+                )}
             </Card>
 
             {r.finishedGames > 0 && r.estimatedMinutes > 0 && (
