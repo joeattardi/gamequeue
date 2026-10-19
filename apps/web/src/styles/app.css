@@ -3006,3 +3006,81 @@ fieldset.stars:disabled .stars__star {
     flex: 1;
     min-width: 0;
 }
+
+/* Import drop zone: the native input is visually hidden, the label is the target */
+.dropzone {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 28px 20px;
+    text-align: center;
+    cursor: pointer;
+    background: var(--surface-2);
+    border: 2px dashed var(--line-strong);
+    border-radius: var(--radius);
+    transition:
+        border-color 0.15s,
+        background-color 0.15s;
+}
+.dropzone:hover,
+.dropzone--active {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+}
+.dropzone:focus-within {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+}
+.dropzone--disabled {
+    cursor: progress;
+    opacity: 0.6;
+}
+.dropzone__input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    overflow: hidden;
+}
+.dropzone__icon {
+    display: grid;
+    place-items: center;
+    width: 48px;
+    height: 48px;
+    margin-bottom: 6px;
+    border-radius: 50%;
+    background: var(--surface);
+    color: var(--accent);
+    border: 1px solid var(--line);
+    transition: transform 0.15s;
+}
+.dropzone__icon svg {
+    width: 24px;
+    height: 24px;
+}
+.dropzone--active .dropzone__icon {
+    transform: translateY(-3px);
+}
+.dropzone__title {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 1.05rem;
+    overflow-wrap: anywhere;
+}
+.dropzone__hint {
+    color: var(--ink-muted);
+    font-size: 0.9rem;
+}
+.dropzone__browse {
+    color: var(--accent);
+    font-weight: 600;
+    text-decoration: underline;
+}
+@media (prefers-reduced-motion: reduce) {
+    .dropzone,
+    .dropzone__icon {
+        transition: none;
+    }
+}

@@ -1,9 +1,9 @@
 import type { ImportReport } from '@gamequeue/shared';
-import { useRef, useState, type ChangeEvent } from 'react';
+import { useRef, useState, type ChangeEvent, type DragEvent } from 'react';
 import { Link } from 'react-router';
 import { ApiRequestError } from '../api/client';
 import { useImport } from '../api/data';
-import { Database, FileSpreadsheet } from 'lucide-react';
+import { Database, FileJson, FileSpreadsheet, UploadCloud } from 'lucide-react';
 import { usePageTitle } from '../lib';
 
 interface Problem {
@@ -20,6 +20,7 @@ export function DataPage() {
     const [done, setDone] = useState<ImportReport>();
     const [error, setError] = useState<string>();
     const [problems, setProblems] = useState<Problem[]>([]);
+    const [dragging, setDragging] = useState(false);
 
     function reset() {
         setFile(undefined);
@@ -38,8 +39,7 @@ export function DataPage() {
         } else setError('Something went wrong. Try again.');
     }
 
-    async function onPick(e: ChangeEvent<HTMLInputElement>) {
-        const picked = e.target.files?.[0];
+    async function load(picked: File | undefined) {
         reset();
         if (!picked) return;
         let data: unknown;
@@ -51,6 +51,17 @@ export function DataPage() {
         }
         setFile({ name: picked.name, data });
         imp.mutate({ file: data, commit: false }, { onSuccess: setPreview, onError: fail });
+    }
+
+    function onPick(e: ChangeEvent<HTMLInputElement>) {
+        void load(e.target.files?.[0]);
+    }
+
+    function onDrop(e: DragEvent<HTMLLabelElement>) {
+        e.preventDefault();
+        setDragging(false);
+        if (imp.isPending) return;
+        void load(e.dataTransfer.files?.[0]);
     }
 
     function confirm() {
@@ -117,15 +128,47 @@ export function DataPage() {
                         added. Importing the same file twice changes nothing. You'll see a preview
                         first.
                     </p>
-                    <label className="field">
-                        <span>Export file (.json)</span>
+                    <label
+                        className={`dropzone${dragging ? ' dropzone--active' : ''}${imp.isPending ? ' dropzone--disabled' : ''}`}
+                        onDragOver={(e) => {
+                            e.preventDefault();
+                            if (!imp.isPending) setDragging(true);
+                        }}
+                        onDragLeave={(e) => {
+                            if (!e.currentTarget.contains(e.relatedTarget as Node | null))
+                                setDragging(false);
+                        }}
+                        onDrop={onDrop}
+                    >
                         <input
                             ref={input}
+                            className="dropzone__input"
                             type="file"
                             accept="application/json,.json"
                             onChange={onPick}
                             disabled={imp.isPending}
                         />
+                        <span className="dropzone__icon" aria-hidden="true">
+                            {file ? <FileJson /> : <UploadCloud />}
+                        </span>
+                        {file ? (
+                            <>
+                                <span className="dropzone__title">{file.name}</span>
+                                <span className="dropzone__hint">
+                                    Drop or choose another file to replace it
+                                </span>
+                            </>
+                        ) : (
+                            <>
+                                <span className="dropzone__title">
+                                    {dragging ? 'Drop to import' : 'Drop your export file here'}
+                                </span>
+                                <span className="dropzone__hint">
+                                    or <span className="dropzone__browse">browse</span> for a .json
+                                    file
+                                </span>
+                            </>
+                        )}
                     </label>
                     {imp.isPending && (
                         <p className="muted" role="status">
