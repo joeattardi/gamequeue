@@ -387,6 +387,13 @@ export function hydrate(db: Db, userId: number, ids: number[]): EntryDto[] {
                         .map((p) => p.endedOn!)
                         .sort()
                         .at(-1) ?? null,
+                finishedYears: [
+                    ...new Set(
+                        (history.get(e.id) ?? [])
+                            .filter((p) => p.outcome === 'finished' && p.endedOn)
+                            .map((p) => Number(p.endedOn!.slice(0, 4)))
+                    )
+                ].sort((a, b) => a - b),
                 platforms: owned.get(e.id) ?? [],
                 tags: tagMap.get(e.id) ?? [],
                 game: gameDtos.get(g.id)!

@@ -78,6 +78,8 @@ export interface EntryDto {
     openPlaythrough: PlaythroughDto | null;
     /** End date of the most recent finished playthrough, if known */
     lastFinishedOn: string | null;
+    /** Every year with a finished playthrough that has a known end date, oldest first */
+    finishedYears: number[];
     /** The slot it currently occupies, if any */
     slotId: number | null;
     /** Lists it belongs to (the queue is separate, see `queued`) */

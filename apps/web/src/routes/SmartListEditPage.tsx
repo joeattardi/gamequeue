@@ -24,9 +24,22 @@ import { CheckSkeletons, EditorSkeleton } from '../components/PageSkeletons';
 import { usePageTitle } from '../lib';
 import { ArrowLeft, Save, Trash2, WandSparkles } from 'lucide-react';
 
-type RuleKind = 'status' | 'platform' | 'genre' | 'tag' | SmartNumberField;
-const RULE_KINDS: RuleKind[] = ['status', 'platform', 'genre', 'tag', ...SMART_NUMBER_FIELDS];
-const SET_LABELS = { status: 'Status', platform: 'Platform', genre: 'Genre', tag: 'Tag' } as const;
+type RuleKind = 'status' | 'platform' | 'genre' | 'tag' | 'finishedYear' | SmartNumberField;
+const RULE_KINDS: RuleKind[] = [
+    'status',
+    'platform',
+    'genre',
+    'tag',
+    'finishedYear',
+    ...SMART_NUMBER_FIELDS
+];
+const SET_LABELS = {
+    status: 'Status',
+    platform: 'Platform',
+    genre: 'Genre',
+    tag: 'Tag',
+    finishedYear: 'Year finished'
+} as const;
 const kindLabel = (k: RuleKind) =>
     k in SET_LABELS
         ? SET_LABELS[k as keyof typeof SET_LABELS]
@@ -52,6 +65,8 @@ function defaultRule(kind: RuleKind): SmartRule {
             return { field: 'genre', anyOf: [] };
         case 'tag':
             return { field: 'tag', anyOf: [] };
+        case 'finishedYear':
+            return { field: 'finishedYear', anyOf: [new Date().getFullYear()] };
         default:
             return { field: kind, op: 'gte', value: DEFAULT_VALUE[kind] };
     }
@@ -97,6 +112,17 @@ function Editor({ existing }: { existing?: SmartListDetailDto }) {
     const [dir, setDir] = useState<SortDir>(existing?.dir ?? 'asc');
     const [error, setError] = useState<string>();
 
+    // Years the user has finished something in, plus this one, newest first
+    const years = useMemo(
+        () =>
+            [
+                ...new Set([
+                    new Date().getFullYear(),
+                    ...(everything.data ?? []).flatMap((e) => e.finishedYears)
+                ])
+            ].sort((a, b) => b - a),
+        [everything.data]
+    );
     const rules = rows.map((r) => r.rule);
     const valid = smartRulesSchema.safeParse(rules).success;
     const matches = useMemo(
@@ -171,6 +197,7 @@ function Editor({ existing }: { existing?: SmartListDetailDto }) {
                             rule={row.rule}
                             facets={facets.data}
                             facetsPending={facets.isPending}
+                            years={years}
                             onChange={(rule) => setRule(row.key, rule)}
                             onRemove={() => setRows((rs) => rs.filter((r) => r.key !== row.key))}
                         />
@@ -295,6 +322,7 @@ function RuleEditor({
     rule,
     facets,
     facetsPending,
+    years,
     onChange,
     onRemove
 }: {
@@ -302,6 +330,7 @@ function RuleEditor({
     rule: SmartRule;
     facets: Facets | undefined;
     facetsPending: boolean;
+    years: number[];
     onChange: (rule: SmartRule) => void;
     onRemove: () => void;
 }) {
@@ -337,6 +366,7 @@ function RuleEditor({
                 rule={rule}
                 facets={facets}
                 facetsPending={facetsPending}
+                years={years}
                 onChange={onChange}
                 label={`Rule ${n}`}
             />
@@ -351,12 +381,14 @@ function RuleBody({
     rule,
     facets,
     facetsPending,
+    years,
     onChange,
     label
 }: {
     rule: SmartRule;
     facets: Facets | undefined;
     facetsPending: boolean;
+    years: number[];
     onChange: (rule: SmartRule) => void;
     label: string;
 }) {
@@ -367,6 +399,20 @@ function RuleBody({
                 options={ENTRY_STATUSES.map((s) => ({ key: s, label: cap(s) }))}
                 selected={rule.anyOf}
                 onToggle={(s) => onChange({ ...rule, anyOf: toggle(rule.anyOf, s) })}
+            />
+        );
+    }
+    if (rule.field === 'finishedYear') {
+        // Keep years saved on the rule visible even if nothing is finished in them now
+        const options = [...new Set([...years, ...rule.anyOf])]
+            .sort((a, b) => b - a)
+            .map((y) => ({ key: y, label: String(y) }));
+        return (
+            <CheckSet
+                label={`${label}: finished in any of`}
+                options={options}
+                selected={rule.anyOf}
+                onToggle={(y) => onChange({ ...rule, anyOf: toggle(rule.anyOf, y) })}
             />
         );
     }

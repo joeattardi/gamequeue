@@ -137,6 +137,32 @@ describe('smart lists', () => {
         expect(names(res.smartList)).toEqual(['Hades']);
     });
 
+    it('lists games finished in a year, counting replays and skipping unknown dates', async () => {
+        const { call, make, names, hades, celeste, knight, wilds } = await setup();
+        const finish = (id: number, endedOn?: string) =>
+            call(`/entries/${id}/playthroughs`, 'POST', { outcome: 'finished', endedOn });
+        await finish(hades.id, '2026-02-01');
+        await finish(celeste.id, '2025-12-31');
+        await finish(celeste.id, '2026-03-03'); // finished twice; once in 2026
+        await finish(knight.id, '2025-06-06');
+        await finish(wilds.id); // no date
+        await call(`/entries/${knight.id}/playthroughs`, 'POST', {
+            outcome: 'abandoned',
+            endedOn: '2026-01-01'
+        });
+        const rules = [{ field: 'finishedYear', anyOf: [2026] }];
+        const { smartList } = await make({ rules });
+        expect(names(smartList)).toEqual(['Celeste', 'Hades']);
+        expect(smartList.description).toEqual(['Finished in 2026']);
+        expect(
+            names(
+                (await make({ rules: [{ field: 'finishedYear', anyOf: [2025, 2026] }] })).smartList
+            )
+        ).toEqual(['Celeste', 'Hades', 'Hollow Knight']);
+        const entry = (await call(`/entries/${celeste.id}`)).entry;
+        expect(entry.finishedYears).toEqual([2025, 2026]);
+    });
+
     it('sorts by the chosen field, missing values last', async () => {
         const { make, names } = await setup();
         const rules = [{ field: 'status', anyOf: ['unplayed'] }];

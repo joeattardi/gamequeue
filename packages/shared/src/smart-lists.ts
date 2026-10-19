@@ -59,6 +59,11 @@ export const smartRuleSchema = z.union([
     }),
     z.object({ field: z.literal('genre'), anyOf: names }),
     z.object({ field: z.literal('tag'), anyOf: names }),
+    // Finished (at least once) in any of these years, by the playthrough's end date
+    z.object({
+        field: z.literal('finishedYear'),
+        anyOf: z.array(z.number().int().min(1950).max(2200)).min(1).max(100)
+    }),
     z.object({
         field: z.enum(SMART_NUMBER_FIELDS),
         op: z.enum(['gte', 'lte']),
@@ -141,6 +146,7 @@ type SmartEntry = Pick<
     | 'addedAt'
     | 'updatedAt'
     | 'lastFinishedOn'
+    | 'finishedYears'
 > & { game: Pick<EntryDto['game'], 'genres' | 'igdbRating' | 'releaseDate'> };
 
 const DAY_MS = 86_400_000;
@@ -188,6 +194,8 @@ export function matchesRule(e: SmartEntry, rule: SmartRule, now: number): boolea
             const wanted = lowerSet(rule.anyOf);
             return e.game.genres.some((g) => wanted.has(g.toLowerCase()));
         }
+        case 'finishedYear':
+            return e.finishedYears.some((y) => rule.anyOf.includes(y));
         case 'tag': {
             const wanted = lowerSet(rule.anyOf);
             return e.tags.some((t) => wanted.has(t.toLowerCase()));
@@ -290,6 +298,8 @@ export function describeRule(
             return `Genre is ${joinOr(rule.anyOf)}`;
         case 'tag':
             return `Tagged ${joinOr(rule.anyOf)}`;
+        case 'finishedYear':
+            return `Finished in ${joinOr(rule.anyOf.map(String))}`;
         default: {
             const label = SMART_NUMBER_FIELD_INFO[rule.field].label;
             if (rule.op === 'unknown') return `${label} is unknown`;

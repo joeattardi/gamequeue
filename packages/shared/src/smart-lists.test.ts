@@ -25,6 +25,7 @@ function entry(over: Record<string, unknown> = {}, game: Record<string, unknown>
         addedAt: NOW,
         updatedAt: NOW,
         lastFinishedOn: null,
+        finishedYears: [],
         platforms: [],
         tags: [],
         ...over,
@@ -82,6 +83,25 @@ describe('matchesRule', () => {
             false
         );
         expect(matchesRule(entry(), { field: 'finishedDays', op: 'unknown' }, NOW)).toBe(true);
+    });
+
+    it('matches games finished in any of the years, including ones finished again later', () => {
+        const replayed = entry({ finishedYears: [2024, 2026] });
+        const rule2026: SmartRule = { field: 'finishedYear', anyOf: [2026] };
+        expect(matchesRule(replayed, rule2026, NOW)).toBe(true);
+        expect(matchesRule(replayed, { field: 'finishedYear', anyOf: [2025] }, NOW)).toBe(false);
+        expect(matchesRule(replayed, { field: 'finishedYear', anyOf: [2025, 2024] }, NOW)).toBe(
+            true
+        );
+        expect(matchesRule(entry(), rule2026, NOW)).toBe(false);
+        expect(describeRule({ field: 'finishedYear', anyOf: [2026] })).toBe('Finished in 2026');
+        expect(describeRule({ field: 'finishedYear', anyOf: [2026, 2025] })).toBe(
+            'Finished in 2026 or 2025'
+        );
+        expect(smartRuleSchema.safeParse({ field: 'finishedYear', anyOf: [] }).success).toBe(false);
+        expect(smartRuleSchema.safeParse({ field: 'finishedYear', anyOf: [2026.5] }).success).toBe(
+            false
+        );
     });
 
     it('reads the release year from the date', () => {
