@@ -6,6 +6,17 @@ export type PublicEntryDto = Pick<
     'id' | 'status' | 'rating' | 'ttbMinutes' | 'lastFinishedOn' | 'game' | 'platforms' | 'tags'
 >;
 
+export const toPublicEntry = (e: EntryDto): PublicEntryDto => ({
+    id: e.id,
+    status: e.status,
+    rating: e.rating,
+    ttbMinutes: e.ttbMinutes,
+    lastFinishedOn: e.lastFinishedOn,
+    game: e.game,
+    platforms: e.platforms,
+    tags: e.tags
+});
+
 export interface ProfileDto {
     username: string;
     /** Account creation time, ms since epoch */

@@ -220,3 +220,28 @@ export function EditorSkeleton() {
         </section>
     );
 }
+
+/** The stats page: a row of number tiles and three chart panels. */
+export function StatsSkeleton() {
+    return (
+        <div className="stack sv" role="status" aria-label="Loading stats">
+            <ul className="sv-tiles" aria-hidden="true">
+                {Array.from({ length: 5 }, (_, i) => (
+                    <li key={i} className="sv-tile">
+                        <span
+                            className="skeleton skeleton--line"
+                            style={{ width: '40%', height: '1.8rem' }}
+                        />
+                        <span className="skeleton skeleton--line skeleton--sub" />
+                    </li>
+                ))}
+            </ul>
+            {[0, 1, 2].map((i) => (
+                <section key={i} className="panel" aria-hidden="true">
+                    <span className="skeleton skeleton--panel-title" />
+                    <span className="skeleton skeleton--block" style={{ height: 150 }} />
+                </section>
+            ))}
+        </div>
+    );
+}

@@ -10,6 +10,7 @@ import { profileRoutes } from './routes/profile.js';
 import { entryRoutes } from './routes/entries.js';
 import { igdbRoutes } from './routes/igdb.js';
 import { listRoutes, pickRoutes, queueRoutes, smartListRoutes } from './routes/lists.js';
+import { statsRoutes } from './routes/stats.js';
 import { slotRoutes } from './routes/slots.js';
 import { wishlistRoutes } from './routes/wishlist.js';
 import { entryActionRoutes, playthroughRoutes } from './routes/playthroughs.js';
@@ -74,6 +75,7 @@ export function createApp(deps: AppDeps) {
     app.route('/api/smart-lists', smartListRoutes(deps));
     app.route('/api/queue', queueRoutes(deps));
     app.route('/api/wishlist', wishlistRoutes(deps));
+    app.route('/api/stats', statsRoutes(deps));
     app.route('/api/pick', pickRoutes(deps));
     app.route('/api/data', dataRoutes(deps));
     // Public: no login required

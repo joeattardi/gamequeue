@@ -86,7 +86,8 @@ const COLLECTION_KEYS = [
     'smartLists',
     'smartList',
     'queue',
-    'wishlist'
+    'wishlist',
+    'stats'
 ];
 
 export function useInvalidateCollection() {

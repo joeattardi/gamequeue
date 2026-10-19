@@ -3,6 +3,7 @@ import {
     ENTRY_STATUSES,
     FINISHED_UNKNOWN_YEAR,
     entryQuerySchema,
+    toPublicEntry,
     type EntryDto,
     type EntryStatus,
     type ProfileDto,
@@ -16,20 +17,12 @@ import { entries, listItems, lists, playthroughs, users, wishlistItems } from '.
 import { HttpError } from '../errors.js';
 import { listEntries } from './entries.js';
 import { getList, listLists } from './lists.js';
+import { getStats } from './stats.js';
 import { listSlots } from './slots.js';
 import { listSmartListDetails } from './smart-lists.js';
 import { findWishlist, wishlistItemsOf } from './wishlist.js';
 
-const toPublic = (e: EntryDto): PublicEntryDto => ({
-    id: e.id,
-    status: e.status,
-    rating: e.rating,
-    ttbMinutes: e.ttbMinutes,
-    lastFinishedOn: e.lastFinishedOn,
-    game: e.game,
-    platforms: e.platforms,
-    tags: e.tags
-});
+const toPublic = toPublicEntry;
 
 function requireUser(db: Db, username: string) {
     const user = db.select().from(users).where(eq(users.username, username)).get();
@@ -89,6 +82,11 @@ export function getProfile(db: Db, username: string): ProfileDto {
             entries: l.entries.map(toPublic)
         }))
     };
+}
+
+/** Read-only and public: counts and games without notes (see `StatsDto`). */
+export function getProfileStats(db: Db, username: string) {
+    return getStats(db, requireUser(db, username).id);
 }
 
 /** Read-only like the rest: a user who never wishlisted anything has no wishlist row, which reads as empty. Notes stay private. */

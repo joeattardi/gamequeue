@@ -6,6 +6,7 @@ import { Footer } from './Footer';
 import { Logo } from './Logo';
 import {
     Database,
+    ChartColumn,
     Dices,
     Play,
     Search,
@@ -139,6 +140,10 @@ export function Shell({ user }: { user: UserDto }) {
                         <NavLink to="/pick">
                             <Dices />
                             Pick
+                        </NavLink>
+                        <NavLink to="/stats">
+                            <ChartColumn />
+                            Stats
                         </NavLink>
                         <NavLink to="/data">
                             <Database />

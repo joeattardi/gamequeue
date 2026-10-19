@@ -186,6 +186,9 @@ export function ProfilePage() {
 
                         <section aria-labelledby="p-collection">
                             <h2 id="p-collection">Collection</h2>
+                            <p>
+                                <Link to={`/u/${profile.data.username}/stats`}>View stats</Link>
+                            </p>
                             <Stats
                                 username={profile.data.username}
                                 summary={profile.data.summary}

@@ -19,6 +19,7 @@ import { SmartListPage } from './routes/SmartListPage';
 import { ProfilePage } from './routes/ProfilePage';
 import { ProfileGamesPage } from './routes/ProfileGamesPage';
 import { ProfileWishlistPage } from './routes/ProfileWishlistPage';
+import { ProfileStatsPage, StatsPage } from './routes/StatsPage';
 import { WishlistPage } from './routes/WishlistPage';
 
 export function App() {
@@ -38,6 +39,8 @@ export function App() {
                 <Route path="/register" element={<AuthPage mode="register" />} />
                 <Route path="/u/:username" element={<ProfilePage />} />
                 <Route path="/u/:username/wishlist" element={<ProfileWishlistPage />} />
+                <Route path="/u/:username/stats" element={<ProfileStatsPage />} />
+                <Route path="/u/:username/stats" element={<ProfileStatsPage />} />
                 <Route path="/u/:username/:view" element={<ProfileGamesPage />} />
                 <Route path="/u/:username/:view/:year" element={<ProfileGamesPage />} />
                 <Route path="*" element={<Navigate to="/login" replace />} />
@@ -48,6 +51,7 @@ export function App() {
         <Routes>
             <Route path="/u/:username" element={<ProfilePage />} />
             <Route path="/u/:username/wishlist" element={<ProfileWishlistPage />} />
+            <Route path="/u/:username/stats" element={<ProfileStatsPage />} />
             <Route path="/u/:username/:view" element={<ProfileGamesPage />} />
             <Route path="/u/:username/:view/:year" element={<ProfileGamesPage />} />
             <Route element={<Shell user={me.data} />}>
@@ -67,6 +71,7 @@ export function App() {
                 <Route path="pick" element={<PickPage />} />
                 <Route path="pick/criteria" element={<PickCriteriaPage />} />
                 <Route path="pick/choose" element={<PickChoosePage />} />
+                <Route path="stats" element={<StatsPage />} />
                 <Route path="data" element={<DataPage />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
             </Route>
