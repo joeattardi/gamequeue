@@ -1,6 +1,6 @@
 # TODO
 
-## 1. Better IGDB error handling and a way to test it
+## Better IGDB error handling and a way to test it
 
 Goal: refine the error UX for when IGDB fails or rate limits us, and make those scenarios easy to
 reproduce. Decided against Mock Service Worker: the browser only talks to our own `/api/igdb/*`
@@ -22,15 +22,11 @@ routes, and the server tests already inject a fake `fetch` into the IGDB client.
 - [ ] **Open question:** when IGDB is down, should search serve stale cached hits for the same query
       (`TtlCache` in `apps/server/src/igdb/search-cache.ts`)?
 
-## 2. Favorites
+## Favorites
 
 Goal: allow the user to mark certain games as favorites, and let them browse/search by favorites and annotate
 favorite games as such in the UI. Use a heart icon rather than a star so the favorite state isn't confused with a star rating.
 
-## 3. Pagination
+## Pagination
 
 Pagination of game lists.
-
-## 4. Search bug
-
-When typing, cursor always jumps to the end of the search field, so you can't insert text at the beginning
