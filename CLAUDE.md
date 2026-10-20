@@ -24,7 +24,8 @@ Full design (data model, API surface, rationale): `/Users/joe/.claude/plans/floa
 - Wishlist: **done** (post-v1; separate tables, not entries/lists; see the product decision below)
 - Search page + game-by-IGDB-id page: **done** (post-v1)
 - M6 (post-v1) smart lists, CSV export, stats: **done**. v1 plus M5 and M6 are complete;
-- Year in review ("Wrapped" for games, `/recap`, public at `/u/:username/recap`): **done** (post-v1). - Avatars: procedural identicons from the username (`packages/shared/src/avatar.ts`, `Avatar` component): **done** plus uploaded avatars (post-v1; client-side crop/resize, BLOB in the `avatars` table, `/account` page; not in the export file). Wait for the user to name the next thing.
+- Year in review ("Wrapped" for games, `/recap`, public at `/u/:username/recap`): **done** (post-v1). - Avatars: procedural identicons from the username (`packages/shared/src/avatar.ts`, `Avatar` component): **done** plus uploaded avatars (post-v1; client-side crop/resize, BLOB in the `avatars` table, `/account` page; not in the export file)
+- Real name (first/last, optional, private unless the profile checkbox is on) + first-name greetings: **done** (post-v1). Wait for the user to name the next thing.
 
 **Visual checks are possible without a browser tool:** Chrome is installed, so bundle a scratch page with esbuild (`NODE_PATH=node_modules npx esbuild entry.tsx --bundle --jsx=automatic`, built CSS from `apps/web/dist/assets`) and run `"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless=new --user-data-dir=<tmp> --allow-file-access-from-files --window-size=W,H --virtual-time-budget=5000 --force-prefers-reduced-motion --blink-settings=preferredColorScheme=0|1 --screenshot=out.png file://page.html`, then read the PNG. Keep scratch files in the scratchpad, not the repo. `--force-prefers-reduced-motion` matters: headless virtual time sometimes stalls CSS transitions and captures a half-animated state.
 

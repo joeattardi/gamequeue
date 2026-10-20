@@ -175,6 +175,9 @@ export function ProfilePage() {
                             />
                             <div>
                                 <h1>{profile.data.username}</h1>
+                                {profile.data.realName && (
+                                    <p className="profile-hero__name">{profile.data.realName}</p>
+                                )}
                                 <p className="muted profile-hero__joined">
                                     <CalendarDays aria-hidden="true" />
                                     Joined{' '}

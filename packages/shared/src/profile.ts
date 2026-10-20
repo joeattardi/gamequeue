@@ -21,6 +21,8 @@ export interface ProfileDto {
     username: string;
     /** See `UserDto.avatarUpdatedAt` */
     avatarUpdatedAt: number | null;
+    /** Real name; only present when the user chose to show it on their profile */
+    realName: string | null;
     /** Account creation time, ms since epoch */
     joinedAt: number;
     slots: { name: string; entry: PublicEntryDto | null }[];

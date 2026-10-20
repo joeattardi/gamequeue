@@ -3,6 +3,7 @@ import {
     ENTRY_STATUSES,
     FINISHED_UNKNOWN_YEAR,
     entryQuerySchema,
+    fullName,
     toPublicEntry,
     type EntryDto,
     type EntryStatus,
@@ -67,6 +68,7 @@ export function getProfile(db: Db, username: string): ProfileDto {
     return {
         username: user.username,
         avatarUpdatedAt: avatarVersion(db, user.id),
+        realName: user.showRealName ? fullName(user) : null,
         joinedAt: user.createdAt,
         slots: listSlots(db, user.id).map((s) => ({
             name: s.name,

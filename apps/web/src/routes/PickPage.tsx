@@ -1,5 +1,6 @@
 import { Link } from 'react-router';
 import { ArrowRight, Dices, ListChecks, SlidersHorizontal } from 'lucide-react';
+import { useFirstName } from '../api/auth';
 import { usePageTitle } from '../lib';
 
 const MODES = [
@@ -19,6 +20,7 @@ const MODES = [
 
 export function PickPage() {
     usePageTitle('Random pick');
+    const firstName = useFirstName();
     return (
         <section>
             <div className="page-head">
@@ -27,7 +29,10 @@ export function PickPage() {
                         <Dices aria-hidden="true" />
                         Random pick
                     </h1>
-                    <p className="muted">Can't decide? Pick how you want fate to help.</p>
+                    <p className="muted">
+                        {firstName ? `Can't decide, ${firstName}?` : "Can't decide?"} Pick how you
+                        want fate to help.
+                    </p>
                 </div>
             </div>
             <ul className="pick-modes">

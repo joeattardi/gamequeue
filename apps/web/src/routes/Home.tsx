@@ -7,11 +7,13 @@ import { UpNext } from '../components/UpNext';
 import { SlotBay } from '../components/SlotBay';
 import { useSlots } from '../api/slots';
 import { Gamepad2, SlidersHorizontal } from 'lucide-react';
-import { usePageTitle } from '../lib';
+import { useFirstName } from '../api/auth';
+import { greeting, usePageTitle } from '../lib';
 
 export function Home() {
     usePageTitle('Now playing');
     const slots = useSlots();
+    const firstName = useFirstName();
     const [assigning, setAssigning] = useState<SlotDto | null>(null);
     const [managing, setManaging] = useState(false);
 
@@ -23,7 +25,9 @@ export function Home() {
                         <Gamepad2 aria-hidden="true" />
                         Now playing
                     </h1>
-                    <p className="muted">What's in each slot right now.</p>
+                    <p className="muted">
+                        {firstName ? `${greeting(firstName)}. ` : ''}What's in each slot right now.
+                    </p>
                 </div>
                 <button className="btn" onClick={() => setManaging(true)}>
                     <SlidersHorizontal />

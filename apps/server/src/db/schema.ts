@@ -17,6 +17,10 @@ export const users = sqliteTable('users', {
     username: text('username').notNull().unique(),
     email: text('email').notNull().unique(),
     passwordHash: text('password_hash').notNull(),
+    // Optional real name; only exposed on the public profile when show_real_name is on
+    firstName: text('first_name'),
+    lastName: text('last_name'),
+    showRealName: integer('show_real_name', { mode: 'boolean' }).notNull().default(false),
     createdAt: integer('created_at').notNull().default(now)
 });
 

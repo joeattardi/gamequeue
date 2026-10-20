@@ -4,6 +4,7 @@ import { HTTPException } from 'hono/http-exception';
 import type { Config } from './config.js';
 import type { Db } from './db/client.js';
 import { FailureLimiter } from './auth/rate-limit.js';
+import { accountRoutes } from './routes/account.js';
 import { avatarRoutes } from './routes/avatar.js';
 import { authRoutes } from './routes/auth.js';
 import { dataRoutes } from './routes/data.js';
@@ -68,6 +69,7 @@ export function createApp(deps: AppDeps) {
         })
     );
 
+    app.route('/api/account', accountRoutes(deps));
     app.route('/api/avatar', avatarRoutes(deps));
     app.route('/api/igdb', igdbRoutes(deps));
     app.route('/api/entries', entryRoutes(deps));

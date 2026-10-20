@@ -3447,3 +3447,29 @@ fieldset.stars:disabled .stars__star {
         flex-direction: column;
     }
 }
+
+.name-form {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+}
+.name-form > p {
+    margin: 0;
+}
+.name-form__fields {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    width: 100%;
+    max-width: 520px;
+}
+@media (max-width: 520px) {
+    .name-form__fields {
+        grid-template-columns: 1fr;
+    }
+}
+.profile-hero__name {
+    margin: 2px 0 0;
+    font-size: 1.05rem;
+}

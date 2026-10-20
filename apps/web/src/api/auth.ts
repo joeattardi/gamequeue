@@ -20,6 +20,11 @@ export function useMe() {
     });
 }
 
+/** The signed-in user's first name when they set one, for greetings; undefined otherwise. */
+export function useFirstName(): string | undefined {
+    return useMe().data?.firstName ?? undefined;
+}
+
 export function useAuthConfig() {
     return useQuery({
         queryKey: ['auth-config'],
