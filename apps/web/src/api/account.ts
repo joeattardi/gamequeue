@@ -1,5 +1,10 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import type { AccountProfileInput, SocialLinksInput, UserDto } from '@gamequeue/shared';
+import type {
+    AccountProfileInput,
+    ChangePasswordInput,
+    SocialLinksInput,
+    UserDto
+} from '@gamequeue/shared';
 import { api } from './client';
 
 export function useUpdateAccount() {
@@ -25,3 +30,9 @@ export function useUpdateSocialLinks() {
         }
     });
 }
+
+export const useChangePassword = () =>
+    useMutation({
+        mutationFn: (input: ChangePasswordInput) =>
+            api<{ ok: true }>('/account/password', { method: 'PUT', body: input })
+    });

@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm';
+import { and, eq, ne } from 'drizzle-orm';
 import type {
     AccountProfileInput,
     SocialLinks,
@@ -6,7 +6,9 @@ import type {
     UserDto
 } from '@gamequeue/shared';
 import type { Db } from '../db/client.js';
-import { users } from '../db/schema.js';
+import { hashPassword, verifyPassword } from '../auth/password.js';
+import { hashToken } from '../auth/sessions.js';
+import { sessions, users } from '../db/schema.js';
 import { avatarVersion } from './avatars.js';
 
 type UserRow = typeof users.$inferSelect;
@@ -50,4 +52,36 @@ export function updateSocialLinks(db: Db, userId: number, input: SocialLinksInpu
         .where(eq(users.id, userId))
         .run();
     return getUserDto(db, userId);
+}
+
+/**
+ * Changes the password after checking the current one. Every other session of the user is signed
+ * out (the one making the request stays), so a leaked session can't outlive a password change.
+ * Returns false when the current password is wrong.
+ */
+export async function changePassword(
+    db: Db,
+    userId: number,
+    currentToken: string | undefined,
+    currentPassword: string,
+    newPassword: string
+): Promise<boolean> {
+    const row = db
+        .select({ hash: users.passwordHash })
+        .from(users)
+        .where(eq(users.id, userId))
+        .get();
+    if (!row || !(await verifyPassword(row.hash, currentPassword))) return false;
+    const passwordHash = await hashPassword(newPassword);
+    db.transaction((tx) => {
+        tx.update(users).set({ passwordHash }).where(eq(users.id, userId)).run();
+        tx.delete(sessions)
+            .where(
+                currentToken
+                    ? and(eq(sessions.userId, userId), ne(sessions.id, hashToken(currentToken)))
+                    : eq(sessions.userId, userId)
+            )
+            .run();
+    });
+    return true;
 }

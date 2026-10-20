@@ -122,3 +122,61 @@ describe('social links', () => {
         expect(me.firstName).toBe('Ada');
     });
 });
+
+describe('change password', () => {
+    const OLD = 'correct horse battery';
+    const NEW = 'a brand new passphrase';
+
+    async function setupPw() {
+        const { app } = makeApp();
+        const cookie = cookieFrom(await register(app, 'me@example.com', OLD, 'joe'));
+        const put = (body: unknown, who = cookie) =>
+            app.request('/api/account/password', {
+                ...json(body, { cookie: who, origin: 'http://localhost' }),
+                method: 'PUT'
+            });
+        const login = async (password: string) =>
+            app.request('/api/auth/login', json({ username: 'joe', password }));
+        const meStatus = async (who: string) =>
+            (await app.request('/api/auth/me', { headers: { cookie: who } })).status;
+        return { app, cookie, put, login, meStatus };
+    }
+
+    it('changes the password, keeps this session and signs out the others', async () => {
+        const { cookie, put, login, meStatus } = await setupPw();
+        const other = cookieFrom(await login(OLD));
+        expect(await meStatus(other)).toBe(200);
+
+        const res = await put({ currentPassword: OLD, newPassword: NEW });
+        expect(res.status).toBe(200);
+        expect(await meStatus(cookie)).toBe(200);
+        expect(await meStatus(other)).toBe(401);
+        expect((await login(OLD)).status).toBe(401);
+        expect((await login(NEW)).status).toBe(200);
+    });
+
+    it('rejects a wrong current password, pointing at that field', async () => {
+        const { put, login } = await setupPw();
+        const res = await put({ currentPassword: 'nope nope nope', newPassword: NEW });
+        expect(res.status).toBe(400);
+        expect((await res.json()).details[0].path).toBe('currentPassword');
+        expect((await login(OLD)).status).toBe(200);
+    });
+
+    it('validates the new password and requires login', async () => {
+        const { put } = await setupPw();
+        expect((await put({ currentPassword: OLD, newPassword: 'short' })).status).toBe(400);
+        expect((await put({ currentPassword: OLD, newPassword: OLD })).status).toBe(400);
+        expect((await put({ currentPassword: OLD, newPassword: NEW }, '')).status).toBe(401);
+    });
+
+    it('rate limits repeated wrong guesses', async () => {
+        const { put } = await setupPw();
+        for (let i = 0; i < 5; i++)
+            expect((await put({ currentPassword: 'wrong wrong', newPassword: NEW })).status).toBe(
+                400
+            );
+        const res = await put({ currentPassword: OLD, newPassword: NEW });
+        expect(res.status).toBe(429);
+    });
+});

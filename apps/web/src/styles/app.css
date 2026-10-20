@@ -3539,3 +3539,8 @@ fieldset.stars:disabled .stars__star {
 .field__icon-input input {
     padding-left: 40px;
 }
+
+.name-form__fields.name-form__fields--stack {
+    grid-template-columns: 1fr;
+    max-width: 320px;
+}

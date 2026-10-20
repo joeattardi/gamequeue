@@ -58,18 +58,13 @@ export function createApp(deps: AppDeps) {
     });
 
     app.get('/api/health', (c) => c.json({ ok: true }));
-    app.route(
-        '/api/auth',
-        authRoutes({
-            ...deps,
-            limiters: deps.limiters ?? {
-                loginByAccount: new FailureLimiter(5, 15 * 60_000),
-                loginByIp: new FailureLimiter(30, 15 * 60_000)
-            }
-        })
-    );
+    const limiters = deps.limiters ?? {
+        loginByAccount: new FailureLimiter(5, 15 * 60_000),
+        loginByIp: new FailureLimiter(30, 15 * 60_000)
+    };
+    app.route('/api/auth', authRoutes({ ...deps, limiters }));
 
-    app.route('/api/account', accountRoutes(deps));
+    app.route('/api/account', accountRoutes({ ...deps, limiters }));
     app.route('/api/avatar', avatarRoutes(deps));
     app.route('/api/igdb', igdbRoutes(deps));
     app.route('/api/entries', entryRoutes(deps));

@@ -6,7 +6,7 @@ import {
     type UserDto
 } from '@gamequeue/shared';
 import { ImageUp, Settings, Trash2 } from 'lucide-react';
-import { useUpdateAccount, useUpdateSocialLinks } from '../api/account';
+import { useChangePassword, useUpdateAccount, useUpdateSocialLinks } from '../api/account';
 import { useRemoveAvatar, useUploadAvatar } from '../api/avatar';
 import { useMe } from '../api/auth';
 import { ApiRequestError } from '../api/client';
@@ -169,6 +169,114 @@ function SocialForm({ me }: { me: UserDto }) {
     );
 }
 
+function PasswordForm() {
+    const change = useChangePassword();
+    const [current, setCurrent] = useState('');
+    const [next, setNext] = useState('');
+    const [confirmNext, setConfirmNext] = useState('');
+    const [problems, setProblems] = useState<Record<string, string>>({});
+    const [error, setError] = useState<string>();
+    const [saved, setSaved] = useState(false);
+
+    function submit(e: FormEvent) {
+        e.preventDefault();
+        setError(undefined);
+        setSaved(false);
+        if (next !== confirmNext) {
+            setProblems({ confirm: 'The two new passwords do not match' });
+            return;
+        }
+        setProblems({});
+        change.mutate(
+            { currentPassword: current, newPassword: next },
+            {
+                onSuccess: () => {
+                    setCurrent('');
+                    setNext('');
+                    setConfirmNext('');
+                    setSaved(true);
+                },
+                onError: (err) => {
+                    if (err instanceof ApiRequestError && Array.isArray(err.details)) {
+                        setProblems(
+                            Object.fromEntries(
+                                (err.details as { path: string; message: string }[]).map((d) => [
+                                    d.path,
+                                    d.message
+                                ])
+                            )
+                        );
+                    } else
+                        setError(err instanceof ApiRequestError ? err.message : 'Could not save.');
+                }
+            }
+        );
+    }
+
+    const fields = [
+        {
+            key: 'currentPassword',
+            label: 'Current password',
+            value: current,
+            set: setCurrent,
+            auto: 'current-password',
+            hint: ''
+        },
+        {
+            key: 'newPassword',
+            label: 'New password',
+            value: next,
+            set: setNext,
+            auto: 'new-password',
+            hint: 'At least 10 characters.'
+        },
+        {
+            key: 'confirm',
+            label: 'Confirm new password',
+            value: confirmNext,
+            set: setConfirmNext,
+            auto: 'new-password',
+            hint: ''
+        }
+    ];
+
+    return (
+        <form onSubmit={submit} className="name-form">
+            <p>
+                Changing your password signs you out everywhere else. You stay signed in on this
+                device.
+            </p>
+            <div className="name-form__fields name-form__fields--stack">
+                {fields.map((f) => (
+                    <label className="field" key={f.key}>
+                        {f.label}
+                        <input
+                            type="password"
+                            value={f.value}
+                            onChange={(e) => f.set(e.target.value)}
+                            maxLength={256}
+                            required
+                            autoComplete={f.auto}
+                            aria-invalid={problems[f.key] ? true : undefined}
+                            aria-describedby={`pw-${f.key}`}
+                        />
+                        <small id={`pw-${f.key}`}>{problems[f.key] ?? f.hint}</small>
+                    </label>
+                ))}
+            </div>
+            <div>
+                <button className="btn btn--primary" disabled={change.isPending}>
+                    {change.isPending ? 'Saving…' : 'Change password'}
+                </button>
+            </div>
+            <p role="status" className="muted">
+                {saved ? 'Password changed.' : ''}
+            </p>
+            {error && <p role="alert">{error}</p>}
+        </form>
+    );
+}
+
 export function AccountPage() {
     usePageTitle('Account');
     const confirm = useConfirm();
@@ -233,6 +341,11 @@ export function AccountPage() {
                 <section aria-labelledby="social-h" className="panel">
                     <h2 id="social-h">Gaming accounts</h2>
                     <SocialForm me={me} />
+                </section>
+
+                <section aria-labelledby="password-h" className="panel">
+                    <h2 id="password-h">Password</h2>
+                    <PasswordForm />
                 </section>
 
                 <section aria-labelledby="avatar-h" className="panel">

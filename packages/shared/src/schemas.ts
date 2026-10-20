@@ -53,6 +53,18 @@ export type AccountProfileInput = z.infer<typeof accountProfileSchema>;
 export const fullName = (u: { firstName: string | null; lastName: string | null }) =>
     [u.firstName, u.lastName].filter(Boolean).join(' ') || null;
 
+export const changePasswordSchema = z
+    .object({
+        // Not held to the password rules: it only has to match what is stored
+        currentPassword: z.string().min(1, 'Enter your current password').max(256),
+        newPassword: passwordSchema
+    })
+    .refine((v) => v.newPassword !== v.currentPassword, {
+        path: ['newPassword'],
+        message: 'Choose a password different from the current one'
+    });
+export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
+
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 
