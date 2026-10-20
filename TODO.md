@@ -26,3 +26,11 @@ routes, and the server tests already inject a fake `fetch` into the IGDB client.
 
 Goal: allow the user to mark certain games as favorites, and let them browse/search by favorites and annotate
 favorite games as such in the UI. Use a heart icon rather than a star so the favorite state isn't confused with a star rating.
+
+## 3. Pagination
+
+Pagination of game lists.
+
+## 4. Search bug
+
+When typing, cursor always jumps to the end of the search field, so you can't insert text at the beginning
