@@ -1,7 +1,7 @@
 import { loginSchema, registerSchema } from '@gamequeue/shared';
 import { useState, type FormEvent } from 'react';
-import { Link } from 'react-router';
-import { useLogin, useRegister } from '../api/auth';
+import { Link, Navigate } from 'react-router';
+import { useAuthConfig, useLogin, useRegister } from '../api/auth';
 import { ApiRequestError } from '../api/client';
 import { Logo } from '../components/Logo';
 import { usePageTitle } from '../lib';
@@ -11,6 +11,7 @@ export function AuthPage({ mode }: { mode: 'login' | 'register' }) {
     const login = useLogin();
     const register = useRegister();
     const mutation = isLogin ? login : register;
+    const config = useAuthConfig();
     const [error, setError] = useState<string>();
     usePageTitle(isLogin ? 'Sign in' : 'Create account');
 
@@ -35,6 +36,9 @@ export function AuthPage({ mode }: { mode: 'login' | 'register' }) {
             register.mutate(parsed.data, { onError });
         }
     }
+
+    // Signups off: the register page has nothing to offer.
+    if (!isLogin && config.data?.signupsEnabled === false) return <Navigate to="/login" replace />;
 
     return (
         <main className="auth">
@@ -83,9 +87,19 @@ export function AuthPage({ mode }: { mode: 'login' | 'register' }) {
                 </button>
                 <p className="auth__switch">
                     {isLogin ? (
-                        <>
-                            New here? <Link to="/register">Create an account</Link>
-                        </>
+                        config.isPending ? (
+                            <span
+                                className="skeleton skeleton--subtitle"
+                                role="status"
+                                aria-label="Loading"
+                            />
+                        ) : (
+                            config.data?.signupsEnabled !== false && (
+                                <>
+                                    New here? <Link to="/register">Create an account</Link>
+                                </>
+                            )
+                        )
                     ) : (
                         <>
                             Already have an account? <Link to="/login">Sign in</Link>

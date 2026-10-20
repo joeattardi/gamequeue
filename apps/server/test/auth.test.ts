@@ -42,6 +42,17 @@ describe('register', () => {
         expect(db.select().from(users).all()).toHaveLength(0);
     });
 
+    it('reports whether signups are enabled', async () => {
+        const on = makeApp().app;
+        expect(await (await on.request('/api/auth/config')).json()).toEqual({
+            signupsEnabled: true
+        });
+        const off = makeApp({ signupsEnabled: false }).app;
+        expect(await (await off.request('/api/auth/config')).json()).toEqual({
+            signupsEnabled: false
+        });
+    });
+
     it('rejects short passwords and duplicate emails', async () => {
         const { app } = makeApp();
         expect((await register(app, 'a@b.co', 'short')).status).toBe(400);

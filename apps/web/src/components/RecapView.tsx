@@ -130,32 +130,38 @@ export function RecapView({ recap, basePath }: { recap: RecapDto; basePath: stri
             {nav}
 
             <Card n={n++} id="rc-hero" title={`${r.year} in games`} className="rc-card--hero">
-                <p className="rc-big">{r.finishedGames}</p>
-                <p className="rc-lead">
-                    {r.finishedGames === 1 ? 'game finished' : 'games finished'}
-                </p>
-                {compare && <p className="rc-note">{compare}</p>}
-                <ul className="rc-chips">
-                    {r.startedCount > 0 && <li>{plural(r.startedCount, 'game')} started</li>}
-                    {r.abandonedGames > 0 && <li>{r.abandonedGames} dropped</li>}
-                    {r.replays > 0 && <li>{plural(r.replays, 'replay')}</li>}
-                </ul>
-                {r.games.length > 0 && (
-                    <ol className="rc-recent" aria-label="Most recent finishes">
-                        {r.games
-                            .slice(-RECENT_COVERS)
-                            .reverse()
-                            .map((e) => (
-                                <li key={e.id} title={e.game.name}>
-                                    <Cover
-                                        imageId={e.game.coverImageId}
-                                        name={e.game.name}
-                                        size="cover_big"
-                                    />
-                                </li>
-                            ))}
-                    </ol>
-                )}
+                <div className="rc-hero">
+                    <div>
+                        <p className="rc-big">{r.finishedGames}</p>
+                        <p className="rc-lead">
+                            {r.finishedGames === 1 ? 'game finished' : 'games finished'}
+                        </p>
+                        {compare && <p className="rc-note">{compare}</p>}
+                        <ul className="rc-chips">
+                            {r.startedCount > 0 && (
+                                <li>{plural(r.startedCount, 'game')} started</li>
+                            )}
+                            {r.abandonedGames > 0 && <li>{r.abandonedGames} dropped</li>}
+                            {r.replays > 0 && <li>{plural(r.replays, 'replay')}</li>}
+                        </ul>
+                    </div>
+                    {r.games.length > 0 && (
+                        <ol className="rc-recent" aria-label="Most recent finishes">
+                            {r.games
+                                .slice(-RECENT_COVERS)
+                                .reverse()
+                                .map((e) => (
+                                    <li key={e.id} title={e.game.name}>
+                                        <Cover
+                                            imageId={e.game.coverImageId}
+                                            name={e.game.name}
+                                            size="cover_big"
+                                        />
+                                    </li>
+                                ))}
+                        </ol>
+                    )}
+                </div>
             </Card>
 
             {r.finishedGames > 0 && r.estimatedMinutes > 0 && (

@@ -3359,19 +3359,32 @@ fieldset.stars:disabled .stars__star {
     overflow-wrap: anywhere;
 }
 
-/* Hero card: the most recent finishes as a slightly overlapping row of covers, newest first */
+/* Hero card: the count on the left, the most recent finishes on the right as an overlapping row of covers, newest first */
+.rc-hero {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px 32px;
+    align-items: center;
+    justify-content: space-between;
+}
+.rc-hero > div {
+    display: grid;
+    gap: 10px;
+}
 .rc-recent {
     list-style: none;
     display: flex;
-    margin: 14px 0 0;
+    margin: 0;
     padding: 0;
+    flex: 0 1 460px;
+    min-width: 0;
 }
 .rc-recent li {
-    flex: 0 1 112px;
+    flex: 0 1 104px;
     min-width: 0;
 }
 .rc-recent li + li {
-    margin-left: -14px;
+    margin-left: -28px;
 }
 .rc-recent .cover {
     width: 100%;

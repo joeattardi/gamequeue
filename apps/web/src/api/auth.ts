@@ -20,6 +20,14 @@ export function useMe() {
     });
 }
 
+export function useAuthConfig() {
+    return useQuery({
+        queryKey: ['auth-config'],
+        queryFn: () => api<{ signupsEnabled: boolean }>('/auth/config'),
+        staleTime: 5 * 60_000
+    });
+}
+
 export function useLogin() {
     const qc = useQueryClient();
     return useMutation({
