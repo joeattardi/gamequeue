@@ -19,6 +19,7 @@ import {
     ListTodo,
     LogOut,
     Menu,
+    Settings,
     X
 } from 'lucide-react';
 
@@ -160,9 +161,17 @@ export function Shell({ user }: { user: UserDto }) {
                             className="btn btn--ghost sidebar__username"
                             to={`/u/${user.username}`}
                         >
-                            <Avatar username={user.username} size={24} />
+                            <Avatar
+                                username={user.username}
+                                size={24}
+                                avatarUpdatedAt={user.avatarUpdatedAt}
+                            />
                             <span>{user.username}</span>
                         </Link>
+                        <NavLink className="btn btn--ghost" to="/account">
+                            <Settings />
+                            Account
+                        </NavLink>
                         <button
                             className="btn btn--ghost"
                             onClick={() => logout.mutate()}

@@ -19,6 +19,8 @@ export const toPublicEntry = (e: EntryDto): PublicEntryDto => ({
 
 export interface ProfileDto {
     username: string;
+    /** See `UserDto.avatarUpdatedAt` */
+    avatarUpdatedAt: number | null;
     /** Account creation time, ms since epoch */
     joinedAt: number;
     slots: { name: string; entry: PublicEntryDto | null }[];

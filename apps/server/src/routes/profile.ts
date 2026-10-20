@@ -9,6 +9,7 @@ import {
     getProfileStats,
     getProfileWishlist
 } from '../services/profile.js';
+import { getAvatarByUsername } from '../services/avatars.js';
 import { parseRecapYear } from '../services/recap.js';
 
 /** Public: deliberately has no requireAuth. */
@@ -26,6 +27,16 @@ export function profileRoutes({ db }: AppDeps) {
     r.get('/:username/wishlist', (c) =>
         c.json({ wishlist: getProfileWishlist(db, parseUsername(c.req.param('username'))) })
     );
+    r.get('/:username/avatar', (c) => {
+        const avatar = getAvatarByUsername(db, parseUsername(c.req.param('username')));
+        if (!avatar) throw new HttpError(404, 'Not found');
+        // The web client adds ?v=<updatedAt>, so a changed avatar is a new URL and may be cached hard.
+        return c.body(new Uint8Array(avatar.data), 200, {
+            'content-type': avatar.contentType,
+            'cache-control': 'public, max-age=31536000, immutable',
+            'x-content-type-options': 'nosniff'
+        });
+    });
     r.get('/:username/stats', (c) =>
         c.json({ stats: getProfileStats(db, parseUsername(c.req.param('username'))) })
     );

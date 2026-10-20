@@ -1,8 +1,32 @@
-import type { CSSProperties } from 'react';
-import { AVATAR_GRID, generateIdenticon } from '@gamequeue/shared';
+import { useState, type CSSProperties } from 'react';
+import { AVATAR_GRID, avatarUrl, generateIdenticon } from '@gamequeue/shared';
 
-/** Identicon generated from the username. Decorative: the username is always shown beside it. */
-export function Avatar({ username, size = 32 }: { username: string; size?: number }) {
+/**
+ * The user's uploaded image when they have one (`avatarUpdatedAt` set), else an identicon generated
+ * from the username. Decorative: the username is always shown beside it.
+ */
+export function Avatar({
+    username,
+    size = 32,
+    avatarUpdatedAt = null
+}: {
+    username: string;
+    size?: number;
+    avatarUpdatedAt?: number | null;
+}) {
+    const [failed, setFailed] = useState<number | null>(null);
+    if (avatarUpdatedAt !== null && failed !== avatarUpdatedAt) {
+        return (
+            <img
+                className="avatar avatar--image"
+                src={avatarUrl(username, avatarUpdatedAt)}
+                width={size}
+                height={size}
+                alt=""
+                onError={() => setFailed(avatarUpdatedAt)}
+            />
+        );
+    }
     const { hue, cells } = generateIdenticon(username);
     // Inset of one cell so the pattern sits inside a padded tile.
     const span = AVATAR_GRID + 2;

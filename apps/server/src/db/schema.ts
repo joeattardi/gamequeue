@@ -1,5 +1,6 @@
 import { sql } from 'drizzle-orm';
 import {
+    blob,
     index,
     integer,
     primaryKey,
@@ -17,6 +18,16 @@ export const users = sqliteTable('users', {
     email: text('email').notNull().unique(),
     passwordHash: text('password_hash').notNull(),
     createdAt: integer('created_at').notNull().default(now)
+});
+
+/** Uploaded avatar image (already cropped and re-encoded by the client); kept out of `users` so user lookups never load the blob. */
+export const avatars = sqliteTable('avatars', {
+    userId: integer('user_id')
+        .primaryKey()
+        .references(() => users.id, { onDelete: 'cascade' }),
+    contentType: text('content_type').notNull(),
+    data: blob('data', { mode: 'buffer' }).notNull(),
+    updatedAt: integer('updated_at').notNull()
 });
 
 export const sessions = sqliteTable(

@@ -1,3 +1,5 @@
+import { z } from 'zod';
+
 /** Procedural "identicon" for a username: deterministic, so it needs no storage and no server call. */
 
 export const AVATAR_GRID = 5;
@@ -47,3 +49,24 @@ export function generateIdenticon(username: string): Identicon {
     }
     return { hue, cells };
 }
+
+/** Uploaded avatars: the web client crops to a square and re-encodes, the server validates and stores the bytes. */
+export const AVATAR_CONTENT_TYPES = ['image/webp', 'image/jpeg', 'image/png'] as const;
+export type AvatarContentType = (typeof AVATAR_CONTENT_TYPES)[number];
+/** Edge length of the square the client produces. */
+export const AVATAR_UPLOAD_SIZE = 256;
+export const AVATAR_MAX_BYTES = 128 * 1024;
+
+export const avatarUploadSchema = z.object({
+    contentType: z.enum(AVATAR_CONTENT_TYPES),
+    /** Base64 of the image bytes (the API only takes JSON bodies) */
+    data: z
+        .string()
+        .max(Math.ceil((AVATAR_MAX_BYTES * 4) / 3) + 4, 'That image is too large')
+        .regex(/^[A-Za-z0-9+/]+={0,2}$/, 'Invalid image data')
+});
+export type AvatarUploadInput = z.infer<typeof avatarUploadSchema>;
+
+/** Public URL of a user's uploaded avatar; `version` busts caches when it changes. */
+export const avatarUrl = (username: string, version: number) =>
+    `/api/profiles/${encodeURIComponent(username)}/avatar?v=${version}`;

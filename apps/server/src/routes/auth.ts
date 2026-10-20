@@ -14,6 +14,7 @@ import {
 import { dummyHash, hashPassword, verifyPassword } from '../auth/password.js';
 import type { FailureLimiter } from '../auth/rate-limit.js';
 import { createSession, destroySession, SESSION_COOKIE } from '../auth/sessions.js';
+import { avatarVersion } from '../services/avatars.js';
 import { slots, users } from '../db/schema.js';
 
 type Deps = Pick<AppDeps, 'db' | 'config'> & Required<Pick<AppDeps, 'limiters'>>;
@@ -97,7 +98,7 @@ export function authRoutes({ db, config, limiters }: Deps) {
         }
         const { token, expiresAt } = createSession(db, user.id);
         setSessionCookie(c, config, token, expiresAt);
-        return c.json({ user }, 201);
+        return c.json({ user: { ...user, avatarUpdatedAt: null } }, 201);
     });
 
     r.post('/login', async (c) => {
@@ -126,7 +127,14 @@ export function authRoutes({ db, config, limiters }: Deps) {
         limiters.loginByAccount.reset(keys[0]![1]);
         const { token, expiresAt } = createSession(db, row.id);
         setSessionCookie(c, config, token, expiresAt);
-        return c.json({ user: { id: row.id, username: row.username, email: row.email } });
+        return c.json({
+            user: {
+                id: row.id,
+                username: row.username,
+                email: row.email,
+                avatarUpdatedAt: avatarVersion(db, row.id)
+            }
+        });
     });
 
     r.post('/logout', (c) => {
@@ -136,7 +144,10 @@ export function authRoutes({ db, config, limiters }: Deps) {
         return c.json({ ok: true });
     });
 
-    r.get('/me', requireAuth(db, config), (c) => c.json({ user: c.get('user') }));
+    r.get('/me', requireAuth(db, config), (c) => {
+        const user = c.get('user');
+        return c.json({ user: { ...user, avatarUpdatedAt: avatarVersion(db, user.id) } });
+    });
 
     return r;
 }

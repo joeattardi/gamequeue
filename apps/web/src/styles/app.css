@@ -364,6 +364,11 @@ a {
         --avatar-fg: hsl(var(--avatar-h) 70% 68%);
     }
 }
+.avatar--image {
+    display: block;
+    object-fit: cover;
+    background: var(--surface);
+}
 .avatar__bg {
     fill: var(--avatar-bg);
 }
@@ -3415,5 +3420,30 @@ fieldset.stars:disabled .stars__star {
 @media (max-width: 560px) {
     .rc-recent li:nth-child(n + 5) {
         display: none;
+    }
+}
+
+.avatar-edit {
+    display: flex;
+    align-items: flex-start;
+    gap: 20px;
+}
+.avatar-edit .avatar {
+    flex: none;
+}
+.avatar-edit__body {
+    min-width: 0;
+}
+.avatar-edit__body p {
+    margin-top: 0;
+}
+.avatar-edit__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+@media (max-width: 520px) {
+    .avatar-edit {
+        flex-direction: column;
     }
 }

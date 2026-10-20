@@ -39,6 +39,8 @@ export interface UserDto {
     id: number;
     username: string;
     email: string;
+    /** When the uploaded avatar last changed (ms); null = none, show the generated identicon */
+    avatarUpdatedAt: number | null;
 }
 export interface ApiError {
     error: string;

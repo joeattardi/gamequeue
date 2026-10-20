@@ -3,6 +3,7 @@ import { useMe } from './api/auth';
 import { BootSkeleton } from './components/PageSkeletons';
 import { Shell } from './components/Shell';
 import { AuthPage } from './routes/AuthPage';
+import { AccountPage } from './routes/AccountPage';
 import { CollectionPage } from './routes/CollectionPage';
 import { DataPage } from './routes/DataPage';
 import { EntryPage } from './routes/EntryPage';
@@ -78,6 +79,7 @@ export function App() {
                 <Route path="stats" element={<StatsPage />} />
                 <Route path="recap" element={<RecapPage />} />
                 <Route path="recap/:year" element={<RecapPage />} />
+                <Route path="account" element={<AccountPage />} />
                 <Route path="data" element={<DataPage />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
             </Route>

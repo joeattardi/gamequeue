@@ -168,7 +168,11 @@ export function ProfilePage() {
                 {profile.data && (
                     <>
                         <div className="profile-hero">
-                            <Avatar username={profile.data.username} size={72} />
+                            <Avatar
+                                username={profile.data.username}
+                                size={72}
+                                avatarUpdatedAt={profile.data.avatarUpdatedAt}
+                            />
                             <div>
                                 <h1>{profile.data.username}</h1>
                                 <p className="muted profile-hero__joined">

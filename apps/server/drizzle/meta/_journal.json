@@ -57,6 +57,13 @@
       "when": 1792368867422,
       "tag": "0007_thin_dakota_north",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1792489333023,
+      "tag": "0008_woozy_the_initiative",
+      "breakpoints": true
     }
   ]
 }
