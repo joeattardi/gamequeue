@@ -1481,6 +1481,7 @@ a.game-row:hover {
     list-style: none;
     margin: 0;
     padding: 0;
+    grid-template-columns: repeat(auto-fill, minmax(96px, 120px));
 }
 
 .rows {
