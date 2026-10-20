@@ -2,7 +2,7 @@ import { ListOrdered } from 'lucide-react';
 import { Link } from 'react-router';
 import { useQueue } from '../api/queue';
 import { UpNextSkeletons } from './HomeSkeletons';
-import { Cover } from './Cover';
+import { GameCard } from './GameCard';
 
 const SHOWN = 4;
 
@@ -34,21 +34,9 @@ export function UpNext() {
             </div>
             {queue.isPending && <UpNextSkeletons />}
             {entries.length > 0 && (
-                <ol className="upnext__list">
+                <ol className="grid upnext__list">
                     {entries.slice(0, SHOWN).map((e, i) => (
-                        <li key={e.id}>
-                            <Link to={`/games/${e.id}`} className="upnext__item">
-                                <Cover
-                                    imageId={e.game.coverImageId}
-                                    name={e.game.name}
-                                    size="cover_big"
-                                />
-                                <span className="upnext__text">
-                                    <span className="muted">{i + 1}</span>
-                                    <strong>{e.game.name}</strong>
-                                </span>
-                            </Link>
-                        </li>
+                        <GameCard key={e.id} entry={e} position={i + 1} />
                     ))}
                 </ol>
             )}

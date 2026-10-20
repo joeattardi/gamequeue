@@ -31,21 +31,19 @@ export function SlotSkeletons({ count = 2 }: { count?: number }) {
     );
 }
 
-/** Placeholder tiles shaped like the `UpNext` items. */
+/** Placeholder tiles shaped like the `UpNext` cards. */
 export function UpNextSkeletons({ count = 4 }: { count?: number }) {
     return (
-        <ol className="upnext__list" role="status" aria-label="Loading your queue">
+        <ol className="grid upnext__list" role="status" aria-label="Loading your queue">
             {Array.from({ length: count }, (_, i) => (
-                <li key={i} aria-hidden="true">
-                    <div className="upnext__item upnext__item--skeleton">
-                        <span className="skeleton skeleton--upnext-cover" />
-                        <span className="upnext__text">
-                            <span className="skeleton skeleton--line skeleton--tiny" />
-                            <span
-                                className="skeleton skeleton--line"
-                                style={{ width: `${88 - (i % 3) * 16}%` }}
-                            />
-                        </span>
+                <li
+                    key={i}
+                    className="card card--skeleton"
+                    aria-hidden="true"
+                    style={{ animationDelay: `${i * 60}ms` }}
+                >
+                    <div className="card__link">
+                        <span className="skeleton skeleton--card-cover" />
                     </div>
                 </li>
             ))}

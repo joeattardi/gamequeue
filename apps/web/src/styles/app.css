@@ -1007,12 +1007,6 @@ a.game-row:hover {
     height: 32px;
     opacity: 0.6;
 }
-.skeleton--upnext-cover {
-    width: 48px;
-    aspect-ratio: 3 / 4;
-    flex: none;
-    border-radius: 3px;
-}
 .skeleton--card-cover {
     width: 100%;
     aspect-ratio: 3 / 4;
@@ -1026,23 +1020,14 @@ a.game-row:hover {
     width: 14px;
     height: 0.75rem;
 }
-.upnext__item--skeleton {
-    pointer-events: none;
-}
-.bay--skeleton,
-.upnext__item--skeleton {
+.bay--skeleton {
     animation: skeleton-in 0.35s ease-out both;
 }
-.bays > .bay--skeleton:nth-child(2),
-.upnext__list > li:nth-child(2) .upnext__item--skeleton {
+.bays > .bay--skeleton:nth-child(2) {
     animation-delay: 60ms;
 }
-.bays > .bay--skeleton:nth-child(3),
-.upnext__list > li:nth-child(3) .upnext__item--skeleton {
+.bays > .bay--skeleton:nth-child(3) {
     animation-delay: 120ms;
-}
-.upnext__list > li:nth-child(4) .upnext__item--skeleton {
-    animation-delay: 180ms;
 }
 @keyframes skeleton-in {
     from {
@@ -1062,8 +1047,7 @@ a.game-row:hover {
     .skeleton,
     .bay--skeleton,
     .card--skeleton,
-    .row-item--skeleton,
-    .upnext__item--skeleton {
+    .row-item--skeleton {
         animation: none;
     }
 }
@@ -1497,32 +1481,6 @@ a.game-row:hover {
     list-style: none;
     margin: 0;
     padding: 0;
-    display: grid;
-    gap: 12px;
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-}
-.upnext__item {
-    display: flex;
-    gap: 12px;
-    align-items: center;
-    padding: 8px;
-    border: 1px solid var(--line);
-    border-radius: var(--radius);
-    background: var(--surface);
-    color: inherit;
-    text-decoration: none;
-}
-.upnext__item:hover {
-    background: var(--surface-2);
-}
-.upnext__item .cover {
-    width: 48px;
-    flex: none;
-}
-.upnext__text {
-    display: grid;
-    gap: 2px;
-    min-width: 0;
 }
 
 .rows {
