@@ -1,20 +1,5 @@
 /** Skeletons for whole pages and for small pieces of UI (selects, checkboxes, list cards). */
 
-/** The app boot screen, before we know whether anyone is signed in. */
-export function BootSkeleton() {
-    return (
-        <main className="boot" role="status" aria-label="Loading">
-            <span className="skeleton skeleton--title" />
-            <span className="skeleton skeleton--line skeleton--subtitle skeleton--gap" />
-            <div className="boot__blocks" aria-hidden="true">
-                <span className="skeleton skeleton--block" />
-                <span className="skeleton skeleton--block" />
-                <span className="skeleton skeleton--block" />
-            </div>
-        </main>
-    );
-}
-
 /** The game page: cover on the left, header, summary and a few panels on the right. */
 export function EntrySkeleton() {
     return (
