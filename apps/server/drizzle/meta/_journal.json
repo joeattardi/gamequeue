@@ -71,6 +71,13 @@
       "when": 1792489607810,
       "tag": "0009_complete_galactus",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1792490070415,
+      "tag": "0010_tricky_vengeance",
+      "breakpoints": true
     }
   ]
 }

@@ -1,3 +1,4 @@
+import type { SocialLinks } from './social.js';
 import { z } from 'zod';
 
 export const emailSchema = z
@@ -66,6 +67,8 @@ export interface UserDto {
     lastName: string | null;
     /** Whether the real name is shown on the public profile */
     showRealName: boolean;
+    /** Gaming account names; always shown on the public profile once set */
+    socialLinks: SocialLinks;
 }
 export interface ApiError {
     error: string;

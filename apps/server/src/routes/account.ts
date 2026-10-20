@@ -1,10 +1,10 @@
 import { Hono } from 'hono';
-import { accountProfileSchema } from '@gamequeue/shared';
+import { accountProfileSchema, socialLinksSchema } from '@gamequeue/shared';
 import type { AppDeps } from '../app.js';
 import { requireAuth, type AuthVars } from '../auth/middleware.js';
 import { HttpError } from '../errors.js';
 import { validate } from '../http.js';
-import { updateAccountProfile } from '../services/users.js';
+import { updateAccountProfile, updateSocialLinks } from '../services/users.js';
 
 export function accountRoutes({ db, config }: AppDeps) {
     const r = new Hono<{ Variables: AuthVars }>();
@@ -15,6 +15,13 @@ export function accountRoutes({ db, config }: AppDeps) {
         if (raw === undefined) throw new HttpError(400, 'Invalid request');
         const input = validate(accountProfileSchema, raw);
         return c.json({ user: updateAccountProfile(db, c.get('user').id, input) });
+    });
+
+    r.put('/social', async (c) => {
+        const raw: unknown = await c.req.json().catch(() => undefined);
+        if (raw === undefined) throw new HttpError(400, 'Invalid request');
+        const input = validate(socialLinksSchema, raw);
+        return c.json({ user: updateSocialLinks(db, c.get('user').id, input) });
     });
 
     return r;

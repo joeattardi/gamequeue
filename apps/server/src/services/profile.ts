@@ -17,6 +17,7 @@ import type { Db } from '../db/client.js';
 import { entries, listItems, lists, playthroughs, users, wishlistItems } from '../db/schema.js';
 import { HttpError } from '../errors.js';
 import { avatarVersion } from './avatars.js';
+import { socialLinksOf } from './users.js';
 import { listEntries } from './entries.js';
 import { getList, listLists } from './lists.js';
 import { getRecap } from './recap.js';
@@ -69,6 +70,7 @@ export function getProfile(db: Db, username: string): ProfileDto {
         username: user.username,
         avatarUpdatedAt: avatarVersion(db, user.id),
         realName: user.showRealName ? fullName(user) : null,
+        socialLinks: socialLinksOf(user),
         joinedAt: user.createdAt,
         slots: listSlots(db, user.id).map((s) => ({
             name: s.name,

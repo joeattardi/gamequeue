@@ -1,8 +1,22 @@
 import { eq } from 'drizzle-orm';
-import type { AccountProfileInput, UserDto } from '@gamequeue/shared';
+import type {
+    AccountProfileInput,
+    SocialLinks,
+    SocialLinksInput,
+    UserDto
+} from '@gamequeue/shared';
 import type { Db } from '../db/client.js';
 import { users } from '../db/schema.js';
 import { avatarVersion } from './avatars.js';
+
+type UserRow = typeof users.$inferSelect;
+
+export const socialLinksOf = (row: UserRow): SocialLinks => ({
+    steam: row.steamId,
+    xbox: row.xboxGamertag,
+    playstation: row.psnId,
+    discord: row.discordName
+});
 
 /** The signed-in user as the web client sees it (`/auth/me`, login, register). */
 export function getUserDto(db: Db, userId: number): UserDto {
@@ -15,11 +29,25 @@ export function getUserDto(db: Db, userId: number): UserDto {
         avatarUpdatedAt: avatarVersion(db, row.id),
         firstName: row.firstName,
         lastName: row.lastName,
-        showRealName: row.showRealName
+        showRealName: row.showRealName,
+        socialLinks: socialLinksOf(row)
     };
 }
 
 export function updateAccountProfile(db: Db, userId: number, input: AccountProfileInput) {
     db.update(users).set(input).where(eq(users.id, userId)).run();
+    return getUserDto(db, userId);
+}
+
+export function updateSocialLinks(db: Db, userId: number, input: SocialLinksInput) {
+    db.update(users)
+        .set({
+            steamId: input.steam,
+            xboxGamertag: input.xbox,
+            psnId: input.playstation,
+            discordName: input.discord
+        })
+        .where(eq(users.id, userId))
+        .run();
     return getUserDto(db, userId);
 }

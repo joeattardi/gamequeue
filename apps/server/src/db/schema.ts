@@ -21,6 +21,11 @@ export const users = sqliteTable('users', {
     firstName: text('first_name'),
     lastName: text('last_name'),
     showRealName: integer('show_real_name', { mode: 'boolean' }).notNull().default(false),
+    // Gaming account names, public on the profile once set
+    steamId: text('steam_id'),
+    xboxGamertag: text('xbox_gamertag'),
+    psnId: text('psn_id'),
+    discordName: text('discord_name'),
     createdAt: integer('created_at').notNull().default(now)
 });
 

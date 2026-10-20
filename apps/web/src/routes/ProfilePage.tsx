@@ -23,6 +23,7 @@ import { ApiRequestError } from '../api/client';
 import { useProfile } from '../api/profile';
 import { Avatar } from '../components/Avatar';
 import { Cover } from '../components/Cover';
+import { SocialLinksList } from '../components/SocialLinks';
 import { ProfileSkeleton } from '../components/PageSkeletons';
 import { Footer } from '../components/Footer';
 import { PublicHeader } from '../components/PublicHeader';
@@ -188,6 +189,7 @@ export function ProfilePage() {
                                         month: 'long'
                                     })}
                                 </p>
+                                <SocialLinksList links={profile.data.socialLinks} />
                             </div>
                         </div>
 

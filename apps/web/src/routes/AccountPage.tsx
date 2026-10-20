@@ -1,7 +1,12 @@
 import { useRef, useState, type ChangeEvent, type FormEvent } from 'react';
-import type { UserDto } from '@gamequeue/shared';
+import {
+    SOCIAL_LABELS,
+    SOCIAL_SERVICES,
+    type SocialLinksInput,
+    type UserDto
+} from '@gamequeue/shared';
 import { ImageUp, Settings, Trash2 } from 'lucide-react';
-import { useUpdateAccount } from '../api/account';
+import { useUpdateAccount, useUpdateSocialLinks } from '../api/account';
 import { useRemoveAvatar, useUploadAvatar } from '../api/avatar';
 import { useMe } from '../api/auth';
 import { ApiRequestError } from '../api/client';
@@ -88,6 +93,78 @@ function NameForm({ me }: { me: UserDto }) {
     );
 }
 
+function SocialForm({ me }: { me: UserDto }) {
+    const update = useUpdateSocialLinks();
+    const [values, setValues] = useState<Record<string, string>>(() =>
+        Object.fromEntries(SOCIAL_SERVICES.map((s) => [s, me.socialLinks[s] ?? '']))
+    );
+    const [problems, setProblems] = useState<Record<string, string>>({});
+    const [error, setError] = useState<string>();
+    const [saved, setSaved] = useState(false);
+
+    function submit(e: FormEvent) {
+        e.preventDefault();
+        setError(undefined);
+        setProblems({});
+        setSaved(false);
+        update.mutate(values as SocialLinksInput, {
+            onSuccess: ({ user }) => {
+                setValues(
+                    Object.fromEntries(SOCIAL_SERVICES.map((s) => [s, user.socialLinks[s] ?? '']))
+                );
+                setSaved(true);
+            },
+            onError: (err) => {
+                if (err instanceof ApiRequestError && Array.isArray(err.details)) {
+                    setProblems(
+                        Object.fromEntries(
+                            (err.details as { path: string; message: string }[]).map((d) => [
+                                d.path,
+                                d.message
+                            ])
+                        )
+                    );
+                } else setError(err instanceof ApiRequestError ? err.message : 'Could not save.');
+            }
+        });
+    }
+
+    return (
+        <form onSubmit={submit} className="name-form">
+            <p>
+                Optional. Anything you fill in is shown, with a link where one exists, on your
+                public profile.
+            </p>
+            <div className="name-form__fields">
+                {SOCIAL_SERVICES.map((s) => (
+                    <label className="field" key={s}>
+                        {SOCIAL_LABELS[s].name}
+                        <input
+                            value={values[s]}
+                            onChange={(e) => setValues({ ...values, [s]: e.target.value })}
+                            maxLength={40}
+                            autoComplete="off"
+                            spellCheck={false}
+                            aria-invalid={problems[s] ? true : undefined}
+                            aria-describedby={`social-${s}`}
+                        />
+                        <small id={`social-${s}`}>{problems[s] ?? SOCIAL_LABELS[s].hint}</small>
+                    </label>
+                ))}
+            </div>
+            <div>
+                <button className="btn btn--primary" disabled={update.isPending}>
+                    {update.isPending ? 'Saving…' : 'Save'}
+                </button>
+            </div>
+            <p role="status" className="muted">
+                {saved ? 'Saved.' : ''}
+            </p>
+            {error && <p role="alert">{error}</p>}
+        </form>
+    );
+}
+
 export function AccountPage() {
     usePageTitle('Account');
     const confirm = useConfirm();
@@ -147,6 +224,11 @@ export function AccountPage() {
                 <section aria-labelledby="name-h" className="panel">
                     <h2 id="name-h">Your name</h2>
                     <NameForm me={me} />
+                </section>
+
+                <section aria-labelledby="social-h" className="panel">
+                    <h2 id="social-h">Gaming accounts</h2>
+                    <SocialForm me={me} />
                 </section>
 
                 <section aria-labelledby="avatar-h" className="panel">

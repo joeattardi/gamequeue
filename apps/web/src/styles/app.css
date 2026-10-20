@@ -3471,3 +3471,45 @@ fieldset.stars:disabled .stars__star {
     margin: 2px 0 0;
     font-size: 0.9rem;
 }
+
+.socials {
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 12px 0 0;
+    padding: 0;
+}
+.social {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    max-width: 100%;
+    padding: 4px 10px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: var(--surface);
+    color: var(--ink);
+    font: inherit;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+}
+.social:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+.social span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.social__icon,
+.social > svg {
+    flex: none;
+    width: 1em;
+    height: 1em;
+}
+.social > .sr-only {
+    position: absolute;
+}

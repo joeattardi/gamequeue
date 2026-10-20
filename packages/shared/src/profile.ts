@@ -1,4 +1,5 @@
 import type { EntryDto, EntryStatus } from './collection.js';
+import type { SocialLinks } from './social.js';
 
 /** The part of an entry that is safe to show to anyone: no notes, no list/slot internals. */
 export type PublicEntryDto = Pick<
@@ -23,6 +24,7 @@ export interface ProfileDto {
     avatarUpdatedAt: number | null;
     /** Real name; only present when the user chose to show it on their profile */
     realName: string | null;
+    socialLinks: SocialLinks;
     /** Account creation time, ms since epoch */
     joinedAt: number;
     slots: { name: string; entry: PublicEntryDto | null }[];

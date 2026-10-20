@@ -64,3 +64,61 @@ describe('account name', () => {
         );
     });
 });
+
+describe('social links', () => {
+    const none = { steam: '', xbox: '', playstation: '', discord: '' };
+    async function setupSocial() {
+        const { app } = makeApp();
+        const cookie = cookieFrom(await register(app, 'me@example.com', undefined, 'joe'));
+        const put = (body: unknown, who = cookie) =>
+            app.request('/api/account/social', {
+                ...json(body, { cookie: who, origin: 'http://localhost' }),
+                method: 'PUT'
+            });
+        const profile = async () => (await (await app.request('/api/profiles/joe')).json()).profile;
+        return { app, cookie, put, profile };
+    }
+
+    it('starts empty, saves, shows on /me and the public profile, and clears', async () => {
+        const { app, cookie, put, profile } = await setupSocial();
+        expect((await profile()).socialLinks).toEqual({
+            steam: null,
+            xbox: null,
+            playstation: null,
+            discord: null
+        });
+
+        const res = await put({ ...none, steam: 'gaben', discord: '@joe.d' });
+        expect(res.status).toBe(200);
+        const expected = { steam: 'gaben', xbox: null, playstation: null, discord: 'joe.d' };
+        expect((await res.json()).user.socialLinks).toEqual(expected);
+        expect((await profile()).socialLinks).toEqual(expected);
+        const me = (await (await app.request('/api/auth/me', { headers: { cookie } })).json()).user;
+        expect(me.socialLinks).toEqual(expected);
+
+        await put(none);
+        expect((await profile()).socialLinks.steam).toBeNull();
+    });
+
+    it('rejects invalid values and anonymous requests', async () => {
+        const { put } = await setupSocial();
+        expect((await put({ ...none, steam: 'a/b' })).status).toBe(400);
+        expect((await put({ ...none, xbox: '<b>' })).status).toBe(400);
+        expect((await put({ steam: 'gaben' })).status).toBe(400);
+        expect((await put(none, '')).status).toBe(401);
+    });
+
+    it("doesn't touch the name settings", async () => {
+        const { app, cookie, put } = await setupSocial();
+        await app.request('/api/account', {
+            ...json(
+                { firstName: 'Ada', lastName: '', showRealName: false },
+                { cookie, origin: 'http://localhost' }
+            ),
+            method: 'PATCH'
+        });
+        await put({ ...none, steam: 'gaben' });
+        const me = (await (await app.request('/api/auth/me', { headers: { cookie } })).json()).user;
+        expect(me.firstName).toBe('Ada');
+    });
+});
