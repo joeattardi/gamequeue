@@ -174,9 +174,11 @@ export function ProfilePage() {
                                 avatarUpdatedAt={profile.data.avatarUpdatedAt}
                             />
                             <div>
-                                <h1>{profile.data.username}</h1>
+                                <h1>{profile.data.realName ?? profile.data.username}</h1>
                                 {profile.data.realName && (
-                                    <p className="profile-hero__name">{profile.data.realName}</p>
+                                    <p className="muted profile-hero__username">
+                                        {profile.data.username}
+                                    </p>
                                 )}
                                 <p className="muted profile-hero__joined">
                                     <CalendarDays aria-hidden="true" />

@@ -3469,7 +3469,7 @@ fieldset.stars:disabled .stars__star {
         grid-template-columns: 1fr;
     }
 }
-.profile-hero__name {
+.profile-hero__username {
     margin: 2px 0 0;
-    font-size: 1.05rem;
+    font-size: 0.9rem;
 }
