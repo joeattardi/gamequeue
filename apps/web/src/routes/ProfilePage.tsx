@@ -8,7 +8,6 @@ import {
 import {
     Ban,
     CalendarDays,
-    Gamepad2,
     Gift,
     Library,
     ListOrdered,
@@ -22,6 +21,7 @@ import type { ReactNode } from 'react';
 import { Link, useParams } from 'react-router';
 import { ApiRequestError } from '../api/client';
 import { useProfile } from '../api/profile';
+import { Avatar } from '../components/Avatar';
 import { Cover } from '../components/Cover';
 import { ProfileSkeleton } from '../components/PageSkeletons';
 import { Footer } from '../components/Footer';
@@ -168,11 +168,9 @@ export function ProfilePage() {
                 {profile.data && (
                     <>
                         <div className="profile-hero">
+                            <Avatar username={profile.data.username} size={72} />
                             <div>
-                                <h1>
-                                    <Gamepad2 aria-hidden="true" />
-                                    {profile.data.username}
-                                </h1>
+                                <h1>{profile.data.username}</h1>
                                 <p className="muted profile-hero__joined">
                                     <CalendarDays aria-hidden="true" />
                                     Joined{' '}

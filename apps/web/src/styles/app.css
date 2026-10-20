@@ -353,6 +353,26 @@ a {
     padding-top: 12px;
     border-top: 1px solid var(--line);
 }
+.avatar {
+    --avatar-bg: hsl(var(--avatar-h) 45% 90%);
+    --avatar-fg: hsl(var(--avatar-h) 60% 42%);
+    border-radius: 22%;
+}
+@media (prefers-color-scheme: dark) {
+    .avatar {
+        --avatar-bg: hsl(var(--avatar-h) 30% 22%);
+        --avatar-fg: hsl(var(--avatar-h) 70% 68%);
+    }
+}
+.avatar__bg {
+    fill: var(--avatar-bg);
+}
+.avatar__cell {
+    fill: var(--avatar-fg);
+}
+.sidebar__username .avatar {
+    flex: none;
+}
 .sidebar__username {
     min-width: 0;
 }
@@ -592,6 +612,12 @@ a.game-row:hover {
 }
 .game-row--skeleton .skeleton--sub {
     width: 25%;
+}
+.skeleton--avatar {
+    flex: none;
+    width: 72px;
+    height: 72px;
+    border-radius: 8px;
 }
 .skeleton--title {
     display: inline-block;
@@ -1906,14 +1932,8 @@ fieldset.stars:disabled .stars__star {
 .profile-hero h1 {
     margin: 0;
 }
-.profile-hero h1 {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-.profile-hero h1 svg {
+.profile-hero .avatar {
     flex: none;
-    color: var(--accent);
 }
 .profile-hero__joined {
     display: flex;

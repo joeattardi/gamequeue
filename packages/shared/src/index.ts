@@ -13,3 +13,4 @@ export * from './smart-lists.js';
 export * from './csv.js';
 export * from './stats.js';
 export * from './recap.js';
+export * from './avatar.js';

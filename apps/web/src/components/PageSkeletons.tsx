@@ -58,6 +58,7 @@ export function ProfileSkeleton() {
     return (
         <div role="status" aria-label="Loading profile">
             <div className="profile-hero" aria-hidden="true">
+                <span className="skeleton skeleton--avatar" />
                 <div>
                     <span className="skeleton skeleton--title" />
                     <span className="skeleton skeleton--line skeleton--subtitle skeleton--gap" />

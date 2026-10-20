@@ -2,6 +2,7 @@ import type { UserDto } from '@gamequeue/shared';
 import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router';
 import { useLogout } from '../api/auth';
+import { Avatar } from './Avatar';
 import { Footer } from './Footer';
 import { Logo } from './Logo';
 import {
@@ -18,7 +19,6 @@ import {
     ListTodo,
     LogOut,
     Menu,
-    User,
     X
 } from 'lucide-react';
 
@@ -160,7 +160,7 @@ export function Shell({ user }: { user: UserDto }) {
                             className="btn btn--ghost sidebar__username"
                             to={`/u/${user.username}`}
                         >
-                            <User aria-hidden="true" />
+                            <Avatar username={user.username} size={24} />
                             <span>{user.username}</span>
                         </Link>
                         <button
