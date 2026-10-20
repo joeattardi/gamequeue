@@ -69,7 +69,7 @@ export function socialUrl(service: SocialService, value: string): string | null 
         case 'xbox':
             return `https://account.xbox.com/en-us/profile?gamertag=${v}`;
         case 'playstation':
-            return `https://psnprofiles.com/${v}`;
+            return `https://my.playstation.com/profile/${v}`;
         case 'discord':
             return null;
     }
