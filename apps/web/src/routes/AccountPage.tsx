@@ -152,7 +152,12 @@ function SocialForm({ me }: { me: UserDto }) {
                                 aria-describedby={`social-${s}`}
                             />
                         </span>
-                        <small id={`social-${s}`}>{problems[s] ?? SOCIAL_LABELS[s].hint}</small>
+                        <small
+                            id={`social-${s}`}
+                            className={problems[s] ? 'field__error' : undefined}
+                        >
+                            {problems[s] ?? SOCIAL_LABELS[s].hint}
+                        </small>
                     </label>
                 ))}
             </div>
@@ -260,7 +265,12 @@ function PasswordForm() {
                             aria-invalid={problems[f.key] ? true : undefined}
                             aria-describedby={`pw-${f.key}`}
                         />
-                        <small id={`pw-${f.key}`}>{problems[f.key] ?? f.hint}</small>
+                        <small
+                            id={`pw-${f.key}`}
+                            className={problems[f.key] ? 'field__error' : undefined}
+                        >
+                            {problems[f.key] ?? f.hint}
+                        </small>
                     </label>
                 ))}
             </div>

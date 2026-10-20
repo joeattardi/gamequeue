@@ -3544,3 +3544,11 @@ fieldset.stars:disabled .stars__star {
     grid-template-columns: 1fr;
     max-width: 320px;
 }
+
+/* Field validation message and its input */
+.field small.field__error {
+    color: var(--danger);
+}
+.field input[aria-invalid='true'] {
+    border-color: var(--danger);
+}
