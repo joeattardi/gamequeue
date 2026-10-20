@@ -3455,6 +3455,10 @@ fieldset.stars:disabled .stars__star {
 .name-form > p {
     margin: 0;
 }
+.name-form__fields .field {
+    /* Hints wrap to different heights; keep labels and inputs aligned across a row */
+    align-content: start;
+}
 .name-form__fields {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
