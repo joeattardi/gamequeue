@@ -9,9 +9,29 @@ html {
 }
 body {
     margin: 0;
-    background: var(--bg);
+    background-color: var(--bg);
+    /* Stacking context, so the grid (z-index -1) paints above this background, not behind it. */
+    isolation: isolate;
     color: var(--ink);
     font: 400 1rem/1.5 var(--font-body);
+}
+/* Faint retro grid pinned to the viewport, fading out towards the bottom. */
+body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background-image:
+        linear-gradient(color-mix(in srgb, var(--line) 35%, transparent) 1px, transparent 1px),
+        linear-gradient(
+            90deg,
+            color-mix(in srgb, var(--line) 35%, transparent) 1px,
+            transparent 1px
+        );
+    background-size: 32px 32px;
+    background-position: -1px -1px;
+    mask-image: linear-gradient(to bottom, #000, transparent 70%);
 }
 h1,
 h2,
