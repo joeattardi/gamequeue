@@ -45,7 +45,7 @@ describe('socialUrl', () => {
         expect(socialUrl('xbox', 'Major Nelson')).toBe(
             'https://account.xbox.com/en-us/profile?gamertag=Major%20Nelson'
         );
-        expect(socialUrl('playstation', 'abc')).toBe('https://my.playstation.com/profile/abc');
+        expect(socialUrl('playstation', 'abc')).toBe('https://profile.playstation.com/abc');
     });
     it('has no link for Discord', () => {
         expect(socialUrl('discord', 'x')).toBeNull();
