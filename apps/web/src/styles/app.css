@@ -3540,6 +3540,12 @@ fieldset.stars:disabled .stars__star {
     padding-left: 40px;
 }
 
+.panel--danger {
+    border-color: var(--danger);
+}
+.panel--danger h2 {
+    color: var(--danger);
+}
 .name-form__fields.name-form__fields--stack {
     grid-template-columns: 1fr;
     max-width: 320px;

@@ -65,6 +65,12 @@ export const changePasswordSchema = z
     });
 export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
 
+/** Deleting the account re-checks the password so a stolen session can't wipe it. */
+export const deleteAccountSchema = z.object({
+    password: z.string().min(1, 'Enter your password').max(256)
+});
+export type DeleteAccountInput = z.infer<typeof deleteAccountSchema>;
+
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 

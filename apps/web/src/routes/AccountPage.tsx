@@ -6,7 +6,13 @@ import {
     type UserDto
 } from '@gamequeue/shared';
 import { ImageUp, Settings, Trash2 } from 'lucide-react';
-import { useChangePassword, useUpdateAccount, useUpdateSocialLinks } from '../api/account';
+import { Link } from 'react-router';
+import {
+    useChangePassword,
+    useDeleteAccount,
+    useUpdateAccount,
+    useUpdateSocialLinks
+} from '../api/account';
 import { useRemoveAvatar, useUploadAvatar } from '../api/avatar';
 import { useMe } from '../api/auth';
 import { ApiRequestError } from '../api/client';
@@ -287,6 +293,76 @@ function PasswordForm() {
     );
 }
 
+function DeleteAccountForm({ username }: { username: string }) {
+    const confirm = useConfirm();
+    const del = useDeleteAccount();
+    const [password, setPassword] = useState('');
+    const [problem, setProblem] = useState<string>();
+    const [error, setError] = useState<string>();
+
+    async function submit(e: FormEvent) {
+        e.preventDefault();
+        setProblem(undefined);
+        setError(undefined);
+        const ok = await confirm({
+            title: 'Delete your account?',
+            message: `This permanently deletes ${username} and everything in it: your collection, playthroughs, lists, queue, wishlist, smart lists and profile. It can't be undone.`,
+            confirmLabel: 'Delete everything',
+            tone: 'danger'
+        });
+        if (!ok) return;
+        del.mutate(
+            { password },
+            {
+                onError: (err) => {
+                    if (err instanceof ApiRequestError && Array.isArray(err.details)) {
+                        setProblem(
+                            (err.details as { message: string }[])[0]?.message ?? 'Wrong password'
+                        );
+                    } else
+                        setError(
+                            err instanceof ApiRequestError ? err.message : 'Could not delete.'
+                        );
+                }
+            }
+        );
+    }
+
+    return (
+        <form onSubmit={submit} className="name-form">
+            <p>
+                Permanently deletes your account and all of its data. This can't be undone.{' '}
+                <Link to="/data">Download an export first</Link> if you might want it back.
+            </p>
+            <div className="name-form__fields name-form__fields--stack">
+                <label className="field">
+                    Your password
+                    <input
+                        type="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        maxLength={256}
+                        required
+                        autoComplete="current-password"
+                        aria-invalid={problem ? true : undefined}
+                        aria-describedby="delete-password"
+                    />
+                    <small id="delete-password" className={problem ? 'field__error' : undefined}>
+                        {problem ?? 'Needed to confirm it is you.'}
+                    </small>
+                </label>
+            </div>
+            <div>
+                <button className="btn btn--danger-solid" disabled={del.isPending}>
+                    <Trash2 aria-hidden="true" />
+                    {del.isPending ? 'Deleting…' : 'Delete my account'}
+                </button>
+            </div>
+            {error && <p role="alert">{error}</p>}
+        </form>
+    );
+}
+
 export function AccountPage() {
     usePageTitle('Account');
     const confirm = useConfirm();
@@ -404,6 +480,11 @@ export function AccountPage() {
                             {error && <p role="alert">{error}</p>}
                         </div>
                     </div>
+                </section>
+
+                <section aria-labelledby="danger-h" className="panel panel--danger">
+                    <h2 id="danger-h">Delete account</h2>
+                    <DeleteAccountForm username={me.username} />
                 </section>
             </div>
         </section>

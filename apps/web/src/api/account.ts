@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type {
     AccountProfileInput,
     ChangePasswordInput,
+    DeleteAccountInput,
     SocialLinksInput,
     UserDto
 } from '@gamequeue/shared';
@@ -36,3 +37,16 @@ export const useChangePassword = () =>
         mutationFn: (input: ChangePasswordInput) =>
             api<{ ok: true }>('/account/password', { method: 'PUT', body: input })
     });
+
+/** Deletes the account; on success the session is gone, so the app drops back to the login screen. */
+export function useDeleteAccount() {
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: (input: DeleteAccountInput) =>
+            api<{ ok: true }>('/account', { method: 'DELETE', body: input }),
+        onSuccess: () => {
+            qc.setQueryData(['me'], null);
+            qc.removeQueries({ predicate: (q) => q.queryKey[0] !== 'me' });
+        }
+    });
+}

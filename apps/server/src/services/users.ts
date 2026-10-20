@@ -85,3 +85,19 @@ export async function changePassword(
     });
     return true;
 }
+
+/**
+ * Permanently deletes the user. Everything they own (entries, playthroughs, slots, lists, wishlist,
+ * tags, smart lists, avatar, sessions) goes with the row through `ON DELETE cascade`; the shared
+ * game metadata cache stays. Returns false when the password is wrong.
+ */
+export async function deleteAccount(db: Db, userId: number, password: string): Promise<boolean> {
+    const row = db
+        .select({ hash: users.passwordHash })
+        .from(users)
+        .where(eq(users.id, userId))
+        .get();
+    if (!row || !(await verifyPassword(row.hash, password))) return false;
+    db.delete(users).where(eq(users.id, userId)).run();
+    return true;
+}
