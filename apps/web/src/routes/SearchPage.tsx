@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { useGameSearch } from '../api/collection';
 import { ApiRequestError } from '../api/client';
@@ -13,7 +14,13 @@ import { Search, SearchX } from 'lucide-react';
 export function SearchPage() {
     usePageTitle('Search');
     const [params, setParams] = useSearchParams();
-    const text = params.get('q') ?? '';
+    const [text, setText] = useState(params.get('q') ?? '');
+    useEffect(() => {
+        if ((params.get('q') ?? '') !== text) {
+            setParams(text ? { q: text } : {}, { replace: true });
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [text]);
     const q = useDebounced(text.trim(), 300);
     const search = useGameSearch(q);
     const searching = text.trim().length >= 2 && (search.isFetching || q !== text.trim());
@@ -47,9 +54,7 @@ export function SearchPage() {
                 <input
                     type="search"
                     value={text}
-                    onChange={(e) =>
-                        setParams(e.target.value ? { q: e.target.value } : {}, { replace: true })
-                    }
+                    onChange={(e) => setText(e.target.value)}
                     autoFocus
                     autoComplete="off"
                     placeholder="e.g. Hades"
