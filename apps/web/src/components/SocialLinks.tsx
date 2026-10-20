@@ -16,7 +16,7 @@ const PATHS: Record<SocialService, string> = {
     discord: DISCORD_PATH
 };
 
-function Glyph({ service }: { service: SocialService }) {
+export function Glyph({ service }: { service: SocialService }) {
     return (
         <svg className="social__icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
             <path d={PATHS[service]} />

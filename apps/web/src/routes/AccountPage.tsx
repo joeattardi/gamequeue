@@ -12,6 +12,7 @@ import { useMe } from '../api/auth';
 import { ApiRequestError } from '../api/client';
 import { prepareAvatar } from '../avatarImage';
 import { Avatar } from '../components/Avatar';
+import { Glyph } from '../components/SocialLinks';
 import { useConfirm } from '../components/Confirm';
 import { usePageTitle } from '../lib';
 
@@ -139,15 +140,18 @@ function SocialForm({ me }: { me: UserDto }) {
                 {SOCIAL_SERVICES.map((s) => (
                     <label className="field" key={s}>
                         {SOCIAL_LABELS[s].name}
-                        <input
-                            value={values[s]}
-                            onChange={(e) => setValues({ ...values, [s]: e.target.value })}
-                            maxLength={40}
-                            autoComplete="off"
-                            spellCheck={false}
-                            aria-invalid={problems[s] ? true : undefined}
-                            aria-describedby={`social-${s}`}
-                        />
+                        <span className="field__icon-input">
+                            <Glyph service={s} />
+                            <input
+                                value={values[s]}
+                                onChange={(e) => setValues({ ...values, [s]: e.target.value })}
+                                maxLength={40}
+                                autoComplete="off"
+                                spellCheck={false}
+                                aria-invalid={problems[s] ? true : undefined}
+                                aria-describedby={`social-${s}`}
+                            />
+                        </span>
                         <small id={`social-${s}`}>{problems[s] ?? SOCIAL_LABELS[s].hint}</small>
                     </label>
                 ))}

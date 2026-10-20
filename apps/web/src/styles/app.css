@@ -3517,3 +3517,25 @@ fieldset.stars:disabled .stars__star {
 .social > .sr-only {
     position: absolute;
 }
+
+/* Text field with a leading brand icon */
+.field__icon-input {
+    position: relative;
+    display: grid;
+}
+.field__icon-input > svg {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    width: 18px;
+    height: 18px;
+    transform: translateY(-50%);
+    color: var(--ink-muted);
+    pointer-events: none;
+}
+.field__icon-input:focus-within > svg {
+    color: var(--accent);
+}
+.field__icon-input input {
+    padding-left: 40px;
+}
