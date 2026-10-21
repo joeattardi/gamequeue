@@ -19,3 +19,4 @@ export * from './release.js';
 export * from './series.js';
 export * from './backup.js';
 export * from './admin-users.js';
+export * from './database-stats.js';

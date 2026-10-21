@@ -26,6 +26,13 @@ export function formatMinutes(min: number | null | undefined): string {
     return m === 0 || h >= 20 ? `${Math.round(min / 60)}h` : `${h}h ${m}m`;
 }
 
+export const formatBytes = (n: number) =>
+    n < 1024
+        ? `${n} B`
+        : n < 1024 * 1024
+          ? `${(n / 1024).toFixed(1)} KB`
+          : `${(n / 1024 / 1024).toFixed(1)} MB`;
+
 /** "5 minutes ago", "3 hours ago", "2 days ago"; "just now" under a minute. */
 export function timeAgo(then: number, now = Date.now()): string {
     const s = Math.max(0, Math.round((now - then) / 1000));

@@ -4,7 +4,8 @@ import type {
     AdminResetPasswordInput,
     AdminUpdateUserInput,
     AdminUserDto,
-    BackupReportDto
+    BackupReportDto,
+    DatabaseStatsDto
 } from '@gamequeue/shared';
 import { api } from './client';
 
@@ -70,3 +71,10 @@ export function useDeleteAdminUser() {
         }
     });
 }
+
+export const useAdminDatabase = () =>
+    useQuery({
+        queryKey: ['admin', 'database'],
+        queryFn: () => api<DatabaseStatsDto>('/admin/database'),
+        refetchOnWindowFocus: true
+    });

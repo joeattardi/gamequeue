@@ -8,22 +8,16 @@ import {
     ArrowRight,
     CircleAlert,
     CircleCheck,
+    Database,
     DatabaseBackup,
     ShieldCheck,
     TriangleAlert,
     Users
 } from 'lucide-react';
 import { Link } from 'react-router';
-import { useAdminBackup, useAdminUsers } from '../api/admin';
+import { useAdminBackup, useAdminDatabase, useAdminUsers } from '../api/admin';
 import { BackupSkeleton, UserStatsSkeleton } from '../components/PageSkeletons';
-import { timeAgo, usePageTitle } from '../lib';
-
-const formatBytes = (n: number) =>
-    n < 1024
-        ? `${n} B`
-        : n < 1024 * 1024
-          ? `${(n / 1024).toFixed(1)} KB`
-          : `${(n / 1024 / 1024).toFixed(1)} MB`;
+import { formatBytes, timeAgo, usePageTitle } from '../lib';
 
 const when = (ms: number) => ({
     ago: timeAgo(ms),
@@ -121,6 +115,42 @@ function BackupStatus({ report }: { report: BackupReportDto }) {
     );
 }
 
+function DatabaseTile() {
+    const db = useAdminDatabase();
+    const d = db.data;
+    const stats = d && [
+        { label: 'Database size', value: formatBytes(d.storage.fileBytes + d.storage.walBytes) },
+        { label: 'Cached games', value: d.cache.games.toLocaleString() },
+        { label: 'Tables', value: d.tables.length.toLocaleString() }
+    ];
+    return (
+        <section className="panel admin-tile" aria-labelledby="db-heading">
+            <h2 id="db-heading">
+                <Database aria-hidden="true" /> Database
+            </h2>
+            {db.isPending ? (
+                <UserStatsSkeleton />
+            ) : db.isError ? (
+                <p className="form-error" role="alert">
+                    Couldn't load the database stats.
+                </p>
+            ) : (
+                <dl className="admin-stats">
+                    {stats!.map((s) => (
+                        <div key={s.label}>
+                            <dd>{s.value}</dd>
+                            <dt>{s.label}</dt>
+                        </div>
+                    ))}
+                </dl>
+            )}
+            <Link className="admin-tile__link" to="/admin/database">
+                Database details <ArrowRight aria-hidden="true" />
+            </Link>
+        </section>
+    );
+}
+
 function UsersTile() {
     const users = useAdminUsers();
     const list = users.data;
@@ -176,6 +206,7 @@ export function AdminPage() {
             </div>
             <div className="admin-tiles">
                 <UsersTile />
+                <DatabaseTile />
             </div>
             <section className="panel" aria-labelledby="backup-heading">
                 <h2 id="backup-heading">

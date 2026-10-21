@@ -281,6 +281,33 @@ export function UserStatsSkeleton() {
     );
 }
 
+/** The admin database page: stat groups and the table list. */
+export function DatabaseSkeleton() {
+    return (
+        <div className="stack" role="status" aria-label="Loading database stats">
+            {[0, 1, 2].map((i) => (
+                <div key={i} className="panel" aria-hidden="true">
+                    <span className="skeleton skeleton--line" style={{ width: '25%' }} />
+                    <div className="admin-stats">
+                        {[0, 1, 2, 3].map((j) => (
+                            <div key={j}>
+                                <span
+                                    className="skeleton skeleton--line"
+                                    style={{ width: 60, height: '1.8rem' }}
+                                />
+                                <span
+                                    className="skeleton skeleton--line skeleton--sub"
+                                    style={{ width: 90 }}
+                                />
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            ))}
+        </div>
+    );
+}
+
 /** The admin user edit page: a panel of form fields. */
 export function UserFormSkeleton() {
     return (

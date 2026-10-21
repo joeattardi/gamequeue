@@ -16,6 +16,7 @@ import {
     resetPassword,
     updateUser
 } from '../services/admin-users.js';
+import { readDatabaseStats } from '../services/database-stats.js';
 import { readBackupReport } from '../services/backup-status.js';
 import type { AppDeps } from '../app.js';
 import { requireAdmin, requireAuth, type AuthVars } from '../auth/middleware.js';
@@ -28,6 +29,9 @@ export function adminRoutes({ db, config }: AppDeps) {
     r.get('/', (c) => c.json({ ok: true }));
     // What the nightly backup script last reported (see scripts/backup.sh)
     r.get('/backup', (c) => c.json(readBackupReport(config)));
+
+    // Database size, IGDB cache and per-table counts
+    r.get('/database', (c) => c.json(readDatabaseStats(db, config)));
 
     // User management
     const body = async (c: { req: { json(): Promise<unknown> } }) => {
