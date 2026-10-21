@@ -7,6 +7,7 @@ import type {
     PlaythroughDto,
     StartInput,
     StatusAction,
+    EntriesPageDto,
     EntryDto,
     FacetCountsDto,
     FacetsDto,
@@ -16,14 +17,45 @@ import type {
     SearchResultDto
 } from '@gamequeue/shared';
 import { api } from './client';
+import { usePagedQuery, withPage } from './paging';
 
-export function useEntries(params: URLSearchParams) {
+const entriesPath = (params: URLSearchParams) => {
     const qs = params.toString();
+    return `/entries${qs ? `?${qs}` : ''}`;
+};
+
+/** The collection or backlog a page at a time ("Load more"). */
+export function usePagedEntries(params: URLSearchParams) {
+    const path = entriesPath(params);
+    return usePagedQuery({
+        key: ['entries', 'paged', params.toString()],
+        load: (offset, limit) => api<EntriesPageDto>(withPage(path, offset, limit)),
+        read: (r) => ({ items: r.entries, total: r.total }),
+        placeholder: true
+    });
+}
+
+/** The first `limit` matches (and how many there are), for search-as-you-type pickers. */
+export function useEntries(params: URLSearchParams, limit = 8) {
+    const path = entriesPath(params);
     return useQuery({
-        queryKey: ['entries', qs],
-        queryFn: async () =>
-            (await api<{ entries: EntryDto[] }>(`/entries${qs ? `?${qs}` : ''}`)).entries,
+        queryKey: ['entries', 'first', params.toString(), limit],
+        queryFn: () => api<EntriesPageDto>(withPage(path, 0, limit)),
         placeholderData: keepPreviousData
+    });
+}
+
+/** Games to put in a slot: queue first, then in progress, then the backlog; searchable. */
+export function useSlotCandidates(q: string, excludeEntryId?: number) {
+    const base = `/entries/candidates?${new URLSearchParams({
+        ...(q ? { q } : {}),
+        ...(excludeEntryId ? { exclude: String(excludeEntryId) } : {})
+    })}`;
+    return usePagedQuery({
+        key: ['entries', 'candidates', q, excludeEntryId ?? null],
+        load: (offset, limit) => api<EntriesPageDto>(withPage(base, offset, limit)),
+        read: (r) => ({ items: r.entries, total: r.total }),
+        placeholder: true
     });
 }
 

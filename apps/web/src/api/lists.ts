@@ -1,6 +1,7 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
 import type { ListDetailDto, ListSummaryDto, PickInput, PickResultDto } from '@gamequeue/shared';
 import { api } from './client';
+import { usePagedQuery, withPage } from './paging';
 import { useInvalidateAfterDelete, useInvalidateCollection } from './collection';
 
 export const useLists = () =>
@@ -9,10 +10,14 @@ export const useLists = () =>
         queryFn: async () => (await api<{ lists: ListSummaryDto[] }>('/lists')).lists
     });
 
+/** A list a page at a time. `name` and `kind` come with every page; `total` is the whole list. */
 export const useList = (id: number) =>
-    useQuery({
-        queryKey: ['list', id],
-        queryFn: async () => (await api<{ list: ListDetailDto }>(`/lists/${id}`)).list
+    usePagedQuery({
+        key: ['list', id],
+        load: async (offset, limit) =>
+            (await api<{ list: ListDetailDto }>(withPage(`/lists/${id}`, offset, limit))).list,
+        read: (l) => ({ items: l.entries, total: l.total }),
+        retry: false
     });
 
 export function useCreateList() {
@@ -59,11 +64,12 @@ export function useRemoveFromList() {
     });
 }
 
-export function useReorderList(listId: number) {
+/** Moves one game to an absolute position, so it works with only the first pages loaded. */
+export function useMoveInList(listId: number) {
     const invalidate = useInvalidateCollection();
     return useMutation({
-        mutationFn: (entryIds: number[]) =>
-            api(`/lists/${listId}/order`, { method: 'PUT', body: { entryIds } }),
+        mutationFn: (v: { entryId: number; toIndex: number }) =>
+            api(`/lists/${listId}/move`, { method: 'PUT', body: v }),
         // Refetch either way so the UI snaps back to the server's order if the save failed
         onSettled: invalidate
     });

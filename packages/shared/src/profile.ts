@@ -34,9 +34,25 @@ export interface ProfileDto {
         wishlisted: number;
         byStatus: Record<EntryStatus, number>;
     };
-    lists: { id: number; name: string; entries: PublicEntryDto[] }[];
+    /** Each list shows its first `PROFILE_PREVIEW_SIZE` games; `total` says how many there are */
+    lists: { id: number; name: string; total: number; entries: PublicEntryDto[] }[];
     /** Smart lists as they match right now, with their rules in words */
-    smartLists: { id: number; name: string; description: string[]; entries: PublicEntryDto[] }[];
+    smartLists: {
+        id: number;
+        name: string;
+        description: string[];
+        total: number;
+        entries: PublicEntryDto[];
+    }[];
+}
+
+/** Games shown per list on the profile before "Show more". */
+export const PROFILE_PREVIEW_SIZE = 12;
+
+/** More of one list on the profile (`/profiles/:username/lists/:id`, `/smart-lists/:id`). */
+export interface ProfileListPageDto {
+    entries: PublicEntryDto[];
+    total: number;
 }
 
 /** The sub-pages of a public profile, each a plain list of games (`/u/:username/:view`). */
@@ -64,6 +80,8 @@ export interface ProfileGamesDto {
      * first); every other view sorted by title
      */
     entries: PublicEntryDto[];
+    /** Games in the whole view; `entries` is one page */
+    total: number;
     /** Finished view only: the year shown, if this is a year page */
     year?: string;
     /** Finished view only: years with finished playthroughs, newest first, then `unknown` */

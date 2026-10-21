@@ -17,20 +17,59 @@ import {
     Trophy,
     WandSparkles
 } from 'lucide-react';
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Link, useParams } from 'react-router';
 import { ApiRequestError } from '../api/client';
-import { useProfile } from '../api/profile';
+import { useProfile, useProfileListRest } from '../api/profile';
 import { Avatar } from '../components/Avatar';
 import { Cover } from '../components/Cover';
+import { GridSkeletons } from '../components/GridSkeletons';
+import { LoadMore } from '../components/LoadMore';
 import { SocialLinksList } from '../components/SocialLinks';
 import { ProfileSkeleton } from '../components/PageSkeletons';
 import { Footer } from '../components/Footer';
 import { PublicHeader } from '../components/PublicHeader';
 import { usePageTitle } from '../lib';
 
-function Games({ entries }: { entries: PublicEntryDto[] }) {
+function Games({
+    entries,
+    username,
+    kind,
+    id,
+    total
+}: {
+    /** What the profile carries: the first few games */
+    entries: PublicEntryDto[];
+    /** With these, a "Show more" button fetches the rest of the list */
+    username?: string;
+    kind?: 'lists' | 'smart-lists';
+    id?: number;
+    total?: number;
+}) {
+    const [more, setMore] = useState(false);
+    const rest = useProfileListRest(username ?? '', kind ?? 'lists', id ?? 0, entries.length, more);
     if (entries.length === 0) return <p className="muted">Nothing here yet.</p>;
+    const shown = [...entries, ...rest.items];
+    const hasMore = total !== undefined && !!username && total > shown.length;
+    return (
+        <>
+            <GameGrid entries={shown} />
+            {hasMore && (
+                <LoadMore
+                    shown={shown.length}
+                    total={total}
+                    hasMore
+                    loading={rest.isFetching}
+                    failed={rest.isError}
+                    onMore={() => (more ? rest.fetchNextPage() : setMore(true))}
+                    skeleton={<GridSkeletons layout="grid" count={4} />}
+                />
+            )}
+        </>
+    );
+}
+
+function GameGrid({ entries }: { entries: PublicEntryDto[] }) {
     return (
         <ul className="grid">
             {entries.map((e) => (
@@ -218,7 +257,13 @@ export function ProfilePage() {
                         {profile.data.lists.map((l) => (
                             <section key={l.id} aria-label={l.name}>
                                 <h2>{l.name}</h2>
-                                <Games entries={l.entries} />
+                                <Games
+                                    entries={l.entries}
+                                    username={profile.data.username}
+                                    kind="lists"
+                                    id={l.id}
+                                    total={l.total}
+                                />
                             </section>
                         ))}
 
@@ -235,7 +280,13 @@ export function ProfilePage() {
                                         </li>
                                     ))}
                                 </ul>
-                                <Games entries={l.entries} />
+                                <Games
+                                    entries={l.entries}
+                                    username={profile.data.username}
+                                    kind="smart-lists"
+                                    id={l.id}
+                                    total={l.total}
+                                />
                             </section>
                         ))}
                     </>

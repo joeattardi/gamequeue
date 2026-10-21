@@ -1,11 +1,12 @@
 import { ENTRY_SORTS } from '@gamequeue/shared';
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
-import { useEntries, useFacetCounts } from '../api/collection';
+import { useFacetCounts, usePagedEntries } from '../api/collection';
 import { AddGameDialog } from '../components/AddGameDialog';
 import { FACET_KEYS, FacetSidebar, type FacetKey } from '../components/FacetSidebar';
 import { GridSkeletons } from '../components/GridSkeletons';
 import { LayoutToggle, useLayout } from '../components/LayoutToggle';
+import { LoadMore } from '../components/LoadMore';
 import { GameCard } from '../components/GameCard';
 import { GameRow } from '../components/GameRow';
 import { useDebounced, usePageTitle } from '../lib';
@@ -70,7 +71,7 @@ export function CollectionPage({ view }: { view: 'all' | 'backlog' }) {
 
     const query = new URLSearchParams(params);
     query.set('view', view);
-    const entries = useEntries(query);
+    const entries = usePagedEntries(query);
     const facets = useFacetCounts(query);
     const filtered = [...FACET_KEYS, 'q'].some((k) => params.get(k));
 
@@ -87,8 +88,8 @@ export function CollectionPage({ view }: { view: 'all' | 'backlog' }) {
                         {view === 'backlog' ? 'Backlog' : 'Collection'}
                     </h1>
                     <p className="muted" aria-live="polite">
-                        {entries.data
-                            ? `${entries.data.length} ${entries.data.length === 1 ? 'game' : 'games'}${filtered ? ' match' : ''}`
+                        {entries.total !== undefined
+                            ? `${entries.total} ${entries.total === 1 ? 'game' : 'games'}${filtered ? ' match' : ''}`
                             : ' '}
                         {view === 'backlog' && " · everything you haven't started"}
                     </p>
@@ -136,20 +137,33 @@ export function CollectionPage({ view }: { view: 'all' | 'backlog' }) {
                         </p>
                     ) : entries.isPending ? (
                         <GridSkeletons layout={layout} />
-                    ) : entries.data?.length === 0 ? (
+                    ) : entries.total === 0 ? (
                         <Empty view={view} filtered={filtered} onAdd={() => setAdding(true)} />
-                    ) : layout === 'list' ? (
-                        <ul className="game-rows" aria-busy={entries.isFetching}>
-                            {entries.data?.map((e) => (
-                                <GameRow key={e.id} entry={e} />
-                            ))}
-                        </ul>
                     ) : (
-                        <ul className="grid" aria-busy={entries.isFetching}>
-                            {entries.data?.map((e) => (
-                                <GameCard key={e.id} entry={e} />
-                            ))}
-                        </ul>
+                        <>
+                            {layout === 'list' ? (
+                                <ul className="game-rows" aria-busy={entries.isFetching}>
+                                    {entries.items.map((e) => (
+                                        <GameRow key={e.id} entry={e} />
+                                    ))}
+                                </ul>
+                            ) : (
+                                <ul className="grid" aria-busy={entries.isFetching}>
+                                    {entries.items.map((e) => (
+                                        <GameCard key={e.id} entry={e} />
+                                    ))}
+                                </ul>
+                            )}
+                            <LoadMore
+                                shown={entries.items.length}
+                                total={entries.total}
+                                hasMore={entries.hasNextPage}
+                                loading={entries.isFetchingNextPage}
+                                failed={entries.isFetchNextPageError}
+                                onMore={() => entries.fetchNextPage()}
+                                skeleton={<GridSkeletons layout={layout} count={4} />}
+                            />
+                        </>
                     )}
                 </div>
                 <aside className="browse__side" aria-label="Filters">

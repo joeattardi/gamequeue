@@ -11,7 +11,7 @@ import { platformLabel, releaseText, usePageTitle } from '../lib';
 export function ProfileWishlistPage() {
     const { username = '' } = useParams();
     const wishlist = useProfileWishlist(username);
-    usePageTitle(`${wishlist.data?.username ?? username}'s Wishlist`);
+    usePageTitle(`${wishlist.head?.username ?? username}'s Wishlist`);
     const notFound = wishlist.error instanceof ApiRequestError && wishlist.error.status === 404;
 
     return (
@@ -25,18 +25,27 @@ export function ProfileWishlistPage() {
                 {!notFound && wishlist.isError && <p role="alert">Couldn't load.</p>}
                 {!notFound && !wishlist.isError && (
                     <>
-                        <h1>{wishlist.data?.username ?? username}: wishlist</h1>
+                        <h1>{wishlist.head?.username ?? username}: wishlist</h1>
                         <PublicGameList
-                            entries={wishlist.data?.items.map((i) => ({
-                                id: i.igdbId,
-                                game: i.game,
-                                caption: [
-                                    releaseText(i.game),
-                                    i.platform && platformLabel(i.platform)
-                                ]
-                                    .filter(Boolean)
-                                    .join(' · ')
-                            }))}
+                            paging={{
+                                total: wishlist.total,
+                                hasMore: wishlist.hasNextPage,
+                                loading: wishlist.isFetchingNextPage,
+                                failed: wishlist.isFetchNextPageError,
+                                onMore: () => wishlist.fetchNextPage()
+                            }}
+                            entries={(wishlist.isPending ? undefined : wishlist.items)?.map(
+                                (i) => ({
+                                    id: i.igdbId,
+                                    game: i.game,
+                                    caption: [
+                                        releaseText(i.game),
+                                        i.platform && platformLabel(i.platform)
+                                    ]
+                                        .filter(Boolean)
+                                        .join(' · ')
+                                })
+                            )}
                             numbered
                             empty="Nothing on the wishlist."
                         />

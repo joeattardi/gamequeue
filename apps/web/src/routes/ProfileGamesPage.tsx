@@ -36,14 +36,14 @@ export function ProfileGamesPage() {
     // The query only runs for a known view; an unknown one is a plain not-found page.
     const games = useProfileGames(username, known ? (view as ProfileView) : 'queue', known, year);
     // Keep the year links while another year loads.
-    const lastYears = useRef<NonNullable<typeof games.data>['years']>(undefined);
-    if (games.data) lastYears.current = games.data.years;
-    const years = games.data?.years ?? lastYears.current;
+    const lastYears = useRef<NonNullable<typeof games.head>['years']>(undefined);
+    if (games.head) lastYears.current = games.head.years;
+    const years = games.head?.years ?? lastYears.current;
     const notFound =
         !known || (games.error instanceof ApiRequestError && games.error.status === 404);
     const meta = known ? VIEWS[view as ProfileView] : undefined;
     usePageTitle(
-        `${games.data?.username ?? username}'s ${meta?.title ?? 'Games'}${year ? ` in ${yearLabel(year)}` : ''}`
+        `${games.head?.username ?? username}'s ${meta?.title ?? 'Games'}${year ? ` in ${yearLabel(year)}` : ''}`
     );
 
     return (
@@ -58,7 +58,7 @@ export function ProfileGamesPage() {
                 {!notFound && !games.isError && meta && (
                     <>
                         <h1>
-                            {games.data?.username ?? username}: {meta.title.toLowerCase()}
+                            {games.head?.username ?? username}: {meta.title.toLowerCase()}
                             {year && ` in ${yearLabel(year)}`}
                         </h1>
                         {view === 'finished' && years && years.length > 0 && (
@@ -78,7 +78,14 @@ export function ProfileGamesPage() {
                             </nav>
                         )}
                         <PublicGameList
-                            entries={games.data?.entries}
+                            entries={games.isPending ? undefined : games.items}
+                            paging={{
+                                total: games.total,
+                                hasMore: games.hasNextPage,
+                                loading: games.isFetchingNextPage,
+                                failed: games.isFetchNextPageError,
+                                onMore: () => games.fetchNextPage()
+                            }}
                             numbered={meta.numbered}
                             empty={year ? 'No games finished then.' : meta.empty}
                         />

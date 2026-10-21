@@ -113,6 +113,10 @@ export const smartListInputSchema = z.object({
 });
 export type SmartListInput = z.infer<typeof smartListInputSchema>;
 
+/** The editor's live preview: rules and sort without a name, since nothing is saved */
+export const smartListPreviewSchema = smartListInputSchema.omit({ name: true });
+export type SmartListPreviewInput = z.infer<typeof smartListPreviewSchema>;
+
 export interface SmartListSummaryDto {
     id: number;
     name: string;
@@ -130,8 +134,10 @@ export interface SmartListDetailDto {
     sort: SmartSort;
     dir: SortDir;
     description: string[];
-    /** The matching games, in sort order */
+    /** One page of the matching games, in sort order */
     entries: EntryDto[];
+    /** Games matching right now */
+    total: number;
 }
 
 // ---------------------------------------------------------------------------

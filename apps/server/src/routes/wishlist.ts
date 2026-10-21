@@ -1,6 +1,9 @@
 import { Hono } from 'hono';
 import {
     addWishlistItemSchema,
+    moveWishlistItemSchema,
+    pageQuerySchema,
+    releasingSoonQuerySchema,
     patchWishlistItemSchema,
     reorderWishlistSchema
 } from '@gamequeue/shared';
@@ -11,6 +14,8 @@ import {
     addToWishlist,
     ensureWishlist,
     getWishlist,
+    moveInWishlist,
+    releasingSoon,
     patchWishlistItem,
     refreshWishlistReleases,
     removeFromWishlist,
@@ -32,7 +37,21 @@ export function wishlistRoutes({ db, config, igdb }: AppDeps) {
     r.get('/', async (c) => {
         const id = wishlistId(c);
         await refreshWishlistReleases(db, igdb, id);
-        return c.json({ wishlist: getWishlist(db, uid(c), id) });
+        return c.json({
+            wishlist: getWishlist(db, uid(c), id, validate(pageQuerySchema, c.req.query()))
+        });
+    });
+    // Home page: unreleased wishlisted games with an exact release day coming up
+    r.get('/releasing-soon', (c) => {
+        const q = validate(releasingSoonQuerySchema, c.req.query());
+        return c.json({
+            items: releasingSoon(
+                db,
+                wishlistId(c),
+                q.today ?? new Date().toISOString().slice(0, 10),
+                q.days
+            )
+        });
     });
     r.post('/items', async (c) =>
         c.json({
@@ -61,6 +80,10 @@ export function wishlistRoutes({ db, config, igdb }: AppDeps) {
             wishlist: removeFromWishlist(db, uid(c), wishlistId(c), parseId(c.req.param('igdbId')))
         })
     );
+    r.put('/move', async (c) => {
+        const { igdbId, toIndex } = validate(moveWishlistItemSchema, await body(c));
+        return c.json({ wishlist: moveInWishlist(db, uid(c), wishlistId(c), igdbId, toIndex) });
+    });
     r.put('/order', async (c) =>
         c.json({
             wishlist: reorderWishlist(

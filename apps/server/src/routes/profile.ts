@@ -1,9 +1,18 @@
 import { Hono } from 'hono';
-import { isFinishedYear, PROFILE_VIEWS, usernameSchema, type ProfileView } from '@gamequeue/shared';
+import {
+    isFinishedYear,
+    pageQuerySchema,
+    PROFILE_VIEWS,
+    usernameSchema,
+    type ProfileView
+} from '@gamequeue/shared';
 import type { AppDeps } from '../app.js';
 import { HttpError } from '../errors.js';
+import { parseId, validate } from '../http.js';
 import {
     getProfile,
+    getProfileList,
+    getProfileSmartList,
     getProfileGames,
     getProfileRecap,
     getProfileStats,
@@ -25,7 +34,33 @@ export function profileRoutes({ db }: AppDeps) {
     );
     // Registered before "/:username/:view" so "wishlist" isn't read as a view
     r.get('/:username/wishlist', (c) =>
-        c.json({ wishlist: getProfileWishlist(db, parseUsername(c.req.param('username'))) })
+        c.json({
+            wishlist: getProfileWishlist(
+                db,
+                parseUsername(c.req.param('username')),
+                validate(pageQuerySchema, c.req.query())
+            )
+        })
+    );
+    r.get('/:username/lists/:id', (c) =>
+        c.json(
+            getProfileList(
+                db,
+                parseUsername(c.req.param('username')),
+                parseId(c.req.param('id')),
+                validate(pageQuerySchema, c.req.query())
+            )
+        )
+    );
+    r.get('/:username/smart-lists/:id', (c) =>
+        c.json(
+            getProfileSmartList(
+                db,
+                parseUsername(c.req.param('username')),
+                parseId(c.req.param('id')),
+                validate(pageQuerySchema, c.req.query())
+            )
+        )
     );
     r.get('/:username/avatar', (c) => {
         const avatar = getAvatarByUsername(db, parseUsername(c.req.param('username')));
@@ -52,13 +87,26 @@ export function profileRoutes({ db }: AppDeps) {
     r.get('/:username/:view', (c) => {
         const view = c.req.param('view') as ProfileView;
         if (!PROFILE_VIEWS.includes(view)) throw new HttpError(404, 'Not found');
-        return c.json({ games: getProfileGames(db, parseUsername(c.req.param('username')), view) });
+        return c.json({
+            games: getProfileGames(
+                db,
+                parseUsername(c.req.param('username')),
+                view,
+                validate(pageQuerySchema, c.req.query())
+            )
+        });
     });
     r.get('/:username/finished/:year', (c) => {
         const year = c.req.param('year');
         if (!isFinishedYear(year)) throw new HttpError(404, 'Not found');
         return c.json({
-            games: getProfileGames(db, parseUsername(c.req.param('username')), 'finished', year)
+            games: getProfileGames(
+                db,
+                parseUsername(c.req.param('username')),
+                'finished',
+                validate(pageQuerySchema, c.req.query()),
+                year
+            )
         });
     });
     return r;

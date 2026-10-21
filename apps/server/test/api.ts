@@ -23,8 +23,8 @@ export const CATALOG = [
 ];
 
 /** An app with one signed-in user and small helpers for the JSON API. */
-export async function setupApi() {
-    const { app, db } = makeApp({}, fakeIgdb(CATALOG).client);
+export async function setupApi(catalog = CATALOG) {
+    const { app, db } = makeApp({}, fakeIgdb(catalog).client);
     const cookie = cookieFrom(await register(app));
     const request = (path: string, method = 'GET', body?: unknown, who = cookie) =>
         app.request(`/api${path}`, {

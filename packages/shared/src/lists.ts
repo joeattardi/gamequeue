@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type { EntryDto } from './collection.js';
+import { moveItemSchema } from './pagination.js';
 
 export interface ListSummaryDto {
     id: number;
@@ -13,8 +14,10 @@ export interface ListDetailDto {
     id: number;
     name: string;
     kind: 'list' | 'queue';
-    /** In list order */
+    /** One page, in list order */
     entries: EntryDto[];
+    /** Games in the whole list */
+    total: number;
 }
 
 const listName = z.string().trim().min(1, 'Give the list a name').max(60);
@@ -22,4 +25,5 @@ const listName = z.string().trim().min(1, 'Give the list a name').max(60);
 export const createListSchema = z.object({ name: listName });
 export const patchListSchema = z.object({ name: listName });
 export const addListItemSchema = z.object({ entryId: z.number().int().positive() });
+export const moveListItemSchema = moveItemSchema.extend({ entryId: z.number().int().positive() });
 export const reorderListSchema = z.object({ entryIds: z.array(z.number().int().positive()) });

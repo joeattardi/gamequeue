@@ -1,5 +1,10 @@
 import { Hono } from 'hono';
-import { addEntrySchema, entryQuerySchema, patchEntrySchema } from '@gamequeue/shared';
+import {
+    addEntrySchema,
+    entryQuerySchema,
+    pageQuerySchema,
+    patchEntrySchema
+} from '@gamequeue/shared';
 import type { AppDeps } from '../app.js';
 import { requireAuth, type AuthVars } from '../auth/middleware.js';
 import { HttpError } from '../errors.js';
@@ -10,7 +15,8 @@ import {
     getEntry,
     getFacetCounts,
     getFacets,
-    listEntries,
+    pageEntries,
+    pageSlotCandidates,
     patchEntry
 } from '../services/entries.js';
 import { ensureScreenshots } from '../services/games.js';
@@ -32,9 +38,31 @@ export function entryRoutes({ db, config, igdb }: AppDeps) {
     r.use('*', requireAuth(db, config));
 
     r.get('/', (c) =>
-        c.json({
-            entries: listEntries(db, c.get('user').id, parseEntryQuery(c.req.queries()))
-        })
+        c.json(
+            pageEntries(
+                db,
+                c.get('user').id,
+                parseEntryQuery(c.req.queries()),
+                validate(pageQuerySchema, c.req.query())
+            )
+        )
+    );
+
+    // Games to put in a slot (queue first, then in progress, then the backlog), searchable
+    r.get('/candidates', (c) =>
+        c.json(
+            pageSlotCandidates(
+                db,
+                c.get('user').id,
+                {
+                    q: c.req.query('q')?.trim() || undefined,
+                    excludeEntryId: c.req.query('exclude')
+                        ? parseId(c.req.query('exclude')!)
+                        : undefined
+                },
+                validate(pageQuerySchema, c.req.query())
+            )
+        )
     );
 
     // Registered before "/:id" so "facets" isn't read as an id

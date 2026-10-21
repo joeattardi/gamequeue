@@ -352,6 +352,7 @@ describe('smart lists in export, import and the public profile', () => {
                 id: expect.any(Number),
                 name: 'Cozy',
                 description: ['Tagged cozy'],
+                total: 2,
                 entries: [
                     expect.objectContaining({ game: expect.objectContaining({ name: 'Celeste' }) }),
                     expect.objectContaining({

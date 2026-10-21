@@ -8,8 +8,9 @@ const SHOWN = 4;
 
 /** The first few games on the queue, for the home page. */
 export function UpNext() {
-    const queue = useQueue();
-    const entries = queue.data?.entries ?? [];
+    const queue = useQueue(SHOWN);
+    const entries = queue.items;
+    const total = queue.total ?? 0;
     return (
         <section aria-labelledby="upnext-h" className="home-section">
             <div className="page-head">
@@ -17,19 +18,19 @@ export function UpNext() {
                     <h2 id="upnext-h">
                         <ListOrdered aria-hidden="true" />
                         Up next
-                        {entries.length > 0 && (
+                        {total > 0 && (
                             <span className="badge upnext__count">
-                                {entries.length}
+                                {total}
                                 <span className="sr-only"> in your queue</span>
                             </span>
                         )}
                     </h2>
-                    {entries.length === 0 && !queue.isPending && (
+                    {total === 0 && !queue.isPending && (
                         <p className="muted">Nothing queued yet.</p>
                     )}
                 </div>
                 <Link className="btn" to="/queue">
-                    {entries.length === 0 ? 'Build your queue' : 'View queue'}
+                    {total === 0 ? 'Build your queue' : 'View queue'}
                 </Link>
             </div>
             {queue.isPending && <UpNextSkeletons />}

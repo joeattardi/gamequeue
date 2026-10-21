@@ -32,7 +32,7 @@ export function PickCriteriaPage() {
     const [params] = useSearchParams();
     const facets = useFacets();
     const lists = useLists();
-    const queue = useQueue();
+    const queue = useQueue(1); // only its id is needed
     const smartLists = useSmartLists();
     const pick = usePick();
 
@@ -130,8 +130,8 @@ export function PickCriteriaPage() {
                         ) : (
                             <select value={source} onChange={(e) => setSource(e.target.value)}>
                                 <option value="backlog">Backlog (unplayed games)</option>
-                                {queue.data && (
-                                    <option value={`list:${queue.data.id}`}>Queue</option>
+                                {queue.head && (
+                                    <option value={`list:${queue.head.id}`}>Queue</option>
                                 )}
                                 {lists.data?.map((l) => (
                                     <option key={l.id} value={`list:${l.id}`}>

@@ -103,6 +103,14 @@ export interface FacetsDto {
     platforms: PlatformDto[];
     tags: string[];
     genres: { id: number; name: string }[];
+    /** Years something was finished in, newest first (for the smart list editor) */
+    finishedYears: number[];
+}
+
+/** One page of games from `GET /entries`; `total` counts every match, not just this page */
+export interface EntriesPageDto {
+    entries: EntryDto[];
+    total: number;
 }
 
 /** Facet sidebar: every option the user has, with how many games match the other active facets */
