@@ -3624,8 +3624,9 @@ fieldset.stars:disabled .stars__star {
 .shots__thumb img {
     display: block;
     width: 100%;
-    aspect-ratio: 16 / 9;
-    object-fit: cover;
+    height: auto;
+    /* 16:9 only until the image loads and brings its own proportions */
+    aspect-ratio: auto 16 / 9;
     transition: transform 0.15s ease-out;
 }
 .shots__thumb:hover img,

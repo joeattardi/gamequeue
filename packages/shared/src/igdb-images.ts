@@ -12,8 +12,12 @@ const BASE = 'https://images.igdb.com/igdb/image/upload';
 export const coverUrl = (imageId: string, size: CoverSize = 'cover_big') =>
     `${BASE}/t_${size}/${imageId}.jpg`;
 
-/** Screenshots are 16:9; `screenshot_med` is 569x320 and `screenshot_big` 889x500. */
-export type ScreenshotSize = 'screenshot_med' | 'screenshot_big' | 'screenshot_huge' | '1080p';
+/**
+ * `screenshot_*` sizes are cropped to 16:9 (`screenshot_med` is 569x320); `720p` and `1080p` keep the
+ * screenshot's own proportions, which is not always 16:9.
+ */
+export type ScreenshotSize =
+    'screenshot_med' | 'screenshot_big' | 'screenshot_huge' | '720p' | '1080p';
 
 export const screenshotUrl = (imageId: string, size: ScreenshotSize = 'screenshot_big') =>
     `${BASE}/t_${size}/${imageId}.jpg`;

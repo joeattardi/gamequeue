@@ -19,13 +19,7 @@ export function Screenshots({ imageIds, name }: { imageIds: string[]; name: stri
                             onClick={() => setOpen(i)}
                             aria-label={`View screenshot ${i + 1} of ${imageIds.length}`}
                         >
-                            <img
-                                src={screenshotUrl(id, 'screenshot_med')}
-                                alt=""
-                                loading="lazy"
-                                width={569}
-                                height={320}
-                            />
+                            <img src={screenshotUrl(id, '720p')} alt="" loading="lazy" />
                         </button>
                     </li>
                 ))}
