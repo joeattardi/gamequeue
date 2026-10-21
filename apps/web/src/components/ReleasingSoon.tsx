@@ -41,7 +41,7 @@ export function ReleasingSoon() {
                 <ol className="grid upnext__list">
                     {items.map(({ igdbId, game, platform }) => (
                         <li key={igdbId} className="card">
-                            <div className="card__link" tabIndex={0}>
+                            <Link to={`/games/igdb/${igdbId}`} className="card__link">
                                 <div className="card__art">
                                     <Cover imageId={game.coverImageId} name={game.name} />
                                     <span className="release-badge">{releaseBadgeText(game)}</span>
@@ -52,7 +52,7 @@ export function ReleasingSoon() {
                                         </span>
                                     </div>
                                 </div>
-                            </div>
+                            </Link>
                         </li>
                     ))}
                 </ol>

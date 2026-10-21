@@ -1592,6 +1592,7 @@ a.game-row:hover {
 }
 .row-item__cover {
     position: relative;
+    display: block;
 }
 .row-item__cover .cover {
     border-radius: 3px;

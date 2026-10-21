@@ -17,6 +17,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { MAX_WISHLIST_NOTE, type SearchResultDto, type WishlistItemDto } from '@gamequeue/shared';
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router';
 import {
     usePatchWishlistItem,
     useRemoveFromWishlist,
@@ -206,7 +207,7 @@ function WishlistTile({ item, position }: { item: WishlistItemDto; position: num
     const { game } = item;
     return (
         <li className="card">
-            <div className="card__link" tabIndex={0}>
+            <Link to={`/games/igdb/${item.igdbId}`} className="card__link">
                 <div className="card__art">
                     <Cover imageId={game.coverImageId} name={game.name} />
                     <ReleaseBadge game={game} />
@@ -219,7 +220,7 @@ function WishlistTile({ item, position }: { item: WishlistItemDto; position: num
                     </div>
                     <span className="card__pos">{position}</span>
                 </div>
-            </div>
+            </Link>
         </li>
     );
 }
@@ -287,12 +288,19 @@ function Row({
             <span className="row-item__pos muted" aria-hidden="true">
                 {index + 1}
             </span>
-            <span className="row-item__cover" aria-hidden="true">
+            <Link
+                to={`/games/igdb/${item.igdbId}`}
+                className="row-item__cover"
+                aria-hidden="true"
+                tabIndex={-1}
+            >
                 <Cover imageId={game.coverImageId} name={game.name} size="cover_big" />
                 <ReleaseBadge game={game} />
-            </span>
+            </Link>
             <div className="row-item__main">
-                <strong className="row-item__title">{game.name}</strong>
+                <Link to={`/games/igdb/${item.igdbId}`} className="row-item__title">
+                    <strong>{game.name}</strong>
+                </Link>
                 <span className="muted">{releaseText(game)}</span>
                 <div className="wish-fields">
                     <label className="field">
