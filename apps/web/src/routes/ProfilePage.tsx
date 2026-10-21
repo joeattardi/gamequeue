@@ -7,6 +7,7 @@ import {
 } from '@gamequeue/shared';
 import {
     Ban,
+    BarChart3,
     CalendarDays,
     Gift,
     Library,
@@ -86,14 +87,14 @@ function Counter({
     className: string;
     to: string;
     icon: ReactNode;
-    value: number;
+    value?: number;
     label: string;
 }) {
     return (
-        <li className={`counter ${className}`}>
+        <li className={`counter ${value === undefined ? 'counter--nav ' : ''}${className}`}>
             <Link to={to} className="counter__link">
                 <span className="counter__icon">{icon}</span>
-                <span className="counter__value">{value}</span>
+                {value !== undefined && <span className="counter__value">{value}</span>}
                 <span className="counter__label">{label}</span>
             </Link>
         </li>
@@ -130,6 +131,18 @@ function Stats({ username, summary }: { username: string; summary: ProfileDto['s
                     icon={<Gift aria-hidden="true" />}
                     value={summary.wishlisted}
                     label="On wishlist"
+                />
+                <Counter
+                    className="counter--stats"
+                    to={`/u/${username}/stats`}
+                    icon={<BarChart3 aria-hidden="true" />}
+                    label="View stats"
+                />
+                <Counter
+                    className="counter--recap"
+                    to={`/u/${username}/recap`}
+                    icon={<CalendarDays aria-hidden="true" />}
+                    label="Year in review"
                 />
             </ul>
             {summary.total > 0 && (
@@ -227,11 +240,6 @@ export function ProfilePage() {
 
                         <section aria-labelledby="p-collection">
                             <h2 id="p-collection">Collection</h2>
-                            <p>
-                                <Link to={`/u/${profile.data.username}/stats`}>View stats</Link>
-                                {' · '}
-                                <Link to={`/u/${profile.data.username}/recap`}>Year in review</Link>
-                            </p>
                             <Stats
                                 username={profile.data.username}
                                 summary={profile.data.summary}

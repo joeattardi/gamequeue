@@ -1994,9 +1994,14 @@ fieldset.stars:disabled .stars__star {
     list-style: none;
     margin: 0 0 16px;
     padding: 0;
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: 12px;
+}
+@media (max-width: 640px) {
+    .counters {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
 }
 .counter {
     --tone: var(--accent);
@@ -2048,6 +2053,10 @@ fieldset.stars:disabled .stars__star {
     font-weight: 700;
     line-height: 1;
     font-variant-numeric: tabular-nums;
+}
+.counter--nav .counter__icon svg {
+    width: 2.4rem;
+    height: 2.4rem;
 }
 .counter__label {
     grid-area: label;

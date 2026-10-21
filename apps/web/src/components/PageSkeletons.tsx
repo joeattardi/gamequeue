@@ -74,7 +74,7 @@ export function ProfileSkeleton() {
                     <span className="skeleton skeleton--line skeleton--section" />
                 </h2>
                 <ul className="counters">
-                    {Array.from({ length: 8 }, (_, i) => (
+                    {Array.from({ length: 10 }, (_, i) => (
                         <li key={i} className="counter">
                             <div className="counter__link">
                                 <span className="counter__icon">
