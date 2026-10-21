@@ -3,7 +3,7 @@ import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { useState } from 'react';
 import { useModalDialog } from './useModalDialog';
 
-const SHOWN = 4;
+const SHOWN = 3;
 
 /** A few screenshots under the cover; a click opens them full size, where all of them can be paged. */
 export function Screenshots({ imageIds, name }: { imageIds: string[]; name: string }) {
