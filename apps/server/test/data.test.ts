@@ -88,8 +88,8 @@ describe('export', () => {
             ['Couch co-op', null]
         ]);
         expect(file.lists).toEqual([
-            { name: 'Up next', games: [3, 1, 4] },
-            { name: 'Cozy', games: [2] }
+            { name: 'Up next', description: '', games: [3, 1, 4] },
+            { name: 'Cozy', description: '', games: [2] }
         ]);
     });
 

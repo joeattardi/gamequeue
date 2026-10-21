@@ -4009,3 +4009,33 @@ fieldset.stars:disabled .stars__star {
     width: 22px;
     height: 22px;
 }
+
+/* Footer of a paged list: "Showing 48 of 312" and the button for the next page */
+.load-more {
+    display: grid;
+    justify-items: center;
+    gap: 10px;
+    margin-top: 20px;
+}
+.load-more > .grid,
+.load-more > .game-rows,
+.load-more > .rows {
+    width: 100%;
+    margin-top: 0;
+}
+.load-more p {
+    margin: 0;
+}
+.list-card__smart {
+    width: 1em;
+    height: 1em;
+    margin-right: 6px;
+    vertical-align: -0.1em;
+}
+/* What the owner wrote about a list, under its title; keeps their line breaks */
+.list-description {
+    margin: 0 0 16px;
+    max-width: 65ch;
+    white-space: pre-line;
+    overflow-wrap: anywhere;
+}

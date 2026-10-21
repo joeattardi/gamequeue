@@ -37,10 +37,11 @@ describe('public profile', () => {
         const { profile } = JSON.parse(text);
         expect(profile.username).toBe('joe');
         expect(profile.summary).toMatchObject({ total: 2, byStatus: { unplayed: 2 } });
-        expect(profile.lists).toHaveLength(1);
-        expect(
-            profile.lists[0].entries.map((e: { game: { name: string } }) => e.game.name)
-        ).toEqual(['Hades']);
+        // lists are tiles only; the games are on the list's own endpoint
+        expect(profile.lists).toEqual([
+            { id: list.id, name: 'Favourites', total: 1, covers: [hades.game.coverImageId] }
+        ]);
+        expect(profile.lists[0].entries).toBeUndefined();
         expect(profile.slots.map((s: { name: string }) => s.name)).toEqual([
             'Main',
             'Secondary',

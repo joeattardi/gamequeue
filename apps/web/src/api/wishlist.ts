@@ -1,12 +1,41 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
-import type { AddWishlistItemInput, PatchWishlistItemInput, WishlistDto } from '@gamequeue/shared';
+import type {
+    AddWishlistItemInput,
+    PatchWishlistItemInput,
+    WishlistDto,
+    WishlistItemDto
+} from '@gamequeue/shared';
 import { api } from './client';
 import { useInvalidateCollection } from './collection';
+import { usePagedQuery, withPage } from './paging';
 
+/** The wishlist a page at a time; `total` is the whole wishlist. */
 export const useWishlist = () =>
+    usePagedQuery({
+        key: ['wishlist'],
+        load: async (offset, limit) =>
+            (await api<{ wishlist: WishlistDto }>(withPage('/wishlist', offset, limit))).wishlist,
+        read: (w) => ({ items: w.items, total: w.total })
+    });
+
+/** How many games are on the wishlist, without loading them (first page of one). */
+export const useWishlistCount = () =>
     useQuery({
-        queryKey: ['wishlist'],
-        queryFn: async () => (await api<{ wishlist: WishlistDto }>('/wishlist')).wishlist
+        queryKey: ['wishlist', 'count'],
+        queryFn: async () =>
+            (await api<{ wishlist: WishlistDto }>(withPage('/wishlist', 0, 1))).wishlist.total
+    });
+
+/** Wishlisted games releasing on an exact day in the next `days` days (the home page). */
+export const useReleasingSoon = (days: number, today: string) =>
+    useQuery({
+        queryKey: ['wishlist', 'releasing-soon', days, today],
+        queryFn: async () =>
+            (
+                await api<{ items: WishlistItemDto[] }>(
+                    `/wishlist/releasing-soon?days=${days}&today=${today}`
+                )
+            ).items
     });
 
 export function useAddToWishlist() {
@@ -35,11 +64,11 @@ export function useRemoveFromWishlist() {
     });
 }
 
-export function useReorderWishlist() {
+export function useMoveInWishlist() {
     const invalidate = useInvalidateCollection();
     return useMutation({
-        mutationFn: (igdbIds: number[]) =>
-            api('/wishlist/order', { method: 'PUT', body: { igdbIds } }),
+        mutationFn: (v: { igdbId: number; toIndex: number }) =>
+            api('/wishlist/move', { method: 'PUT', body: v }),
         // Refetch either way so the UI snaps back to the server's order if the save failed
         onSettled: invalidate
     });

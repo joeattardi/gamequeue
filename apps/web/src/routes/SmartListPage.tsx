@@ -1,10 +1,11 @@
-import type { SmartListDetailDto } from '@gamequeue/shared';
 import { Link, useNavigate, useParams } from 'react-router';
 import { useDeleteSmartList, useSmartList } from '../api/smartLists';
 import { useConfirm } from '../components/Confirm';
 import { GameCard } from '../components/GameCard';
 import { GameRow } from '../components/GameRow';
+import { GridSkeletons } from '../components/GridSkeletons';
 import { LayoutToggle, useLayout } from '../components/LayoutToggle';
+import { LoadMore } from '../components/LoadMore';
 import { ListLoading } from '../components/ListLoading';
 import { usePageTitle } from '../lib';
 import { ArrowLeft, FileSpreadsheet, Pencil, Trash2, WandSparkles } from 'lucide-react';
@@ -14,7 +15,7 @@ const LAYOUT_KEY = 'gq_smart_list_layout';
 export function SmartListPage() {
     const id = Number(useParams().id);
     const list = useSmartList(id);
-    usePageTitle(list.data?.name);
+    usePageTitle(list.head?.name);
     if (list.isPending)
         return (
             <ListLoading
@@ -23,7 +24,7 @@ export function SmartListPage() {
                 readOnly
             />
         );
-    if (list.isError || !list.data)
+    if (list.isError || !list.head)
         return (
             <div className="empty">
                 <p>
@@ -32,15 +33,18 @@ export function SmartListPage() {
                 <Link to="/lists">Back to lists</Link>
             </div>
         );
-    return <SmartListView list={list.data} isFetching={list.isFetching} />;
+    return <SmartListView paged={list} />;
 }
 
-function SmartListView({ list, isFetching }: { list: SmartListDetailDto; isFetching: boolean }) {
+function SmartListView({ paged }: { paged: ReturnType<typeof useSmartList> }) {
+    const list = paged.head!;
+    const isFetching = paged.isFetching;
     const navigate = useNavigate();
     const del = useDeleteSmartList(list.id);
     const confirm = useConfirm();
     const [layout, setLayout] = useLayout(LAYOUT_KEY);
-    const { entries } = list;
+    const entries = paged.items;
+    const total = paged.total ?? entries.length;
 
     return (
         <section>
@@ -54,8 +58,7 @@ function SmartListView({ list, isFetching }: { list: SmartListDetailDto; isFetch
                         {list.name}
                     </h1>
                     <p className="muted" aria-live="polite">
-                        {entries.length} {entries.length === 1 ? 'game' : 'games'} · always up to
-                        date
+                        {total} {total === 1 ? 'game' : 'games'} · always up to date
                     </p>
                 </div>
                 <div className="row">
@@ -89,15 +92,16 @@ function SmartListView({ list, isFetching }: { list: SmartListDetailDto; isFetch
                 </div>
             </div>
 
+            {list.description && <p className="list-description">{list.description}</p>}
             <ul className="rule-summary" aria-label="Rules">
-                {list.description.map((d) => (
+                {list.ruleText.map((d) => (
                     <li key={d} className="badge">
                         {d}
                     </li>
                 ))}
             </ul>
 
-            {entries.length === 0 ? (
+            {total === 0 ? (
                 <div className="empty">
                     <p>
                         <strong>No games match right now.</strong>
@@ -122,6 +126,15 @@ function SmartListView({ list, isFetching }: { list: SmartListDetailDto; isFetch
                             ))}
                         </ul>
                     )}
+                    <LoadMore
+                        shown={entries.length}
+                        total={total}
+                        hasMore={paged.hasNextPage}
+                        loading={paged.isFetchingNextPage}
+                        failed={paged.isFetchNextPageError}
+                        onMore={() => paged.fetchNextPage()}
+                        skeleton={<GridSkeletons layout={layout} count={4} />}
+                    />
                 </>
             )}
         </section>

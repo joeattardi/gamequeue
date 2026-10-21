@@ -2,7 +2,10 @@ import type { EntryStatus, GameDto } from '@gamequeue/shared';
 import type { CSSProperties } from 'react';
 import { Cover } from './Cover';
 import { LayoutToggle, useLayout, type Layout } from './LayoutToggle';
+import { LoadMore } from './LoadMore';
 import { StarDisplay } from './StarRating';
+
+type LoadMoreProps = Parameters<typeof LoadMore>[0];
 
 /** What this list shows of a game; a `PublicEntryDto` fits, and so does a wishlist item. */
 export interface PublicListItem {
@@ -25,13 +28,16 @@ function staggerStyle(index: number): CSSProperties {
 export function PublicGameList({
     entries,
     numbered = false,
-    empty
+    empty,
+    paging
 }: {
     /** Undefined while loading: the selector stays, the list shows skeletons */
     entries: PublicListItem[] | undefined;
     /** Show each game's position, for ordered lists such as the queue */
     numbered?: boolean;
     empty: string;
+    /** Footer for a paged list; omit when `entries` is complete */
+    paging?: Omit<LoadMoreProps, 'skeleton' | 'shown'>;
 }) {
     const [layout, setLayout] = useLayout(LAYOUT_KEY);
 
@@ -72,6 +78,13 @@ export function PublicGameList({
         <>
             <LayoutToggle layout={layout} onChange={setLayout} />
             {content}
+            {paging && entries && (
+                <LoadMore
+                    {...paging}
+                    shown={entries.length}
+                    skeleton={<Skeleton layout={layout} numbered={numbered} count={4} />}
+                />
+            )}
         </>
     );
 }
@@ -87,12 +100,20 @@ function Details({ item }: { item: PublicListItem }) {
 }
 
 /** Loading placeholders built on the real list's own classes, so sizes match. */
-function Skeleton({ layout, numbered }: { layout: Layout; numbered: boolean }) {
+function Skeleton({
+    layout,
+    numbered,
+    count
+}: {
+    layout: Layout;
+    numbered: boolean;
+    count?: number;
+}) {
     return (
         <>
             {layout === 'grid' ? (
                 <ul className="public-grid" role="status" aria-label="Loading games">
-                    {Array.from({ length: 12 }, (_, i) => (
+                    {Array.from({ length: count ?? 12 }, (_, i) => (
                         <li key={i}>
                             <div className="public-skeleton public-skeleton--cover" />
                         </li>
@@ -100,7 +121,7 @@ function Skeleton({ layout, numbered }: { layout: Layout; numbered: boolean }) {
                 </ul>
             ) : (
                 <ul className="public-games" role="status" aria-label="Loading games">
-                    {Array.from({ length: 8 }, (_, i) => (
+                    {Array.from({ length: count ?? 8 }, (_, i) => (
                         <li key={i}>
                             {numbered && <span className="public-games__pos">&nbsp;</span>}
                             <div className="public-skeleton public-skeleton--thumb" />

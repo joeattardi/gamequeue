@@ -1,12 +1,17 @@
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
 import type { ListDetailDto } from '@gamequeue/shared';
 import { api } from './client';
 import { useInvalidateCollection } from './collection';
+import { usePagedQuery, withPage } from './paging';
 
-export const useQueue = () =>
-    useQuery({
-        queryKey: ['queue'],
-        queryFn: async () => (await api<{ list: ListDetailDto }>('/queue')).list
+/** The queue a page at a time. `limit` is for previews (home page, pickers). */
+export const useQueue = (limit?: number) =>
+    usePagedQuery({
+        key: ['queue', limit ?? null],
+        load: async (offset, size) =>
+            (await api<{ list: ListDetailDto }>(withPage('/queue', offset, size))).list,
+        read: (l) => ({ items: l.entries, total: l.total }),
+        limit
     });
 
 export function useAddToQueue() {

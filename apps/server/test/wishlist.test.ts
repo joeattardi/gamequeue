@@ -105,7 +105,7 @@ describe('wishlist on the public profile', () => {
     it('is public without notes, counted, and never created by reading', async () => {
         const { app, db, wish } = await setup();
         const empty = await (await app.request('/api/profiles/user_me/wishlist')).json();
-        expect(empty.wishlist).toEqual({ username: 'user_me', items: [] });
+        expect(empty.wishlist).toEqual({ username: 'user_me', items: [], total: 0 });
         expect(db.select().from(wishlists).all()).toEqual([]);
 
         await wish(2, { platformId: PC.id, note: 'secret' });

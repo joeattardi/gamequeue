@@ -292,6 +292,7 @@ function mergeLists(
     report: ImportReport
 ) {
     const byName = new Map<string, number>();
+    const described = new Set<number>();
     for (const l of db
         .select()
         .from(lists)
@@ -299,17 +300,22 @@ function mergeLists(
         .orderBy(asc(lists.id))
         .all()) {
         if (!byName.has(lower(l.name))) byName.set(lower(l.name), l.id);
+        if (l.description) described.add(l.id);
     }
     for (const fl of file.lists) {
         let listId = byName.get(lower(fl.name));
         if (listId === undefined) {
             listId = db
                 .insert(lists)
-                .values({ userId, name: fl.name })
+                .values({ userId, name: fl.name, description: fl.description })
                 .returning({ id: lists.id })
                 .get().id;
             byName.set(lower(fl.name), listId);
             report.lists.created++;
+        } else if (fl.description && !described.has(listId)) {
+            // Your own description wins; an empty one is filled
+            db.update(lists).set({ description: fl.description }).where(eq(lists.id, listId)).run();
+            described.add(listId);
         }
         const present = new Set(
             db
@@ -377,6 +383,7 @@ function mergeSmartLists(db: Db, userId: number, file: ExportFile, report: Impor
             .values({
                 userId,
                 name: sl.name,
+                description: sl.description,
                 rules: JSON.stringify(sl.rules),
                 sort: sl.sort,
                 dir: sl.dir

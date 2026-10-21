@@ -7,8 +7,10 @@ import {
     toPublicEntry,
     type EntryDto,
     type EntryStatus,
+    type PageQuery,
     type ProfileDto,
     type ProfileGamesDto,
+    type ProfileListPageDto,
     type ProfileView,
     type ProfileWishlistDto,
     type PublicEntryDto
@@ -18,12 +20,12 @@ import { entries, listItems, lists, playthroughs, users, wishlistItems } from '.
 import { HttpError } from '../errors.js';
 import { avatarVersion } from './avatars.js';
 import { socialLinksOf } from './users.js';
-import { listEntries } from './entries.js';
+import { listEntries, pageEntries } from './entries.js';
 import { getList, listLists } from './lists.js';
 import { getRecap } from './recap.js';
 import { getStats } from './stats.js';
 import { listSlots } from './slots.js';
-import { listSmartListDetails } from './smart-lists.js';
+import { getSmartList, listSmartLists } from './smart-lists.js';
 import { findWishlist, wishlistItemsOf } from './wishlist.js';
 
 const toPublic = toPublicEntry;
@@ -80,15 +82,55 @@ export function getProfile(db: Db, username: string): ProfileDto {
         lists: listLists(db, user.id).map((l) => ({
             id: l.id,
             name: l.name,
-            entries: getList(db, user.id, l.id).entries.map(toPublic)
+            total: l.count,
+            covers: l.covers
         })),
-        smartLists: listSmartListDetails(db, user.id).map((l) => ({
+        smartLists: listSmartLists(db, user.id).map((l) => ({
             id: l.id,
             name: l.name,
-            description: l.description,
-            entries: l.entries.map(toPublic)
+            total: l.count,
+            covers: l.covers
         }))
     };
+}
+
+/** One of a user's lists, a page at a time (the profile itself only shows tiles). */
+export function getProfileList(
+    db: Db,
+    username: string,
+    listId: number,
+    page: PageQuery
+): ProfileListPageDto {
+    const user = requireUser(db, username);
+    const list = db
+        .select({ id: lists.id, name: lists.name, description: lists.description })
+        .from(lists)
+        .where(and(eq(lists.id, listId), eq(lists.userId, user.id), eq(lists.kind, 'list')))
+        .get();
+    if (!list) throw new HttpError(404, 'Not found');
+    const { entries, total } = getList(db, user.id, list.id, page);
+    return {
+        name: list.name,
+        description: list.description,
+        entries: entries.map(toPublic),
+        total
+    };
+}
+
+export function getProfileSmartList(
+    db: Db,
+    username: string,
+    smartListId: number,
+    page: PageQuery
+): ProfileListPageDto {
+    const user = requireUser(db, username);
+    const { name, description, ruleText, entries, total } = getSmartList(
+        db,
+        user.id,
+        smartListId,
+        page
+    );
+    return { name, description, ruleText, entries: entries.map(toPublic), total };
 }
 
 /** Read-only and public: the year in review, no notes (see `RecapDto`). */
@@ -102,16 +144,14 @@ export function getProfileStats(db: Db, username: string) {
 }
 
 /** Read-only like the rest: a user who never wishlisted anything has no wishlist row, which reads as empty. Notes stay private. */
-export function getProfileWishlist(db: Db, username: string): ProfileWishlistDto {
+export function getProfileWishlist(db: Db, username: string, page: PageQuery): ProfileWishlistDto {
     const user = requireUser(db, username);
     const wl = findWishlist(db, user.id);
+    const { items, total } = wl ? wishlistItemsOf(db, wl.id, page) : { items: [], total: 0 };
     return {
         username: user.username,
-        items: (wl ? wishlistItemsOf(db, wl.id) : []).map((i) => ({
-            igdbId: i.igdbId,
-            game: i.game,
-            platform: i.platform
-        }))
+        total,
+        items: items.map((i) => ({ igdbId: i.igdbId, game: i.game, platform: i.platform }))
     };
 }
 
@@ -123,28 +163,35 @@ export function getProfileGames(
     db: Db,
     username: string,
     view: ProfileView,
+    page: PageQuery,
     year?: string
 ): ProfileGamesDto {
     const user = requireUser(db, username);
-    if (view === 'finished') return getFinishedGames(db, user, year);
-    let list: EntryDto[];
+    if (view === 'finished') return getFinishedGames(db, user, page, year);
+    let result: { entries: EntryDto[]; total: number };
     if (view === 'queue') {
         const queue = db
             .select({ id: lists.id })
             .from(lists)
             .where(and(eq(lists.userId, user.id), eq(lists.kind, 'queue')))
             .get();
-        list = queue ? getList(db, user.id, queue.id).entries : [];
-    } else if (view === 'collection') {
-        list = listEntries(db, user.id, entryQuerySchema.parse({}));
+        result = queue ? getList(db, user.id, queue.id, page) : { entries: [], total: 0 };
     } else {
-        list = listEntries(
+        result = pageEntries(
             db,
             user.id,
-            entryQuerySchema.parse(view === 'backlog' ? { view } : { status: view })
+            entryQuerySchema.parse(
+                view === 'collection' ? {} : view === 'backlog' ? { view } : { status: view }
+            ),
+            page
         );
     }
-    return { username: user.username, view, entries: list.map(toPublic) };
+    return {
+        username: user.username,
+        view,
+        entries: result.entries.map(toPublic),
+        total: result.total
+    };
 }
 
 /**
@@ -155,6 +202,7 @@ export function getProfileGames(
 function getFinishedGames(
     db: Db,
     user: { id: number; username: string },
+    page: PageQuery,
     year?: string
 ): ProfileGamesDto {
     const finishes = db
@@ -195,7 +243,8 @@ function getFinishedGames(
         return {
             username: user.username,
             view: 'finished',
-            entries: finished.map(toPublic),
+            entries: finished.slice(page.offset, page.offset + page.limit).map(toPublic),
+            total: finished.length,
             years
         };
     }
@@ -224,7 +273,8 @@ function getFinishedGames(
         username: user.username,
         view: 'finished',
         year,
-        entries: inYear.map(toPublic),
+        entries: inYear.slice(page.offset, page.offset + page.limit).map(toPublic),
+        total: inYear.length,
         years
     };
 }

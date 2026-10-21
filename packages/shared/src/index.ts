@@ -1,4 +1,5 @@
 export * from './schemas.js';
+export * from './pagination.js';
 export * from './collection.js';
 export * from './igdb-images.js';
 export * from './status.js';

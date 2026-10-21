@@ -24,6 +24,7 @@ import { PickCriteriaPage } from './routes/PickCriteriaPage';
 import { PickPage } from './routes/PickPage';
 import { SmartListEditPage } from './routes/SmartListEditPage';
 import { SmartListPage } from './routes/SmartListPage';
+import { ProfileListPage } from './routes/ProfileListPage';
 import { ProfilePage } from './routes/ProfilePage';
 import { ProfileGamesPage } from './routes/ProfileGamesPage';
 import { ProfileWishlistPage } from './routes/ProfileWishlistPage';
@@ -48,6 +49,11 @@ export function App() {
                 <Route path="/register" element={<AuthPage mode="register" />} />
                 <Route path="/u/:username" element={<ProfilePage />} />
                 <Route path="/u/:username/wishlist" element={<ProfileWishlistPage />} />
+                <Route path="/u/:username/lists/:id" element={<ProfileListPage kind="lists" />} />
+                <Route
+                    path="/u/:username/smart-lists/:id"
+                    element={<ProfileListPage kind="smart-lists" />}
+                />
                 <Route path="/u/:username/stats" element={<ProfileStatsPage />} />
                 <Route path="/u/:username/recap" element={<ProfileRecapPage />} />
                 <Route path="/u/:username/recap/:year" element={<ProfileRecapPage />} />
@@ -61,6 +67,11 @@ export function App() {
         <Routes>
             <Route path="/u/:username" element={<ProfilePage />} />
             <Route path="/u/:username/wishlist" element={<ProfileWishlistPage />} />
+            <Route path="/u/:username/lists/:id" element={<ProfileListPage kind="lists" />} />
+            <Route
+                path="/u/:username/smart-lists/:id"
+                element={<ProfileListPage kind="smart-lists" />}
+            />
             <Route path="/u/:username/stats" element={<ProfileStatsPage />} />
             <Route path="/u/:username/recap" element={<ProfileRecapPage />} />
             <Route path="/u/:username/recap/:year" element={<ProfileRecapPage />} />

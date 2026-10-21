@@ -1,11 +1,27 @@
-import { and, asc, desc, eq, exists, inArray, sql, type AnyColumn, type SQL } from 'drizzle-orm';
+import {
+    and,
+    asc,
+    count,
+    desc,
+    eq,
+    exists,
+    inArray,
+    isNotNull,
+    ne,
+    or,
+    sql,
+    type AnyColumn,
+    type SQL
+} from 'drizzle-orm';
 import type {
     AddEntryInput,
+    EntriesPageDto,
     EntryDto,
     EntryQuery,
     FacetCountsDto,
     FacetsDto,
     GameDto,
+    PageQuery,
     PatchEntryInput,
     PlatformDto,
     PlaythroughDto
@@ -270,18 +286,82 @@ function filterWhere(db: Db, userId: number, q: EntryQuery, omit?: Facet): SQL[]
     return where;
 }
 
+/** Every match: for server-side work (stats, pick, smart lists, exports). The API pages instead. */
 export function listEntries(db: Db, userId: number, q: EntryQuery): EntryDto[] {
-    const where = filterWhere(db, userId, q);
+    return pageEntries(db, userId, q).entries;
+}
 
+/** One page of matches (all of them when `page` is omitted) plus the number of matches overall. */
+export function pageEntries(
+    db: Db,
+    userId: number,
+    q: EntryQuery,
+    page?: PageQuery
+): EntriesPageDto {
+    const where = and(...filterWhere(db, userId, q));
+    const total = db
+        .select({ n: count() })
+        .from(entries)
+        .innerJoin(games, eq(games.id, entries.gameId))
+        .where(where)
+        .get()!.n;
+    const query = db
+        .select({ id: entries.id })
+        .from(entries)
+        .innerJoin(games, eq(games.id, entries.gameId))
+        .where(where)
+        .orderBy(...buildOrder(q));
+    const ids = (page ? query.limit(page.limit).offset(page.offset) : query).all().map((r) => r.id);
+    return { entries: hydrate(db, userId, ids), total };
+}
+
+/**
+ * Games to put in a slot: the queue first (in order), then playing, paused and unplayed, each by
+ * title. Finished and abandoned games are only offered if they're queued.
+ */
+export function pageSlotCandidates(
+    db: Db,
+    userId: number,
+    opts: { q?: string; excludeEntryId?: number },
+    page: PageQuery
+): EntriesPageDto {
+    const queue = db
+        .select({ id: lists.id })
+        .from(lists)
+        .where(and(eq(lists.userId, userId), eq(lists.kind, 'queue')))
+        .get();
+    const queuedAt = sql<
+        number | null
+    >`(select ${listItems.position} from ${listItems} where ${listItems.listId} = ${queue?.id ?? 0} and ${listItems.entryId} = ${entries.id})`;
+    const where = and(
+        eq(entries.userId, userId),
+        or(isNotNull(queuedAt), inArray(entries.status, ['playing', 'paused', 'unplayed'])),
+        opts.excludeEntryId ? ne(entries.id, opts.excludeEntryId) : undefined,
+        opts.q ? sql`instr(lower(${games.name}), lower(${opts.q})) > 0` : undefined
+    );
+    const total = db
+        .select({ n: count() })
+        .from(entries)
+        .innerJoin(games, eq(games.id, entries.gameId))
+        .where(where)
+        .get()!.n;
     const ids = db
         .select({ id: entries.id })
         .from(entries)
         .innerJoin(games, eq(games.id, entries.gameId))
-        .where(and(...where))
-        .orderBy(...buildOrder(q))
+        .where(where)
+        .orderBy(
+            sql`${queuedAt} IS NULL`,
+            asc(queuedAt),
+            sql`case ${entries.status} when 'playing' then 0 when 'paused' then 1 else 2 end`,
+            asc(sql`lower(${games.name})`),
+            asc(entries.id)
+        )
+        .limit(page.limit)
+        .offset(page.offset)
         .all()
         .map((r) => r.id);
-    return hydrate(db, userId, ids);
+    return { entries: hydrate(db, userId, ids), total };
 }
 
 export function getEntry(db: Db, userId: number, id: number): EntryDto | undefined {
@@ -447,7 +527,20 @@ export function getFacets(db: Db, userId: number): FacetsDto {
             .innerJoin(genres, eq(genres.id, gameGenres.genreId))
             .where(eq(entries.userId, userId))
             .orderBy(asc(genres.name))
+            .all(),
+        finishedYears: db
+            .selectDistinct({ year: sql<string>`substr(${playthroughs.endedOn}, 1, 4)` })
+            .from(playthroughs)
+            .where(
+                and(
+                    eq(playthroughs.userId, userId),
+                    eq(playthroughs.outcome, 'finished'),
+                    isNotNull(playthroughs.endedOn)
+                )
+            )
             .all()
+            .map((r) => Number(r.year))
+            .sort((a, b) => b - a)
     };
 }
 

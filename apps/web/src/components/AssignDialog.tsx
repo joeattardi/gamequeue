@@ -1,20 +1,16 @@
 import { ResultListSkeleton } from './ResultSkeletons';
 import type { EntryDto, SlotDto } from '@gamequeue/shared';
-import { useMemo, useState } from 'react';
-import { useEntries } from '../api/collection';
-import { useQueue } from '../api/queue';
+import { useState } from 'react';
+import { useSlotCandidates } from '../api/collection';
 import { needsPlatform, useSlots } from '../api/slots';
-import { yearOf } from '../lib';
+import { useDebounced, yearOf } from '../lib';
+import { LoadMore } from './LoadMore';
 import { MetaLine } from './MetaLine';
 import { PlatformTags } from './PlatformIcon';
 import { Cover } from './Cover';
 import { useAssign } from './useAssign';
 import { useModalDialog } from './useModalDialog';
 import { X } from 'lucide-react';
-
-const BACKLOG = new URLSearchParams({ view: 'backlog' });
-const PAUSED = new URLSearchParams({ view: 'all', status: 'paused' });
-const PLAYING = new URLSearchParams({ view: 'all', status: 'playing' });
 
 /** Choose a game for one slot: your queue first, then anything in progress, then the backlog. */
 export function AssignDialog({ slot, onClose }: { slot: SlotDto | null; onClose: () => void }) {
@@ -33,28 +29,15 @@ export function AssignDialog({ slot, onClose }: { slot: SlotDto | null; onClose:
 }
 
 function AssignBody({ slot, onDone }: { slot: SlotDto; onDone: () => void }) {
-    const backlog = useEntries(BACKLOG);
-    const paused = useEntries(PAUSED);
-    const playing = useEntries(PLAYING);
-    const queue = useQueue();
     const slots = useSlots();
     const { assignTo, pending, error } = useAssign();
     const [text, setText] = useState('');
     const [picked, setPicked] = useState<EntryDto>();
     const [platformId, setPlatformId] = useState('');
 
-    const candidates = useMemo(() => {
-        // Queue first, then in progress (playing, then paused), then the backlog
-        const seen = new Set<number>();
-        const all = [
-            ...(queue.data?.entries ?? []),
-            ...(playing.data ?? []),
-            ...(paused.data ?? []),
-            ...(backlog.data ?? [])
-        ].filter((e) => e.id !== slot.entry?.id && !seen.has(e.id) && seen.add(e.id));
-        const q = text.trim().toLowerCase();
-        return q ? all.filter((e) => e.game.name.toLowerCase().includes(q)) : all;
-    }, [queue.data, backlog.data, paused.data, playing.data, text, slot.entry?.id]);
+    // The server searches and orders: queue first, then in progress, then the backlog
+    const found = useSlotCandidates(useDebounced(text.trim(), 250), slot.entry?.id);
+    const candidates = found.items;
     const slotName = (id: number | null) => slots.data?.find((s) => s.id === id)?.name;
 
     function choose(entry: EntryDto) {
@@ -130,59 +113,67 @@ function AssignBody({ slot, onDone }: { slot: SlotDto; onDone: () => void }) {
                     <p className="form-error" role="alert">
                         {error}
                     </p>
-                    {backlog.isPending ||
-                    paused.isPending ||
-                    playing.isPending ||
-                    queue.isPending ? (
+                    {found.isPending ? (
                         <ResultListSkeleton />
                     ) : candidates.length === 0 ? (
                         <p className="muted">
                             {text ? 'No matches.' : 'Nothing to choose from. Add some games first.'}
                         </p>
                     ) : (
-                        <ul className="results">
-                            {candidates.map((e) => (
-                                <li key={e.id}>
-                                    <button
-                                        className="result"
-                                        disabled={pending}
-                                        onClick={() => choose(e)}
-                                    >
-                                        <Cover
-                                            imageId={e.game.coverImageId}
-                                            name={e.game.name}
-                                            size="cover_big"
-                                        />
-                                        <span className="result__text">
-                                            <strong>{e.game.name}</strong>
-                                            <span className="muted">
-                                                <MetaLine
-                                                    parts={[
-                                                        yearOf(e.game.releaseDate),
-                                                        <PlatformTags
-                                                            key="p"
-                                                            platforms={e.platforms}
-                                                        />
-                                                    ]}
-                                                />
-                                            </span>
-                                        </span>
-                                        {e.queued && <span className="badge">queued</span>}
-                                        {e.slotId !== null ? (
-                                            <span className="badge badge--playing">
-                                                in {slotName(e.slotId) ?? 'a slot'}
-                                            </span>
-                                        ) : (
-                                            e.status !== 'unplayed' && (
-                                                <span className={`badge badge--${e.status}`}>
-                                                    {e.status}
+                        <>
+                            <ul className="results" aria-busy={found.isFetching}>
+                                {candidates.map((e) => (
+                                    <li key={e.id}>
+                                        <button
+                                            className="result"
+                                            disabled={pending}
+                                            onClick={() => choose(e)}
+                                        >
+                                            <Cover
+                                                imageId={e.game.coverImageId}
+                                                name={e.game.name}
+                                                size="cover_big"
+                                            />
+                                            <span className="result__text">
+                                                <strong>{e.game.name}</strong>
+                                                <span className="muted">
+                                                    <MetaLine
+                                                        parts={[
+                                                            yearOf(e.game.releaseDate),
+                                                            <PlatformTags
+                                                                key="p"
+                                                                platforms={e.platforms}
+                                                            />
+                                                        ]}
+                                                    />
                                                 </span>
-                                            )
-                                        )}
-                                    </button>
-                                </li>
-                            ))}
-                        </ul>
+                                            </span>
+                                            {e.queued && <span className="badge">queued</span>}
+                                            {e.slotId !== null ? (
+                                                <span className="badge badge--playing">
+                                                    in {slotName(e.slotId) ?? 'a slot'}
+                                                </span>
+                                            ) : (
+                                                e.status !== 'unplayed' && (
+                                                    <span className={`badge badge--${e.status}`}>
+                                                        {e.status}
+                                                    </span>
+                                                )
+                                            )}
+                                        </button>
+                                    </li>
+                                ))}
+                            </ul>
+                            <LoadMore
+                                shown={candidates.length}
+                                total={found.total}
+                                hasMore={found.hasNextPage}
+                                loading={found.isFetchingNextPage}
+                                failed={found.isFetchNextPageError}
+                                onMore={() => found.fetchNextPage()}
+                                skeleton={<ResultListSkeleton />}
+                            />
+                        </>
                     )}
                 </>
             )}

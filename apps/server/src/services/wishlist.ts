@@ -1,18 +1,25 @@
-import { and, asc, eq, inArray, max } from 'drizzle-orm';
+import { and, asc, count, eq, gte, inArray, isNotNull, lte, max } from 'drizzle-orm';
+import { FIRST_PAGE, releasesWithin } from '@gamequeue/shared';
 import type {
     AddWishlistItemInput,
+    PageQuery,
     PatchWishlistItemInput,
     PlatformDto,
     WishlistDto,
     WishlistItemDto
 } from '@gamequeue/shared';
 import type { Db } from '../db/client.js';
-import { entries, platforms, wishlistItems, wishlists } from '../db/schema.js';
+import { entries, games, platforms, wishlistItems, wishlists } from '../db/schema.js';
 import { HttpError } from '../errors.js';
 import type { IgdbClient } from '../igdb/types.js';
+import { moveInOrder } from './order.js';
 import { ensureGame, existingPlatformIds, loadGames, refreshReleaseDates } from './games.js';
 
 export const DEFAULT_WISHLIST_NAME = 'Wishlist';
+
+/** `YYYY-MM-DD` plus whole days, in UTC so daylight saving can't shift the day. */
+const addDays = (day: string, days: number) =>
+    new Date(Date.parse(`${day}T00:00:00Z`) + days * 86_400_000).toISOString().slice(0, 10);
 
 function requireWishlist(db: Db, userId: number, id: number) {
     const w = db
@@ -41,15 +48,62 @@ export function ensureWishlist(db: Db, userId: number) {
     );
 }
 
-/** Items of one wishlist, in order, with their game details. */
-export function wishlistItemsOf(db: Db, wishlistId: number): WishlistItemDto[] {
-    const rows = db
+/** Items of one wishlist, in order, with their game details; one page, or all without `page`. */
+export function wishlistItemsOf(
+    db: Db,
+    wishlistId: number,
+    page?: PageQuery
+): { items: WishlistItemDto[]; total: number } {
+    const total = db
+        .select({ n: count() })
+        .from(wishlistItems)
+        .where(eq(wishlistItems.wishlistId, wishlistId))
+        .get()!.n;
+    const query = db
         .select({ item: wishlistItems, platform: platforms })
         .from(wishlistItems)
         .leftJoin(platforms, eq(platforms.id, wishlistItems.platformId))
         .where(eq(wishlistItems.wishlistId, wishlistId))
-        .orderBy(asc(wishlistItems.position))
+        .orderBy(asc(wishlistItems.position));
+    const rows = (page ? query.limit(page.limit).offset(page.offset) : query).all();
+    return { items: toItems(db, rows), total };
+}
+
+/** Unreleased wishlisted games with an exact release day within `days` of `today`, soonest first. */
+export function releasingSoon(
+    db: Db,
+    wishlistId: number,
+    today: string,
+    days: number
+): WishlistItemDto[] {
+    const rows = db
+        .select({ item: wishlistItems, platform: platforms })
+        .from(wishlistItems)
+        .innerJoin(games, eq(games.id, wishlistItems.gameId))
+        .leftJoin(platforms, eq(platforms.id, wishlistItems.platformId))
+        .where(
+            and(
+                eq(wishlistItems.wishlistId, wishlistId),
+                isNotNull(games.releaseDate),
+                gte(games.releaseDate, today),
+                lte(games.releaseDate, addDays(today, days))
+            )
+        )
+        .orderBy(asc(games.releaseDate), asc(wishlistItems.position))
         .all();
+    // `releasesWithin` also checks the date's precision, which SQL can't
+    return toItems(db, rows).filter(({ game }) =>
+        releasesWithin(game.releaseDate, game.releasePrecision, today, days)
+    );
+}
+
+function toItems(
+    db: Db,
+    rows: {
+        item: typeof wishlistItems.$inferSelect;
+        platform: typeof platforms.$inferSelect | null;
+    }[]
+): WishlistItemDto[] {
     const gameDtos = loadGames(db, [...new Set(rows.map((r) => r.item.gameId))]);
     return rows.flatMap(({ item, platform }) => {
         const game = gameDtos.get(item.gameId);
@@ -82,9 +136,9 @@ export async function refreshWishlistReleases(
     await refreshReleaseDates(db, igdb, ids);
 }
 
-export function getWishlist(db: Db, userId: number, id: number): WishlistDto {
+export function getWishlist(db: Db, userId: number, id: number, page?: PageQuery): WishlistDto {
     const w = requireWishlist(db, userId, id);
-    return { id: w.id, name: w.name, items: wishlistItemsOf(db, w.id) };
+    return { id: w.id, name: w.name, ...wishlistItemsOf(db, w.id, page) };
 }
 
 function assertPlatform(db: Db, platformId: number) {
@@ -129,7 +183,7 @@ export async function addToWishlist(
         })
         .onConflictDoNothing()
         .run();
-    return getWishlist(db, userId, wishlistId);
+    return getWishlist(db, userId, wishlistId, FIRST_PAGE);
 }
 
 export function patchWishlistItem(
@@ -150,7 +204,7 @@ export function patchWishlistItem(
         .where(and(eq(wishlistItems.wishlistId, wishlistId), eq(wishlistItems.gameId, igdbId)))
         .run();
     if (res.changes === 0) throw new HttpError(404, 'That game is not on the wishlist');
-    return getWishlist(db, userId, wishlistId);
+    return getWishlist(db, userId, wishlistId, FIRST_PAGE);
 }
 
 /** Deletes items and closes the gaps so positions stay 0..n-1. */
@@ -187,7 +241,7 @@ export function removeFromWishlist(
 ): WishlistDto {
     requireWishlist(db, userId, wishlistId);
     db.transaction((tx) => removeItems(tx as unknown as Db, wishlistId, [igdbId]));
-    return getWishlist(db, userId, wishlistId);
+    return getWishlist(db, userId, wishlistId, FIRST_PAGE);
 }
 
 /** Owning a game ends the wish: called when a game joins the collection, from any wishlist. */
@@ -198,6 +252,39 @@ export function dropFromWishlists(db: Db, userId: number, igdbId: number) {
         .where(eq(wishlists.userId, userId))
         .all();
     for (const w of mine) removeItems(db, w.id, [igdbId]);
+}
+
+/** Moves one game to an absolute position; only the rows between its old and new place change. */
+export function moveInWishlist(
+    db: Db,
+    userId: number,
+    wishlistId: number,
+    igdbId: number,
+    toIndex: number
+): WishlistDto {
+    requireWishlist(db, userId, wishlistId);
+    const ids = db
+        .select({ gameId: wishlistItems.gameId })
+        .from(wishlistItems)
+        .where(eq(wishlistItems.wishlistId, wishlistId))
+        .orderBy(asc(wishlistItems.position))
+        .all()
+        .map((r) => r.gameId);
+    const moved = moveInOrder(ids, igdbId, toIndex);
+    if (!moved) throw new HttpError(404, 'That game is not on the wishlist');
+    db.transaction((tx) => {
+        for (let i = moved.first; i <= moved.last; i++)
+            tx.update(wishlistItems)
+                .set({ position: i })
+                .where(
+                    and(
+                        eq(wishlistItems.wishlistId, wishlistId),
+                        eq(wishlistItems.gameId, moved.next[i]!)
+                    )
+                )
+                .run();
+    });
+    return getWishlist(db, userId, wishlistId, FIRST_PAGE);
 }
 
 export function reorderWishlist(
@@ -228,5 +315,5 @@ export function reorderWishlist(
                 .run()
         )
     );
-    return getWishlist(db, userId, wishlistId);
+    return getWishlist(db, userId, wishlistId, FIRST_PAGE);
 }

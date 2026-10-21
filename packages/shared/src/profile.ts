@@ -34,9 +34,30 @@ export interface ProfileDto {
         wishlisted: number;
         byStatus: Record<EntryStatus, number>;
     };
-    lists: { id: number; name: string; entries: PublicEntryDto[] }[];
+    /** Tiles only: the games themselves are on each list's own page */
+    lists: ProfileListTileDto[];
     /** Smart lists as they match right now, with their rules in words */
-    smartLists: { id: number; name: string; description: string[]; entries: PublicEntryDto[] }[];
+    smartLists: ProfileListTileDto[];
+}
+
+export interface ProfileListTileDto {
+    id: number;
+    name: string;
+    /** Games in it (for a smart list, matching right now) */
+    total: number;
+    /** Cover image ids of the first few games that have one */
+    covers: string[];
+}
+
+/** One list on the profile, a page at a time (`/profiles/:username/lists/:id`, `/smart-lists/:id`). */
+export interface ProfileListPageDto {
+    name: string;
+    /** What the owner wrote about the list; empty if nothing */
+    description: string;
+    /** Smart lists only: the rules in words */
+    ruleText?: string[];
+    entries: PublicEntryDto[];
+    total: number;
 }
 
 /** The sub-pages of a public profile, each a plain list of games (`/u/:username/:view`). */
@@ -64,6 +85,8 @@ export interface ProfileGamesDto {
      * first); every other view sorted by title
      */
     entries: PublicEntryDto[];
+    /** Games in the whole view; `entries` is one page */
+    total: number;
     /** Finished view only: the year shown, if this is a year page */
     year?: string;
     /** Finished view only: years with finished playthroughs, newest first, then `unknown` */

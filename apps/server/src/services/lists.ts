@@ -1,9 +1,17 @@
-import { and, asc, eq, isNotNull, max, sql } from 'drizzle-orm';
-import type { EntryDto, ListDetailDto, ListSummaryDto } from '@gamequeue/shared';
+import { and, asc, count, eq, isNotNull, max, sql } from 'drizzle-orm';
+import { FIRST_PAGE } from '@gamequeue/shared';
+import type {
+    EntryDto,
+    ListDetailDto,
+    ListSummaryDto,
+    PageQuery,
+    PatchListInput
+} from '@gamequeue/shared';
 import type { Db } from '../db/client.js';
 import { entries, games, listItems, lists } from '../db/schema.js';
 import { HttpError } from '../errors.js';
 import { hydrate } from './entries.js';
+import { moveInOrder } from './order.js';
 
 function requireList(db: Db, userId: number, id: number) {
     const list = db
@@ -35,8 +43,8 @@ export function ensureQueue(db: Db, userId: number) {
     );
 }
 
-export function getQueue(db: Db, userId: number): ListDetailDto {
-    return getList(db, userId, ensureQueue(db, userId).id);
+export function getQueue(db: Db, userId: number, page?: PageQuery): ListDetailDto {
+    return getList(db, userId, ensureQueue(db, userId).id, page);
 }
 
 function assertPlainList(list: { kind: string }, action: string) {
@@ -75,28 +83,40 @@ export function listLists(db: Db, userId: number): ListSummaryDto[] {
     return rows.map((r) => ({ ...r, covers: covers.get(r.id) ?? [] }));
 }
 
-export function getList(db: Db, userId: number, id: number): ListDetailDto {
+/** One page of a list in list order, or all of it when `page` is omitted (server-side callers). */
+export function getList(db: Db, userId: number, id: number, page?: PageQuery): ListDetailDto {
     const list = requireList(db, userId, id);
-    const ids = db
+    const total = db.select({ n: count() }).from(listItems).where(eq(listItems.listId, id)).get()!
+        .n;
+    const query = db
         .select({ entryId: listItems.entryId })
         .from(listItems)
         .where(eq(listItems.listId, id))
-        .orderBy(asc(listItems.position))
+        .orderBy(asc(listItems.position));
+    const ids = (page ? query.limit(page.limit).offset(page.offset) : query)
         .all()
         .map((r) => r.entryId);
     // hydrate() keeps the order it's given
     const dtos: EntryDto[] = hydrate(db, userId, ids);
-    return { id: list.id, name: list.name, kind: list.kind, entries: dtos };
+    return {
+        id: list.id,
+        name: list.name,
+        kind: list.kind,
+        description: list.description,
+        entries: dtos,
+        total
+    };
 }
 
-export function createList(db: Db, userId: number, name: string): ListSummaryDto {
-    const row = db.insert(lists).values({ userId, name }).returning().get();
+export function createList(db: Db, userId: number, name: string, description = ''): ListSummaryDto {
+    const row = db.insert(lists).values({ userId, name, description }).returning().get();
     return { id: row.id, name: row.name, count: 0, covers: [] };
 }
 
-export function renameList(db: Db, userId: number, id: number, name: string) {
-    assertPlainList(requireList(db, userId, id), 'renamed');
-    db.update(lists).set({ name }).where(eq(lists.id, id)).run();
+/** Renames and/or re-describes a list; fields left out stay as they are. */
+export function updateList(db: Db, userId: number, id: number, patch: PatchListInput) {
+    assertPlainList(requireList(db, userId, id), 'renamed or described');
+    db.update(lists).set(patch).where(eq(lists.id, id)).run();
 }
 
 export function deleteList(db: Db, userId: number, id: number) {
@@ -122,7 +142,7 @@ export function addToList(db: Db, userId: number, listId: number, entryId: numbe
         .values({ listId, entryId, position: (top ?? -1) + 1 })
         .onConflictDoNothing()
         .run();
-    return getList(db, userId, listId);
+    return getList(db, userId, listId, FIRST_PAGE);
 }
 
 /** Deletes one item and closes the gap so positions stay 0..n-1. */
@@ -163,7 +183,35 @@ export function removeFromList(
 ): ListDetailDto {
     requireList(db, userId, listId);
     db.transaction((tx) => removeItem(tx as unknown as Db, listId, entryId));
-    return getList(db, userId, listId);
+    return getList(db, userId, listId, FIRST_PAGE);
+}
+
+/** Moves one game to an absolute position; only the rows between its old and new place change. */
+export function moveInList(
+    db: Db,
+    userId: number,
+    listId: number,
+    entryId: number,
+    toIndex: number
+): ListDetailDto {
+    requireList(db, userId, listId);
+    const ids = db
+        .select({ entryId: listItems.entryId })
+        .from(listItems)
+        .where(eq(listItems.listId, listId))
+        .orderBy(asc(listItems.position))
+        .all()
+        .map((r) => r.entryId);
+    const moved = moveInOrder(ids, entryId, toIndex);
+    if (!moved) throw new HttpError(404, 'That game is not in the list');
+    db.transaction((tx) => {
+        for (let i = moved.first; i <= moved.last; i++)
+            tx.update(listItems)
+                .set({ position: i })
+                .where(and(eq(listItems.listId, listId), eq(listItems.entryId, moved.next[i]!)))
+                .run();
+    });
+    return getList(db, userId, listId, FIRST_PAGE);
 }
 
 export function reorderList(
@@ -192,5 +240,5 @@ export function reorderList(
                 .run()
         )
     );
-    return getList(db, userId, listId);
+    return getList(db, userId, listId, FIRST_PAGE);
 }

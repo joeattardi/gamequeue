@@ -21,12 +21,14 @@ import { Link } from 'react-router';
 import {
     usePatchWishlistItem,
     useRemoveFromWishlist,
-    useReorderWishlist,
+    useMoveInWishlist,
     useWishlist
 } from '../api/wishlist';
 import { AddGameDialog } from '../components/AddGameDialog';
 import { Cover } from '../components/Cover';
 import { LayoutToggle, useLayout } from '../components/LayoutToggle';
+import { LoadMore } from '../components/LoadMore';
+import { GridSkeletons, RowSkeletons } from '../components/GridSkeletons';
 import { ListLoading } from '../components/ListLoading';
 import { MetaLine } from '../components/MetaLine';
 import { releaseBadgeText, releaseText, usePageTitle } from '../lib';
@@ -45,13 +47,13 @@ export function WishlistPage() {
                 layoutKey={LAYOUT_KEY}
             />
         );
-    if (wishlist.isError || !wishlist.data)
+    if (wishlist.isError || !wishlist.head)
         return (
             <p className="form-error" role="alert">
                 Couldn't load your wishlist.
             </p>
         );
-    return <WishlistView items={wishlist.data.items} />;
+    return <WishlistView paged={wishlist} />;
 }
 
 /** What the add dialog needs to move a wishlisted game into the collection. */
@@ -66,8 +68,10 @@ const asSearchResult = (item: WishlistItemDto): SearchResultDto => ({
     wishlisted: true
 });
 
-function WishlistView({ items }: { items: WishlistItemDto[] }) {
-    const reorder = useReorderWishlist();
+function WishlistView({ paged }: { paged: ReturnType<typeof useWishlist> }) {
+    const items = paged.items;
+    const total = paged.total ?? items.length;
+    const reorder = useMoveInWishlist();
     const remove = useRemoveFromWishlist();
     const [order, setOrder] = useState(items);
     const [error, setError] = useState<string>();
@@ -82,20 +86,24 @@ function WishlistView({ items }: { items: WishlistItemDto[] }) {
         useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
     );
 
-    function commit(next: WishlistItemDto[]) {
-        setOrder(next); // optimistic; the query refetches and corrects it if the save fails
+    // Only the first pages are loaded, so an index here is also the game's index in the whole
+    // wishlist, and the server moves just that one game.
+    function commit(from: number, to: number) {
+        const igdbId = order[from]!.igdbId;
+        setOrder(arrayMove(order, from, to)); // optimistic; the query refetches and corrects it if the save fails
         setError(undefined);
         reorder.mutate(
-            next.map((i) => i.igdbId),
+            { igdbId, toIndex: to },
             { onError: () => setError("Couldn't save the new order.") }
         );
     }
 
     function onDragEnd({ active, over }: DragEndEvent) {
         if (!over || active.id === over.id) return;
-        const from = order.findIndex((i) => i.igdbId === active.id);
-        const to = order.findIndex((i) => i.igdbId === over.id);
-        commit(arrayMove(order, from, to));
+        commit(
+            order.findIndex((i) => i.igdbId === active.id),
+            order.findIndex((i) => i.igdbId === over.id)
+        );
     }
 
     return (
@@ -107,8 +115,8 @@ function WishlistView({ items }: { items: WishlistItemDto[] }) {
                         Wishlist
                     </h1>
                     <p className="muted" aria-live="polite">
-                        {order.length} {order.length === 1 ? 'game' : 'games'} · top of the list is
-                        what you want most
+                        {total} {total === 1 ? 'game' : 'games'} · top of the list is what you want
+                        most
                     </p>
                 </div>
                 <div className="row">
@@ -123,7 +131,7 @@ function WishlistView({ items }: { items: WishlistItemDto[] }) {
                 {error}
             </p>
 
-            {order.length === 0 ? (
+            {total === 0 ? (
                 <div className="empty">
                     <p>
                         <strong>Your wishlist is empty.</strong>
@@ -159,7 +167,7 @@ function WishlistView({ items }: { items: WishlistItemDto[] }) {
                                             item={item}
                                             index={i}
                                             last={i === order.length - 1}
-                                            onMove={(by) => commit(arrayMove(order, i, i + by))}
+                                            onMove={(by) => commit(i, i + by)}
                                             onAcquire={() => setAcquiring(item)}
                                             onRemove={() => remove.mutate(item.igdbId)}
                                         />
@@ -168,6 +176,21 @@ function WishlistView({ items }: { items: WishlistItemDto[] }) {
                             </SortableContext>
                         </DndContext>
                     )}
+                    <LoadMore
+                        shown={order.length}
+                        total={total}
+                        hasMore={paged.hasNextPage}
+                        loading={paged.isFetchingNextPage}
+                        failed={paged.isFetchNextPageError}
+                        onMore={() => paged.fetchNextPage()}
+                        skeleton={
+                            layout === 'grid' ? (
+                                <GridSkeletons layout="grid" count={4} />
+                            ) : (
+                                <RowSkeletons count={3} />
+                            )
+                        }
+                    />
                 </>
             )}
 

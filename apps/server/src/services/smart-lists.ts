@@ -1,5 +1,6 @@
 import { and, asc, eq, inArray, sql } from 'drizzle-orm';
 import {
+    FIRST_PAGE,
     defaultSmartDir,
     describeRules,
     entryQuerySchema,
@@ -9,6 +10,8 @@ import {
     type EntryDto,
     type SmartListDetailDto,
     type SmartListInput,
+    type SmartListPreviewInput,
+    type PageQuery,
     type SmartListSummaryDto,
     type SmartRule,
     type SmartSort
@@ -64,7 +67,8 @@ const allEntries = (db: Db, userId: number) => listEntries(db, userId, entryQuer
 export function listSmartListDetails(
     db: Db,
     userId: number,
-    now = Date.now()
+    now = Date.now(),
+    page?: PageQuery
 ): SmartListDetailDto[] {
     const rows = db
         .select()
@@ -74,41 +78,70 @@ export function listSmartListDetails(
         .all();
     if (rows.length === 0) return [];
     const all = allEntries(db, userId);
-    return rows.map((row) => toDetail(db, row, all, now));
+    return rows.map((row) => toDetail(db, row, all, now, page));
 }
 
 export function listSmartLists(db: Db, userId: number, now = Date.now()): SmartListSummaryDto[] {
     return listSmartListDetails(db, userId, now).map((l) => ({
         id: l.id,
         name: l.name,
-        count: l.entries.length,
+        count: l.total,
         covers: l.entries
             .flatMap((e) => (e.game.coverImageId ? [e.game.coverImageId] : []))
             .slice(0, TILE_COVERS),
-        description: l.description
+        ruleText: l.ruleText
     }));
 }
 
-function toDetail(db: Db, row: Row, all: EntryDto[], now: number): SmartListDetailDto {
+function toDetail(
+    db: Db,
+    row: Row,
+    all: EntryDto[],
+    now: number,
+    page?: PageQuery
+): SmartListDetailDto {
     const rules = rulesOf(row);
+    const entries = matching(row, all, now);
     return {
         id: row.id,
         name: row.name,
         rules,
         sort: sortOf(row),
         dir: row.dir,
-        description: describeRules(rules, platformNamer(db, rules)),
-        entries: matching(row, all, now)
+        description: row.description,
+        ruleText: describeRules(rules, platformNamer(db, rules)),
+        entries: page ? entries.slice(page.offset, page.offset + page.limit) : entries,
+        total: entries.length
     };
 }
 
+/** One page of the games matching right now (all of them when `page` is omitted). */
 export function getSmartList(
     db: Db,
     userId: number,
     id: number,
+    page?: PageQuery,
     now = Date.now()
 ): SmartListDetailDto {
-    return toDetail(db, requireRow(db, userId, id), allEntries(db, userId), now);
+    return toDetail(db, requireRow(db, userId, id), allEntries(db, userId), now, page);
+}
+
+/** The editor's live preview: what these rules would match, without saving anything. */
+export function previewSmartList(
+    db: Db,
+    userId: number,
+    input: SmartListPreviewInput,
+    page: PageQuery,
+    now = Date.now()
+): { entries: EntryDto[]; total: number } {
+    const matches = evaluateSmartList(
+        allEntries(db, userId),
+        input.rules,
+        input.sort,
+        input.dir ?? defaultSmartDir(input.sort),
+        now
+    );
+    return { entries: matches.slice(page.offset, page.offset + page.limit), total: matches.length };
 }
 
 export function createSmartList(db: Db, userId: number, input: SmartListInput) {
@@ -117,13 +150,14 @@ export function createSmartList(db: Db, userId: number, input: SmartListInput) {
         .values({
             userId,
             name: input.name,
+            description: input.description,
             rules: JSON.stringify(input.rules),
             sort: input.sort,
             dir: input.dir ?? defaultSmartDir(input.sort)
         })
         .returning()
         .get();
-    return getSmartList(db, userId, row.id);
+    return getSmartList(db, userId, row.id, FIRST_PAGE);
 }
 
 /** Replaces name, rules and sort wholesale (the editor always sends all of them). */
@@ -132,13 +166,14 @@ export function updateSmartList(db: Db, userId: number, id: number, input: Smart
     db.update(smartLists)
         .set({
             name: input.name,
+            description: input.description,
             rules: JSON.stringify(input.rules),
             sort: input.sort,
             dir: input.dir ?? defaultSmartDir(input.sort)
         })
         .where(eq(smartLists.id, id))
         .run();
-    return getSmartList(db, userId, id);
+    return getSmartList(db, userId, id, FIRST_PAGE);
 }
 
 export function deleteSmartList(db: Db, userId: number, id: number) {
@@ -154,5 +189,11 @@ export function listSmartListRows(db: Db, userId: number) {
         .where(eq(smartLists.userId, userId))
         .orderBy(asc(smartLists.id))
         .all()
-        .map((row) => ({ name: row.name, rules: rulesOf(row), sort: sortOf(row), dir: row.dir }));
+        .map((row) => ({
+            name: row.name,
+            description: row.description,
+            rules: rulesOf(row),
+            sort: sortOf(row),
+            dir: row.dir
+        }));
 }

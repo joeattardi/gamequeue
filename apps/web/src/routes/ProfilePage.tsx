@@ -14,8 +14,7 @@ import {
     ListTodo,
     Pause,
     Play,
-    Trophy,
-    WandSparkles
+    Trophy
 } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { Link, useParams } from 'react-router';
@@ -23,6 +22,7 @@ import { ApiRequestError } from '../api/client';
 import { useProfile } from '../api/profile';
 import { Avatar } from '../components/Avatar';
 import { Cover } from '../components/Cover';
+import { ListCard } from '../components/ListCard';
 import { SocialLinksList } from '../components/SocialLinks';
 import { ProfileSkeleton } from '../components/PageSkeletons';
 import { Footer } from '../components/Footer';
@@ -31,6 +31,10 @@ import { usePageTitle } from '../lib';
 
 function Games({ entries }: { entries: PublicEntryDto[] }) {
     if (entries.length === 0) return <p className="muted">Nothing here yet.</p>;
+    return <GameGrid entries={entries} />;
+}
+
+function GameGrid({ entries }: { entries: PublicEntryDto[] }) {
     return (
         <ul className="grid">
             {entries.map((e) => (
@@ -149,6 +153,34 @@ function Stats({ username, summary }: { username: string; summary: ProfileDto['s
     );
 }
 
+/** Lists and smart lists together as tiles, by name; smart ones carry a wand. */
+function ProfileLists({ profile }: { profile: ProfileDto }) {
+    const tiles = [
+        ...profile.lists.map((l) => ({ ...l, smart: false })),
+        ...profile.smartLists.map((l) => ({ ...l, smart: true }))
+    ].sort(
+        (a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }) || a.id - b.id
+    );
+    if (tiles.length === 0) return null;
+    return (
+        <section aria-labelledby="p-lists">
+            <h2 id="p-lists">Lists</h2>
+            <ul className="list-cards">
+                {tiles.map((l) => (
+                    <ListCard
+                        key={`${l.smart ? 'smart' : 'list'}-${l.id}`}
+                        to={`/u/${profile.username}/${l.smart ? 'smart-lists' : 'lists'}/${l.id}`}
+                        name={l.name}
+                        count={l.total}
+                        covers={l.covers}
+                        smart={l.smart}
+                    />
+                ))}
+            </ul>
+        </section>
+    );
+}
+
 export function ProfilePage() {
     const { username = '' } = useParams();
     const profile = useProfile(username);
@@ -215,29 +247,7 @@ export function ProfilePage() {
                             />
                         </section>
 
-                        {profile.data.lists.map((l) => (
-                            <section key={l.id} aria-label={l.name}>
-                                <h2>{l.name}</h2>
-                                <Games entries={l.entries} />
-                            </section>
-                        ))}
-
-                        {profile.data.smartLists.map((l) => (
-                            <section key={`smart-${l.id}`} aria-label={l.name}>
-                                <h2>
-                                    <WandSparkles aria-hidden="true" />
-                                    {l.name}
-                                </h2>
-                                <ul className="rule-summary" aria-label="Rules">
-                                    {l.description.map((d) => (
-                                        <li key={d} className="badge">
-                                            {d}
-                                        </li>
-                                    ))}
-                                </ul>
-                                <Games entries={l.entries} />
-                            </section>
-                        ))}
+                        <ProfileLists profile={profile.data} />
                     </>
                 )}
             </main>

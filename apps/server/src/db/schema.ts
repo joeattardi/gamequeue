@@ -310,6 +310,7 @@ export const lists = sqliteTable(
             .notNull()
             .references(() => users.id, { onDelete: 'cascade' }),
         name: text('name').notNull(),
+        description: text('description').notNull().default(''),
         // 'queue' is the user's one "up next" list; it's created on first use
         kind: text('kind', { enum: ['list', 'queue'] })
             .notNull()
@@ -378,6 +379,7 @@ export const smartLists = sqliteTable(
             .notNull()
             .references(() => users.id, { onDelete: 'cascade' }),
         name: text('name').notNull(),
+        description: text('description').notNull().default(''),
         rules: text('rules').notNull(),
         sort: text('sort').notNull().default('title'),
         dir: text('dir', { enum: ['asc', 'desc'] })

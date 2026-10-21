@@ -15,7 +15,7 @@ import {
     verticalListSortingStrategy
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import type { EntryDto } from '@gamequeue/shared';
+import { MAX_LIST_DESCRIPTION, type EntryDto } from '@gamequeue/shared';
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import { useEntries } from '../api/collection';
@@ -25,15 +25,17 @@ import {
     useDeleteList,
     useList,
     useRemoveFromList,
-    useRenameList,
-    useReorderList
+    useUpdateList,
+    useMoveInList
 } from '../api/lists';
 import { useQueue } from '../api/queue';
 import { useConfirm } from '../components/Confirm';
 import { Cover } from '../components/Cover';
 import { GameCard } from '../components/GameCard';
 import { LayoutToggle, useLayout } from '../components/LayoutToggle';
+import { LoadMore } from '../components/LoadMore';
 import { ListLoading } from '../components/ListLoading';
+import { GridSkeletons, RowSkeletons } from '../components/GridSkeletons';
 import { ResultSkeletons } from '../components/ResultSkeletons';
 import { MetaLine } from '../components/MetaLine';
 import { PlatformTags } from '../components/PlatformIcon';
@@ -55,10 +57,10 @@ const LAYOUT_KEY = 'gq_list_layout';
 export function ListPage() {
     const id = Number(useParams().id);
     const list = useList(id);
-    usePageTitle(list.data?.name);
+    usePageTitle(list.head?.name);
     if (list.isPending)
         return <ListLoading icon={<List aria-hidden="true" />} layoutKey={LAYOUT_KEY} />;
-    if (list.isError || !list.data)
+    if (list.isError || !list.head)
         return (
             <div className="empty">
                 <p>
@@ -67,7 +69,9 @@ export function ListPage() {
                 <Link to="/lists">Back to lists</Link>
             </div>
         );
-    return <ListView id={id} name={list.data.name} entries={list.data.entries} />;
+    return (
+        <ListView id={id} name={list.head.name} description={list.head.description} paged={list} />
+    );
 }
 
 export function QueuePage() {
@@ -81,28 +85,43 @@ export function QueuePage() {
                 layoutKey={LAYOUT_KEY}
             />
         );
-    if (queue.isError || !queue.data)
+    if (queue.isError || !queue.head)
         return (
             <p className="form-error" role="alert">
                 Couldn't load your queue.
             </p>
         );
-    return <ListView id={queue.data.id} name="Queue" entries={queue.data.entries} isQueue />;
+    return <ListView id={queue.head.id} name="Queue" paged={queue} isQueue />;
 }
+
+/** What a list page needs from `useList`/`useQueue`: the games loaded so far and how to get more. */
+type Paged = Pick<
+    ReturnType<typeof useList>,
+    | 'items'
+    | 'total'
+    | 'hasNextPage'
+    | 'isFetchingNextPage'
+    | 'isFetchNextPageError'
+    | 'fetchNextPage'
+>;
 
 function ListView({
     id,
     name,
-    entries,
+    description = '',
+    paged,
     isQueue = false
 }: {
     id: number;
     name: string;
-    entries: EntryDto[];
+    description?: string;
+    paged: Paged;
     isQueue?: boolean;
 }) {
     const navigate = useNavigate();
-    const reorder = useReorderList(id);
+    const entries = paged.items;
+    const total = paged.total ?? entries.length;
+    const reorder = useMoveInList(id);
     const remove = useRemoveFromList();
     const del = useDeleteList(id);
     const confirm = useConfirm();
@@ -110,6 +129,7 @@ function ListView({
     const [layout, setLayout] = useLayout(LAYOUT_KEY, 'list');
     const [order, setOrder] = useState(entries);
     const [error, setError] = useState<string>();
+    const [editing, setEditing] = useState(false);
     useEffect(() => setOrder(entries), [entries]);
 
     const sensors = useSensors(
@@ -117,23 +137,27 @@ function ListView({
         useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
     );
 
-    function commit(next: EntryDto[]) {
-        setOrder(next); // optimistic; the query refetches and corrects it if the save fails
+    // Only the first pages are loaded, so an index here is also the game's index in the whole
+    // list, and the server moves just that one game.
+    function commit(from: number, to: number) {
+        const entryId = order[from]!.id;
+        setOrder(arrayMove(order, from, to)); // optimistic; the query refetches and corrects it if the save fails
         setError(undefined);
         reorder.mutate(
-            next.map((e) => e.id),
+            { entryId, toIndex: to },
             { onError: () => setError("Couldn't save the new order.") }
         );
     }
 
     function onDragEnd({ active, over }: DragEndEvent) {
         if (!over || active.id === over.id) return;
-        const from = order.findIndex((e) => e.id === active.id);
-        const to = order.findIndex((e) => e.id === over.id);
-        commit(arrayMove(order, from, to));
+        commit(
+            order.findIndex((e) => e.id === active.id),
+            order.findIndex((e) => e.id === over.id)
+        );
     }
 
-    const move = (index: number, by: -1 | 1) => commit(arrayMove(order, index, index + by));
+    const move = (index: number, by: -1 | 1) => commit(index, index + by);
 
     return (
         <section>
@@ -149,7 +173,7 @@ function ListView({
                         {name}
                     </h1>
                     <p className="muted" aria-live="polite">
-                        {order.length} {order.length === 1 ? 'game' : 'games'}
+                        {total} {total === 1 ? 'game' : 'games'}
                         {isQueue && ' · starting a game takes it off the queue'}
                     </p>
                 </div>
@@ -163,7 +187,14 @@ function ListView({
                     </a>
                     {!isQueue && (
                         <>
-                            <RenameButton id={id} name={name} />
+                            <button
+                                className="btn"
+                                onClick={() => setEditing((on) => !on)}
+                                aria-expanded={editing}
+                            >
+                                <Pencil />
+                                Edit
+                            </button>
                             <button
                                 className="btn btn--danger"
                                 disabled={del.isPending}
@@ -186,12 +217,23 @@ function ListView({
                 </div>
             </div>
 
-            <AddGames listId={id} isQueue={isQueue} inList={new Set(order.map((e) => e.id))} />
+            {editing ? (
+                <EditListForm
+                    id={id}
+                    name={name}
+                    description={description}
+                    onDone={() => setEditing(false)}
+                />
+            ) : (
+                description && <p className="list-description">{description}</p>
+            )}
+
+            <AddGames listId={id} isQueue={isQueue} />
             <p className="form-error" role="alert">
                 {error}
             </p>
 
-            {order.length === 0 ? (
+            {total === 0 ? (
                 <div className="empty">
                     <p>
                         <strong>{isQueue ? 'Your queue is empty.' : 'This list is empty.'}</strong>
@@ -239,6 +281,21 @@ function ListView({
                             </SortableContext>
                         </DndContext>
                     )}
+                    <LoadMore
+                        shown={order.length}
+                        total={total}
+                        hasMore={paged.hasNextPage}
+                        loading={paged.isFetchingNextPage}
+                        failed={paged.isFetchNextPageError}
+                        onMore={() => paged.fetchNextPage()}
+                        skeleton={
+                            layout === 'grid' ? (
+                                <GridSkeletons layout="grid" count={4} />
+                            ) : (
+                                <RowSkeletons count={3} />
+                            )
+                        }
+                    />
                 </>
             )}
         </section>
@@ -342,72 +399,76 @@ function Row({
     );
 }
 
-function RenameButton({ id, name }: { id: number; name: string }) {
-    const rename = useRenameList(id);
-    const [editing, setEditing] = useState(false);
-    const [text, setText] = useState(name);
+/** Name and description of a list, edited in place under the heading. */
+function EditListForm({
+    id,
+    name,
+    description,
+    onDone
+}: {
+    id: number;
+    name: string;
+    description: string;
+    onDone: () => void;
+}) {
+    const update = useUpdateList(id);
+    const [nameText, setNameText] = useState(name);
+    const [descText, setDescText] = useState(description);
     const [error, setError] = useState<string>();
     function submit(e: FormEvent) {
         e.preventDefault();
         setError(undefined);
-        rename.mutate(text.trim(), {
-            onSuccess: () => setEditing(false),
-            onError: (err) =>
-                setError(err instanceof ApiRequestError ? err.message : 'Something went wrong.')
-        });
-    }
-    if (!editing)
-        return (
-            <button
-                className="btn"
-                onClick={() => {
-                    setText(name);
-                    setEditing(true);
-                }}
-            >
-                <Pencil />
-                Rename
-            </button>
+        update.mutate(
+            { name: nameText.trim(), description: descText.trim() },
+            {
+                onSuccess: onDone,
+                onError: (err) =>
+                    setError(err instanceof ApiRequestError ? err.message : 'Something went wrong.')
+            }
         );
+    }
     return (
-        <form className="inline-form" onSubmit={submit}>
+        <form className="panel stack" onSubmit={submit}>
             <label className="field">
-                <span className="sr-only">List name</span>
+                <span>Name</span>
                 <input
-                    value={text}
-                    onChange={(e) => setText(e.target.value)}
+                    value={nameText}
+                    onChange={(e) => setNameText(e.target.value)}
                     maxLength={60}
                     autoFocus
                 />
             </label>
-            <button
-                className="btn btn--primary"
-                type="submit"
-                disabled={rename.isPending || !text.trim()}
-            >
-                Save
-            </button>
-            <button className="btn btn--ghost" type="button" onClick={() => setEditing(false)}>
-                Cancel
-            </button>
+            <label className="field">
+                <span>Description (optional)</span>
+                <textarea
+                    value={descText}
+                    onChange={(e) => setDescText(e.target.value)}
+                    maxLength={MAX_LIST_DESCRIPTION}
+                    rows={3}
+                />
+            </label>
             {error && (
                 <span className="form-error" role="alert">
                     {error}
                 </span>
             )}
+            <div className="row">
+                <button
+                    className="btn btn--primary"
+                    type="submit"
+                    disabled={update.isPending || !nameText.trim()}
+                >
+                    Save
+                </button>
+                <button className="btn btn--ghost" type="button" onClick={onDone}>
+                    Cancel
+                </button>
+            </div>
         </form>
     );
 }
 
-function AddGames({
-    listId,
-    inList,
-    isQueue
-}: {
-    listId: number;
-    inList: Set<number>;
-    isQueue: boolean;
-}) {
+function AddGames({ listId, isQueue }: { listId: number; isQueue: boolean }) {
     const [text, setText] = useState('');
     const q = useDebounced(text.trim(), 250);
     return (
@@ -422,15 +483,17 @@ function AddGames({
                     autoComplete="off"
                 />
             </label>
-            {q && <AddResults listId={listId} q={q} inList={inList} />}
+            {q && <AddResults listId={listId} q={q} isQueue={isQueue} />}
         </div>
     );
 }
 
-function AddResults({ listId, q, inList }: { listId: number; q: string; inList: Set<number> }) {
-    const results = useEntries(new URLSearchParams({ view: 'all', q }));
+function AddResults({ listId, q, isQueue }: { listId: number; q: string; isQueue: boolean }) {
+    // Entries say which lists hold them, so membership doesn't depend on what the page has loaded
+    const results = useEntries(new URLSearchParams({ view: 'all', q }), 20);
     const add = useAddToList();
-    const matches = (results.data ?? []).filter((e) => !inList.has(e.id)).slice(0, 8);
+    const inList = (e: EntryDto) => (isQueue ? e.queued : e.lists.some((l) => l.id === listId));
+    const matches = (results.data?.entries ?? []).filter((e) => !inList(e)).slice(0, 8);
     if (results.isPending)
         return (
             <ul className="results" aria-busy="true">
@@ -442,9 +505,7 @@ function AddResults({ listId, q, inList }: { listId: number; q: string; inList: 
         );
     if (matches.length === 0)
         return (
-            <p className="muted">
-                {results.data?.length ? 'Already in this list.' : 'No matches.'}
-            </p>
+            <p className="muted">{results.data?.total ? 'Already in this list.' : 'No matches.'}</p>
         );
     return (
         <ul className="results">

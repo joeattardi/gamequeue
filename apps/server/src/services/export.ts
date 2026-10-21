@@ -213,7 +213,11 @@ export function buildExport(db: Db, userId: number, now = new Date()): ExportFil
         })),
         lists: listRows
             .filter((l) => l.kind === 'list')
-            .map((l) => ({ name: l.name, games: igdbIds(items.get(l.id)) })),
+            .map((l) => ({
+                name: l.name,
+                description: l.description,
+                games: igdbIds(items.get(l.id))
+            })),
         queue: igdbIds(queueRow && items.get(queueRow.id)),
         smartLists: listSmartListRows(db, userId),
         wishlist: wished.map(({ item, g, platform }): ExportWishlistItem => ({

@@ -1,7 +1,6 @@
-import { releasesWithin } from '@gamequeue/shared';
 import { CalendarClock } from 'lucide-react';
 import { Link } from 'react-router';
-import { useWishlist } from '../api/wishlist';
+import { useReleasingSoon } from '../api/wishlist';
 import { releaseBadgeText, releaseText, todayLocal } from '../lib';
 import { Cover } from './Cover';
 import { ReleasingSoonSkeletons } from './HomeSkeletons';
@@ -11,14 +10,9 @@ const WINDOW_DAYS = 14;
 
 /** Wishlisted games with an exact release day in the next two weeks, soonest first. Hidden when none. */
 export function ReleasingSoon() {
-    const wishlist = useWishlist();
+    const wishlist = useReleasingSoon(WINDOW_DAYS, todayLocal());
     if (wishlist.isError) return null;
-    const today = todayLocal();
-    const items = (wishlist.data?.items ?? [])
-        .filter(({ game }) =>
-            releasesWithin(game.releaseDate, game.releasePrecision, today, WINDOW_DAYS)
-        )
-        .sort((a, b) => (a.game.releaseDate ?? '').localeCompare(b.game.releaseDate ?? ''));
+    const items = wishlist.data ?? [];
     if (!wishlist.isPending && items.length === 0) return null;
 
     return (

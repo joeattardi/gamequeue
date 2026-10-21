@@ -1,12 +1,16 @@
 import { Hono } from 'hono';
 import {
+    FIRST_PAGE,
     addListItemSchema,
     createListSchema,
     patchListSchema,
     entriesToCsv,
     pickSchema,
     smartListInputSchema,
-    reorderListSchema
+    reorderListSchema,
+    moveListItemSchema,
+    pageQuerySchema,
+    smartListPreviewSchema
 } from '@gamequeue/shared';
 import type { AppDeps } from '../app.js';
 import { requireAuth, type AuthVars } from '../auth/middleware.js';
@@ -20,7 +24,8 @@ import {
     getQueue,
     listLists,
     removeFromList,
-    renameList,
+    updateList,
+    moveInList,
     reorderList
 } from '../services/lists.js';
 import { pick } from '../services/pick.js';
@@ -28,6 +33,7 @@ import {
     createSmartList,
     deleteSmartList,
     getSmartList,
+    previewSmartList,
     listSmartLists,
     updateSmartList
 } from '../services/smart-lists.js';
@@ -40,21 +46,28 @@ export function listRoutes({ db, config }: AppDeps) {
     const uid = (c: { get(k: 'user'): { id: number } }) => c.get('user').id;
 
     r.get('/', (c) => c.json({ lists: listLists(db, uid(c)) }));
-    r.post('/', async (c) =>
-        c.json(
-            { list: createList(db, uid(c), validate(createListSchema, await body(c)).name) },
-            201
-        )
+    r.post('/', async (c) => {
+        const input = validate(createListSchema, await body(c));
+        return c.json({ list: createList(db, uid(c), input.name, input.description) }, 201);
+    });
+    r.get('/:id', (c) =>
+        c.json({
+            list: getList(
+                db,
+                uid(c),
+                parseId(c.req.param('id')),
+                validate(pageQuerySchema, c.req.query())
+            )
+        })
     );
-    r.get('/:id', (c) => c.json({ list: getList(db, uid(c), parseId(c.req.param('id'))) }));
     r.get('/:id/export.csv', (c) => {
         const list = getList(db, uid(c), parseId(c.req.param('id')));
         return csvResponse(c, list.name, entriesToCsv(list.entries));
     });
     r.patch('/:id', async (c) => {
         const id = parseId(c.req.param('id'));
-        renameList(db, uid(c), id, validate(patchListSchema, await body(c)).name);
-        return c.json({ list: getList(db, uid(c), id) });
+        updateList(db, uid(c), id, validate(patchListSchema, await body(c)));
+        return c.json({ list: getList(db, uid(c), id, FIRST_PAGE) });
     });
     r.delete('/:id', (c) => {
         deleteList(db, uid(c), parseId(c.req.param('id')));
@@ -80,6 +93,12 @@ export function listRoutes({ db, config }: AppDeps) {
             )
         })
     );
+    r.put('/:id/move', async (c) => {
+        const { entryId, toIndex } = validate(moveListItemSchema, await body(c));
+        return c.json({
+            list: moveInList(db, uid(c), parseId(c.req.param('id')), entryId, toIndex)
+        });
+    });
     r.put('/:id/order', async (c) =>
         c.json({
             list: reorderList(
@@ -109,7 +128,9 @@ export function queueRoutes({ db, config }: AppDeps) {
     const uid = (c: { get(k: 'user'): { id: number } }) => c.get('user').id;
     const queueId = (c: { get(k: 'user'): { id: number } }) => ensureQueue(db, uid(c)).id;
 
-    r.get('/', (c) => c.json({ list: getQueue(db, uid(c)) }));
+    r.get('/', (c) =>
+        c.json({ list: getQueue(db, uid(c), validate(pageQuerySchema, c.req.query())) })
+    );
     r.post('/items', async (c) =>
         c.json({
             list: addToList(
@@ -125,6 +146,10 @@ export function queueRoutes({ db, config }: AppDeps) {
             list: removeFromList(db, uid(c), queueId(c), parseId(c.req.param('entryId')))
         })
     );
+    r.put('/move', async (c) => {
+        const { entryId, toIndex } = validate(moveListItemSchema, await body(c));
+        return c.json({ list: moveInList(db, uid(c), queueId(c), entryId, toIndex) });
+    });
     r.put('/order', async (c) =>
         c.json({
             list: reorderList(
@@ -156,8 +181,26 @@ export function smartListRoutes({ db, config }: AppDeps) {
             201
         )
     );
+    // Registered before "/:id" so "preview" isn't read as an id
+    r.post('/preview', async (c) =>
+        c.json(
+            previewSmartList(
+                db,
+                uid(c),
+                validate(smartListPreviewSchema, await body(c)),
+                validate(pageQuerySchema, c.req.query())
+            )
+        )
+    );
     r.get('/:id', (c) =>
-        c.json({ smartList: getSmartList(db, uid(c), parseId(c.req.param('id'))) })
+        c.json({
+            smartList: getSmartList(
+                db,
+                uid(c),
+                parseId(c.req.param('id')),
+                validate(pageQuerySchema, c.req.query())
+            )
+        })
     );
     r.get('/:id/export.csv', (c) => {
         const list = getSmartList(db, uid(c), parseId(c.req.param('id')));

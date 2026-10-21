@@ -1,9 +1,13 @@
-import { coverSrcSet, coverUrl } from '@gamequeue/shared';
+import { ListCard } from '../components/ListCard';
 import { ListCardSkeletons } from '../components/PageSkeletons';
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { ApiRequestError } from '../api/client';
-import { SMART_LIST_PRESETS, type SmartListSummaryDto } from '@gamequeue/shared';
+import {
+    MAX_LIST_DESCRIPTION,
+    SMART_LIST_PRESETS,
+    type SmartListSummaryDto
+} from '@gamequeue/shared';
 import { useCreateList, useLists } from '../api/lists';
 import { useCreateSmartList, useSmartLists } from '../api/smartLists';
 import { List, Plus, WandSparkles } from 'lucide-react';
@@ -15,16 +19,20 @@ export function ListsPage() {
     const create = useCreateList();
     const navigate = useNavigate();
     const [name, setName] = useState('');
+    const [description, setDescription] = useState('');
     const [error, setError] = useState<string>();
 
     function submit(e: FormEvent) {
         e.preventDefault();
         setError(undefined);
-        create.mutate(name.trim(), {
-            onSuccess: (list) => navigate(`/lists/${list.id}`),
-            onError: (err) =>
-                setError(err instanceof ApiRequestError ? err.message : 'Something went wrong.')
-        });
+        create.mutate(
+            { name: name.trim(), description: description.trim() },
+            {
+                onSuccess: (list) => navigate(`/lists/${list.id}`),
+                onError: (err) =>
+                    setError(err instanceof ApiRequestError ? err.message : 'Something went wrong.')
+            }
+        );
     }
 
     return (
@@ -41,8 +49,8 @@ export function ListsPage() {
                     </p>
                 </div>
             </div>
-            <form className="inline-form" onSubmit={submit}>
-                <label className="field field--grow">
+            <form className="stack" onSubmit={submit}>
+                <label className="field">
                     <span>New list</span>
                     <input
                         value={name}
@@ -51,14 +59,26 @@ export function ListsPage() {
                         placeholder="e.g. Up next"
                     />
                 </label>
-                <button
-                    className="btn btn--primary"
-                    type="submit"
-                    disabled={create.isPending || !name.trim()}
-                >
-                    <Plus />
-                    Create list
-                </button>
+                <label className="field">
+                    <span>Description (optional)</span>
+                    <textarea
+                        value={description}
+                        onChange={(e) => setDescription(e.target.value)}
+                        maxLength={MAX_LIST_DESCRIPTION}
+                        rows={2}
+                        placeholder="What is this list for?"
+                    />
+                </label>
+                <div className="row">
+                    <button
+                        className="btn btn--primary"
+                        type="submit"
+                        disabled={create.isPending || !name.trim()}
+                    >
+                        <Plus />
+                        Create list
+                    </button>
+                </div>
             </form>
             <p className="form-error" role="alert">
                 {error}
@@ -81,29 +101,13 @@ export function ListsPage() {
             ) : (
                 <ul className="list-cards">
                     {lists.data?.map((l) => (
-                        <li key={l.id}>
-                            <Link to={`/lists/${l.id}`} className="list-card">
-                                {l.covers.length > 0 && (
-                                    <span className="list-card__covers" aria-hidden="true">
-                                        {l.covers.map((id) => (
-                                            <img
-                                                key={id}
-                                                src={coverUrl(id, 'cover_big')}
-                                                srcSet={coverSrcSet(id, 'cover_big')}
-                                                alt=""
-                                                loading="lazy"
-                                            />
-                                        ))}
-                                    </span>
-                                )}
-                                <span className="list-card__text">
-                                    <strong>{l.name}</strong>
-                                    <span className="list-card__count">
-                                        {l.count} {l.count === 1 ? 'game' : 'games'}
-                                    </span>
-                                </span>
-                            </Link>
-                        </li>
+                        <ListCard
+                            key={l.id}
+                            to={`/lists/${l.id}`}
+                            name={l.name}
+                            count={l.count}
+                            covers={l.covers}
+                        />
                     ))}
                 </ul>
             )}
@@ -172,6 +176,7 @@ function SmartLists() {
                                         create.mutate(
                                             {
                                                 name: p.name,
+                                                description: '',
                                                 rules: p.rules,
                                                 sort: p.sort,
                                                 dir: p.dir
@@ -204,29 +209,13 @@ function SmartCards({ lists }: { lists: SmartListSummaryDto[] }) {
     return (
         <ul className="list-cards">
             {lists.map((l) => (
-                <li key={l.id}>
-                    <Link to={`/smart-lists/${l.id}`} className="list-card">
-                        {l.covers.length > 0 && (
-                            <span className="list-card__covers" aria-hidden="true">
-                                {l.covers.map((id) => (
-                                    <img
-                                        key={id}
-                                        src={coverUrl(id, 'cover_big')}
-                                        srcSet={coverSrcSet(id, 'cover_big')}
-                                        alt=""
-                                        loading="lazy"
-                                    />
-                                ))}
-                            </span>
-                        )}
-                        <span className="list-card__text">
-                            <strong>{l.name}</strong>
-                            <span className="list-card__count">
-                                {l.count} {l.count === 1 ? 'game' : 'games'}
-                            </span>
-                        </span>
-                    </Link>
-                </li>
+                <ListCard
+                    key={l.id}
+                    to={`/smart-lists/${l.id}`}
+                    name={l.name}
+                    count={l.count}
+                    covers={l.covers}
+                />
             ))}
         </ul>
     );

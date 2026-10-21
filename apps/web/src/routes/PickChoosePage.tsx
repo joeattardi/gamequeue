@@ -4,7 +4,10 @@ import type { EntryDto } from '@gamequeue/shared';
 import { pickRandom, toCandidate } from '@gamequeue/shared';
 import { useState } from 'react';
 import { Link } from 'react-router';
+import { useQueryClient } from '@tanstack/react-query';
+import type { ListDetailDto } from '@gamequeue/shared';
 import { useEntries } from '../api/collection';
+import { fetchAll } from '../api/paging';
 import { useList, useLists } from '../api/lists';
 import { useQueue } from '../api/queue';
 import { Cover } from '../components/Cover';
@@ -167,10 +170,10 @@ function Contenders({
 
 function FromList({ onAdd }: { onAdd: (entries: EntryDto[]) => void }) {
     const lists = useLists();
-    const queue = useQueue();
+    const queue = useQueue(1); // only its id is needed
     const [listId, setListId] = useState(0);
     const options = [
-        ...(queue.data ? [{ id: queue.data.id, name: 'Queue' }] : []),
+        ...(queue.head ? [{ id: queue.head.id, name: 'Queue' }] : []),
         ...(lists.data ?? []).map((l) => ({ id: l.id, name: `List: ${l.name}` }))
     ];
     return (
@@ -197,6 +200,9 @@ function FromList({ onAdd }: { onAdd: (entries: EntryDto[]) => void }) {
 
 function LoadList({ id, onAdd }: { id: number; onAdd: (entries: EntryDto[]) => void }) {
     const list = useList(id);
+    const queryClient = useQueryClient();
+    const [loading, setLoading] = useState(false);
+    const [failed, setFailed] = useState(false);
     if (list.isPending)
         return (
             <span
@@ -205,15 +211,44 @@ function LoadList({ id, onAdd }: { id: number; onAdd: (entries: EntryDto[]) => v
                 aria-label="Loading list"
             />
         );
-    if (!list.data) return <p className="muted">Couldn't load that list.</p>;
-    const { entries } = list.data;
-    if (entries.length === 0) return <p className="muted">That list is empty.</p>;
+    if (list.isError || list.total === undefined)
+        return <p className="muted">Couldn't load that list.</p>;
+    const { total } = list;
+    if (total === 0) return <p className="muted">That list is empty.</p>;
+
+    // The list page only loads a page at a time; adding the whole list reads the rest now
+    async function addAll() {
+        setLoading(true);
+        setFailed(false);
+        try {
+            onAdd(
+                await fetchAll(
+                    queryClient,
+                    ['list', id],
+                    `/lists/${id}`,
+                    (r: { list: ListDetailDto }) => ({
+                        items: r.list.entries,
+                        total: r.list.total
+                    })
+                )
+            );
+        } catch {
+            setFailed(true);
+        } finally {
+            setLoading(false);
+        }
+    }
     return (
         <div className="pick-load">
-            <button className="btn" onClick={() => onAdd(entries)}>
+            <button className="btn" onClick={addAll} disabled={loading}>
                 <Plus />
-                Add {entries.length} {entries.length === 1 ? 'game' : 'games'}
+                {loading ? 'Adding…' : `Add ${total} ${total === 1 ? 'game' : 'games'}`}
             </button>
+            {failed && (
+                <p className="form-error" role="alert">
+                    Couldn't load that list.
+                </p>
+            )}
         </div>
     );
 }
@@ -221,9 +256,10 @@ function LoadList({ id, onAdd }: { id: number; onAdd: (entries: EntryDto[]) => v
 function Search({ chosen, onAdd }: { chosen: EntryDto[]; onAdd: (e: EntryDto) => void }) {
     const [text, setText] = useState('');
     const q = useDebounced(text.trim(), 250);
-    const results = useEntries(new URLSearchParams(q ? { view: 'all', q } : { view: 'all' }));
+    // A few more than are shown, so games already chosen can be skipped
+    const results = useEntries(new URLSearchParams(q ? { view: 'all', q } : { view: 'all' }), 20);
     const have = new Set(chosen.map((e) => e.id));
-    const matches = (results.data ?? []).filter((e) => !have.has(e.id));
+    const matches = (results.data?.entries ?? []).filter((e) => !have.has(e.id));
     return (
         <div className="panel">
             <label className="field">
@@ -240,7 +276,7 @@ function Search({ chosen, onAdd }: { chosen: EntryDto[]; onAdd: (e: EntryDto) =>
                 <ResultListSkeleton label="Searching…" />
             ) : matches.length === 0 ? (
                 <p className="muted">
-                    {results.data?.length
+                    {results.data?.total
                         ? 'Everything that matches is already added.'
                         : 'No matches.'}
                 </p>
@@ -267,9 +303,9 @@ function Search({ chosen, onAdd }: { chosen: EntryDto[]; onAdd: (e: EntryDto) =>
                             </li>
                         ))}
                     </ul>
-                    {matches.length > 8 && (
+                    {(results.data?.total ?? 0) > 8 && (
                         <p className="muted">
-                            Showing 8 of {matches.length}. Type to narrow it down.
+                            Showing 8 of {results.data?.total}. Type to narrow it down.
                         </p>
                     )}
                 </>

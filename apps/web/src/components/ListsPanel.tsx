@@ -36,13 +36,16 @@ export function ListsPanel({ entry }: { entry: EntryDto }) {
     function submit(e: FormEvent) {
         e.preventDefault();
         setError(undefined);
-        create.mutate(name.trim(), {
-            onSuccess: (list) => {
-                setName('');
-                add.mutate({ listId: list.id, entryId: entry.id }, { onError: fail });
-            },
-            onError: fail
-        });
+        create.mutate(
+            { name: name.trim() },
+            {
+                onSuccess: (list) => {
+                    setName('');
+                    add.mutate({ listId: list.id, entryId: entry.id }, { onError: fail });
+                },
+                onError: fail
+            }
+        );
     }
 
     return (

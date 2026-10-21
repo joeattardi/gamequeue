@@ -1,13 +1,12 @@
 import {
+    MAX_LIST_DESCRIPTION,
     SMART_NUMBER_FIELDS,
     SMART_NUMBER_FIELD_INFO,
     SMART_SORTS,
     SMART_SORT_LABELS,
     ENTRY_STATUSES,
     defaultSmartDir,
-    evaluateSmartList,
     smartRulesSchema,
-    type EntryDto,
     type SmartListDetailDto,
     type SmartNumberField,
     type SmartRule,
@@ -17,11 +16,18 @@ import {
 import { useMemo, useRef, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import { ApiRequestError } from '../api/client';
-import { useEntries, useFacets } from '../api/collection';
-import { useCreateSmartList, useSmartList, useUpdateSmartList } from '../api/smartLists';
+import { useFacets } from '../api/collection';
+import {
+    useCreateSmartList,
+    useSmartList,
+    useSmartListPreview,
+    useUpdateSmartList
+} from '../api/smartLists';
 import { GameCard } from '../components/GameCard';
+import { GridSkeletons } from '../components/GridSkeletons';
+import { LoadMore } from '../components/LoadMore';
 import { CheckSkeletons, EditorSkeleton } from '../components/PageSkeletons';
-import { usePageTitle } from '../lib';
+import { useDebounced, usePageTitle } from '../lib';
 import { ArrowLeft, Save, Trash2, WandSparkles } from 'lucide-react';
 
 type RuleKind = 'status' | 'platform' | 'genre' | 'tag' | 'finishedYear' | SmartNumberField;
@@ -85,7 +91,7 @@ export function SmartListEditPage() {
     usePageTitle(editing ? 'Edit smart list' : 'New smart list');
     if (!editing) return <Editor />;
     if (list.isPending) return <EditorSkeleton />;
-    if (list.isError || !list.data)
+    if (list.isError || !list.head)
         return (
             <div className="empty">
                 <p>
@@ -94,7 +100,7 @@ export function SmartListEditPage() {
                 <Link to="/lists">Back to lists</Link>
             </div>
         );
-    return <Editor existing={list.data} />;
+    return <Editor existing={list.head} />;
 }
 
 function Editor({ existing }: { existing?: SmartListDetailDto }) {
@@ -102,11 +108,11 @@ function Editor({ existing }: { existing?: SmartListDetailDto }) {
     const create = useCreateSmartList();
     const update = useUpdateSmartList(existing?.id ?? 0);
     const facets = useFacets();
-    const everything = useEntries(new URLSearchParams());
 
     const keys = useRef(0);
     const makeRow = (rule: SmartRule): Row => ({ key: keys.current++, rule });
     const [name, setName] = useState(existing?.name ?? '');
+    const [description, setDescription] = useState(existing?.description ?? '');
     const [rows, setRows] = useState<Row[]>(() => (existing?.rules ?? []).map(makeRow));
     const [sort, setSort] = useState<SmartSort>(existing?.sort ?? 'title');
     const [dir, setDir] = useState<SortDir>(existing?.dir ?? 'asc');
@@ -115,25 +121,17 @@ function Editor({ existing }: { existing?: SmartListDetailDto }) {
     // Years the user has finished something in, plus this one, newest first
     const years = useMemo(
         () =>
-            [
-                ...new Set([
-                    new Date().getFullYear(),
-                    ...(everything.data ?? []).flatMap((e) => e.finishedYears)
-                ])
-            ].sort((a, b) => b - a),
-        [everything.data]
+            [...new Set([new Date().getFullYear(), ...(facets.data?.finishedYears ?? [])])].sort(
+                (a, b) => b - a
+            ),
+        [facets.data]
     );
     const rules = rows.map((r) => r.rule);
     const valid = smartRulesSchema.safeParse(rules).success;
-    const matches = useMemo(
-        () =>
-            valid && everything.data
-                ? evaluateSmartList(everything.data, rules, sort, dir)
-                : undefined,
-        // `rules` is derived from `rows`
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-        [valid, everything.data, rows, sort, dir]
-    );
+    // The server evaluates the rules, so wait for a pause in editing before asking
+    const draft = JSON.stringify({ rules, sort, dir });
+    const settled = useDebounced(draft, 300);
+    const preview = useSmartListPreview(JSON.parse(settled), valid && settled === draft);
 
     const setRule = (key: number, rule: SmartRule) =>
         setRows((rs) => rs.map((r) => (r.key === key ? { ...r, rule } : r)));
@@ -141,7 +139,7 @@ function Editor({ existing }: { existing?: SmartListDetailDto }) {
     function submit(e: FormEvent) {
         e.preventDefault();
         setError(undefined);
-        const input = { name: name.trim(), rules, sort, dir };
+        const input = { name: name.trim(), description: description.trim(), rules, sort, dir };
         const opts = {
             onSuccess: (saved: SmartListDetailDto) => navigate(`/smart-lists/${saved.id}`),
             onError: (err: unknown) =>
@@ -179,6 +177,17 @@ function Editor({ existing }: { existing?: SmartListDetailDto }) {
                         maxLength={60}
                         placeholder="e.g. Quick wins"
                         autoFocus={!existing}
+                    />
+                </label>
+
+                <label className="field">
+                    <span>Description (optional)</span>
+                    <textarea
+                        value={description}
+                        onChange={(e) => setDescription(e.target.value)}
+                        maxLength={MAX_LIST_DESCRIPTION}
+                        rows={2}
+                        placeholder="What is this list for?"
                     />
                 </label>
 
@@ -248,7 +257,7 @@ function Editor({ existing }: { existing?: SmartListDetailDto }) {
                     </label>
                 </div>
 
-                <Preview matches={matches} pending={everything.isPending} valid={valid} />
+                <Preview preview={preview} valid={valid} />
 
                 <p className="form-error" role="alert">
                     {error}
@@ -274,41 +283,46 @@ function Editor({ existing }: { existing?: SmartListDetailDto }) {
     );
 }
 
-const PREVIEW_LIMIT = 12;
-
 function Preview({
-    matches,
-    pending,
+    preview,
     valid
 }: {
-    matches: EntryDto[] | undefined;
-    pending: boolean;
+    preview: ReturnType<typeof useSmartListPreview>;
     valid: boolean;
 }) {
+    const { items, total } = preview;
     return (
         <section className="panel" aria-labelledby="preview-h" aria-live="polite">
             <h2 id="preview-h">Preview</h2>
-            {pending ? (
-                <p className="muted" role="status">
-                    <span className="skeleton skeleton--line skeleton--subtitle" />
-                </p>
-            ) : !valid || !matches ? (
+            {!valid ? (
                 <p className="muted">
                     Add at least one rule, and fill in every choice, to see what matches.
                 </p>
-            ) : matches.length === 0 ? (
+            ) : preview.isPending || total === undefined ? (
+                <p className="muted" role="status">
+                    <span className="skeleton skeleton--line skeleton--subtitle" />
+                </p>
+            ) : total === 0 ? (
                 <p className="muted">No games match right now.</p>
             ) : (
                 <>
                     <p className="muted">
-                        {matches.length} {matches.length === 1 ? 'game matches' : 'games match'}
-                        {matches.length > PREVIEW_LIMIT && ` · showing the first ${PREVIEW_LIMIT}`}
+                        {total} {total === 1 ? 'game matches' : 'games match'}
                     </p>
-                    <ul className="grid">
-                        {matches.slice(0, PREVIEW_LIMIT).map((e) => (
+                    <ul className="grid" aria-busy={preview.isFetching}>
+                        {items.map((e) => (
                             <GameCard key={e.id} entry={e} />
                         ))}
                     </ul>
+                    <LoadMore
+                        shown={items.length}
+                        total={total}
+                        hasMore={preview.hasNextPage}
+                        loading={preview.isFetchingNextPage}
+                        failed={preview.isFetchNextPageError}
+                        onMore={() => preview.fetchNextPage()}
+                        skeleton={<GridSkeletons layout="grid" count={4} />}
+                    />
                 </>
             )}
         </section>

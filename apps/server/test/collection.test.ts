@@ -367,7 +367,8 @@ describe('editing and deleting', () => {
         );
         const headers = { cookie: cookie2, 'content-type': 'application/json' };
         expect(await (await app.request('/api/entries', { headers })).json()).toEqual({
-            entries: []
+            entries: [],
+            total: 0
         });
         expect((await app.request(`/api/entries/${e.id}`, { headers })).status).toBe(404);
         expect(

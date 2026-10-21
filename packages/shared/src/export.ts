@@ -3,6 +3,7 @@ import { ENTRY_STATUSES, ratingSchema, tagsSchema } from './collection.js';
 import { isoDateSchema } from './playthroughs.js';
 import { releasePrecisionSchema } from './release.js';
 import { MAX_SLOTS } from './slots.js';
+import { listDescription } from './lists.js';
 import { SMART_SORTS, smartRulesSchema } from './smart-lists.js';
 
 export const EXPORT_FORMAT = 'gamequeue-export';
@@ -120,6 +121,8 @@ export const exportFileSchema = z
             .array(
                 z.object({
                     name: z.string().trim().min(1).max(60),
+                    /** Added after v1 shipped: optional, an older file has none */
+                    description: listDescription.default(''),
                     /** IGDB ids in list order */
                     games: z.array(id)
                 })
@@ -143,6 +146,7 @@ export const exportFileSchema = z
             .array(
                 z.object({
                     name: z.string().trim().min(1).max(60),
+                    description: listDescription.default(''),
                     rules: smartRulesSchema,
                     sort: z.enum(SMART_SORTS),
                     dir: z.enum(['asc', 'desc'])
