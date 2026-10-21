@@ -7,6 +7,9 @@ import { ReleasingSoon } from '../components/ReleasingSoon';
 import { UpNext } from '../components/UpNext';
 import { SlotBay } from '../components/SlotBay';
 import { useSlots } from '../api/slots';
+import { useStats } from '../api/stats';
+import { useWishlist } from '../api/wishlist';
+import { Welcome } from '../components/Welcome';
 import { Gamepad2, SlidersHorizontal } from 'lucide-react';
 import { useFirstName } from '../api/auth';
 import { greeting, usePageTitle } from '../lib';
@@ -17,6 +20,11 @@ export function Home() {
     const firstName = useFirstName();
     const [assigning, setAssigning] = useState<SlotDto | null>(null);
     const [managing, setManaging] = useState(false);
+    const stats = useStats();
+    const wishlist = useWishlist();
+
+    // Nothing owned (so nothing queued, listed or slotted either) and nothing wishlisted
+    if (stats.data?.overview.total === 0 && wishlist.data?.items.length === 0) return <Welcome />;
 
     return (
         <div className="home">

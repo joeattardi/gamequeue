@@ -229,7 +229,6 @@ function DetailsForm({ user }: { user: AdminUserDto }) {
                     autoComplete="off"
                     required
                 />
-                <RoleSelect value={v.role} onChange={set('role')} />
                 <TextField
                     label="First name"
                     value={v.firstName}
@@ -244,6 +243,7 @@ function DetailsForm({ user }: { user: AdminUserDto }) {
                     problem={problems.lastName}
                     maxLength={50}
                 />
+                <RoleSelect value={v.role} onChange={set('role')} />
             </div>
             <label className="check">
                 <input
