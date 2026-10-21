@@ -50,3 +50,23 @@ export function UpNextSkeletons({ count = 4 }: { count?: number }) {
         </ol>
     );
 }
+
+/** Placeholder tiles shaped like the `ReleasingSoon` cards. */
+export function ReleasingSoonSkeletons({ count = 4 }: { count?: number }) {
+    return (
+        <ol className="grid upnext__list" role="status" aria-label="Loading upcoming releases">
+            {Array.from({ length: count }, (_, i) => (
+                <li
+                    key={i}
+                    className="card card--skeleton"
+                    aria-hidden="true"
+                    style={{ animationDelay: `${i * 60}ms` }}
+                >
+                    <div className="card__link">
+                        <span className="skeleton skeleton--card-cover" />
+                    </div>
+                </li>
+            ))}
+        </ol>
+    );
+}

@@ -1,0 +1,62 @@
+import { releasesWithin } from '@gamequeue/shared';
+import { CalendarClock } from 'lucide-react';
+import { Link } from 'react-router';
+import { useWishlist } from '../api/wishlist';
+import { releaseBadgeText, releaseText, todayLocal } from '../lib';
+import { Cover } from './Cover';
+import { ReleasingSoonSkeletons } from './HomeSkeletons';
+import { MetaLine } from './MetaLine';
+
+const WINDOW_DAYS = 14;
+
+/** Wishlisted games with an exact release day in the next two weeks, soonest first. Hidden when none. */
+export function ReleasingSoon() {
+    const wishlist = useWishlist();
+    if (wishlist.isError) return null;
+    const today = todayLocal();
+    const items = (wishlist.data?.items ?? [])
+        .filter(({ game }) =>
+            releasesWithin(game.releaseDate, game.releasePrecision, today, WINDOW_DAYS)
+        )
+        .sort((a, b) => (a.game.releaseDate ?? '').localeCompare(b.game.releaseDate ?? ''));
+    if (!wishlist.isPending && items.length === 0) return null;
+
+    return (
+        <section aria-labelledby="soon-h" className="upnext">
+            <div className="page-head">
+                <div>
+                    <h2 id="soon-h">
+                        <CalendarClock aria-hidden="true" />
+                        Releasing soon
+                    </h2>
+                    <p className="muted">From your wishlist, in the next {WINDOW_DAYS} days.</p>
+                </div>
+                <Link className="btn" to="/wishlist">
+                    View wishlist
+                </Link>
+            </div>
+            {wishlist.isPending ? (
+                <ReleasingSoonSkeletons />
+            ) : (
+                <ol className="grid upnext__list">
+                    {items.map(({ igdbId, game, platform }) => (
+                        <li key={igdbId} className="card">
+                            <div className="card__link" tabIndex={0}>
+                                <div className="card__art">
+                                    <Cover imageId={game.coverImageId} name={game.name} />
+                                    <span className="release-badge">{releaseBadgeText(game)}</span>
+                                    <div className="card__info">
+                                        <strong className="card__title">{game.name}</strong>
+                                        <span className="muted card__sub">
+                                            <MetaLine parts={[releaseText(game), platform?.name]} />
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </li>
+                    ))}
+                </ol>
+            )}
+        </section>
+    );
+}

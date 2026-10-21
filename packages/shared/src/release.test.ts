@@ -4,6 +4,7 @@ import {
     relativeDays,
     releaseBadge,
     releaseLabel,
+    releasesWithin,
     releasePeriodEnd
 } from './release.js';
 
@@ -64,5 +65,20 @@ describe('releaseBadge', () => {
         expect(releaseBadge(null, null, today)).toBe('TBA');
         expect(releaseBadge('2026-12-31', 'year', '2027-01-01')).toBeNull();
         expect(releaseBadge('2020-05-01', 'day', today)).toBeNull();
+    });
+});
+
+describe('releasesWithin', () => {
+    const today = '2026-10-20';
+    it('counts exact days from today through the window', () => {
+        expect(releasesWithin('2026-10-20', 'day', today, 14)).toBe(true);
+        expect(releasesWithin('2026-11-03', null, today, 14)).toBe(true);
+        expect(releasesWithin('2026-11-04', 'day', today, 14)).toBe(false);
+        expect(releasesWithin('2026-10-19', 'day', today, 14)).toBe(false);
+    });
+    it('ignores vague and missing dates', () => {
+        expect(releasesWithin('2026-10-31', 'month', today, 14)).toBe(false);
+        expect(releasesWithin('2026-12-31', 'quarter', today, 90)).toBe(false);
+        expect(releasesWithin(null, null, today, 14)).toBe(false);
     });
 });

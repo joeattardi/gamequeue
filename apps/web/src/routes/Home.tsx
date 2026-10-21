@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { AssignDialog } from '../components/AssignDialog';
 import { ManageSlotsDialog } from '../components/ManageSlotsDialog';
 import { SlotSkeletons } from '../components/HomeSkeletons';
+import { ReleasingSoon } from '../components/ReleasingSoon';
 import { UpNext } from '../components/UpNext';
 import { SlotBay } from '../components/SlotBay';
 import { useSlots } from '../api/slots';
@@ -53,6 +54,7 @@ export function Home() {
                 onClose={() => setAssigning(null)}
             />
             <UpNext />
+            <ReleasingSoon />
             <ManageSlotsDialog open={managing} onClose={() => setManaging(false)} />
         </section>
     );

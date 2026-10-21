@@ -85,3 +85,18 @@ export function releaseBadge(
         return relativeDays(Math.round(toDay(date) - toDay(today)));
     return releaseLabel(date, precision);
 }
+
+/**
+ * Whether a game lands within the next `days` days, today included. Only an exact day counts: a
+ * month, quarter or year placeholder says nothing about when in the period it comes out.
+ */
+export function releasesWithin(
+    date: string | null,
+    precision: ReleasePrecision | null,
+    today: string,
+    days: number
+): boolean {
+    if (!date || (precision !== null && precision !== 'day')) return false;
+    const away = toDay(date) - toDay(today);
+    return away >= 0 && away <= days;
+}
