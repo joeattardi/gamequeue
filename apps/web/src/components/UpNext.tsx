@@ -11,10 +11,11 @@ export function UpNext() {
     const queue = useQueue();
     const entries = queue.data?.entries ?? [];
     return (
-        <section aria-labelledby="upnext-h" className="upnext">
+        <section aria-labelledby="upnext-h" className="home-section">
             <div className="page-head">
                 <div>
                     <h2 id="upnext-h">
+                        <ListOrdered aria-hidden="true" />
                         Up next
                         {entries.length > 0 && (
                             <span className="badge upnext__count">
@@ -28,7 +29,6 @@ export function UpNext() {
                     )}
                 </div>
                 <Link className="btn" to="/queue">
-                    <ListOrdered aria-hidden="true" />
                     {entries.length === 0 ? 'Build your queue' : 'View queue'}
                 </Link>
             </div>

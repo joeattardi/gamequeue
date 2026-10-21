@@ -19,43 +19,46 @@ export function Home() {
     const [managing, setManaging] = useState(false);
 
     return (
-        <section>
-            <div className="page-head">
-                <div>
-                    <h1>
-                        <Gamepad2 aria-hidden="true" />
-                        Now playing
-                    </h1>
-                    <p className="muted">
-                        {firstName ? `${greeting(firstName)}. ` : ''}What's in each slot right now.
-                    </p>
+        <div className="home">
+            <h1>{greeting(firstName)}</h1>
+            <section aria-labelledby="playing-h" className="home-section home-section--first">
+                <div className="page-head">
+                    <div>
+                        <h2 id="playing-h">
+                            <Gamepad2 aria-hidden="true" />
+                            Now playing
+                        </h2>
+                        <p className="muted">What's in each slot right now.</p>
+                    </div>
+                    <button className="btn" onClick={() => setManaging(true)}>
+                        <SlidersHorizontal />
+                        Edit slots
+                    </button>
                 </div>
-                <button className="btn" onClick={() => setManaging(true)}>
-                    <SlidersHorizontal />
-                    Edit slots
-                </button>
-            </div>
-            {slots.isError ? (
-                <p className="form-error" role="alert">
-                    Couldn't load your slots.
-                </p>
-            ) : slots.isPending ? (
-                <SlotSkeletons />
-            ) : (
-                <ul className="bays" aria-busy={slots.isFetching}>
-                    {slots.data?.map((slot) => (
-                        <SlotBay key={slot.id} slot={slot} onChoose={setAssigning} />
-                    ))}
-                </ul>
-            )}
-            {/* Re-read the slot from fresh data so the dialog never shows a stale occupant */}
-            <AssignDialog
-                slot={assigning ? (slots.data?.find((s) => s.id === assigning.id) ?? null) : null}
-                onClose={() => setAssigning(null)}
-            />
+                {slots.isError ? (
+                    <p className="form-error" role="alert">
+                        Couldn't load your slots.
+                    </p>
+                ) : slots.isPending ? (
+                    <SlotSkeletons />
+                ) : (
+                    <ul className="bays" aria-busy={slots.isFetching}>
+                        {slots.data?.map((slot) => (
+                            <SlotBay key={slot.id} slot={slot} onChoose={setAssigning} />
+                        ))}
+                    </ul>
+                )}
+                {/* Re-read the slot from fresh data so the dialog never shows a stale occupant */}
+                <AssignDialog
+                    slot={
+                        assigning ? (slots.data?.find((s) => s.id === assigning.id) ?? null) : null
+                    }
+                    onClose={() => setAssigning(null)}
+                />
+            </section>
             <UpNext />
             <ReleasingSoon />
             <ManageSlotsDialog open={managing} onClose={() => setManaging(false)} />
-        </section>
+        </div>
     );
 }

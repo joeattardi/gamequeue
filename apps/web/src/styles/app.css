@@ -1537,14 +1537,20 @@ a.game-row:hover {
     filter: brightness(1.08);
 }
 
-.upnext {
+.home-section {
     margin-top: 32px;
 }
-.upnext h2 {
+.home-section h2 {
     margin: 0;
     display: flex;
     align-items: center;
     gap: 8px;
+}
+.home-section h2 svg {
+    width: 1em;
+    height: 1em;
+    flex: none;
+    color: var(--accent);
 }
 .upnext__count {
     vertical-align: middle;
@@ -3591,4 +3597,7 @@ fieldset.stars:disabled .stars__star {
 }
 .field input[aria-invalid='true'] {
     border-color: var(--danger);
+}
+.home-section--first {
+    margin-top: 0;
 }

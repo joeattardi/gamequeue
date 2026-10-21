@@ -22,7 +22,7 @@ export function ReleasingSoon() {
     if (!wishlist.isPending && items.length === 0) return null;
 
     return (
-        <section aria-labelledby="soon-h" className="upnext">
+        <section aria-labelledby="soon-h" className="home-section">
             <div className="page-head">
                 <div>
                     <h2 id="soon-h">
