@@ -1,5 +1,5 @@
 import { asc, eq, inArray, sql } from 'drizzle-orm';
-import type { GameDto, PlatformDto } from '@gamequeue/shared';
+import { isReleased, type GameDto, type PlatformDto } from '@gamequeue/shared';
 import type { Db } from '../db/client.js';
 import {
     gameGenres,
@@ -62,7 +62,7 @@ export function saveGame(
     db: Db,
     g: GameRecord,
     now = Date.now(),
-    opts: { keepExistingPlatforms?: boolean } = {}
+    opts: { keepExistingPlatforms?: boolean; release?: 'checked' | 'unchecked' } = {}
 ) {
     db.transaction((tx) => {
         upsertPlatforms(tx as unknown as Db, g.platforms, {
@@ -77,6 +77,9 @@ export function saveGame(
                 slug: g.slug,
                 summary: g.summary,
                 releaseDate: g.releaseDate,
+                releasePrecision: g.releasePrecision,
+                // A date from an import file is only a snapshot, so it is due for a check
+                releaseCheckedAt: opts.release === 'unchecked' ? null : now,
                 coverImageId: g.coverImageId,
                 igdbRating: g.igdbRating,
                 igdbRatingCount: g.igdbRatingCount,
@@ -118,6 +121,60 @@ export async function ensureGame(db: Db, igdb: IgdbClient | undefined, igdbId: n
     const record = await callIgdb(() => requireIgdb(igdb).fetchGame(igdbId));
     if (!record) throw new HttpError(404, "That game wasn't found on IGDB");
     saveGame(db, record);
+}
+
+/** A release date is only worth asking IGDB about again after this long. */
+export const RELEASE_REFRESH_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * Re-reads the release date of cached games that haven't come out yet (announced, delayed or still
+ * TBA), at most once a day each, in one IGDB request. Released games never change, so they are
+ * skipped. Best effort: an IGDB failure leaves the cached dates alone and is not an error.
+ */
+export async function refreshReleaseDates(
+    db: Db,
+    igdb: IgdbClient | undefined,
+    gameIds: number[],
+    now = Date.now()
+) {
+    if (!igdb || gameIds.length === 0) return;
+    const today = new Date(now).toISOString().slice(0, 10);
+    const due = db
+        .select()
+        .from(games)
+        .where(inArray(games.id, gameIds))
+        .all()
+        .filter(
+            (g) =>
+                (g.releaseCheckedAt === null || g.releaseCheckedAt < now - RELEASE_REFRESH_MS) &&
+                !isReleased(g.releaseDate, g.releasePrecision, today)
+        )
+        .map((g) => g.id);
+    if (due.length === 0) return;
+    try {
+        const fresh = await igdb.fetchReleaseDates(due);
+        db.transaction((tx) => {
+            for (const r of fresh)
+                tx.update(games)
+                    .set({
+                        releaseDate: r.releaseDate,
+                        releasePrecision: r.releasePrecision,
+                        releaseCheckedAt: now
+                    })
+                    .where(eq(games.id, r.id))
+                    .run();
+            // Games IGDB no longer returns still count as checked, so they aren't asked about daily
+            const seen = new Set(fresh.map((r) => r.id));
+            const gone = due.filter((id) => !seen.has(id));
+            if (gone.length)
+                tx.update(games)
+                    .set({ releaseCheckedAt: now })
+                    .where(inArray(games.id, gone))
+                    .run();
+        });
+    } catch (e) {
+        console.error('Release date refresh failed', e);
+    }
 }
 
 /** Platform list for pickers. Synced from IGDB once, then served from the DB. */
@@ -198,6 +255,7 @@ export function loadGames(db: Db, gameIds: number[]): Map<number, GameDto> {
             slug: g.slug,
             summary: g.summary,
             releaseDate: g.releaseDate,
+            releasePrecision: g.releasePrecision,
             coverImageId: g.coverImageId,
             igdbRating: g.igdbRating,
             genres: gGenres.get(g.id) ?? [],

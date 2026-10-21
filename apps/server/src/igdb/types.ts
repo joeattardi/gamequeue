@@ -1,4 +1,4 @@
-import type { PlatformDto } from '@gamequeue/shared';
+import type { PlatformDto, ReleasePrecision } from '@gamequeue/shared';
 
 /** A game as we cache it (shared across users) */
 export interface GameRecord {
@@ -7,6 +7,7 @@ export interface GameRecord {
     slug: string | null;
     summary: string | null;
     releaseDate: string | null; // YYYY-MM-DD (UTC)
+    releasePrecision: ReleasePrecision | null;
     coverImageId: string | null;
     igdbRating: number | null; // 0-100
     igdbRatingCount: number | null;
@@ -32,11 +33,19 @@ export interface IgdbSearchHit {
     platforms: PlatformDto[];
 }
 
+export interface ReleaseInfo {
+    id: number;
+    releaseDate: string | null;
+    releasePrecision: ReleasePrecision | null;
+}
+
 /** Everything the app needs from IGDB. Faked in tests. */
 export interface IgdbClient {
     search(query: string): Promise<IgdbSearchHit[]>;
     fetchGame(igdbId: number): Promise<GameRecord | null>;
     fetchPlatforms(): Promise<PlatformDto[]>;
+    /** Current release dates for these games; ids IGDB no longer knows are left out */
+    fetchReleaseDates(igdbIds: number[]): Promise<ReleaseInfo[]>;
 }
 
 export class IgdbError extends Error {

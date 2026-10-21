@@ -1,3 +1,4 @@
+import { releaseCountdown, releaseLabel, type GameDto } from '@gamequeue/shared';
 import { useEffect, useState } from 'react';
 
 export function useDebounced<T>(value: T, ms = 300): T {
@@ -62,4 +63,13 @@ export function usePageTitle(title?: string | null) {
     useEffect(() => {
         document.title = title ? `${title} | ${APP_NAME}` : APP_NAME;
     }, [title]);
+}
+
+/** "Nov 19, 2026" / "Q4 2027" / "TBA", plus a countdown ("In 30 days") for an exact day still ahead. */
+export function releaseParts(game: Pick<GameDto, 'releaseDate' | 'releasePrecision'>): string[] {
+    const countdown = releaseCountdown(game.releaseDate, game.releasePrecision, todayLocal());
+    return [
+        releaseLabel(game.releaseDate, game.releasePrecision),
+        ...(countdown ? [countdown] : [])
+    ];
 }

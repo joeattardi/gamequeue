@@ -1,4 +1,5 @@
 import { sql } from 'drizzle-orm';
+import type { ReleasePrecision } from '@gamequeue/shared';
 import {
     blob,
     index,
@@ -101,6 +102,8 @@ export const games = sqliteTable('games', {
     slug: text('slug'),
     summary: text('summary'),
     releaseDate: text('release_date'), // YYYY-MM-DD
+    releasePrecision: text('release_precision').$type<ReleasePrecision>(), // null = unknown
+    releaseCheckedAt: integer('release_checked_at'), // last time IGDB was asked for the date
     coverImageId: text('cover_image_id'),
     igdbRating: integer('igdb_rating'), // 0-100
     igdbRatingCount: integer('igdb_rating_count'),

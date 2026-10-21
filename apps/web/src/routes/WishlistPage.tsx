@@ -28,7 +28,7 @@ import { Cover } from '../components/Cover';
 import { LayoutToggle, useLayout } from '../components/LayoutToggle';
 import { ListLoading } from '../components/ListLoading';
 import { MetaLine } from '../components/MetaLine';
-import { yearOf, usePageTitle } from '../lib';
+import { releaseParts, usePageTitle } from '../lib';
 import { ChevronDown, ChevronUp, Gift, Plus, ShoppingCart, X } from 'lucide-react';
 
 const LAYOUT_KEY = 'gq_wishlist_layout';
@@ -200,7 +200,7 @@ function WishlistTile({ item, position }: { item: WishlistItemDto; position: num
                     <div className="card__info">
                         <strong className="card__title">{game.name}</strong>
                         <span className="muted card__sub">
-                            <MetaLine parts={[yearOf(game.releaseDate), item.platform?.name]} />
+                            <MetaLine parts={[...releaseParts(game), item.platform?.name]} />
                         </span>
                         {item.note && <span className="muted card__note">{item.note}</span>}
                     </div>
@@ -280,7 +280,7 @@ function Row({
             <div className="row-item__main">
                 <strong className="row-item__title">{game.name}</strong>
                 <span className="muted">
-                    <MetaLine parts={[yearOf(game.releaseDate)]} />
+                    <MetaLine parts={releaseParts(game)} />
                 </span>
                 <div className="wish-fields">
                     <label className="field">

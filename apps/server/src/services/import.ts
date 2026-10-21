@@ -98,7 +98,15 @@ function merge(
     for (const g of file.games) {
         // Shared metadata cache: add games we've never seen, never touch ones we have
         if (!cached.has(g.igdbId)) {
-            saveGame(db, { id: g.igdbId, ...g.game }, now, { keepExistingPlatforms: true });
+            saveGame(
+                db,
+                { id: g.igdbId, ...g.game, releasePrecision: g.game.releasePrecision ?? null },
+                now,
+                {
+                    keepExistingPlatforms: true,
+                    release: 'unchecked'
+                }
+            );
             cached.add(g.igdbId);
         }
         upsertPlatforms(
@@ -488,7 +496,15 @@ function mergeWishlist(
             continue;
         }
         if (!cached.has(w.igdbId)) {
-            saveGame(db, { id: w.igdbId, ...w.game }, now, { keepExistingPlatforms: true });
+            saveGame(
+                db,
+                { id: w.igdbId, ...w.game, releasePrecision: w.game.releasePrecision ?? null },
+                now,
+                {
+                    keepExistingPlatforms: true,
+                    release: 'unchecked'
+                }
+            );
             cached.add(w.igdbId);
         }
         if (w.platform) upsertPlatforms(db, [w.platform], { keepExisting: true });

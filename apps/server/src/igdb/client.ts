@@ -1,5 +1,12 @@
 import { RequestLimiter } from './limiter.js';
-import { isCollectable, mapGame, mapSearchHit, type RawGame, type RawTtb } from './mappers.js';
+import {
+    isCollectable,
+    mapGame,
+    mapReleaseInfo,
+    mapSearchHit,
+    type RawGame,
+    type RawTtb
+} from './mappers.js';
 import { TokenProvider } from './token.js';
 import { IgdbError, type IgdbClient } from './types.js';
 
@@ -7,6 +14,8 @@ const BASE = 'https://api.igdb.com/v4';
 const GAME_FIELDS =
     'name,slug,summary,first_release_date,cover.image_id,platforms.name,platforms.abbreviation,' +
     'genres.name,themes.name,total_rating,total_rating_count,game_type.type';
+/** Only a game's own page needs the per-platform dates, which say how exact the release date is */
+const RELEASE_FIELDS = 'release_dates.date,release_dates.date_format';
 const MAX_429_RETRIES = 3;
 
 export interface IgdbClientOptions {
@@ -69,13 +78,26 @@ export function createIgdbClient(opts: IgdbClientOptions): IgdbClient {
             // One round trip for the game plus its time-to-beat
             const results = await request<{ name: string; result: unknown[] }[]>(
                 'multiquery',
-                `query games "game" { fields ${GAME_FIELDS}; where id = ${igdbId}; };\n` +
+                `query games "game" { fields ${GAME_FIELDS},${RELEASE_FIELDS}; where id = ${igdbId}; };\n` +
                     `query game_time_to_beats "ttb" { fields game_id,hastily,normally,completely,count; where game_id = ${igdbId}; };`
             );
             const game = results.find((r) => r.name === 'game')?.result[0] as RawGame | undefined;
             if (!game) return null;
             const ttb = results.find((r) => r.name === 'ttb')?.result[0] as RawTtb | undefined;
             return mapGame(game, ttb);
+        },
+
+        async fetchReleaseDates(igdbIds) {
+            const out = [];
+            for (let i = 0; i < igdbIds.length; i += 100) {
+                const ids = igdbIds.slice(i, i + 100);
+                const raw = await request<RawGame[]>(
+                    'games',
+                    `fields first_release_date,${RELEASE_FIELDS}; where id = (${ids.join(',')}); limit 100;`
+                );
+                out.push(...raw.map(mapReleaseInfo));
+            }
+            return out;
         },
 
         async fetchPlatforms() {

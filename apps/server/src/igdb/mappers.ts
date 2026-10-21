@@ -1,4 +1,5 @@
-import type { GameRecord, IgdbSearchHit } from './types.js';
+import type { ReleasePrecision } from '@gamequeue/shared';
+import type { GameRecord, IgdbSearchHit, ReleaseInfo } from './types.js';
 
 interface RawNamed {
     id: number;
@@ -11,6 +12,7 @@ export interface RawGame {
     slug?: string;
     summary?: string;
     first_release_date?: number;
+    release_dates?: { date?: number; date_format?: number | { id?: number } }[];
     cover?: { image_id?: string };
     platforms?: RawNamed[];
     genres?: RawNamed[];
@@ -29,6 +31,43 @@ export interface RawTtb {
 
 const toIsoDate = (unixSeconds?: number) =>
     unixSeconds === undefined ? null : new Date(unixSeconds * 1000).toISOString().slice(0, 10);
+
+/** IGDB `date_formats` ids (checked live): 0 day, 1 month, 2 year, 3-6 quarters 1-4, 7 TBD. */
+const PRECISION_BY_FORMAT: Record<number, ReleasePrecision | 'tbd'> = {
+    0: 'day',
+    1: 'month',
+    2: 'year',
+    3: 'quarter',
+    4: 'quarter',
+    5: 'quarter',
+    6: 'quarter',
+    7: 'tbd'
+};
+const PRECISION_RANK: Record<string, number> = { day: 0, month: 1, quarter: 2, year: 3 };
+
+/**
+ * The game's first release date and how exact it is. `first_release_date` is the earliest of the
+ * per-platform `release_dates`, so the precision comes from the ones that carry that same date (the
+ * most exact wins). A format of TBD, or no matching row, leaves the precision unknown (null).
+ */
+export function mapRelease(raw: Pick<RawGame, 'first_release_date' | 'release_dates'>) {
+    const date = toIsoDate(raw.first_release_date);
+    let precision: ReleasePrecision | null = null;
+    let tbd = false;
+    for (const r of raw.release_dates ?? []) {
+        if (r.date === undefined || r.date !== raw.first_release_date) continue;
+        const id = typeof r.date_format === 'object' ? r.date_format?.id : r.date_format;
+        const p = id === undefined ? undefined : PRECISION_BY_FORMAT[id];
+        if (p === 'tbd') tbd = true;
+        else if (p && (!precision || PRECISION_RANK[p]! < PRECISION_RANK[precision]!))
+            precision = p;
+    }
+    return tbd && !precision
+        ? { releaseDate: null, releasePrecision: null }
+        : { releaseDate: date, releasePrecision: precision };
+}
+
+export const mapReleaseInfo = (raw: RawGame): ReleaseInfo => ({ id: raw.id, ...mapRelease(raw) });
 
 const platforms = (raw?: RawNamed[]) =>
     (raw ?? []).map((p) => ({ id: p.id, name: p.name, abbreviation: p.abbreviation ?? null }));
@@ -71,7 +110,7 @@ export function mapGame(raw: RawGame, ttb?: RawTtb): GameRecord {
         name: raw.name,
         slug: raw.slug ?? null,
         summary: raw.summary ?? null,
-        releaseDate: toIsoDate(raw.first_release_date),
+        ...mapRelease(raw),
         coverImageId: raw.cover?.image_id ?? null,
         igdbRating: raw.total_rating === undefined ? null : Math.round(raw.total_rating),
         igdbRatingCount: raw.total_rating_count ?? null,

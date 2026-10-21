@@ -133,6 +133,7 @@ export function buildExport(db: Db, userId: number, now = new Date()): ExportFil
         slug: g.slug,
         summary: g.summary,
         releaseDate: g.releaseDate,
+        releasePrecision: g.releasePrecision,
         coverImageId: g.coverImageId,
         igdbRating: g.igdbRating,
         igdbRatingCount: g.igdbRatingCount,

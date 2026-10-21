@@ -10,7 +10,7 @@ import type { Db } from '../db/client.js';
 import { entries, platforms, wishlistItems, wishlists } from '../db/schema.js';
 import { HttpError } from '../errors.js';
 import type { IgdbClient } from '../igdb/types.js';
-import { ensureGame, existingPlatformIds, loadGames } from './games.js';
+import { ensureGame, existingPlatformIds, loadGames, refreshReleaseDates } from './games.js';
 
 export const DEFAULT_WISHLIST_NAME = 'Wishlist';
 
@@ -65,6 +65,21 @@ export function wishlistItemsOf(db: Db, wishlistId: number): WishlistItemDto[] {
               ]
             : [];
     });
+}
+
+/** Brings the release dates of the unreleased games on a wishlist up to date (see `refreshReleaseDates`). */
+export async function refreshWishlistReleases(
+    db: Db,
+    igdb: IgdbClient | undefined,
+    wishlistId: number
+) {
+    const ids = db
+        .select({ id: wishlistItems.gameId })
+        .from(wishlistItems)
+        .where(eq(wishlistItems.wishlistId, wishlistId))
+        .all()
+        .map((r) => r.id);
+    await refreshReleaseDates(db, igdb, ids);
 }
 
 export function getWishlist(db: Db, userId: number, id: number): WishlistDto {

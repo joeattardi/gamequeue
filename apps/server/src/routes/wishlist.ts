@@ -12,6 +12,7 @@ import {
     ensureWishlist,
     getWishlist,
     patchWishlistItem,
+    refreshWishlistReleases,
     removeFromWishlist,
     reorderWishlist
 } from '../services/wishlist.js';
@@ -28,7 +29,11 @@ export function wishlistRoutes({ db, config, igdb }: AppDeps) {
     const uid = (c: { get(k: 'user'): { id: number } }) => c.get('user').id;
     const wishlistId = (c: { get(k: 'user'): { id: number } }) => ensureWishlist(db, uid(c)).id;
 
-    r.get('/', (c) => c.json({ wishlist: getWishlist(db, uid(c), wishlistId(c)) }));
+    r.get('/', async (c) => {
+        const id = wishlistId(c);
+        await refreshWishlistReleases(db, igdb, id);
+        return c.json({ wishlist: getWishlist(db, uid(c), id) });
+    });
     r.post('/items', async (c) =>
         c.json({
             wishlist: await addToWishlist(

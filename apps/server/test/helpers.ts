@@ -48,6 +48,7 @@ export function fakeGame(id: number, name: string, extra: Partial<GameRecord> = 
         slug: name.toLowerCase().replace(/\W+/g, '-'),
         summary: `${name} summary`,
         releaseDate: '2020-05-01',
+        releasePrecision: 'day',
         coverImageId: `co${id}`,
         igdbRating: 80,
         igdbRatingCount: 100,
@@ -67,7 +68,7 @@ export function fakeGame(id: number, name: string, extra: Partial<GameRecord> = 
 
 /** In-memory IGDB stand-in that counts calls, so tests can prove caching. */
 export function fakeIgdb(catalog: GameRecord[]) {
-    const calls = { search: 0, fetchGame: 0, fetchPlatforms: 0 };
+    const calls = { search: 0, fetchGame: 0, fetchPlatforms: 0, fetchReleaseDates: 0 };
     const client: IgdbClient = {
         async search(q) {
             calls.search++;
@@ -85,6 +86,16 @@ export function fakeIgdb(catalog: GameRecord[]) {
         async fetchGame(id) {
             calls.fetchGame++;
             return catalog.find((g) => g.id === id) ?? null;
+        },
+        async fetchReleaseDates(ids) {
+            calls.fetchReleaseDates++;
+            return catalog
+                .filter((g) => ids.includes(g.id))
+                .map((g) => ({
+                    id: g.id,
+                    releaseDate: g.releaseDate,
+                    releasePrecision: g.releasePrecision
+                }));
         },
         async fetchPlatforms() {
             calls.fetchPlatforms++;

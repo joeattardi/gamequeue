@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type { PlaythroughDto } from './playthroughs.js';
+import type { ReleasePrecision } from './release.js';
 
 export const ENTRY_STATUSES = ['unplayed', 'playing', 'paused', 'finished', 'abandoned'] as const;
 export type EntryStatus = (typeof ENTRY_STATUSES)[number];
@@ -37,6 +38,8 @@ export interface GameDto {
     slug: string | null;
     summary: string | null;
     releaseDate: string | null;
+    /** How exact `releaseDate` is; null means unknown (treat as a day) */
+    releasePrecision: ReleasePrecision | null;
     coverImageId: string | null;
     igdbRating: number | null;
     genres: string[];

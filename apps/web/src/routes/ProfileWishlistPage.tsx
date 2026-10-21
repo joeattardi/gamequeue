@@ -5,7 +5,7 @@ import { useProfileWishlist } from '../api/profile';
 import { PublicGameList } from '../components/PublicGameList';
 import { Footer } from '../components/Footer';
 import { PublicHeader } from '../components/PublicHeader';
-import { platformLabel, usePageTitle } from '../lib';
+import { platformLabel, releaseParts, usePageTitle } from '../lib';
 
 /** Public: someone's wishlist in their order, without their notes (`/u/:username/wishlist`). */
 export function ProfileWishlistPage() {
@@ -30,7 +30,12 @@ export function ProfileWishlistPage() {
                             entries={wishlist.data?.items.map((i) => ({
                                 id: i.igdbId,
                                 game: i.game,
-                                caption: i.platform ? platformLabel(i.platform) : undefined
+                                caption: [
+                                    ...releaseParts(i.game),
+                                    i.platform && platformLabel(i.platform)
+                                ]
+                                    .filter(Boolean)
+                                    .join(' · ')
                             }))}
                             numbered
                             empty="Nothing on the wishlist."

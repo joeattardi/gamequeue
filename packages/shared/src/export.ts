@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { ENTRY_STATUSES, ratingSchema, tagsSchema } from './collection.js';
 import { isoDateSchema } from './playthroughs.js';
+import { releasePrecisionSchema } from './release.js';
 import { MAX_SLOTS } from './slots.js';
 import { SMART_SORTS, smartRulesSchema } from './smart-lists.js';
 
@@ -24,6 +25,8 @@ export const exportGameSchema = z.object({
     slug: z.string().max(500).nullable(),
     summary: z.string().max(20_000).nullable(),
     releaseDate: isoDateSchema.nullable(),
+    // Optional so files from before it existed are still valid v1
+    releasePrecision: releasePrecisionSchema.nullable().optional(),
     coverImageId: z.string().max(100).nullable(),
     igdbRating: z.number().int().min(0).max(100).nullable(),
     igdbRatingCount: z.number().int().min(0).nullable(),
