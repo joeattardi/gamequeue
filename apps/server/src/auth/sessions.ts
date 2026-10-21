@@ -25,7 +25,8 @@ export function resolveSession(db: Db, token: string, now = Date.now()) {
             expiresAt: sessions.expiresAt,
             userId: users.id,
             username: users.username,
-            email: users.email
+            email: users.email,
+            role: users.role
         })
         .from(sessions)
         .innerJoin(users, eq(users.id, sessions.userId))
@@ -42,7 +43,7 @@ export function resolveSession(db: Db, token: string, now = Date.now()) {
         db.update(sessions).set({ expiresAt }).where(eq(sessions.id, id)).run();
     }
     return {
-        user: { id: row.userId, username: row.username, email: row.email },
+        user: { id: row.userId, username: row.username, email: row.email, role: row.role },
         expiresAt,
         renewed: expiresAt !== row.expiresAt
     };

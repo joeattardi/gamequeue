@@ -20,6 +20,7 @@ import {
     LogOut,
     Menu,
     Settings,
+    ShieldCheck,
     X
 } from 'lucide-react';
 
@@ -155,6 +156,12 @@ export function Shell({ user }: { user: UserDto }) {
                             <Database />
                             Data
                         </NavLink>
+                        {user.role === 'admin' && (
+                            <NavLink to="/admin">
+                                <ShieldCheck />
+                                Admin
+                            </NavLink>
+                        )}
                     </nav>
                     <div className="sidebar__user">
                         <Link

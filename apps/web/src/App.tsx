@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from 'react-router';
 import { useMe } from './api/auth';
 import { Splash } from './components/Splash';
 import { Shell } from './components/Shell';
+import { AdminPage } from './routes/AdminPage';
 import { AuthPage } from './routes/AuthPage';
 import { AccountPage } from './routes/AccountPage';
 import { CollectionPage } from './routes/CollectionPage';
@@ -83,6 +84,7 @@ export function App() {
                 <Route path="recap/:year" element={<RecapPage />} />
                 <Route path="account" element={<AccountPage />} />
                 <Route path="data" element={<DataPage />} />
+                {me.data.role === 'admin' && <Route path="admin" element={<AdminPage />} />}
                 <Route path="*" element={<Navigate to="/" replace />} />
             </Route>
         </Routes>

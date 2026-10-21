@@ -238,6 +238,17 @@ In the Cloudflare dashboard for `gamequeue.app` (all available on the free plan)
 - **Security > WAF > Rate limiting rules:** optionally add one rule limiting `POST /api/auth/login` per IP. This also covers the `X-Forwarded-For` caveat above, because Cloudflare keys it on the real client IP.
 - Do not put Cloudflare Access (login wall) in front of the whole site: the public profile pages (`/u/:username`) must stay reachable by everyone.
 
+## Making a user an admin
+
+Roles are `gamer` (default) and `admin`; there is no UI to change them. On the Pi (the host `sqlite3` from step 2 is safe on the live database, and the app picks the change up on the user's next request, no restart or new login):
+
+```sh
+sqlite3 ~/gamequeue/data/gamequeue.db "UPDATE users SET role = 'admin' WHERE username = 'jattardi';"
+sqlite3 ~/gamequeue/data/gamequeue.db "SELECT username, role FROM users;"
+```
+
+For a local dev database use `apps/server/data/gamequeue.db` (or your `DATABASE_PATH`). Set it back with `role = 'gamer'`. Back up first (`scripts/backup.sh`) if you want to be careful.
+
 ## How HTTPS works
 
 - **Browser to Cloudflare:** a certificate for `gamequeue.app` that Cloudflare issues and renews itself (Universal SSL). Nothing to buy or install. A brand-new zone can take several minutes to get its first certificate; until then browsers show a certificate error.

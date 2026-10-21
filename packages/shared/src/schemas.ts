@@ -74,10 +74,16 @@ export type DeleteAccountInput = z.infer<typeof deleteAccountSchema>;
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 
+/** Permission levels: `gamer` is the standard user, `admin` also gets the admin area. */
+export const USER_ROLES = ['gamer', 'admin'] as const;
+export type UserRole = (typeof USER_ROLES)[number];
+
 export interface UserDto {
     id: number;
     username: string;
     email: string;
+    /** Only a UI hint (shows the Admin link); the server checks the role again on every admin request */
+    role: UserRole;
     /** When the uploaded avatar last changed (ms); null = none, show the generated identicon */
     avatarUpdatedAt: number | null;
     /** Optional real name, private to the user unless `showRealName` is on */

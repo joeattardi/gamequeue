@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm';
-import type { ReleasePrecision } from '@gamequeue/shared';
+import { USER_ROLES, type ReleasePrecision } from '@gamequeue/shared';
 import {
     blob,
     index,
@@ -18,6 +18,8 @@ export const users = sqliteTable('users', {
     username: text('username').notNull().unique(),
     email: text('email').notNull().unique(),
     passwordHash: text('password_hash').notNull(),
+    // Permission level: 'gamer' is the standard user, 'admin' also gets the admin area
+    role: text('role', { enum: USER_ROLES }).notNull().default('gamer'),
     // Optional real name; only exposed on the public profile when show_real_name is on
     firstName: text('first_name'),
     lastName: text('last_name'),

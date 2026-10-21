@@ -1,10 +1,13 @@
+import type { UserRole } from '@gamequeue/shared';
 import type { Context, MiddlewareHandler } from 'hono';
 import { deleteCookie, getCookie, setCookie } from 'hono/cookie';
 import type { Config } from '../config.js';
 import type { Db } from '../db/client.js';
 import { resolveSession, SESSION_COOKIE, SESSION_TTL_MS } from './sessions.js';
 
-export type AuthVars = { user: { id: number; username: string; email: string } };
+export type AuthVars = {
+    user: { id: number; username: string; email: string; role: UserRole };
+};
 
 export function cookieOptions(config: Config, expiresAt: number) {
     return {
@@ -38,3 +41,13 @@ export function requireAuth(db: Db, config: Config): MiddlewareHandler<{ Variabl
         await next();
     };
 }
+
+/**
+ * Use after `requireAuth` on admin-only routers: 403 unless the user has the `admin` role. The role
+ * comes from the database on every request (`resolveSession` joins `users`), so granting or revoking
+ * it takes effect immediately, without a new login.
+ */
+export const requireAdmin: MiddlewareHandler<{ Variables: AuthVars }> = async (c, next) => {
+    if (c.get('user').role !== 'admin') return c.json({ error: 'Admin access required' }, 403);
+    await next();
+};
