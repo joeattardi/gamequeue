@@ -244,6 +244,40 @@ export function BackupSkeleton() {
     );
 }
 
+/** The admin users list: avatar, name and email lines per row. */
+export function UserRowSkeletons({ count = 4 }: { count?: number }) {
+    return (
+        <ul className="admin-users" role="status" aria-label="Loading users">
+            {Array.from({ length: count }, (_, i) => (
+                <li key={i} className="admin-user" aria-hidden="true">
+                    <span className="skeleton skeleton--user-avatar" />
+                    <div className="admin-user__main">
+                        <span className="skeleton skeleton--line" style={{ width: '30%' }} />
+                        <span
+                            className="skeleton skeleton--line skeleton--sub"
+                            style={{ width: '45%' }}
+                        />
+                    </div>
+                </li>
+            ))}
+        </ul>
+    );
+}
+
+/** The admin user edit page: a panel of form fields. */
+export function UserFormSkeleton() {
+    return (
+        <div className="stack" role="status" aria-label="Loading user">
+            <div className="panel" aria-hidden="true">
+                <span className="skeleton skeleton--line" style={{ width: '25%' }} />
+                {[0, 1, 2, 3].map((i) => (
+                    <span key={i} className="skeleton skeleton--block" style={{ height: 40 }} />
+                ))}
+            </div>
+        </div>
+    );
+}
+
 /** The stats page: a row of number tiles and three chart panels. */
 export function StatsSkeleton() {
     return (

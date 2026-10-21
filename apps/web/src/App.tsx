@@ -3,6 +3,7 @@ import { useMe } from './api/auth';
 import { Splash } from './components/Splash';
 import { Shell } from './components/Shell';
 import { AdminPage } from './routes/AdminPage';
+import { AdminUserPage } from './routes/AdminUserPage';
 import { AuthPage } from './routes/AuthPage';
 import { AccountPage } from './routes/AccountPage';
 import { CollectionPage } from './routes/CollectionPage';
@@ -84,7 +85,13 @@ export function App() {
                 <Route path="recap/:year" element={<RecapPage />} />
                 <Route path="account" element={<AccountPage />} />
                 <Route path="data" element={<DataPage />} />
-                {me.data.role === 'admin' && <Route path="admin" element={<AdminPage />} />}
+                {me.data.role === 'admin' && (
+                    <>
+                        <Route path="admin" element={<AdminPage />} />
+                        <Route path="admin/users/new" element={<AdminUserPage />} />
+                        <Route path="admin/users/:id" element={<AdminUserPage />} />
+                    </>
+                )}
                 <Route path="*" element={<Navigate to="/" replace />} />
             </Route>
         </Routes>

@@ -3742,3 +3742,81 @@ fieldset.stars:disabled .stars__star {
     margin: 0;
     overflow-wrap: anywhere;
 }
+
+/* Admin: user management */
+.admin-panel-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+.admin-users {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+}
+.admin-user {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 0;
+    border-top: 1px solid var(--line);
+}
+.admin-user:first-child {
+    border-top: 0;
+}
+.admin-user__main {
+    flex: 1;
+    min-width: 0;
+    display: grid;
+    gap: 4px;
+}
+.admin-user__email {
+    overflow-wrap: anywhere;
+    font-size: 0.9rem;
+}
+.admin-user__games {
+    white-space: nowrap;
+    font-size: 0.9rem;
+}
+.skeleton--user-avatar {
+    flex: none;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+}
+.admin-user-head {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+.admin-user-head h1,
+.admin-user-head p {
+    margin: 0;
+}
+.admin-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+.admin-subhead {
+    margin: 4px 0 0;
+    font-size: 0.95rem;
+}
+.back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-bottom: 12px;
+}
+.back-link svg {
+    width: 1em;
+    height: 1em;
+}
+@media (max-width: 520px) {
+    .admin-user__games {
+        display: none;
+    }
+}

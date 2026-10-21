@@ -4,9 +4,20 @@ import {
     type BackupReportDto,
     type BackupStatusDto
 } from '@gamequeue/shared';
-import { CircleAlert, CircleCheck, DatabaseBackup, ShieldCheck, TriangleAlert } from 'lucide-react';
-import { useAdminBackup } from '../api/admin';
-import { BackupSkeleton } from '../components/PageSkeletons';
+import {
+    CircleAlert,
+    CircleCheck,
+    DatabaseBackup,
+    ShieldCheck,
+    TriangleAlert,
+    UserPlus,
+    Users
+} from 'lucide-react';
+import { Link } from 'react-router';
+import { useAdminBackup, useAdminUsers } from '../api/admin';
+import { useMe } from '../api/auth';
+import { Avatar } from '../components/Avatar';
+import { BackupSkeleton, UserRowSkeletons } from '../components/PageSkeletons';
 import { timeAgo, usePageTitle } from '../lib';
 
 const formatBytes = (n: number) =>
@@ -112,6 +123,55 @@ function BackupStatus({ report }: { report: BackupReportDto }) {
     );
 }
 
+function UsersPanel() {
+    const users = useAdminUsers();
+    const me = useMe();
+    return (
+        <section className="panel" aria-labelledby="users-heading">
+            <div className="admin-panel-head">
+                <h2 id="users-heading">
+                    <Users aria-hidden="true" /> Users
+                </h2>
+                <Link className="btn btn--small" to="/admin/users/new">
+                    <UserPlus aria-hidden="true" /> New user
+                </Link>
+            </div>
+            {users.isPending ? (
+                <UserRowSkeletons />
+            ) : users.isError ? (
+                <p className="form-error" role="alert">
+                    Couldn't load the users.
+                </p>
+            ) : (
+                <ul className="admin-users">
+                    {users.data.map((u) => (
+                        <li key={u.id} className="admin-user">
+                            <Avatar
+                                username={u.username}
+                                size={36}
+                                avatarUpdatedAt={u.avatarUpdatedAt}
+                            />
+                            <div className="admin-user__main">
+                                <Link to={`/admin/users/${u.id}`}>
+                                    <strong>{u.username}</strong>
+                                </Link>
+                                {u.id === me.data?.id && <span className="muted"> (you)</span>}
+                                <div className="muted admin-user__email">{u.email}</div>
+                            </div>
+                            <span className={`badge ${u.role === 'admin' ? '' : 'badge--quiet'}`}>
+                                {u.role}
+                            </span>
+                            <span className="muted admin-user__games">
+                                {u.gameCount} {u.gameCount === 1 ? 'game' : 'games'}
+                            </span>
+                        </li>
+                    ))}
+                </ul>
+            )}
+        </section>
+    );
+}
+
 /** Admin area; only routed (and linked) for users with the admin role. */
 export function AdminPage() {
     usePageTitle('Admin');
@@ -127,6 +187,7 @@ export function AdminPage() {
                     <p className="muted">Tools for running this GameQueue instance.</p>
                 </div>
             </div>
+            <UsersPanel />
             <section className="panel" aria-labelledby="backup-heading">
                 <h2 id="backup-heading">
                     <DatabaseBackup aria-hidden="true" /> Backups
