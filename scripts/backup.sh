@@ -2,6 +2,7 @@
 # Snapshots the live SQLite database (safe while the app runs), keeps 14 days, copies off-machine if
 # an rclone remote named "offsite" exists. Run nightly from cron; update.sh also runs it before updates.
 # Every run leaves data/backup-status.json behind for the admin page (success or failure).
+# If HEALTHCHECK_URL is set (environment or .env), also pings healthchecks.io: /start, then success or /fail.
 set -euo pipefail
 
 DIR=${GQ_DIR:-$(cd "$(dirname "$0")/.." && pwd)}
@@ -10,6 +11,9 @@ OUT="$DIR/backups"
 STATUS="$DIR/data/backup-status.json"
 STAMP=$(date +%F-%H%M%S)
 FILE="$OUT/gamequeue-$STAMP.db"
+
+# healthchecks.io ping URL; read from .env by name rather than sourcing the file (it holds other secrets)
+HEALTHCHECK_URL=${HEALTHCHECK_URL:-$(sed -n 's/^HEALTHCHECK_URL=//p' "$DIR/.env" 2>/dev/null | head -n1 | tr -d '"'"'"'\r' || true)}
 
 FAILED_CMD=""
 OFFSITE="not-configured"
@@ -32,8 +36,23 @@ write_status() {
         mv "$STATUS.tmp" "$STATUS" || true
 }
 
+# ping [suffix] [message]: never fails the backup, so a monitoring outage can't break it
+ping_healthcheck() {
+    [ -n "$HEALTHCHECK_URL" ] || return 0
+    curl -fsS -m 10 --retry 3 -o /dev/null --data-raw "${2:-}" "$HEALTHCHECK_URL${1:-}" || true
+}
+
+on_exit() {
+    local rc=$?
+    [ $rc -eq 0 ] && return
+    local msg="backup failed (exit $rc): $FAILED_CMD"
+    write_status false "$msg"
+    ping_healthcheck /fail "$msg"
+}
+
 trap 'FAILED_CMD=$BASH_COMMAND' ERR
-trap 'rc=$?; [ $rc -eq 0 ] || write_status false "backup failed (exit $rc): $FAILED_CMD"' EXIT
+trap on_exit EXIT
+ping_healthcheck /start
 
 mkdir -p "$OUT"
 sqlite3 "$DB" ".backup '$FILE'"
@@ -62,3 +81,4 @@ if command -v rclone >/dev/null && rclone listremotes | grep -q '^offsite:'; the
 fi
 
 write_status true ""
+ping_healthcheck "" "$NAME $SIZE bytes, offsite: $OFFSITE"

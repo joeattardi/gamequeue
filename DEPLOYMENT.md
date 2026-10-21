@@ -326,6 +326,16 @@ Approach: a nightly snapshot kept locally for 14 days, plus a copy off the machi
 
 Every run also writes `~/gamequeue/data/backup-status.json` (success or failure), which the **Admin > Backups** panel in the app reads: last run, last success, whether the off-site upload worked, and a red banner if the last run failed or no backup has succeeded in 26 hours. This is the way to notice a silently broken cron job or B2 key. The file lives in `data/` because that is the only directory the container can see.
 
+### Monitoring with healthchecks.io
+
+The admin panel only helps when you look at it, and it can't notice a dead Pi or a cron job that never runs. `backup.sh` therefore also pings [healthchecks.io](https://healthchecks.io) when `HEALTHCHECK_URL` is set: `/start` when it begins, a plain ping on success, and `/fail` (with the error text) on failure. If no ping arrives within the check's period plus grace, healthchecks.io emails you, and again when it recovers.
+
+1. In healthchecks.io create a check for the nightly job: period **1 day**, grace **a few hours** (the job runs at 03:00), and an email integration.
+2. Copy its ping URL (`https://hc-ping.com/<uuid>`) and add it to `~/gamequeue/.env` on the Pi: `HEALTHCHECK_URL=https://hc-ping.com/<uuid>`. The script reads that one line from `.env` (or the environment); the app and compose ignore it. Treat the URL as a secret, since anyone holding it can fake a success.
+3. Run `~/gamequeue/scripts/backup.sh` by hand and check the check turns green in the dashboard.
+
+Pings never fail the backup (short timeout, a few retries, errors ignored). `update.sh` runs the backup before each update, so those runs ping too; extra pings are harmless. Healthchecks does not email on every success, only on down and recovery.
+
 Run it once by hand and confirm a `.db.gz` file appears in `~/gamequeue/backups`:
 
 ```sh
