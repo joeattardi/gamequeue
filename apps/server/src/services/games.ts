@@ -98,6 +98,8 @@ export function saveGame(
                 releaseCheckedAt: opts.fromImport ? null : now,
                 seriesCheckedAt: opts.fromImport ? null : now,
                 coverImageId: g.coverImageId,
+                // An import file carries no screenshots: they are fetched when the game is opened
+                screenshots: opts.fromImport ? null : JSON.stringify(g.screenshots),
                 igdbRating: g.igdbRating,
                 igdbRatingCount: g.igdbRatingCount,
                 gameType: g.gameType,
@@ -139,6 +141,36 @@ export async function ensureGame(db: Db, igdb: IgdbClient | undefined, igdbId: n
     const record = await callIgdb(() => requireIgdb(igdb).fetchGame(igdbId));
     if (!record) throw new HttpError(404, "That game wasn't found on IGDB");
     saveGame(db, record);
+}
+
+/**
+ * Makes sure a cached game has its screenshots, asking IGDB once for games cached before they were
+ * stored (or saved from an import file). Best effort: a failure just leaves the gallery empty until
+ * the next visit. Returns whether anything was stored.
+ */
+export async function ensureScreenshots(
+    db: Db,
+    igdb: IgdbClient | undefined,
+    igdbId: number
+): Promise<boolean> {
+    if (!igdb) return false;
+    const row = db
+        .select({ screenshots: games.screenshots })
+        .from(games)
+        .where(eq(games.id, igdbId))
+        .get();
+    if (!row || row.screenshots !== null) return false;
+    try {
+        const ids = await igdb.fetchScreenshots(igdbId);
+        db.update(games)
+            .set({ screenshots: JSON.stringify(ids ?? []) })
+            .where(eq(games.id, igdbId))
+            .run();
+        return true;
+    } catch (e) {
+        console.error('Screenshot fetch failed', e);
+        return false;
+    }
 }
 
 let backfilling = false;
@@ -316,6 +348,7 @@ export function loadGames(db: Db, gameIds: number[]): Map<number, GameDto> {
             releaseDate: g.releaseDate,
             releasePrecision: g.releasePrecision,
             coverImageId: g.coverImageId,
+            screenshots: g.screenshots ? (JSON.parse(g.screenshots) as string[]) : [],
             igdbRating: g.igdbRating,
             series: gSeries.get(g.id) ?? [],
             genres: gGenres.get(g.id) ?? [],

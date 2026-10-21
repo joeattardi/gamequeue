@@ -13,6 +13,7 @@ import {
     listEntries,
     patchEntry
 } from '../services/entries.js';
+import { ensureScreenshots } from '../services/games.js';
 
 const FACET_KEYS = ['status', 'platform', 'genre', 'series', 'tag'];
 
@@ -48,9 +49,13 @@ export function entryRoutes({ db, config, igdb }: AppDeps) {
         return c.json({ entry: await addEntry(db, igdb, c.get('user').id, input) }, 201);
     });
 
-    r.get('/:id', (c) => {
-        const entry = getEntry(db, c.get('user').id, parseId(c.req.param('id')));
+    r.get('/:id', async (c) => {
+        const userId = c.get('user').id;
+        const id = parseId(c.req.param('id'));
+        let entry = getEntry(db, userId, id);
         if (!entry) throw new HttpError(404, 'Entry not found');
+        // Games cached before screenshots were stored get them on first view
+        if (await ensureScreenshots(db, igdb, entry.game.id)) entry = getEntry(db, userId, id)!;
         return c.json({ entry });
     });
 

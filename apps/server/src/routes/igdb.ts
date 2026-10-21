@@ -8,7 +8,14 @@ import { validate } from '../http.js';
 import { TtlCache } from '../igdb/search-cache.js';
 import type { IgdbSearchHit } from '../igdb/types.js';
 import { HttpError } from '../errors.js';
-import { callIgdb, ensureGame, listPlatforms, loadGames, requireIgdb } from '../services/games.js';
+import {
+    callIgdb,
+    ensureGame,
+    ensureScreenshots,
+    listPlatforms,
+    loadGames,
+    requireIgdb
+} from '../services/games.js';
 
 export function igdbRoutes({ db, config, igdb }: AppDeps) {
     const r = new Hono<{ Variables: AuthVars }>();
@@ -80,6 +87,7 @@ export function igdbRoutes({ db, config, igdb }: AppDeps) {
         if (!Number.isInteger(igdbId) || igdbId <= 0) throw new HttpError(400, 'Invalid game id');
         const userId = c.get('user').id;
         await ensureGame(db, igdb, igdbId);
+        await ensureScreenshots(db, igdb, igdbId);
         const game = loadGames(db, [igdbId]).get(igdbId)!;
         const entry = db
             .select({ id: entries.id })

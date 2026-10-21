@@ -106,6 +106,7 @@ export const games = sqliteTable('games', {
     releaseCheckedAt: integer('release_checked_at'), // last time IGDB was asked for the date
     seriesCheckedAt: integer('series_checked_at'), // null = never asked IGDB which series it is in
     coverImageId: text('cover_image_id'),
+    screenshots: text('screenshots'), // JSON array of IGDB image ids; null = never asked IGDB
     igdbRating: integer('igdb_rating'), // 0-100
     igdbRatingCount: integer('igdb_rating_count'),
     gameType: text('game_type'),

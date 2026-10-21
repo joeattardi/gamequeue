@@ -9,6 +9,8 @@ export interface GameRecord {
     releaseDate: string | null; // YYYY-MM-DD (UTC)
     releasePrecision: ReleasePrecision | null;
     series: SeriesRefDto[];
+    /** IGDB image ids of the first few screenshots */
+    screenshots: string[];
     coverImageId: string | null;
     igdbRating: number | null; // 0-100
     igdbRatingCount: number | null;
@@ -62,6 +64,8 @@ export interface IgdbClient {
     fetchReleaseDates(igdbIds: number[]): Promise<ReleaseInfo[]>;
     /** Which series each game belongs to; ids IGDB no longer knows are left out */
     fetchGameSeries(igdbIds: number[]): Promise<{ id: number; series: SeriesRefDto[] }[]>;
+    /** Screenshot image ids for one game, or null when IGDB no longer knows it */
+    fetchScreenshots(igdbId: number): Promise<string[] | null>;
     fetchSeries(seriesId: number): Promise<SeriesRecord | null>;
 }
 

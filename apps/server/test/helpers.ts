@@ -50,6 +50,7 @@ export function fakeGame(id: number, name: string, extra: Partial<GameRecord> = 
         releaseDate: '2020-05-01',
         releasePrecision: 'day',
         series: [],
+        screenshots: [],
         coverImageId: `co${id}`,
         igdbRating: 80,
         igdbRatingCount: 100,
@@ -75,6 +76,7 @@ export function fakeIgdb(catalog: GameRecord[]) {
         fetchPlatforms: 0,
         fetchReleaseDates: 0,
         fetchGameSeries: 0,
+        fetchScreenshots: 0,
         fetchSeries: 0
     };
     const client: IgdbClient = {
@@ -110,6 +112,10 @@ export function fakeIgdb(catalog: GameRecord[]) {
             return catalog
                 .filter((g) => ids.includes(g.id))
                 .map((g) => ({ id: g.id, series: g.series }));
+        },
+        async fetchScreenshots(id) {
+            calls.fetchScreenshots++;
+            return catalog.find((g) => g.id === id)?.screenshots ?? null;
         },
         async fetchSeries(id) {
             calls.fetchSeries++;

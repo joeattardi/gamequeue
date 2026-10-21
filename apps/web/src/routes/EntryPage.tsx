@@ -6,6 +6,7 @@ import { ApiRequestError } from '../api/client';
 import { useConfirm } from '../components/Confirm';
 import { StarRating } from '../components/StarRating';
 import { Cover } from '../components/Cover';
+import { Screenshots } from '../components/Screenshots';
 import { ListsPanel } from '../components/ListsPanel';
 import { SeriesLinks } from '../components/SeriesLinks';
 import { ScoreGauge } from '../components/ScoreGauge';
@@ -54,6 +55,7 @@ function EntryDetail({ entry }: { entry: EntryDto }) {
             <div className="entry__layout">
                 <div className="entry__cover">
                     <Cover imageId={game.coverImageId} name={game.name} size="720p" />
+                    <Screenshots imageIds={game.screenshots} name={game.name} />
                 </div>
                 <div className="stack">
                     <header className="entry__head">

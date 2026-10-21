@@ -104,7 +104,8 @@ function merge(
                     id: g.igdbId,
                     ...g.game,
                     releasePrecision: g.game.releasePrecision ?? null,
-                    series: []
+                    series: [],
+                    screenshots: []
                 },
                 now,
                 {
@@ -507,7 +508,8 @@ function mergeWishlist(
                     id: w.igdbId,
                     ...w.game,
                     releasePrecision: w.game.releasePrecision ?? null,
-                    series: []
+                    series: [],
+                    screenshots: []
                 },
                 now,
                 {

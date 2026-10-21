@@ -5,6 +5,7 @@ import {
     mapGame,
     mapRelease,
     mapReleaseInfo,
+    mapScreenshots,
     mapSeriesRefs,
     mapSearchHit,
     type RawGame,
@@ -19,7 +20,7 @@ const GAME_FIELDS =
     'genres.name,themes.name,total_rating,total_rating_count,game_type.type';
 /** Only a game's own page needs the per-platform dates, which say how exact the release date is */
 const RELEASE_FIELDS = 'release_dates.date,release_dates.date_format';
-const DETAIL_FIELDS = `${RELEASE_FIELDS},collections.name`;
+const DETAIL_FIELDS = `${RELEASE_FIELDS},collections.name,screenshots.image_id`;
 const MAX_429_RETRIES = 3;
 
 export interface IgdbClientOptions {
@@ -115,6 +116,14 @@ export function createIgdbClient(opts: IgdbClientOptions): IgdbClient {
                 out.push(...raw.map((g) => ({ id: g.id, series: mapSeriesRefs(g) })));
             }
             return out;
+        },
+
+        async fetchScreenshots(igdbId) {
+            const [raw] = await request<RawGame[]>(
+                'games',
+                `fields screenshots.image_id; where id = ${igdbId};`
+            );
+            return raw ? mapScreenshots(raw) : null;
         },
 
         async fetchSeries(seriesId) {

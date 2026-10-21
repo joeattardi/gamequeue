@@ -12,6 +12,12 @@ const BASE = 'https://images.igdb.com/igdb/image/upload';
 export const coverUrl = (imageId: string, size: CoverSize = 'cover_big') =>
     `${BASE}/t_${size}/${imageId}.jpg`;
 
+/** Screenshots are 16:9; `screenshot_med` is 569x320 and `screenshot_big` 889x500. */
+export type ScreenshotSize = 'screenshot_med' | 'screenshot_big' | 'screenshot_huge' | '1080p';
+
+export const screenshotUrl = (imageId: string, size: ScreenshotSize = 'screenshot_big') =>
+    `${BASE}/t_${size}/${imageId}.jpg`;
+
 /** The next size up, for screens with a higher pixel density. */
 const RETINA: Partial<Record<CoverSize, CoverSize>> = {
     cover_small: 'cover_small_2x',

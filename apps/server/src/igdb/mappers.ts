@@ -15,6 +15,7 @@ export interface RawGame {
     collections?: { id: number; name: string }[];
     release_dates?: { date?: number; date_format?: number | { id?: number } }[];
     cover?: { image_id?: string };
+    screenshots?: { image_id?: string }[];
     platforms?: RawNamed[];
     genres?: RawNamed[];
     themes?: RawNamed[];
@@ -71,6 +72,14 @@ export function mapRelease(raw: Pick<RawGame, 'first_release_date' | 'release_da
 export const mapSeriesRefs = (raw: Pick<RawGame, 'collections'>) =>
     (raw.collections ?? []).map((c) => ({ id: c.id, name: c.name }));
 
+/** Screenshots are a gallery, not a catalogue: keep the first few. */
+export const MAX_SCREENSHOTS = 6;
+
+export const mapScreenshots = (raw: Pick<RawGame, 'screenshots'>) =>
+    (raw.screenshots ?? [])
+        .flatMap((s) => (s.image_id ? [s.image_id] : []))
+        .slice(0, MAX_SCREENSHOTS);
+
 export const mapReleaseInfo = (raw: RawGame): ReleaseInfo => ({ id: raw.id, ...mapRelease(raw) });
 
 const platforms = (raw?: RawNamed[]) =>
@@ -116,6 +125,7 @@ export function mapGame(raw: RawGame, ttb?: RawTtb): GameRecord {
         summary: raw.summary ?? null,
         ...mapRelease(raw),
         series: mapSeriesRefs(raw),
+        screenshots: mapScreenshots(raw),
         coverImageId: raw.cover?.image_id ?? null,
         igdbRating: raw.total_rating === undefined ? null : Math.round(raw.total_rating),
         igdbRatingCount: raw.total_rating_count ?? null,

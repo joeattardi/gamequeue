@@ -6,6 +6,7 @@ import { useGameDetail } from '../api/collection';
 import { useAddToWishlist, useRemoveFromWishlist } from '../api/wishlist';
 import { AddGameDialog } from '../components/AddGameDialog';
 import { Cover } from '../components/Cover';
+import { Screenshots } from '../components/Screenshots';
 import { EntrySkeleton } from '../components/PageSkeletons';
 import { PlatformTags } from '../components/PlatformIcon';
 import { SeriesLinks } from '../components/SeriesLinks';
@@ -64,6 +65,7 @@ function GameDetail({ detail }: { detail: GameDetailDto }) {
             <div className="entry__layout">
                 <div className="entry__cover">
                     <Cover imageId={game.coverImageId} name={game.name} size="720p" />
+                    <Screenshots imageIds={game.screenshots} name={game.name} />
                 </div>
                 <div className="stack">
                     <header className="entry__head">

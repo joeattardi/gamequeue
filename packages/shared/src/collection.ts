@@ -42,6 +42,8 @@ export interface GameDto {
     /** How exact `releaseDate` is; null means unknown (treat as a day) */
     releasePrecision: ReleasePrecision | null;
     coverImageId: string | null;
+    /** IGDB image ids of a few screenshots; empty until looked up or when there are none */
+    screenshots: string[];
     igdbRating: number | null;
     /** IGDB series the game belongs to; empty until looked up or when it has none */
     series: SeriesRefDto[];
