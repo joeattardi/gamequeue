@@ -155,7 +155,7 @@ function CreateForm() {
                 <button className="btn btn--primary" disabled={create.isPending}>
                     {create.isPending ? 'Creating…' : 'Create user'}
                 </button>
-                <Link className="btn btn--ghost" to="/admin">
+                <Link className="btn btn--ghost" to="/admin/users">
                     Cancel
                 </Link>
             </div>
@@ -372,7 +372,7 @@ function DeletePanel({ user }: { user: AdminUserDto }) {
         )
             return;
         del.mutate(user.id, {
-            onSuccess: () => navigate('/admin', { replace: true }),
+            onSuccess: () => navigate('/admin/users', { replace: true }),
             onError: (err) => setError(problemsOf(err).general)
         });
     }
@@ -441,11 +441,11 @@ export function AdminUserPage() {
     const isNew = id === undefined;
     usePageTitle(isNew ? 'New user | Admin' : undefined);
     const numeric = Number(id);
-    if (!isNew && !Number.isInteger(numeric)) return <Navigate to="/admin" replace />;
+    if (!isNew && !Number.isInteger(numeric)) return <Navigate to="/admin/users" replace />;
     return (
         <section>
-            <Link to="/admin" className="back-link">
-                <ArrowLeft aria-hidden="true" /> Admin
+            <Link to="/admin/users" className="back-link">
+                <ArrowLeft aria-hidden="true" /> Users
             </Link>
             {isNew ? <CreateForm /> : <EditUser id={numeric} />}
         </section>

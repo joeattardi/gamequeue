@@ -3744,13 +3744,6 @@ fieldset.stars:disabled .stars__star {
 }
 
 /* Admin: user management */
-.admin-panel-head {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 12px;
-    flex-wrap: wrap;
-}
 .admin-users {
     list-style: none;
     margin: 0;
@@ -3819,4 +3812,44 @@ fieldset.stars:disabled .stars__star {
     .admin-user__games {
         display: none;
     }
+}
+
+/* Admin dashboard */
+.admin-tiles {
+    display: grid;
+    gap: 16px;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+    margin-bottom: 16px;
+}
+.admin-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+    gap: 12px;
+    margin: 0;
+}
+.admin-stats > div {
+    display: flex;
+    flex-direction: column-reverse;
+    gap: 2px;
+}
+.admin-stats dd {
+    margin: 0;
+    font-family: var(--font-display, inherit);
+    font-size: 1.8rem;
+    font-weight: 700;
+    line-height: 1.1;
+}
+.admin-stats dt {
+    color: var(--ink-muted);
+    font-size: 0.85rem;
+}
+.admin-tile__link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 600;
+}
+.admin-tile__link svg {
+    width: 1em;
+    height: 1em;
 }

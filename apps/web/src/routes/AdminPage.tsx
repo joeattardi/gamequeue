@@ -5,19 +5,17 @@ import {
     type BackupStatusDto
 } from '@gamequeue/shared';
 import {
+    ArrowRight,
     CircleAlert,
     CircleCheck,
     DatabaseBackup,
     ShieldCheck,
     TriangleAlert,
-    UserPlus,
     Users
 } from 'lucide-react';
 import { Link } from 'react-router';
 import { useAdminBackup, useAdminUsers } from '../api/admin';
-import { useMe } from '../api/auth';
-import { Avatar } from '../components/Avatar';
-import { BackupSkeleton, UserRowSkeletons } from '../components/PageSkeletons';
+import { BackupSkeleton, UserStatsSkeleton } from '../components/PageSkeletons';
 import { timeAgo, usePageTitle } from '../lib';
 
 const formatBytes = (n: number) =>
@@ -123,51 +121,40 @@ function BackupStatus({ report }: { report: BackupReportDto }) {
     );
 }
 
-function UsersPanel() {
+function UsersTile() {
     const users = useAdminUsers();
-    const me = useMe();
+    const list = users.data;
+    const monthAgo = Date.now() - 30 * 24 * 3600 * 1000;
+    const stats = list && [
+        { label: 'Users', value: list.length },
+        { label: 'Admins', value: list.filter((u) => u.role === 'admin').length },
+        { label: 'Joined in 30 days', value: list.filter((u) => u.createdAt >= monthAgo).length },
+        { label: 'Games', value: list.reduce((n, u) => n + u.gameCount, 0) }
+    ];
     return (
-        <section className="panel" aria-labelledby="users-heading">
-            <div className="admin-panel-head">
-                <h2 id="users-heading">
-                    <Users aria-hidden="true" /> Users
-                </h2>
-                <Link className="btn btn--small" to="/admin/users/new">
-                    <UserPlus aria-hidden="true" /> New user
-                </Link>
-            </div>
+        <section className="panel admin-tile" aria-labelledby="users-heading">
+            <h2 id="users-heading">
+                <Users aria-hidden="true" /> Users
+            </h2>
             {users.isPending ? (
-                <UserRowSkeletons />
+                <UserStatsSkeleton />
             ) : users.isError ? (
                 <p className="form-error" role="alert">
                     Couldn't load the users.
                 </p>
             ) : (
-                <ul className="admin-users">
-                    {users.data.map((u) => (
-                        <li key={u.id} className="admin-user">
-                            <Avatar
-                                username={u.username}
-                                size={36}
-                                avatarUpdatedAt={u.avatarUpdatedAt}
-                            />
-                            <div className="admin-user__main">
-                                <Link to={`/admin/users/${u.id}`}>
-                                    <strong>{u.username}</strong>
-                                </Link>
-                                {u.id === me.data?.id && <span className="muted"> (you)</span>}
-                                <div className="muted admin-user__email">{u.email}</div>
-                            </div>
-                            <span className={`badge ${u.role === 'admin' ? '' : 'badge--quiet'}`}>
-                                {u.role}
-                            </span>
-                            <span className="muted admin-user__games">
-                                {u.gameCount} {u.gameCount === 1 ? 'game' : 'games'}
-                            </span>
-                        </li>
+                <dl className="admin-stats">
+                    {stats!.map((s) => (
+                        <div key={s.label}>
+                            <dd>{s.value}</dd>
+                            <dt>{s.label}</dt>
+                        </div>
                     ))}
-                </ul>
+                </dl>
             )}
+            <Link className="admin-tile__link" to="/admin/users">
+                Manage users <ArrowRight aria-hidden="true" />
+            </Link>
         </section>
     );
 }
@@ -187,7 +174,9 @@ export function AdminPage() {
                     <p className="muted">Tools for running this GameQueue instance.</p>
                 </div>
             </div>
-            <UsersPanel />
+            <div className="admin-tiles">
+                <UsersTile />
+            </div>
             <section className="panel" aria-labelledby="backup-heading">
                 <h2 id="backup-heading">
                     <DatabaseBackup aria-hidden="true" /> Backups

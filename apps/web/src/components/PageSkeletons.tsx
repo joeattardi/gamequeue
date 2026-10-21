@@ -264,6 +264,23 @@ export function UserRowSkeletons({ count = 4 }: { count?: number }) {
     );
 }
 
+/** The admin dashboard's users tile: four number/label pairs. */
+export function UserStatsSkeleton() {
+    return (
+        <dl className="admin-stats" role="status" aria-label="Loading user stats">
+            {[0, 1, 2, 3].map((i) => (
+                <div key={i} aria-hidden="true">
+                    <span
+                        className="skeleton skeleton--line"
+                        style={{ width: 40, height: '1.8rem' }}
+                    />
+                    <span className="skeleton skeleton--line skeleton--sub" style={{ width: 80 }} />
+                </div>
+            ))}
+        </dl>
+    );
+}
+
 /** The admin user edit page: a panel of form fields. */
 export function UserFormSkeleton() {
     return (
