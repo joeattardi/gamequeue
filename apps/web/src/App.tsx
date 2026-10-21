@@ -54,11 +54,6 @@ export function App() {
                     path="/u/:username/smart-lists/:id"
                     element={<ProfileListPage kind="smart-lists" />}
                 />
-                <Route path="/u/:username/lists/:id" element={<ProfileListPage kind="lists" />} />
-                <Route
-                    path="/u/:username/smart-lists/:id"
-                    element={<ProfileListPage kind="smart-lists" />}
-                />
                 <Route path="/u/:username/stats" element={<ProfileStatsPage />} />
                 <Route path="/u/:username/recap" element={<ProfileRecapPage />} />
                 <Route path="/u/:username/recap/:year" element={<ProfileRecapPage />} />
@@ -72,6 +67,11 @@ export function App() {
         <Routes>
             <Route path="/u/:username" element={<ProfilePage />} />
             <Route path="/u/:username/wishlist" element={<ProfileWishlistPage />} />
+            <Route path="/u/:username/lists/:id" element={<ProfileListPage kind="lists" />} />
+            <Route
+                path="/u/:username/smart-lists/:id"
+                element={<ProfileListPage kind="smart-lists" />}
+            />
             <Route path="/u/:username/stats" element={<ProfileStatsPage />} />
             <Route path="/u/:username/recap" element={<ProfileRecapPage />} />
             <Route path="/u/:username/recap/:year" element={<ProfileRecapPage />} />
