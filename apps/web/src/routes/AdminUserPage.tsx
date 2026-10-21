@@ -128,7 +128,7 @@ function CreateForm() {
                     hint="3-30 letters, numbers, underscores or hyphens"
                     autoComplete="off"
                     required
-                    data-autofocus
+                    autoFocus
                 />
                 <TextField
                     label="Email"
