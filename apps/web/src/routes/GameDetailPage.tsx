@@ -11,7 +11,7 @@ import { PlatformTags } from '../components/PlatformIcon';
 import { SeriesLinks } from '../components/SeriesLinks';
 import { ScoreGauge } from '../components/ScoreGauge';
 import { formatMinutes, usePageTitle, yearOf } from '../lib';
-import { ArrowLeft, Gift, Library, X } from 'lucide-react';
+import { Gift, Library, X } from 'lucide-react';
 
 /**
  * A game by IGDB id, for games that aren't in the collection yet. Owned games redirect to their
@@ -61,9 +61,6 @@ function GameDetail({ detail }: { detail: GameDetailDto }) {
 
     return (
         <article className="entry">
-            <Link to="/search" className="back">
-                <ArrowLeft /> Search
-            </Link>
             <div className="entry__layout">
                 <div className="entry__cover">
                     <Cover imageId={game.coverImageId} name={game.name} size="720p" />
