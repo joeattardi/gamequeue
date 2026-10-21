@@ -115,7 +115,7 @@ function BackupStatus({ report }: { report: BackupReportDto }) {
                         <dt>Latest snapshot</dt>
                         <dd>
                             {backup.file
-                                ? `${backup.file}${backup.sizeBytes != null ? ` (${formatBytes(backup.sizeBytes)})` : ''}`
+                                ? `${backup.file}${backup.sizeBytes != null ? `\u00a0(${formatBytes(backup.sizeBytes).replace(' ', '\u00a0')})` : ''}`
                                 : '—'}
                         </dd>
                     </div>
@@ -319,21 +319,21 @@ export function AdminPage() {
                 <IgdbTile />
                 <ServerTile />
                 <SettingsTile />
+                <section className="panel" aria-labelledby="backup-heading">
+                    <h2 id="backup-heading">
+                        <DatabaseBackup aria-hidden="true" /> Backups
+                    </h2>
+                    {backup.isPending ? (
+                        <BackupSkeleton />
+                    ) : backup.isError ? (
+                        <p className="form-error" role="alert">
+                            Couldn't load the backup status.
+                        </p>
+                    ) : (
+                        <BackupStatus report={backup.data} />
+                    )}
+                </section>
             </div>
-            <section className="panel" aria-labelledby="backup-heading">
-                <h2 id="backup-heading">
-                    <DatabaseBackup aria-hidden="true" /> Backups
-                </h2>
-                {backup.isPending ? (
-                    <BackupSkeleton />
-                ) : backup.isError ? (
-                    <p className="form-error" role="alert">
-                        Couldn't load the backup status.
-                    </p>
-                ) : (
-                    <BackupStatus report={backup.data} />
-                )}
-            </section>
         </section>
     );
 }

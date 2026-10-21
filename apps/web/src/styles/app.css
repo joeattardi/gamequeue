@@ -3736,7 +3736,10 @@ fieldset.stars:disabled .stars__star {
     display: grid;
     gap: 12px 24px;
     margin: 0;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+}
+.backup__facts > div:last-child {
+    grid-column: 1 / -1;
 }
 .backup__facts dt {
     color: var(--ink-muted);
