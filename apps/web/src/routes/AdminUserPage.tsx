@@ -229,6 +229,8 @@ function DetailsForm({ user }: { user: AdminUserDto }) {
                     autoComplete="off"
                     required
                 />
+            </div>
+            <div className="name-form__fields">
                 <TextField
                     label="First name"
                     value={v.firstName}
@@ -243,7 +245,6 @@ function DetailsForm({ user }: { user: AdminUserDto }) {
                     problem={problems.lastName}
                     maxLength={50}
                 />
-                <RoleSelect value={v.role} onChange={set('role')} />
             </div>
             <label className="check">
                 <input
@@ -256,6 +257,9 @@ function DetailsForm({ user }: { user: AdminUserDto }) {
                 />
                 Show their name on their public profile
             </label>
+            <div className="name-form__fields name-form__fields--stack">
+                <RoleSelect value={v.role} onChange={set('role')} />
+            </div>
             <h3 className="admin-subhead">Gaming accounts</h3>
             <div className="name-form__fields">
                 {SOCIAL_SERVICES.map((s) => (
