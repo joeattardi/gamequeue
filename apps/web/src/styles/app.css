@@ -3603,13 +3603,18 @@ fieldset.stars:disabled .stars__star {
     margin-top: 0;
 }
 
-/* ---- Screenshots under the cover ---- */
+/* ---- Screenshots under the cover (hidden on narrow screens, where the layout is one column) ---- */
 .shots {
+    display: none;
     list-style: none;
     margin: 12px 0 0;
     padding: 0;
-    display: grid;
     gap: 8px;
+}
+@media (min-width: 760px) {
+    .shots {
+        display: grid;
+    }
 }
 .shots__thumb {
     display: block;
