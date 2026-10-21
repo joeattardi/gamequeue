@@ -10,12 +10,85 @@ import {
 } from '@gamequeue/shared';
 import { useCreateList, useLists } from '../api/lists';
 import { useCreateSmartList, useSmartLists } from '../api/smartLists';
-import { List, Plus, WandSparkles } from 'lucide-react';
+import { List, Plus, WandSparkles, X } from 'lucide-react';
 import { usePageTitle } from '../lib';
+import { useModalDialog } from '../components/useModalDialog';
 
 export function ListsPage() {
     usePageTitle('Lists');
     const lists = useLists();
+    const [creating, setCreating] = useState(false);
+
+    return (
+        <section>
+            <div className="page-head">
+                <div>
+                    <h1>
+                        <List aria-hidden="true" />
+                        Lists
+                    </h1>
+                    <p className="muted">
+                        Ordered lists of games, and smart lists that fill themselves. Your queue has
+                        its own page.
+                    </p>
+                </div>
+                <button className="btn btn--primary" onClick={() => setCreating(true)}>
+                    <Plus />
+                    New list
+                </button>
+            </div>
+            <NewListDialog open={creating} onClose={() => setCreating(false)} />
+            {lists.isError ? (
+                <p className="form-error" role="alert">
+                    Couldn't load your lists.
+                </p>
+            ) : lists.isPending ? (
+                <ListCardSkeletons />
+            ) : lists.data?.length === 0 ? (
+                <div className="empty">
+                    <p>
+                        <strong>No lists yet.</strong>
+                    </p>
+                    <p className="muted">
+                        Create one with the New list button, then add games from here or from a
+                        game's page.
+                    </p>
+                </div>
+            ) : (
+                <ul className="list-cards">
+                    {lists.data?.map((l) => (
+                        <ListCard
+                            key={l.id}
+                            to={`/lists/${l.id}`}
+                            name={l.name}
+                            count={l.count}
+                            covers={l.covers}
+                        />
+                    ))}
+                </ul>
+            )}
+
+            <SmartLists />
+        </section>
+    );
+}
+
+function NewListDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
+    const ref = useModalDialog(open);
+    return (
+        <dialog
+            ref={ref}
+            className="dialog"
+            onClose={onClose}
+            aria-labelledby="new-list-title"
+            onClick={(e) => e.target === ref.current && onClose()}
+        >
+            {open && <NewListForm onDone={onClose} />}
+        </dialog>
+    );
+}
+
+function NewListForm({ onDone }: { onDone: () => void }) {
     const create = useCreateList();
     const navigate = useNavigate();
     const [name, setName] = useState('');
@@ -36,84 +109,56 @@ export function ListsPage() {
     }
 
     return (
-        <section>
-            <div className="page-head">
-                <div>
-                    <h1>
-                        <List aria-hidden="true" />
-                        Lists
-                    </h1>
-                    <p className="muted">
-                        Ordered lists of games, and smart lists that fill themselves. Your queue has
-                        its own page.
-                    </p>
-                </div>
+        <form className="dialog__body stack" onSubmit={submit}>
+            <div className="dialog__head">
+                <h2 id="new-list-title">New list</h2>
+                <button
+                    type="button"
+                    className="btn btn--ghost"
+                    onClick={onDone}
+                    aria-label="Close"
+                >
+                    <X />
+                </button>
             </div>
-            <form className="stack" onSubmit={submit}>
-                <label className="field">
-                    <span>New list</span>
-                    <input
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        maxLength={60}
-                        placeholder="e.g. Up next"
-                    />
-                </label>
-                <label className="field">
-                    <span>Description (optional)</span>
-                    <textarea
-                        value={description}
-                        onChange={(e) => setDescription(e.target.value)}
-                        maxLength={MAX_LIST_DESCRIPTION}
-                        rows={2}
-                        placeholder="What is this list for?"
-                    />
-                </label>
-                <div className="row">
-                    <button
-                        className="btn btn--primary"
-                        type="submit"
-                        disabled={create.isPending || !name.trim()}
-                    >
-                        <Plus />
-                        Create list
-                    </button>
-                </div>
-            </form>
+            <label className="field">
+                <span>Name</span>
+                <input
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    maxLength={60}
+                    placeholder="e.g. Up next"
+                    autoFocus
+                    data-autofocus
+                />
+            </label>
+            <label className="field">
+                <span>Description (optional)</span>
+                <textarea
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    maxLength={MAX_LIST_DESCRIPTION}
+                    rows={2}
+                    placeholder="What is this list for?"
+                />
+            </label>
             <p className="form-error" role="alert">
                 {error}
             </p>
-            {lists.isError ? (
-                <p className="form-error" role="alert">
-                    Couldn't load your lists.
-                </p>
-            ) : lists.isPending ? (
-                <ListCardSkeletons />
-            ) : lists.data?.length === 0 ? (
-                <div className="empty">
-                    <p>
-                        <strong>No lists yet.</strong>
-                    </p>
-                    <p className="muted">
-                        Create one above, then add games from here or from a game's page.
-                    </p>
-                </div>
-            ) : (
-                <ul className="list-cards">
-                    {lists.data?.map((l) => (
-                        <ListCard
-                            key={l.id}
-                            to={`/lists/${l.id}`}
-                            name={l.name}
-                            count={l.count}
-                            covers={l.covers}
-                        />
-                    ))}
-                </ul>
-            )}
-
-            <SmartLists />
-        </section>
+            <div className="row">
+                <button type="button" className="btn" onClick={onDone}>
+                    Cancel
+                </button>
+                <button
+                    className="btn btn--primary"
+                    type="submit"
+                    disabled={create.isPending || !name.trim()}
+                >
+                    <Plus />
+                    Create list
+                </button>
+            </div>
+        </form>
     );
 }
 
