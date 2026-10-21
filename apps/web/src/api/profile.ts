@@ -53,23 +53,12 @@ export const useProfileWishlist = (username: string) =>
         retry: false
     });
 
-/**
- * The rest of one list on the profile, past the preview the profile carries. Starts at `start`
- * (the preview's length) and is only fetched once `enabled` (the visitor asked for more).
- */
-export const useProfileListRest = (
-    username: string,
-    kind: 'lists' | 'smart-lists',
-    id: number,
-    start: number,
-    enabled: boolean
-) =>
+/** One of a user's lists on their profile, a page at a time. */
+export const useProfileList = (username: string, kind: 'lists' | 'smart-lists', id: number) =>
     usePagedQuery({
         key: ['profile', username, kind, id],
         load: (offset, limit) =>
-            api<ProfileListPageDto>(
-                withPage(`/profiles/${username}/${kind}/${id}`, start + offset, limit)
-            ),
-        read: (p) => ({ items: p.entries, total: p.total - start }),
-        enabled
+            api<ProfileListPageDto>(withPage(`/profiles/${username}/${kind}/${id}`, offset, limit)),
+        read: (p) => ({ items: p.entries, total: p.total }),
+        retry: false
     });

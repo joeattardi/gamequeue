@@ -2,7 +2,6 @@ import { and, count, eq } from 'drizzle-orm';
 import {
     ENTRY_STATUSES,
     FINISHED_UNKNOWN_YEAR,
-    PROFILE_PREVIEW_SIZE,
     entryQuerySchema,
     fullName,
     toPublicEntry,
@@ -26,11 +25,10 @@ import { getList, listLists } from './lists.js';
 import { getRecap } from './recap.js';
 import { getStats } from './stats.js';
 import { listSlots } from './slots.js';
-import { getSmartList, listSmartListDetails } from './smart-lists.js';
+import { getSmartList, listSmartLists } from './smart-lists.js';
 import { findWishlist, wishlistItemsOf } from './wishlist.js';
 
 const toPublic = toPublicEntry;
-const PREVIEW = { limit: PROFILE_PREVIEW_SIZE, offset: 0 };
 
 function requireUser(db: Db, username: string) {
     const user = db.select().from(users).where(eq(users.username, username)).get();
@@ -81,21 +79,23 @@ export function getProfile(db: Db, username: string): ProfileDto {
             entry: s.entry ? toPublic(s.entry) : null
         })),
         summary: { total: statuses.length, queued, wishlisted, byStatus },
-        lists: listLists(db, user.id).map((l) => {
-            const { entries, total } = getList(db, user.id, l.id, PREVIEW);
-            return { id: l.id, name: l.name, total, entries: entries.map(toPublic) };
-        }),
-        smartLists: listSmartListDetails(db, user.id, Date.now(), PREVIEW).map((l) => ({
+        lists: listLists(db, user.id).map((l) => ({
             id: l.id,
             name: l.name,
-            description: l.description,
-            total: l.total,
-            entries: l.entries.map(toPublic)
+            total: l.count,
+            covers: l.covers
+        })),
+        smartLists: listSmartLists(db, user.id).map((l) => ({
+            id: l.id,
+            name: l.name,
+            total: l.count,
+            covers: l.covers,
+            description: l.description
         }))
     };
 }
 
-/** More games of one of a user's lists, past the preview the profile itself carries. */
+/** One of a user's lists, a page at a time (the profile itself only shows tiles). */
 export function getProfileList(
     db: Db,
     username: string,
@@ -104,13 +104,13 @@ export function getProfileList(
 ): ProfileListPageDto {
     const user = requireUser(db, username);
     const list = db
-        .select({ id: lists.id })
+        .select({ id: lists.id, name: lists.name })
         .from(lists)
         .where(and(eq(lists.id, listId), eq(lists.userId, user.id), eq(lists.kind, 'list')))
         .get();
     if (!list) throw new HttpError(404, 'Not found');
     const { entries, total } = getList(db, user.id, list.id, page);
-    return { entries: entries.map(toPublic), total };
+    return { name: list.name, entries: entries.map(toPublic), total };
 }
 
 export function getProfileSmartList(
@@ -120,8 +120,8 @@ export function getProfileSmartList(
     page: PageQuery
 ): ProfileListPageDto {
     const user = requireUser(db, username);
-    const { entries, total } = getSmartList(db, user.id, smartListId, page);
-    return { entries: entries.map(toPublic), total };
+    const { name, description, entries, total } = getSmartList(db, user.id, smartListId, page);
+    return { name, description, entries: entries.map(toPublic), total };
 }
 
 /** Read-only and public: the year in review, no notes (see `RecapDto`). */

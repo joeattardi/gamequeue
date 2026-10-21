@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import { PROFILE_PREVIEW_SIZE } from '@gamequeue/shared';
 import { fakeGame } from './helpers.js';
 import { PC, setupApi } from './api.js';
 
@@ -159,7 +158,7 @@ describe('smart list paging and preview', () => {
 });
 
 describe('paging the public profile', () => {
-    it('shows a short preview of each list with its total, then the rest on request', async () => {
+    it('shows lists as tiles with their total, and pages the games of one list', async () => {
         const { app, call, ids } = await setup(30);
         const { list } = await call('/lists', 'POST', { name: 'Big' });
         for (const id of ids) await call(`/lists/${list.id}/items`, 'POST', { entryId: id });
@@ -169,14 +168,16 @@ describe('paging the public profile', () => {
             (await app.request(`/api/profiles/${me}${path}`)).json();
 
         const { profile } = await get('');
-        expect(profile.lists[0].total).toBe(30);
-        expect(profile.lists[0].entries).toHaveLength(PROFILE_PREVIEW_SIZE);
+        expect(profile.lists).toEqual([
+            { id: list.id, name: 'Big', total: 30, covers: expect.any(Array) }
+        ]);
+        expect(profile.lists[0].covers.length).toBeLessThanOrEqual(4);
         expect(profile.summary.total).toBe(30);
 
-        const more = await get(`/lists/${list.id}?limit=100&offset=${PROFILE_PREVIEW_SIZE}`);
-        expect(more.total).toBe(30);
-        expect(more.entries).toHaveLength(30 - PROFILE_PREVIEW_SIZE);
-        expect(more.entries[0].game.name).toBe('Game 13');
+        const page = await get(`/lists/${list.id}?limit=10&offset=12`);
+        expect(page).toMatchObject({ name: 'Big', total: 30 });
+        expect(page.entries).toHaveLength(10);
+        expect(page.entries[0].game.name).toBe('Game 13');
 
         const queue = (await get('/queue?limit=5&offset=15')).games;
         expect(queue.total).toBe(20);

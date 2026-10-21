@@ -1,4 +1,4 @@
-import { coverSrcSet, coverUrl } from '@gamequeue/shared';
+import { ListCard } from '../components/ListCard';
 import { ListCardSkeletons } from '../components/PageSkeletons';
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router';
@@ -81,29 +81,13 @@ export function ListsPage() {
             ) : (
                 <ul className="list-cards">
                     {lists.data?.map((l) => (
-                        <li key={l.id}>
-                            <Link to={`/lists/${l.id}`} className="list-card">
-                                {l.covers.length > 0 && (
-                                    <span className="list-card__covers" aria-hidden="true">
-                                        {l.covers.map((id) => (
-                                            <img
-                                                key={id}
-                                                src={coverUrl(id, 'cover_big')}
-                                                srcSet={coverSrcSet(id, 'cover_big')}
-                                                alt=""
-                                                loading="lazy"
-                                            />
-                                        ))}
-                                    </span>
-                                )}
-                                <span className="list-card__text">
-                                    <strong>{l.name}</strong>
-                                    <span className="list-card__count">
-                                        {l.count} {l.count === 1 ? 'game' : 'games'}
-                                    </span>
-                                </span>
-                            </Link>
-                        </li>
+                        <ListCard
+                            key={l.id}
+                            to={`/lists/${l.id}`}
+                            name={l.name}
+                            count={l.count}
+                            covers={l.covers}
+                        />
                     ))}
                 </ul>
             )}
@@ -204,29 +188,13 @@ function SmartCards({ lists }: { lists: SmartListSummaryDto[] }) {
     return (
         <ul className="list-cards">
             {lists.map((l) => (
-                <li key={l.id}>
-                    <Link to={`/smart-lists/${l.id}`} className="list-card">
-                        {l.covers.length > 0 && (
-                            <span className="list-card__covers" aria-hidden="true">
-                                {l.covers.map((id) => (
-                                    <img
-                                        key={id}
-                                        src={coverUrl(id, 'cover_big')}
-                                        srcSet={coverSrcSet(id, 'cover_big')}
-                                        alt=""
-                                        loading="lazy"
-                                    />
-                                ))}
-                            </span>
-                        )}
-                        <span className="list-card__text">
-                            <strong>{l.name}</strong>
-                            <span className="list-card__count">
-                                {l.count} {l.count === 1 ? 'game' : 'games'}
-                            </span>
-                        </span>
-                    </Link>
-                </li>
+                <ListCard
+                    key={l.id}
+                    to={`/smart-lists/${l.id}`}
+                    name={l.name}
+                    count={l.count}
+                    covers={l.covers}
+                />
             ))}
         </ul>
     );

@@ -17,56 +17,22 @@ import {
     Trophy,
     WandSparkles
 } from 'lucide-react';
-import { useState, type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { Link, useParams } from 'react-router';
 import { ApiRequestError } from '../api/client';
-import { useProfile, useProfileListRest } from '../api/profile';
+import { useProfile } from '../api/profile';
 import { Avatar } from '../components/Avatar';
 import { Cover } from '../components/Cover';
-import { GridSkeletons } from '../components/GridSkeletons';
-import { LoadMore } from '../components/LoadMore';
+import { ListCard } from '../components/ListCard';
 import { SocialLinksList } from '../components/SocialLinks';
 import { ProfileSkeleton } from '../components/PageSkeletons';
 import { Footer } from '../components/Footer';
 import { PublicHeader } from '../components/PublicHeader';
 import { usePageTitle } from '../lib';
 
-function Games({
-    entries,
-    username,
-    kind,
-    id,
-    total
-}: {
-    /** What the profile carries: the first few games */
-    entries: PublicEntryDto[];
-    /** With these, a "Show more" button fetches the rest of the list */
-    username?: string;
-    kind?: 'lists' | 'smart-lists';
-    id?: number;
-    total?: number;
-}) {
-    const [more, setMore] = useState(false);
-    const rest = useProfileListRest(username ?? '', kind ?? 'lists', id ?? 0, entries.length, more);
+function Games({ entries }: { entries: PublicEntryDto[] }) {
     if (entries.length === 0) return <p className="muted">Nothing here yet.</p>;
-    const shown = [...entries, ...rest.items];
-    const hasMore = total !== undefined && !!username && total > shown.length;
-    return (
-        <>
-            <GameGrid entries={shown} />
-            {hasMore && (
-                <LoadMore
-                    shown={shown.length}
-                    total={total}
-                    hasMore
-                    loading={rest.isFetching}
-                    failed={rest.isError}
-                    onMore={() => (more ? rest.fetchNextPage() : setMore(true))}
-                    skeleton={<GridSkeletons layout="grid" count={4} />}
-                />
-            )}
-        </>
-    );
+    return <GameGrid entries={entries} />;
 }
 
 function GameGrid({ entries }: { entries: PublicEntryDto[] }) {
@@ -254,41 +220,42 @@ export function ProfilePage() {
                             />
                         </section>
 
-                        {profile.data.lists.map((l) => (
-                            <section key={l.id} aria-label={l.name}>
-                                <h2>{l.name}</h2>
-                                <Games
-                                    entries={l.entries}
-                                    username={profile.data.username}
-                                    kind="lists"
-                                    id={l.id}
-                                    total={l.total}
-                                />
-                            </section>
-                        ))}
-
-                        {profile.data.smartLists.map((l) => (
-                            <section key={`smart-${l.id}`} aria-label={l.name}>
-                                <h2>
-                                    <WandSparkles aria-hidden="true" />
-                                    {l.name}
-                                </h2>
-                                <ul className="rule-summary" aria-label="Rules">
-                                    {l.description.map((d) => (
-                                        <li key={d} className="badge">
-                                            {d}
-                                        </li>
+                        {profile.data.lists.length > 0 && (
+                            <section aria-labelledby="p-lists">
+                                <h2 id="p-lists">Lists</h2>
+                                <ul className="list-cards">
+                                    {profile.data.lists.map((l) => (
+                                        <ListCard
+                                            key={l.id}
+                                            to={`/u/${profile.data.username}/lists/${l.id}`}
+                                            name={l.name}
+                                            count={l.total}
+                                            covers={l.covers}
+                                        />
                                     ))}
                                 </ul>
-                                <Games
-                                    entries={l.entries}
-                                    username={profile.data.username}
-                                    kind="smart-lists"
-                                    id={l.id}
-                                    total={l.total}
-                                />
                             </section>
-                        ))}
+                        )}
+
+                        {profile.data.smartLists.length > 0 && (
+                            <section aria-labelledby="p-smart">
+                                <h2 id="p-smart">
+                                    <WandSparkles aria-hidden="true" />
+                                    Smart lists
+                                </h2>
+                                <ul className="list-cards">
+                                    {profile.data.smartLists.map((l) => (
+                                        <ListCard
+                                            key={l.id}
+                                            to={`/u/${profile.data.username}/smart-lists/${l.id}`}
+                                            name={l.name}
+                                            count={l.total}
+                                            covers={l.covers}
+                                        />
+                                    ))}
+                                </ul>
+                            </section>
+                        )}
                     </>
                 )}
             </main>

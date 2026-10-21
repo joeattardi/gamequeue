@@ -353,14 +353,22 @@ describe('smart lists in export, import and the public profile', () => {
                 name: 'Cozy',
                 description: ['Tagged cozy'],
                 total: 2,
-                entries: [
-                    expect.objectContaining({ game: expect.objectContaining({ name: 'Celeste' }) }),
-                    expect.objectContaining({
-                        game: expect.objectContaining({ name: 'Outer Wilds' })
-                    })
-                ]
+                covers: expect.any(Array)
             }
         ]);
+        const page = await (
+            await s.app.request(`/api/profiles/${me}/smart-lists/${profile.smartLists[0].id}`)
+        ).text();
+        expect(JSON.parse(page)).toMatchObject({
+            name: 'Cozy',
+            description: ['Tagged cozy'],
+            total: 2,
+            entries: [
+                expect.objectContaining({ game: expect.objectContaining({ name: 'Celeste' }) }),
+                expect.objectContaining({ game: expect.objectContaining({ name: 'Outer Wilds' }) })
+            ]
+        });
+        expect(page).not.toContain('secret note');
         expect(text).not.toContain('secret note');
         expect(s.db.select().from(smartLists).all()).toHaveLength(1);
     });

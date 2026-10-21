@@ -34,23 +34,26 @@ export interface ProfileDto {
         wishlisted: number;
         byStatus: Record<EntryStatus, number>;
     };
-    /** Each list shows its first `PROFILE_PREVIEW_SIZE` games; `total` says how many there are */
-    lists: { id: number; name: string; total: number; entries: PublicEntryDto[] }[];
+    /** Tiles only: the games themselves are on each list's own page */
+    lists: ProfileListTileDto[];
     /** Smart lists as they match right now, with their rules in words */
-    smartLists: {
-        id: number;
-        name: string;
-        description: string[];
-        total: number;
-        entries: PublicEntryDto[];
-    }[];
+    smartLists: (ProfileListTileDto & { description: string[] })[];
 }
 
-/** Games shown per list on the profile before "Show more". */
-export const PROFILE_PREVIEW_SIZE = 12;
+export interface ProfileListTileDto {
+    id: number;
+    name: string;
+    /** Games in it (for a smart list, matching right now) */
+    total: number;
+    /** Cover image ids of the first few games that have one */
+    covers: string[];
+}
 
-/** More of one list on the profile (`/profiles/:username/lists/:id`, `/smart-lists/:id`). */
+/** One list on the profile, a page at a time (`/profiles/:username/lists/:id`, `/smart-lists/:id`). */
 export interface ProfileListPageDto {
+    name: string;
+    /** Smart lists only: the rules in words */
+    description?: string[];
     entries: PublicEntryDto[];
     total: number;
 }
