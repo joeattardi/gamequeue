@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { greeting, timeAgo } from './lib';
+import { formatBytes, greeting, timeAgo } from './lib';
 
 describe('greeting', () => {
     const at = (h: number) => new Date(2026, 0, 1, h);
@@ -26,5 +26,22 @@ describe('timeAgo', () => {
     });
     it('treats a time in the future as just now', () => {
         expect(timeAgo(now + 60_000, now)).toBe('just now');
+    });
+});
+
+describe('formatBytes', () => {
+    const MB = 1024 ** 2;
+    const GB = 1024 ** 3;
+    it('uses the largest sensible unit', () => {
+        expect(formatBytes(0)).toBe('0 B');
+        expect(formatBytes(812)).toBe('812 B');
+        expect(formatBytes(4300)).toBe('4.2 KB');
+        expect(formatBytes(36.5 * MB)).toBe('37 MB');
+        expect(formatBytes(515704.9 * MB)).toBe('504 GB');
+        expect(formatBytes(2.5 * GB)).toBe('2.5 GB');
+        expect(formatBytes(3 * 1024 * GB)).toBe('3.0 TB');
+    });
+    it('moves up a unit instead of showing 1024', () => {
+        expect(formatBytes(1023.9 * MB)).toBe('1.0 GB');
     });
 });

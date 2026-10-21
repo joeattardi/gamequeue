@@ -26,12 +26,23 @@ export function formatMinutes(min: number | null | undefined): string {
     return m === 0 || h >= 20 ? `${Math.round(min / 60)}h` : `${h}h ${m}m`;
 }
 
-export const formatBytes = (n: number) =>
-    n < 1024
-        ? `${n} B`
-        : n < 1024 * 1024
-          ? `${(n / 1024).toFixed(1)} KB`
-          : `${(n / 1024 / 1024).toFixed(1)} MB`;
+/** "812 B", "4.2 KB", "36.5 MB", "515 GB": the next unit up at 1024, one decimal under 10, none above. */
+export function formatBytes(n: number): string {
+    const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+    let value = n;
+    let unit = 0;
+    while (value >= 1024 && unit < units.length - 1) {
+        value /= 1024;
+        unit++;
+    }
+    if (unit === 0) return `${n} B`;
+    // Rounding can land on 1024 (1023.97 MB): show it in the next unit instead
+    if (Math.round(value) >= 1024 && unit < units.length - 1) {
+        value /= 1024;
+        unit++;
+    }
+    return `${value < 10 ? value.toFixed(1) : Math.round(value)} ${units[unit]}`;
+}
 
 /** "3d 4h", "5h 12m", "7m"; for uptime. */
 export function formatDuration(seconds: number): string {
