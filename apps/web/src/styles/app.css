@@ -3818,8 +3818,16 @@ fieldset.stars:disabled .stars__star {
 .admin-tiles {
     display: grid;
     gap: 16px;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     margin-bottom: 16px;
+}
+.admin-tiles > .panel {
+    align-content: start;
+}
+@media (max-width: 700px) {
+    .admin-tiles {
+        grid-template-columns: minmax(0, 1fr);
+    }
 }
 .admin-stats {
     display: grid;
