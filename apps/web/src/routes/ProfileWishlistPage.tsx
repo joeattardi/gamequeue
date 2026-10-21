@@ -5,7 +5,7 @@ import { useProfileWishlist } from '../api/profile';
 import { PublicGameList } from '../components/PublicGameList';
 import { Footer } from '../components/Footer';
 import { PublicHeader } from '../components/PublicHeader';
-import { platformLabel, releaseParts, usePageTitle } from '../lib';
+import { platformLabel, releaseText, usePageTitle } from '../lib';
 
 /** Public: someone's wishlist in their order, without their notes (`/u/:username/wishlist`). */
 export function ProfileWishlistPage() {
@@ -31,7 +31,7 @@ export function ProfileWishlistPage() {
                                 id: i.igdbId,
                                 game: i.game,
                                 caption: [
-                                    ...releaseParts(i.game),
+                                    releaseText(i.game),
                                     i.platform && platformLabel(i.platform)
                                 ]
                                     .filter(Boolean)

@@ -58,19 +58,30 @@ export function releaseLabel(date: string | null, precision: ReleasePrecision | 
 const DAY_MS = 86_400_000;
 const toDay = (date: string) => Date.parse(`${date}T00:00:00Z`) / DAY_MS;
 
+/** "today", "tomorrow", "in 6 days", "in 3 weeks", "in 3 months", "in 2 years" for a day count ahead. */
+export function relativeDays(days: number): string {
+    if (days <= 0) return 'today';
+    if (days === 1) return 'tomorrow';
+    const plural = (n: number, unit: string) => `in ${n} ${unit}${n === 1 ? '' : 's'}`;
+    if (days < 14) return plural(days, 'day');
+    if (days < 56) return plural(Math.round(days / 7), 'week');
+    const months = Math.round(days / 30.44);
+    if (months < 12) return plural(months, 'month');
+    return plural(Math.round(days / 365.25), 'year');
+}
+
 /**
- * A short countdown for a release that has an exact day in the future ("Tomorrow", "In 41 days");
- * null for released games and for vague dates, where a day count would claim too much.
+ * What to say about a game that isn't out yet, for a badge: how long to wait when the day is
+ * known, otherwise the vague date itself ("Q4 2027", "2028", "TBA") since a day count would claim
+ * too much. Null once the game is released.
  */
-export function releaseCountdown(
+export function releaseBadge(
     date: string | null,
     precision: ReleasePrecision | null,
     today: string
 ): string | null {
-    if (!date || (precision !== null && precision !== 'day')) return null;
-    const days = Math.round(toDay(date) - toDay(today));
-    if (days < 0) return null;
-    if (days === 0) return 'Today';
-    if (days === 1) return 'Tomorrow';
-    return `In ${days} days`;
+    if (isReleased(date, precision, today)) return null;
+    if (date && (precision === null || precision === 'day'))
+        return relativeDays(Math.round(toDay(date) - toDay(today)));
+    return releaseLabel(date, precision);
 }

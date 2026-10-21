@@ -28,7 +28,7 @@ import { Cover } from '../components/Cover';
 import { LayoutToggle, useLayout } from '../components/LayoutToggle';
 import { ListLoading } from '../components/ListLoading';
 import { MetaLine } from '../components/MetaLine';
-import { releaseParts, usePageTitle } from '../lib';
+import { releaseBadgeText, releaseText, usePageTitle } from '../lib';
 import { ChevronDown, ChevronUp, Gift, Plus, ShoppingCart, X } from 'lucide-react';
 
 const LAYOUT_KEY = 'gq_wishlist_layout';
@@ -189,6 +189,18 @@ function WishlistView({ items }: { items: WishlistItemDto[] }) {
     );
 }
 
+/** Over the box art of a game that isn't out yet: how long until it is, or its vague date. */
+function ReleaseBadge({ game }: { game: WishlistItemDto['game'] }) {
+    const text = releaseBadgeText(game);
+    if (!text) return null;
+    // The cover's alt text and the meta line already name the game and date for assistive tech
+    return (
+        <span className="release-badge" title={`Releases ${releaseText(game)}`}>
+            {text}
+        </span>
+    );
+}
+
 /** Box art for a wishlisted game; it isn't owned, so there's no game page to open. */
 function WishlistTile({ item, position }: { item: WishlistItemDto; position: number }) {
     const { game } = item;
@@ -197,10 +209,11 @@ function WishlistTile({ item, position }: { item: WishlistItemDto; position: num
             <div className="card__link" tabIndex={0}>
                 <div className="card__art">
                     <Cover imageId={game.coverImageId} name={game.name} />
+                    <ReleaseBadge game={game} />
                     <div className="card__info">
                         <strong className="card__title">{game.name}</strong>
                         <span className="muted card__sub">
-                            <MetaLine parts={[...releaseParts(game), item.platform?.name]} />
+                            <MetaLine parts={[releaseText(game), item.platform?.name]} />
                         </span>
                         {item.note && <span className="muted card__note">{item.note}</span>}
                     </div>
@@ -276,12 +289,11 @@ function Row({
             </span>
             <span className="row-item__cover" aria-hidden="true">
                 <Cover imageId={game.coverImageId} name={game.name} size="cover_big" />
+                <ReleaseBadge game={game} />
             </span>
             <div className="row-item__main">
                 <strong className="row-item__title">{game.name}</strong>
-                <span className="muted">
-                    <MetaLine parts={releaseParts(game)} />
-                </span>
+                <span className="muted">{releaseText(game)}</span>
                 <div className="wish-fields">
                     <label className="field">
                         <span className="sr-only">Platform to buy {game.name} on</span>
