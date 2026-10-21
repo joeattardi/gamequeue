@@ -2202,7 +2202,8 @@ fieldset.stars:disabled .stars__star {
 .layout-toggle + .public-grid,
 .layout-toggle + .game-rows,
 .layout-toggle + .rows,
-.layout-toggle + .grid {
+.layout-toggle + .grid,
+.layout-toggle + .empty {
     margin-top: 10px;
 }
 .public-grid {
