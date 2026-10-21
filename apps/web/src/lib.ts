@@ -26,6 +26,16 @@ export function formatMinutes(min: number | null | undefined): string {
     return m === 0 || h >= 20 ? `${Math.round(min / 60)}h` : `${h}h ${m}m`;
 }
 
+/** "5 minutes ago", "3 hours ago", "2 days ago"; "just now" under a minute. */
+export function timeAgo(then: number, now = Date.now()): string {
+    const s = Math.max(0, Math.round((now - then) / 1000));
+    if (s < 60) return 'just now';
+    const unit = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'} ago`;
+    if (s < 3600) return unit(Math.floor(s / 60), 'minute');
+    if (s < 86400) return unit(Math.floor(s / 3600), 'hour');
+    return unit(Math.floor(s / 86400), 'day');
+}
+
 export const platformLabel = (p: { name: string; abbreviation: string | null }) =>
     p.abbreviation ?? p.name;
 export const yearOf = (date: string | null) => (date ? date.slice(0, 4) : null);

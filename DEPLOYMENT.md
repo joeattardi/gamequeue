@@ -324,6 +324,8 @@ Approach: a nightly snapshot kept locally for 14 days, plus a copy off the machi
 
 `scripts/backup.sh` (in the repo) does the snapshot: `sqlite3 .backup` into `~/gamequeue/backups/gamequeue-<date-time>.db.gz`, an integrity check that refuses to keep a damaged snapshot, deletion of snapshots older than 14 days, and an `rclone copy` to a remote named `offsite` if one is configured. `scripts/update.sh` runs it before every update, and the nightly cron line from "Updating" runs it at 03:00. Both run as your Pi user, who owns the data directory.
 
+Every run also writes `~/gamequeue/data/backup-status.json` (success or failure), which the **Admin > Backups** panel in the app reads: last run, last success, whether the off-site upload worked, and a red banner if the last run failed or no backup has succeeded in 26 hours. This is the way to notice a silently broken cron job or B2 key. The file lives in `data/` because that is the only directory the container can see.
+
 Run it once by hand and confirm a `.db.gz` file appears in `~/gamequeue/backups`:
 
 ```sh

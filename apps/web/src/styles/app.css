@@ -3683,3 +3683,62 @@ fieldset.stars:disabled .stars__star {
 .shots__nav--next {
     right: 8px;
 }
+
+/* Admin: backup status */
+.panel h2 svg {
+    vertical-align: -3px;
+    margin-right: 4px;
+}
+.backup {
+    display: grid;
+    gap: 14px;
+}
+.backup__banner {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    padding: 12px 14px;
+    border: 1px solid var(--line);
+    border-left-width: 4px;
+    border-radius: var(--radius);
+}
+.backup__banner p {
+    margin: 2px 0 0;
+    overflow-wrap: anywhere;
+}
+.backup__banner svg {
+    flex: none;
+    margin-top: 2px;
+}
+.backup__banner--good {
+    border-left-color: var(--status-good);
+}
+.backup__banner--good svg {
+    color: var(--status-good);
+}
+.backup__banner--warn {
+    border-left-color: var(--status-mid);
+}
+.backup__banner--warn svg {
+    color: var(--status-mid);
+}
+.backup__banner--bad {
+    border-left-color: var(--status-bad);
+}
+.backup__banner--bad svg {
+    color: var(--status-bad);
+}
+.backup__facts {
+    display: grid;
+    gap: 12px 24px;
+    margin: 0;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+.backup__facts dt {
+    color: var(--ink-muted);
+    font-size: 0.85rem;
+}
+.backup__facts dd {
+    margin: 0;
+    overflow-wrap: anywhere;
+}

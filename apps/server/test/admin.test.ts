@@ -1,3 +1,6 @@
+import { mkdtempSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { eq } from 'drizzle-orm';
 import { describe, expect, it } from 'vitest';
 import { users } from '../src/db/schema.js';
@@ -46,5 +49,55 @@ describe('roles', () => {
         expect((await get()).status).toBe(200);
         setRole('gamer');
         expect((await get()).status).toBe(403);
+    });
+});
+
+describe('backup status', () => {
+    const status = {
+        lastRunAt: 1_800_000_000_000,
+        ok: true,
+        error: null,
+        lastSuccessAt: 1_800_000_000_000,
+        file: 'gamequeue-2026-10-21-030000.db.gz',
+        sizeBytes: 4096,
+        offsite: 'uploaded'
+    };
+
+    async function adminWithDir() {
+        const dir = mkdtempSync(join(tmpdir(), 'gq-backup-'));
+        const { app, db } = makeApp({ databasePath: join(dir, 'gamequeue.db') });
+        const cookie = cookieFrom(await register(app, 'me@example.com', undefined, 'joe'));
+        db.update(users).set({ role: 'admin' }).where(eq(users.username, 'joe')).run();
+        const get = async () => {
+            const res = await app.request('/api/admin/backup', { headers: { cookie } });
+            return { status: res.status, body: await res.json() };
+        };
+        return { dir, app, cookie, get };
+    }
+
+    it('is admin only', async () => {
+        const { app } = makeApp();
+        const cookie = cookieFrom(await register(app, 'me@example.com', undefined, 'joe'));
+        expect((await app.request('/api/admin/backup')).status).toBe(401);
+        expect((await app.request('/api/admin/backup', { headers: { cookie } })).status).toBe(403);
+    });
+
+    it('reports never run when there is no status file', async () => {
+        const { get } = await adminWithDir();
+        expect(await get()).toEqual({ status: 200, body: { backup: null, unreadable: false } });
+    });
+
+    it('returns the status the backup script wrote next to the database', async () => {
+        const { dir, get } = await adminWithDir();
+        writeFileSync(join(dir, 'backup-status.json'), JSON.stringify(status));
+        expect(await get()).toEqual({ status: 200, body: { backup: status, unreadable: false } });
+    });
+
+    it('flags a corrupt or wrongly shaped file as unreadable', async () => {
+        const { dir, get } = await adminWithDir();
+        writeFileSync(join(dir, 'backup-status.json'), '{ half a fi');
+        expect((await get()).body).toEqual({ backup: null, unreadable: true });
+        writeFileSync(join(dir, 'backup-status.json'), JSON.stringify({ ok: 'yes' }));
+        expect((await get()).body).toEqual({ backup: null, unreadable: true });
     });
 });

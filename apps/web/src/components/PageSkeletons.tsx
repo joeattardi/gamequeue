@@ -227,6 +227,23 @@ export function EditorSkeleton() {
     );
 }
 
+/** The admin page's backup panel: status line and three detail rows. */
+export function BackupSkeleton() {
+    return (
+        <div className="backup" role="status" aria-label="Loading backup status">
+            <span className="skeleton skeleton--block" style={{ height: 52 }} aria-hidden="true" />
+            <div className="backup__facts" aria-hidden="true">
+                {[0, 1, 2].map((i) => (
+                    <div key={i}>
+                        <span className="skeleton skeleton--line skeleton--sub" />
+                        <span className="skeleton skeleton--line" style={{ width: '70%' }} />
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+}
+
 /** The stats page: a row of number tiles and three chart panels. */
 export function StatsSkeleton() {
     return (

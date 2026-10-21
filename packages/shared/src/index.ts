@@ -17,3 +17,4 @@ export * from './avatar.js';
 export * from './social.js';
 export * from './release.js';
 export * from './series.js';
+export * from './backup.js';
