@@ -5,7 +5,15 @@ import type {
     AdminUpdateUserInput,
     AdminUserDto,
     BackupReportDto,
-    DatabaseStatsDto
+    AdminSettingsDto,
+    AdminSettingsInput,
+    DatabaseStatsDto,
+    IgdbPingDto,
+    IgdbStatusDto,
+    PurgeSessionsResult,
+    PurgeUnusedGamesResult,
+    ServerInfoDto,
+    VacuumResult
 } from '@gamequeue/shared';
 import { api } from './client';
 
@@ -78,3 +86,60 @@ export const useAdminDatabase = () =>
         queryFn: () => api<DatabaseStatsDto>('/admin/database'),
         refetchOnWindowFocus: true
     });
+
+export const useAdminIgdb = () =>
+    useQuery({
+        queryKey: ['admin', 'igdb'],
+        queryFn: () => api<IgdbStatusDto>('/admin/igdb'),
+        refetchOnWindowFocus: true
+    });
+
+/** Live connectivity check; the counters change too, so they are refetched. */
+export function usePingIgdb() {
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: () => api<IgdbPingDto>('/admin/igdb/ping', { method: 'POST', body: {} }),
+        onSettled: () => qc.invalidateQueries({ queryKey: ['admin', 'igdb'] })
+    });
+}
+
+export const useAdminServer = () =>
+    useQuery({
+        queryKey: ['admin', 'server'],
+        queryFn: () => api<ServerInfoDto>('/admin/server'),
+        refetchOnWindowFocus: true
+    });
+
+export const useAdminSettings = () =>
+    useQuery({
+        queryKey: ['admin', 'settings'],
+        queryFn: () => api<AdminSettingsDto>('/admin/settings')
+    });
+
+export function useUpdateAdminSettings() {
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: (input: AdminSettingsInput) =>
+            api<AdminSettingsDto>('/admin/settings', { method: 'PUT', body: input }),
+        onSuccess: (settings) => {
+            qc.setQueryData(['admin', 'settings'], settings);
+            // The login page reads the public flag
+            qc.invalidateQueries({ queryKey: ['auth-config'] });
+        }
+    });
+}
+
+/** The three housekeeping actions; each refreshes the database figures it changes. */
+function useMaintenance<T>(action: string) {
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: () => api<T>(`/admin/maintenance/${action}`, { method: 'POST', body: {} }),
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: ['admin', 'database'] });
+            qc.invalidateQueries({ queryKey: ['admin', 'server'] });
+        }
+    });
+}
+export const usePurgeUnusedGames = () => useMaintenance<PurgeUnusedGamesResult>('purge-games');
+export const usePurgeSessions = () => useMaintenance<PurgeSessionsResult>('purge-sessions');
+export const useVacuum = () => useMaintenance<VacuumResult>('vacuum');

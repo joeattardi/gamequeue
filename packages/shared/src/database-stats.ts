@@ -17,6 +17,8 @@ export interface DatabaseStatsDto {
         /** Games that some collection entry or wishlist item points at */
         gamesInUse: number;
         series: number;
+        /** Series that none of the cached games belongs to */
+        unusedSeries: number;
         /** Series member rows (the games IGDB lists per series; not necessarily cached games) */
         seriesMembers: number;
         platforms: number;

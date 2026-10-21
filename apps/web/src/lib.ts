@@ -33,6 +33,20 @@ export const formatBytes = (n: number) =>
           ? `${(n / 1024).toFixed(1)} KB`
           : `${(n / 1024 / 1024).toFixed(1)} MB`;
 
+/** "3d 4h", "5h 12m", "7m"; for uptime. */
+export function formatDuration(seconds: number): string {
+    const d = Math.floor(seconds / 86400);
+    const h = Math.floor((seconds % 86400) / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    if (d > 0) return `${d}d ${h}h`;
+    if (h > 0) return `${h}h ${m}m`;
+    return `${m}m`;
+}
+
+/** Low when under a tenth of the volume or under 1 GB is left. */
+export const diskIsLow = (disk: { totalBytes: number; freeBytes: number }) =>
+    disk.freeBytes < 1024 ** 3 || disk.freeBytes / disk.totalBytes < 0.1;
+
 /** "5 minutes ago", "3 hours ago", "2 days ago"; "just now" under a minute. */
 export function timeAgo(then: number, now = Date.now()): string {
     const s = Math.max(0, Math.round((now - then) / 1000));

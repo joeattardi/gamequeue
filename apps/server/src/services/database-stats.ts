@@ -75,6 +75,7 @@ export function readDatabaseStats(db: Db, config: Config): DatabaseStatsDto {
                  (select game_id from entries union select game_id from wishlist_items)`
             ).n,
             series: count(db, 'series'),
+            unusedSeries: count(db, 'series where id not in (select series_id from game_series)'),
             seriesMembers: count(db, 'series_members'),
             platforms: count(db, 'platforms'),
             genres: count(db, 'genres'),

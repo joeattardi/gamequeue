@@ -32,6 +32,13 @@ export const users = sqliteTable('users', {
     createdAt: integer('created_at').notNull().default(now)
 });
 
+/** Instance-wide settings an admin can change at runtime; absent key = use the environment default. */
+export const settings = sqliteTable('settings', {
+    key: text('key').primaryKey(),
+    value: text('value').notNull(),
+    updatedAt: integer('updated_at').notNull().default(now)
+});
+
 /** Uploaded avatar image (already cropped and re-encoded by the client); kept out of `users` so user lookups never load the blob. */
 export const avatars = sqliteTable('avatars', {
     userId: integer('user_id')

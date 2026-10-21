@@ -22,6 +22,12 @@ export class TokenProvider {
         return (this.inflight ??= this.refresh().finally(() => (this.inflight = undefined)));
     }
 
+    /** Whether a cached token exists and hasn't expired (it may still be refreshed early). */
+    status(): { valid: boolean; expiresAt: number | null } {
+        const t = this.token;
+        return { valid: !!t && this.now() < t.expiresAt, expiresAt: t?.expiresAt ?? null };
+    }
+
     /** Call after a 401 so the next get() fetches a fresh token. */
     invalidate() {
         this.token = undefined;

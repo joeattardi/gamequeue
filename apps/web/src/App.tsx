@@ -3,6 +3,8 @@ import { useMe } from './api/auth';
 import { Splash } from './components/Splash';
 import { Shell } from './components/Shell';
 import { AdminPage } from './routes/AdminPage';
+import { AdminIgdbPage } from './routes/AdminIgdbPage';
+import { AdminServerPage } from './routes/AdminServerPage';
 import { AdminDatabasePage } from './routes/AdminDatabasePage';
 import { AdminUsersPage } from './routes/AdminUsersPage';
 import { AdminUserPage } from './routes/AdminUserPage';
@@ -91,6 +93,8 @@ export function App() {
                     <>
                         <Route path="admin" element={<AdminPage />} />
                         <Route path="admin/database" element={<AdminDatabasePage />} />
+                        <Route path="admin/igdb" element={<AdminIgdbPage />} />
+                        <Route path="admin/server" element={<AdminServerPage />} />
                         <Route path="admin/users" element={<AdminUsersPage />} />
                         <Route path="admin/users/new" element={<AdminUserPage />} />
                         <Route path="admin/users/:id" element={<AdminUserPage />} />

@@ -22,6 +22,7 @@ const GAME_FIELDS =
 const RELEASE_FIELDS = 'release_dates.date,release_dates.date_format';
 const DETAIL_FIELDS = `${RELEASE_FIELDS},collections.name,screenshots.image_id`;
 const MAX_429_RETRIES = 3;
+const DAY_MS = 24 * 3600_000;
 
 export interface IgdbClientOptions {
     clientId: string;
@@ -30,6 +31,7 @@ export interface IgdbClientOptions {
     limiter?: RequestLimiter;
     tokens?: TokenProvider;
     sleep?: (ms: number) => Promise<void>;
+    now?: () => number;
 }
 
 /** APICalypse string literals: backslash and double quote must be escaped. */
@@ -39,9 +41,37 @@ export function createIgdbClient(opts: IgdbClientOptions): IgdbClient {
     const fetchFn = opts.fetchFn ?? fetch;
     const limiter = opts.limiter ?? new RequestLimiter();
     const tokens = opts.tokens ?? new TokenProvider(opts.clientId, opts.clientSecret, fetchFn);
+    const now = opts.now ?? Date.now;
+    const since = now();
+    // One entry per HTTP attempt in the last 24 hours; small at this app's request rates
+    let attempts: { at: number; ok: boolean }[] = [];
+    let lastSuccessAt: number | null = null;
+    let lastError: { at: number; message: string; status: number | null } | null = null;
+    const record = (ok: boolean, error?: { message: string; status?: number }) => {
+        const at = now();
+        attempts = attempts.filter((a) => at - a.at < DAY_MS);
+        attempts.push({ at, ok });
+        if (ok) lastSuccessAt = at;
+        else
+            lastError = {
+                at,
+                message: error?.message ?? 'Unknown error',
+                status: error?.status ?? null
+            };
+    };
     const sleep = opts.sleep ?? ((ms) => new Promise<void>((r) => setTimeout(r, ms)));
 
     async function request<T>(endpoint: string, body: string): Promise<T> {
+        try {
+            return await send<T>(endpoint, body);
+        } catch (e) {
+            // Failed attempts that were retried successfully are recorded inside `send`
+            if (!(e instanceof IgdbError)) record(false, { message: (e as Error).message });
+            throw e;
+        }
+    }
+
+    async function send<T>(endpoint: string, body: string): Promise<T> {
         let refreshedToken = false;
         for (let attempt = 0; ; attempt++) {
             const res = await limiter.schedule(async () =>
@@ -55,7 +85,14 @@ export function createIgdbClient(opts: IgdbClientOptions): IgdbClient {
                     body
                 })
             );
-            if (res.ok) return (await res.json()) as T;
+            if (res.ok) {
+                record(true);
+                return (await res.json()) as T;
+            }
+            record(false, {
+                message: `IGDB request to ${endpoint} failed (${res.status})`,
+                status: res.status
+            });
             if (res.status === 401 && !refreshedToken) {
                 refreshedToken = true;
                 tokens.invalidate();
@@ -71,6 +108,29 @@ export function createIgdbClient(opts: IgdbClientOptions): IgdbClient {
     }
 
     return {
+        status() {
+            const at = now();
+            const recent = attempts.filter((a) => at - a.at < DAY_MS);
+            return {
+                tracked: true,
+                since,
+                token: tokens.status(),
+                requests24h: { total: recent.length, failed: recent.filter((a) => !a.ok).length },
+                lastSuccessAt,
+                lastError
+            };
+        },
+
+        async ping() {
+            const start = now();
+            try {
+                await request('platforms', 'fields name; limit 1;');
+                return { ok: true, ms: now() - start, error: null };
+            } catch (e) {
+                return { ok: false, ms: now() - start, error: (e as Error).message };
+            }
+        },
+
         async search(query) {
             const raw = await request<RawGame[]>(
                 'games',

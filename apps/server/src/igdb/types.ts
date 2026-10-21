@@ -1,4 +1,10 @@
-import type { PlatformDto, ReleasePrecision, SeriesRefDto } from '@gamequeue/shared';
+import type {
+    IgdbPingDto,
+    IgdbStatusDto,
+    PlatformDto,
+    ReleasePrecision,
+    SeriesRefDto
+} from '@gamequeue/shared';
 
 /** A game as we cache it (shared across users) */
 export interface GameRecord {
@@ -67,6 +73,10 @@ export interface IgdbClient {
     /** Screenshot image ids for one game, or null when IGDB no longer knows it */
     fetchScreenshots(igdbId: number): Promise<string[] | null>;
     fetchSeries(seriesId: number): Promise<SeriesRecord | null>;
+    /** Counters for the admin page; the real client keeps them, test fakes needn't */
+    status?(): Omit<IgdbStatusDto, 'configured' | 'lastReleaseCheckAt'>;
+    /** One cheap request to prove credentials and connectivity work */
+    ping?(): Promise<IgdbPingDto>;
 }
 
 export class IgdbError extends Error {

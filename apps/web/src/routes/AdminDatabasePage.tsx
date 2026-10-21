@@ -1,7 +1,9 @@
-import { ArrowLeft, Database } from 'lucide-react';
+import { useState } from 'react';
+import { ArrowLeft, Database, Wrench } from 'lucide-react';
 import { Link } from 'react-router';
 import type { DatabaseStatsDto } from '@gamequeue/shared';
-import { useAdminDatabase } from '../api/admin';
+import { useAdminDatabase, usePurgeSessions, usePurgeUnusedGames, useVacuum } from '../api/admin';
+import { useConfirm } from '../components/Confirm';
 import { DatabaseSkeleton } from '../components/PageSkeletons';
 import { formatBytes, timeAgo, usePageTitle } from '../lib';
 
@@ -31,6 +33,118 @@ function Group({
                     </div>
                 ))}
             </dl>
+        </section>
+    );
+}
+
+function Action({
+    title,
+    text,
+    button,
+    disabled,
+    pending,
+    run
+}: {
+    title: string;
+    text: string;
+    button: string;
+    disabled?: boolean;
+    pending: boolean;
+    run: () => Promise<string | undefined>;
+}) {
+    const [message, setMessage] = useState<{ ok: boolean; text: string }>();
+    return (
+        <li className="maint">
+            <div className="maint__text">
+                <strong>{title}</strong>
+                <p className="muted">{text}</p>
+                <p role="status" className={message?.ok === false ? 'form-error' : 'muted'}>
+                    {message?.text}
+                </p>
+            </div>
+            <button
+                className="btn"
+                disabled={disabled || pending}
+                onClick={async () => {
+                    setMessage(undefined);
+                    try {
+                        const done = await run();
+                        if (done) setMessage({ ok: true, text: done });
+                    } catch {
+                        setMessage({ ok: false, text: 'That failed. Nothing was changed.' });
+                    }
+                }}
+            >
+                {pending ? 'Working…' : button}
+            </button>
+        </li>
+    );
+}
+
+function Maintenance({ d }: { d: DatabaseStatsDto }) {
+    const confirm = useConfirm();
+    const purgeGames = usePurgeUnusedGames();
+    const purgeSessions = usePurgeSessions();
+    const vacuum = useVacuum();
+    const unusedGames = d.cache.games - d.cache.gamesInUse;
+    const free = d.storage.freePages * d.storage.pageSize;
+    return (
+        <section className="panel" aria-labelledby="maint-h">
+            <h2 id="maint-h">
+                <Wrench aria-hidden="true" /> Housekeeping
+            </h2>
+            <ul className="maint-list">
+                <Action
+                    title="Remove unused cached games"
+                    text={`${n(unusedGames)} cached ${unusedGames === 1 ? 'game is' : 'games are'} in nobody's collection or wishlist, and ${n(d.cache.unusedSeries)} ${d.cache.unusedSeries === 1 ? 'series has' : 'series have'} no cached game. Nothing a user can see changes; a game is fetched from IGDB again if someone adds it later.`}
+                    button="Remove"
+                    disabled={unusedGames === 0 && d.cache.unusedSeries === 0}
+                    pending={purgeGames.isPending}
+                    run={async () => {
+                        if (
+                            !(await confirm({
+                                title: 'Remove unused cached games?',
+                                message: `This deletes ${n(unusedGames)} cached ${unusedGames === 1 ? 'game' : 'games'} and ${n(d.cache.unusedSeries)} unused ${d.cache.unusedSeries === 1 ? 'series' : 'series'}. Adding one again later costs an IGDB request.`,
+                                confirmLabel: 'Remove',
+                                tone: 'danger'
+                            }))
+                        )
+                            return undefined;
+                        const r = await purgeGames.mutateAsync();
+                        return `Removed ${n(r.deletedGames)} games and ${n(r.deletedSeries)} series.`;
+                    }}
+                />
+                <Action
+                    title="Remove expired sessions"
+                    text={`${n(d.content.expiredSessions)} expired ${d.content.expiredSessions === 1 ? 'session is' : 'sessions are'} waiting to be removed. The server also does this every few hours.`}
+                    button="Remove"
+                    disabled={d.content.expiredSessions === 0}
+                    pending={purgeSessions.isPending}
+                    run={async () => {
+                        const r = await purgeSessions.mutateAsync();
+                        return `Removed ${n(r.deleted)} sessions.`;
+                    }}
+                />
+                <Action
+                    title="Compact the database file"
+                    text={`Rewrites the file without its ${formatBytes(free)} of empty space and empties the write-ahead log. Writes wait while it runs, usually a few seconds, and it needs enough free disk for a temporary copy of the database.`}
+                    button="Compact"
+                    pending={vacuum.isPending}
+                    run={async () => {
+                        if (
+                            !(await confirm({
+                                title: 'Compact the database?',
+                                message:
+                                    'The app pauses writes for a few seconds. Make sure there is free disk space for a copy of the database.',
+                                confirmLabel: 'Compact'
+                            }))
+                        )
+                            return undefined;
+                        const r = await vacuum.mutateAsync();
+                        return `Went from ${formatBytes(r.beforeBytes)} to ${formatBytes(r.afterBytes)}.`;
+                    }}
+                />
+            </ul>
         </section>
     );
 }
@@ -94,6 +208,7 @@ function Stats({ d }: { d: DatabaseStatsDto }) {
                     }
                 ]}
             />
+            <Maintenance d={d} />
             <section className="panel" aria-labelledby="tables-h">
                 <h2 id="tables-h">Tables</h2>
                 <p className="muted">Size includes each table's indexes. Largest first.</p>

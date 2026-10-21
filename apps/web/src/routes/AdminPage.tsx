@@ -5,19 +5,29 @@ import {
     type BackupStatusDto
 } from '@gamequeue/shared';
 import {
-    ArrowRight,
     CircleAlert,
     CircleCheck,
     Database,
     DatabaseBackup,
+    Gamepad2,
+    Server,
     ShieldCheck,
+    SlidersHorizontal,
     TriangleAlert,
     Users
 } from 'lucide-react';
-import { Link } from 'react-router';
-import { useAdminBackup, useAdminDatabase, useAdminUsers } from '../api/admin';
-import { BackupSkeleton, UserStatsSkeleton } from '../components/PageSkeletons';
-import { formatBytes, timeAgo, usePageTitle } from '../lib';
+import {
+    useAdminBackup,
+    useAdminDatabase,
+    useAdminIgdb,
+    useAdminServer,
+    useAdminSettings,
+    useAdminUsers,
+    useUpdateAdminSettings
+} from '../api/admin';
+import { AdminTile } from '../components/AdminTile';
+import { BackupSkeleton, CheckSkeletons } from '../components/PageSkeletons';
+import { diskIsLow, formatBytes, formatDuration, timeAgo, usePageTitle } from '../lib';
 
 const when = (ms: number) => ({
     ago: timeAgo(ms),
@@ -115,76 +125,175 @@ function BackupStatus({ report }: { report: BackupReportDto }) {
     );
 }
 
+const state = (q: { isPending: boolean; isError: boolean }) =>
+    q.isPending ? 'pending' : q.isError ? 'error' : 'ready';
+
 function DatabaseTile() {
-    const db = useAdminDatabase();
-    const d = db.data;
-    const stats = d && [
-        { label: 'Database size', value: formatBytes(d.storage.fileBytes + d.storage.walBytes) },
-        { label: 'Cached games', value: d.cache.games.toLocaleString() },
-        { label: 'Tables', value: d.tables.length.toLocaleString() }
-    ];
+    const q = useAdminDatabase();
+    const d = q.data;
     return (
-        <section className="panel admin-tile" aria-labelledby="db-heading">
-            <h2 id="db-heading">
-                <Database aria-hidden="true" /> Database
-            </h2>
-            {db.isPending ? (
-                <UserStatsSkeleton />
-            ) : db.isError ? (
-                <p className="form-error" role="alert">
-                    Couldn't load the database stats.
-                </p>
-            ) : (
-                <dl className="admin-stats">
-                    {stats!.map((s) => (
-                        <div key={s.label}>
-                            <dd>{s.value}</dd>
-                            <dt>{s.label}</dt>
-                        </div>
-                    ))}
-                </dl>
-            )}
-            <Link className="admin-tile__link" to="/admin/database">
-                Database details <ArrowRight aria-hidden="true" />
-            </Link>
-        </section>
+        <AdminTile
+            id="db-heading"
+            icon={<Database aria-hidden="true" />}
+            title="Database"
+            state={state(q)}
+            stats={
+                d
+                    ? [
+                          {
+                              label: 'Database size',
+                              value: formatBytes(d.storage.fileBytes + d.storage.walBytes)
+                          },
+                          { label: 'Cached games', value: d.cache.games.toLocaleString() },
+                          { label: 'Tables', value: d.tables.length }
+                      ]
+                    : []
+            }
+            to="/admin/database"
+            linkLabel="Details and cleanup"
+        />
     );
 }
 
 function UsersTile() {
-    const users = useAdminUsers();
-    const list = users.data;
+    const q = useAdminUsers();
+    const list = q.data ?? [];
     const monthAgo = Date.now() - 30 * 24 * 3600 * 1000;
-    const stats = list && [
-        { label: 'Users', value: list.length },
-        { label: 'Admins', value: list.filter((u) => u.role === 'admin').length },
-        { label: 'Joined in 30 days', value: list.filter((u) => u.createdAt >= monthAgo).length },
-        { label: 'Games', value: list.reduce((n, u) => n + u.gameCount, 0) }
-    ];
     return (
-        <section className="panel admin-tile" aria-labelledby="users-heading">
-            <h2 id="users-heading">
-                <Users aria-hidden="true" /> Users
+        <AdminTile
+            id="users-heading"
+            icon={<Users aria-hidden="true" />}
+            title="Users"
+            state={state(q)}
+            stats={[
+                { label: 'Users', value: list.length },
+                { label: 'Admins', value: list.filter((u) => u.role === 'admin').length },
+                {
+                    label: 'Joined in 30 days',
+                    value: list.filter((u) => u.createdAt >= monthAgo).length
+                },
+                { label: 'Games', value: list.reduce((n, u) => n + u.gameCount, 0) }
+            ]}
+            to="/admin/users"
+            linkLabel="Manage users"
+        />
+    );
+}
+
+function IgdbTile() {
+    const q = useAdminIgdb();
+    const d = q.data;
+    const failing = d && d.requests24h.failed > 0;
+    return (
+        <AdminTile
+            id="igdb-heading"
+            icon={<Gamepad2 aria-hidden="true" />}
+            title="IGDB"
+            state={state(q)}
+            stats={
+                d
+                    ? !d.configured
+                        ? [{ label: 'Status', value: 'Not set up' }]
+                        : [
+                              {
+                                  label: 'Access token',
+                                  value: d.token.valid ? 'Valid' : 'None yet',
+                                  title: d.token.expiresAt
+                                      ? `Expires ${new Date(d.token.expiresAt).toLocaleString()}`
+                                      : undefined
+                              },
+                              { label: 'Requests, 24h', value: d.requests24h.total },
+                              { label: 'Failed', value: d.requests24h.failed }
+                          ]
+                    : []
+            }
+            to="/admin/igdb"
+            linkLabel="IGDB health"
+        >
+            {failing && d.lastError && (
+                <p className="muted">
+                    Last error {timeAgo(d.lastError.at)}: {d.lastError.message}
+                </p>
+            )}
+        </AdminTile>
+    );
+}
+
+function ServerTile() {
+    const q = useAdminServer();
+    const d = q.data;
+    const low = d?.disk && diskIsLow(d.disk);
+    return (
+        <AdminTile
+            id="server-heading"
+            icon={<Server aria-hidden="true" />}
+            title="Server"
+            state={state(q)}
+            stats={
+                d
+                    ? [
+                          { label: 'Uptime', value: formatDuration(d.uptimeSeconds) },
+                          {
+                              label: 'Disk free',
+                              value: d.disk ? formatBytes(d.disk.freeBytes) : 'Unknown',
+                              title: d.disk
+                                  ? `of ${formatBytes(d.disk.totalBytes)} on the database volume`
+                                  : undefined
+                          },
+                          { label: 'Memory', value: formatBytes(d.memory.rssBytes) }
+                      ]
+                    : []
+            }
+            to="/admin/server"
+            linkLabel="Server details"
+        >
+            {low && (
+                <p className="admin-warn" role="status">
+                    <TriangleAlert aria-hidden="true" /> Disk space is running low.
+                </p>
+            )}
+        </AdminTile>
+    );
+}
+
+function SettingsTile() {
+    const q = useAdminSettings();
+    const update = useUpdateAdminSettings();
+    const s = q.data;
+    return (
+        <section className="panel admin-tile" aria-labelledby="settings-heading">
+            <h2 id="settings-heading">
+                <SlidersHorizontal aria-hidden="true" /> Settings
             </h2>
-            {users.isPending ? (
-                <UserStatsSkeleton />
-            ) : users.isError ? (
+            {q.isPending ? (
+                <CheckSkeletons count={1} label="Loading settings" />
+            ) : q.isError ? (
                 <p className="form-error" role="alert">
-                    Couldn't load the users.
+                    Couldn't load the settings.
                 </p>
             ) : (
-                <dl className="admin-stats">
-                    {stats!.map((s) => (
-                        <div key={s.label}>
-                            <dd>{s.value}</dd>
-                            <dt>{s.label}</dt>
-                        </div>
-                    ))}
-                </dl>
+                <>
+                    <label className="check">
+                        <input
+                            type="checkbox"
+                            checked={s!.signupsEnabled}
+                            disabled={update.isPending}
+                            onChange={(e) => update.mutate({ signupsEnabled: e.target.checked })}
+                        />
+                        Allow new signups
+                    </label>
+                    <p className="muted" role="status">
+                        {update.isError
+                            ? "Couldn't save that."
+                            : s!.signupsOverridden
+                              ? `Overrides SIGNUPS_ENABLED=${s!.signupsDefault} from the environment. Takes effect immediately.`
+                              : `Currently from SIGNUPS_ENABLED in the environment. Changing this takes effect immediately and overrides it.`}
+                    </p>
+                    <p className="muted">
+                        Admins can always create users from the Users page, whatever this says.
+                    </p>
+                </>
             )}
-            <Link className="admin-tile__link" to="/admin/users">
-                Manage users <ArrowRight aria-hidden="true" />
-            </Link>
         </section>
     );
 }
@@ -207,6 +316,9 @@ export function AdminPage() {
             <div className="admin-tiles">
                 <UsersTile />
                 <DatabaseTile />
+                <IgdbTile />
+                <ServerTile />
+                <SettingsTile />
             </div>
             <section className="panel" aria-labelledby="backup-heading">
                 <h2 id="backup-heading">

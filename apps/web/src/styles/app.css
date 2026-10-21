@@ -3892,3 +3892,65 @@ fieldset.stars:disabled .stars__star {
         display: none;
     }
 }
+
+/* Admin: housekeeping, disk meter, tile warning */
+.maint-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+}
+.maint {
+    display: flex;
+    gap: 16px;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 12px 0;
+    border-top: 1px solid var(--line);
+}
+.maint:first-child {
+    border-top: 0;
+    padding-top: 0;
+}
+.maint__text {
+    min-width: 0;
+}
+.maint__text p {
+    margin: 4px 0 0;
+    max-width: 65ch;
+}
+.maint .btn {
+    flex: none;
+}
+@media (max-width: 520px) {
+    .maint {
+        flex-direction: column;
+    }
+}
+.meter {
+    height: 10px;
+    border-radius: 5px;
+    background: var(--surface-2);
+    overflow: hidden;
+}
+.meter__fill {
+    display: block;
+    height: 100%;
+    background: var(--accent);
+}
+.meter__fill--bad {
+    background: var(--status-bad);
+}
+.admin-warn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0;
+    color: var(--status-bad);
+    font-weight: 600;
+}
+.admin-warn svg {
+    flex: none;
+    width: 1.1em;
+    height: 1.1em;
+}

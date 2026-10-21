@@ -282,9 +282,9 @@ export function UserStatsSkeleton() {
 }
 
 /** The admin database page: stat groups and the table list. */
-export function DatabaseSkeleton() {
+export function DatabaseSkeleton({ label = 'Loading database stats' }: { label?: string }) {
     return (
-        <div className="stack" role="status" aria-label="Loading database stats">
+        <div className="stack" role="status" aria-label={label}>
             {[0, 1, 2].map((i) => (
                 <div key={i} className="panel" aria-hidden="true">
                     <span className="skeleton skeleton--line" style={{ width: '25%' }} />

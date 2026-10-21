@@ -214,7 +214,7 @@ If you see Cloudflare error 1033 or 502, see Troubleshooting.
 ### 9. First login and lock signups
 
 1. Open `https://gamequeue.app` and create your account.
-2. Set `SIGNUPS_ENABLED=false` in `~/gamequeue/.env`, then `docker compose up -d` (this recreates the app container with the new value). Registration now returns 403. Flip it on briefly if a friend needs an account.
+2. Set `SIGNUPS_ENABLED=false` in `~/gamequeue/.env`, then `docker compose up -d` (this recreates the app container with the new value). Registration now returns 403. Flip it on briefly if a friend needs an account. Admins can also change this without a restart from the Settings tile on `/admin`; a saved choice there overrides the environment value.
 
 ### 10. IGDB credentials
 

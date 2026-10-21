@@ -14,6 +14,7 @@ import {
 import { dummyHash, hashPassword, verifyPassword } from '../auth/password.js';
 import type { FailureLimiter } from '../auth/rate-limit.js';
 import { createSession, destroySession, SESSION_COOKIE } from '../auth/sessions.js';
+import { signupsEnabled } from '../services/settings.js';
 import { getUserDto } from '../services/users.js';
 import { slots, users } from '../db/schema.js';
 
@@ -62,10 +63,10 @@ export function authRoutes({ db, config, limiters }: Deps) {
     const r = new Hono<{ Variables: AuthVars }>();
 
     // Public: lets the login page hide the "Create an account" link.
-    r.get('/config', (c) => c.json({ signupsEnabled: config.signupsEnabled }));
+    r.get('/config', (c) => c.json({ signupsEnabled: signupsEnabled(db, config) }));
 
     r.post('/register', async (c) => {
-        if (!config.signupsEnabled) return c.json({ error: 'Signups are disabled' }, 403);
+        if (!signupsEnabled(db, config)) return c.json({ error: 'Signups are disabled' }, 403);
         const body = await parseBody(c, registerSchema);
         if (body.response) return body.response;
         const { username, email, password } = body.data;
