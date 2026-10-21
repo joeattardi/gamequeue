@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import type { PlaythroughDto } from './playthroughs.js';
 import type { ReleasePrecision } from './release.js';
+import type { SeriesRefDto } from './series.js';
 
 export const ENTRY_STATUSES = ['unplayed', 'playing', 'paused', 'finished', 'abandoned'] as const;
 export type EntryStatus = (typeof ENTRY_STATUSES)[number];
@@ -42,6 +43,8 @@ export interface GameDto {
     releasePrecision: ReleasePrecision | null;
     coverImageId: string | null;
     igdbRating: number | null;
+    /** IGDB series the game belongs to; empty until looked up or when it has none */
+    series: SeriesRefDto[];
     genres: string[];
     themes: string[];
     /** Platforms the game exists on, per IGDB */
@@ -105,6 +108,8 @@ export interface FacetCountsDto {
     statuses: { value: EntryStatus; count: number }[];
     platforms: (PlatformDto & { count: number })[];
     genres: { id: number; name: string; count: number }[];
+    /** Only series with at least two of the user's games, since one-game series filter nothing */
+    series: { id: number; name: string; count: number }[];
     tags: { name: string; count: number }[];
 }
 
@@ -143,6 +148,7 @@ export const entryQuerySchema = z.object({
     status: multi(z.enum(ENTRY_STATUSES)).optional(),
     platform: multi(positiveInt).optional(),
     genre: multi(positiveInt).optional(),
+    series: multi(positiveInt).optional(),
     tag: multi(z.string().trim().min(1)).optional(),
     q: z.string().trim().min(1).max(100).optional(),
     sort: z.enum(ENTRY_SORTS).default('title'),

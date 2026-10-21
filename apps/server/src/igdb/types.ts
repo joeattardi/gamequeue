@@ -1,4 +1,4 @@
-import type { PlatformDto, ReleasePrecision } from '@gamequeue/shared';
+import type { PlatformDto, ReleasePrecision, SeriesRefDto } from '@gamequeue/shared';
 
 /** A game as we cache it (shared across users) */
 export interface GameRecord {
@@ -8,6 +8,7 @@ export interface GameRecord {
     summary: string | null;
     releaseDate: string | null; // YYYY-MM-DD (UTC)
     releasePrecision: ReleasePrecision | null;
+    series: SeriesRefDto[];
     coverImageId: string | null;
     igdbRating: number | null; // 0-100
     igdbRatingCount: number | null;
@@ -39,6 +40,19 @@ export interface ReleaseInfo {
     releasePrecision: ReleasePrecision | null;
 }
 
+/** An IGDB series with the games worth listing in it (see `SERIES_GAME_TYPES`) */
+export interface SeriesRecord {
+    id: number;
+    name: string;
+    games: {
+        id: number;
+        name: string;
+        coverImageId: string | null;
+        releaseDate: string | null;
+        releasePrecision: ReleasePrecision | null;
+    }[];
+}
+
 /** Everything the app needs from IGDB. Faked in tests. */
 export interface IgdbClient {
     search(query: string): Promise<IgdbSearchHit[]>;
@@ -46,6 +60,9 @@ export interface IgdbClient {
     fetchPlatforms(): Promise<PlatformDto[]>;
     /** Current release dates for these games; ids IGDB no longer knows are left out */
     fetchReleaseDates(igdbIds: number[]): Promise<ReleaseInfo[]>;
+    /** Which series each game belongs to; ids IGDB no longer knows are left out */
+    fetchGameSeries(igdbIds: number[]): Promise<{ id: number; series: SeriesRefDto[] }[]>;
+    fetchSeries(seriesId: number): Promise<SeriesRecord | null>;
 }
 
 export class IgdbError extends Error {

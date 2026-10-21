@@ -8,6 +8,7 @@ import { CollectionPage } from './routes/CollectionPage';
 import { DataPage } from './routes/DataPage';
 import { EntryPage } from './routes/EntryPage';
 import { GameDetailPage } from './routes/GameDetailPage';
+import { SeriesPage } from './routes/SeriesPage';
 import { SearchPage } from './routes/SearchPage';
 import { Home } from './routes/Home';
 import { ListPage, QueuePage } from './routes/ListPage';
@@ -68,6 +69,7 @@ export function App() {
                 <Route path="games/igdb/:igdbId" element={<GameDetailPage />} />
                 <Route path="queue" element={<QueuePage />} />
                 <Route path="wishlist" element={<WishlistPage />} />
+                <Route path="series/:id" element={<SeriesPage />} />
                 <Route path="lists" element={<ListsPage />} />
                 <Route path="lists/:id" element={<ListPage />} />
                 <Route path="smart-lists/new" element={<SmartListEditPage />} />

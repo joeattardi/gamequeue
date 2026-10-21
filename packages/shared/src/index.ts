@@ -16,3 +16,4 @@ export * from './recap.js';
 export * from './avatar.js';
 export * from './social.js';
 export * from './release.js';
+export * from './series.js';

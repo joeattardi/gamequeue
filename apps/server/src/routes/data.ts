@@ -13,12 +13,13 @@ import { HttpError } from '../errors.js';
 import { csvResponse } from '../http.js';
 import { listEntries } from '../services/entries.js';
 import { buildExport } from '../services/export.js';
+import { backfillSeries } from '../services/games.js';
 import { importData } from '../services/import.js';
 
 const MAX_BYTES = 50 * 1024 * 1024;
 const MAX_ISSUES = 50;
 
-export function dataRoutes({ db, config }: AppDeps) {
+export function dataRoutes({ db, config, igdb }: AppDeps) {
     const r = new Hono<{ Variables: AuthVars }>();
     r.use('*', requireAuth(db, config));
 
@@ -79,7 +80,10 @@ export function dataRoutes({ db, config }: AppDeps) {
             }
 
             const dryRun = c.req.query('commit') !== 'true';
-            return c.json({ report: importData(db, c.get('user').id, parsed.data, { dryRun }) });
+            const report = importData(db, c.get('user').id, parsed.data, { dryRun });
+            // Imported games carry no series; learn them in the background
+            if (!dryRun) void backfillSeries(db, igdb);
+            return c.json({ report });
         }
     );
 

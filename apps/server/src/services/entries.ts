@@ -19,6 +19,8 @@ import {
     listItems,
     lists,
     gameGenres,
+    gameSeries,
+    series,
     gamePlatforms,
     games,
     gameThemes,
@@ -197,7 +199,7 @@ function buildOrder(q: EntryQuery): SQL[] {
     return [sql`${k} IS NULL`, d(k), asc(sql`lower(${games.name})`), asc(entries.id)];
 }
 
-type Facet = 'status' | 'platform' | 'genre' | 'tag';
+type Facet = 'status' | 'platform' | 'genre' | 'series' | 'tag';
 
 /** Conditions for a query. `omit` leaves one facet out, which is how facet counts are computed. */
 function filterWhere(db: Db, userId: number, q: EntryQuery, omit?: Facet): SQL[] {
@@ -228,6 +230,20 @@ function filterWhere(db: Db, userId: number, q: EntryQuery, omit?: Facet): SQL[]
                         and(
                             eq(gameGenres.gameId, entries.gameId),
                             inArray(gameGenres.genreId, q.genre)
+                        )
+                    )
+            )
+        );
+    if (q.series?.length && omit !== 'series')
+        where.push(
+            exists(
+                db
+                    .select({ x: sql`1` })
+                    .from(gameSeries)
+                    .where(
+                        and(
+                            eq(gameSeries.gameId, entries.gameId),
+                            inArray(gameSeries.seriesId, q.series)
                         )
                     )
             )
@@ -475,6 +491,28 @@ export function getFacetCounts(db: Db, userId: number, q: EntryQuery): FacetCoun
             .groupBy(gameGenres.genreId)
             .all()
     );
+    const bySeries = count(
+        db
+            .select({ key: gameSeries.seriesId, n })
+            .from(entries)
+            .innerJoin(games, eq(games.id, entries.gameId))
+            .innerJoin(gameSeries, eq(gameSeries.gameId, entries.gameId))
+            .where(scoped('series'))
+            .groupBy(gameSeries.seriesId)
+            .all()
+    );
+    // A series with one game of yours has nothing to filter, so it is only offered from two up
+    // (or when already selected, so a link to one never shows an empty sidebar)
+    const ownedSeries = db
+        .select({ id: series.id, name: series.name, n: sql<number>`count(distinct ${entries.id})` })
+        .from(entries)
+        .innerJoin(gameSeries, eq(gameSeries.gameId, entries.gameId))
+        .innerJoin(series, eq(series.id, gameSeries.seriesId))
+        .where(eq(entries.userId, userId))
+        .groupBy(series.id)
+        .all()
+        .filter((s) => s.n >= 2 || q.series?.includes(s.id))
+        .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
     const byTag = count(
         db
             .select({ key: sql<string>`lower(${tags.name})`, n })
@@ -495,6 +533,11 @@ export function getFacetCounts(db: Db, userId: number, q: EntryQuery): FacetCoun
         })),
         platforms: base.platforms.map((p) => ({ ...p, count: byPlatform.get(p.id) ?? 0 })),
         genres: base.genres.map((g) => ({ ...g, count: byGenre.get(g.id) ?? 0 })),
+        series: ownedSeries.map((s) => ({
+            id: s.id,
+            name: s.name,
+            count: bySeries.get(s.id) ?? 0
+        })),
         tags: base.tags.map((name) => ({ name, count: byTag.get(name.toLowerCase()) ?? 0 }))
     };
 }

@@ -1,8 +1,11 @@
+import { SERIES_GAME_TYPES } from '@gamequeue/shared';
 import { RequestLimiter } from './limiter.js';
 import {
     isCollectable,
     mapGame,
+    mapRelease,
     mapReleaseInfo,
+    mapSeriesRefs,
     mapSearchHit,
     type RawGame,
     type RawTtb
@@ -16,6 +19,7 @@ const GAME_FIELDS =
     'genres.name,themes.name,total_rating,total_rating_count,game_type.type';
 /** Only a game's own page needs the per-platform dates, which say how exact the release date is */
 const RELEASE_FIELDS = 'release_dates.date,release_dates.date_format';
+const DETAIL_FIELDS = `${RELEASE_FIELDS},collections.name`;
 const MAX_429_RETRIES = 3;
 
 export interface IgdbClientOptions {
@@ -78,7 +82,7 @@ export function createIgdbClient(opts: IgdbClientOptions): IgdbClient {
             // One round trip for the game plus its time-to-beat
             const results = await request<{ name: string; result: unknown[] }[]>(
                 'multiquery',
-                `query games "game" { fields ${GAME_FIELDS},${RELEASE_FIELDS}; where id = ${igdbId}; };\n` +
+                `query games "game" { fields ${GAME_FIELDS},${DETAIL_FIELDS}; where id = ${igdbId}; };\n` +
                     `query game_time_to_beats "ttb" { fields game_id,hastily,normally,completely,count; where game_id = ${igdbId}; };`
             );
             const game = results.find((r) => r.name === 'game')?.result[0] as RawGame | undefined;
@@ -98,6 +102,41 @@ export function createIgdbClient(opts: IgdbClientOptions): IgdbClient {
                 out.push(...raw.map(mapReleaseInfo));
             }
             return out;
+        },
+
+        async fetchGameSeries(igdbIds) {
+            const out = [];
+            for (let i = 0; i < igdbIds.length; i += 100) {
+                const ids = igdbIds.slice(i, i + 100);
+                const raw = await request<RawGame[]>(
+                    'games',
+                    `fields collections.name; where id = (${ids.join(',')}); limit 100;`
+                );
+                out.push(...raw.map((g) => ({ id: g.id, series: mapSeriesRefs(g) })));
+            }
+            return out;
+        },
+
+        async fetchSeries(seriesId) {
+            const [collection] = await request<{ id: number; name: string }[]>(
+                'collections',
+                `fields name; where id = ${seriesId};`
+            );
+            if (!collection) return null;
+            const raw = await request<RawGame[]>(
+                'games',
+                `fields name,first_release_date,cover.image_id,${RELEASE_FIELDS}; where collections = (${seriesId}) & version_parent = null & game_type = (${SERIES_GAME_TYPES.join(',')}); sort first_release_date asc; limit 500;`
+            );
+            return {
+                id: collection.id,
+                name: collection.name,
+                games: raw.map((g) => ({
+                    id: g.id,
+                    name: g.name,
+                    coverImageId: g.cover?.image_id ?? null,
+                    ...mapRelease(g)
+                }))
+            };
         },
 
         async fetchPlatforms() {

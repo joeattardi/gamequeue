@@ -12,6 +12,7 @@ export interface RawGame {
     slug?: string;
     summary?: string;
     first_release_date?: number;
+    collections?: { id: number; name: string }[];
     release_dates?: { date?: number; date_format?: number | { id?: number } }[];
     cover?: { image_id?: string };
     platforms?: RawNamed[];
@@ -67,6 +68,9 @@ export function mapRelease(raw: Pick<RawGame, 'first_release_date' | 'release_da
         : { releaseDate: date, releasePrecision: precision };
 }
 
+export const mapSeriesRefs = (raw: Pick<RawGame, 'collections'>) =>
+    (raw.collections ?? []).map((c) => ({ id: c.id, name: c.name }));
+
 export const mapReleaseInfo = (raw: RawGame): ReleaseInfo => ({ id: raw.id, ...mapRelease(raw) });
 
 const platforms = (raw?: RawNamed[]) =>
@@ -111,6 +115,7 @@ export function mapGame(raw: RawGame, ttb?: RawTtb): GameRecord {
         slug: raw.slug ?? null,
         summary: raw.summary ?? null,
         ...mapRelease(raw),
+        series: mapSeriesRefs(raw),
         coverImageId: raw.cover?.image_id ?? null,
         igdbRating: raw.total_rating === undefined ? null : Math.round(raw.total_rating),
         igdbRatingCount: raw.total_rating_count ?? null,

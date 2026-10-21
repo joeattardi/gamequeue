@@ -1,4 +1,24 @@
 /** Skeletons for whole pages and for small pieces of UI (selects, checkboxes, list cards). */
+import { GridSkeletons } from './GridSkeletons';
+
+/** The series page: heading, summary line and the list rows of the games. */
+export function SeriesSkeleton() {
+    return (
+        <section aria-busy="true">
+            <div className="page-head">
+                <div>
+                    <h1>
+                        <span className="skeleton skeleton--title" />
+                    </h1>
+                    <p className="muted">
+                        <span className="skeleton skeleton--line skeleton--subtitle" />
+                    </p>
+                </div>
+            </div>
+            <GridSkeletons layout="list" count={8} />
+        </section>
+    );
+}
 
 /** The game page: cover on the left, header, summary and a few panels on the right. */
 export function EntrySkeleton() {

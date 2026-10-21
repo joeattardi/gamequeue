@@ -8,6 +8,7 @@ import { AddGameDialog } from '../components/AddGameDialog';
 import { Cover } from '../components/Cover';
 import { EntrySkeleton } from '../components/PageSkeletons';
 import { PlatformTags } from '../components/PlatformIcon';
+import { SeriesLinks } from '../components/SeriesLinks';
 import { ScoreGauge } from '../components/ScoreGauge';
 import { formatMinutes, usePageTitle, yearOf } from '../lib';
 import { ArrowLeft, Gift, Library, X } from 'lucide-react';
@@ -76,6 +77,7 @@ function GameDetail({ detail }: { detail: GameDetailDto }) {
                                     .filter(Boolean)
                                     .join(' · ')}
                             </p>
+                            <SeriesLinks series={game.series} />
                         </div>
                         {game.igdbRating !== null && (
                             <ScoreGauge value={game.igdbRating} label="IGDB" />

@@ -1,10 +1,12 @@
-import { asc, eq, inArray, sql } from 'drizzle-orm';
-import { isReleased, type GameDto, type PlatformDto } from '@gamequeue/shared';
+import { asc, eq, inArray, isNull, sql } from 'drizzle-orm';
+import { isReleased, type GameDto, type PlatformDto, type SeriesRefDto } from '@gamequeue/shared';
 import type { Db } from '../db/client.js';
 import {
     gameGenres,
     gamePlatforms,
     games,
+    gameSeries,
+    series,
     gameThemes,
     genres,
     platforms,
@@ -57,12 +59,26 @@ export function upsertPlatforms(
     }
 }
 
+/** Records which series a game is in (the series rows themselves are shared). */
+function saveGameSeries(db: Db, gameId: number, list: SeriesRefDto[]) {
+    for (const s of list)
+        db.insert(series)
+            .values({ id: s.id, name: s.name })
+            .onConflictDoUpdate({ target: series.id, set: { name: s.name } })
+            .run();
+    if (list.length)
+        db.insert(gameSeries)
+            .values(list.map((s) => ({ gameId, seriesId: s.id })))
+            .onConflictDoNothing()
+            .run();
+}
+
 /** Writes a fetched game and its relations into the shared cache. */
 export function saveGame(
     db: Db,
     g: GameRecord,
     now = Date.now(),
-    opts: { keepExistingPlatforms?: boolean; release?: 'checked' | 'unchecked' } = {}
+    opts: { keepExistingPlatforms?: boolean; fromImport?: boolean } = {}
 ) {
     db.transaction((tx) => {
         upsertPlatforms(tx as unknown as Db, g.platforms, {
@@ -78,8 +94,9 @@ export function saveGame(
                 summary: g.summary,
                 releaseDate: g.releaseDate,
                 releasePrecision: g.releasePrecision,
-                // A date from an import file is only a snapshot, so it is due for a check
-                releaseCheckedAt: opts.release === 'unchecked' ? null : now,
+                // An import file is only a snapshot: its dates and series are due for a check
+                releaseCheckedAt: opts.fromImport ? null : now,
+                seriesCheckedAt: opts.fromImport ? null : now,
                 coverImageId: g.coverImageId,
                 igdbRating: g.igdbRating,
                 igdbRatingCount: g.igdbRatingCount,
@@ -93,6 +110,7 @@ export function saveGame(
             .onConflictDoNothing()
             .run();
         // Drizzle rejects empty inserts, and IGDB games often lack themes/genres/platforms
+        saveGameSeries(tx as unknown as Db, g.id, g.series);
         if (g.platforms.length)
             tx.insert(gamePlatforms)
                 .values(g.platforms.map((p) => ({ gameId: g.id, platformId: p.id })))
@@ -121,6 +139,38 @@ export async function ensureGame(db: Db, igdb: IgdbClient | undefined, igdbId: n
     const record = await callIgdb(() => requireIgdb(igdb).fetchGame(igdbId));
     if (!record) throw new HttpError(404, "That game wasn't found on IGDB");
     saveGame(db, record);
+}
+
+let backfilling = false;
+
+/**
+ * Asks IGDB which series each cached game is in, for games cached before series were stored (or
+ * saved from an import file). One request per 100 games; games IGDB doesn't return count as
+ * checked. Best effort: a failure leaves the rest for the next run, and only one run goes at a time.
+ */
+export async function backfillSeries(db: Db, igdb: IgdbClient | undefined, now = Date.now()) {
+    if (!igdb || backfilling) return;
+    backfilling = true;
+    try {
+        const due = db
+            .select({ id: games.id })
+            .from(games)
+            .where(isNull(games.seriesCheckedAt))
+            .all()
+            .map((g) => g.id);
+        for (let i = 0; i < due.length; i += 100) {
+            const ids = due.slice(i, i + 100);
+            const found = await igdb.fetchGameSeries(ids);
+            db.transaction((tx) => {
+                for (const f of found) saveGameSeries(tx as unknown as Db, f.id, f.series);
+                tx.update(games).set({ seriesCheckedAt: now }).where(inArray(games.id, ids)).run();
+            });
+        }
+    } catch (e) {
+        console.error('Series backfill failed', e);
+    } finally {
+        backfilling = false;
+    }
 }
 
 /** A release date is only worth asking IGDB about again after this long. */
@@ -214,6 +264,7 @@ export function loadGames(db: Db, gameIds: number[]): Map<number, GameDto> {
     const gPlatforms = new Map<number, PlatformDto[]>();
     const gGenres = new Map<number, string[]>();
     const gThemes = new Map<number, string[]>();
+    const gSeries = new Map<number, SeriesRefDto[]>();
     const push = <K, V>(m: Map<K, V[]>, k: K, v: V) => (m.get(k) ?? m.set(k, []).get(k)!).push(v);
     const rows: (typeof games.$inferSelect)[] = [];
     for (let i = 0; i < gameIds.length; i += 500) {
@@ -235,6 +286,14 @@ export function loadGames(db: Db, gameIds: number[]): Map<number, GameDto> {
             .orderBy(asc(genres.name))
             .all())
             push(gGenres, r.gameId, r.name);
+        for (const r of db
+            .select({ gameId: gameSeries.gameId, id: series.id, name: series.name })
+            .from(gameSeries)
+            .innerJoin(series, eq(series.id, gameSeries.seriesId))
+            .where(inArray(gameSeries.gameId, chunk))
+            .orderBy(asc(series.name))
+            .all())
+            push(gSeries, r.gameId, { id: r.id, name: r.name });
         for (const r of db
             .select({ gameId: gameThemes.gameId, name: themes.name })
             .from(gameThemes)
@@ -258,6 +317,7 @@ export function loadGames(db: Db, gameIds: number[]): Map<number, GameDto> {
             releasePrecision: g.releasePrecision,
             coverImageId: g.coverImageId,
             igdbRating: g.igdbRating,
+            series: gSeries.get(g.id) ?? [],
             genres: gGenres.get(g.id) ?? [],
             themes: gThemes.get(g.id) ?? [],
             platforms: gPlatforms.get(g.id) ?? [],

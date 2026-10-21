@@ -7,6 +7,7 @@ import { useConfirm } from '../components/Confirm';
 import { StarRating } from '../components/StarRating';
 import { Cover } from '../components/Cover';
 import { ListsPanel } from '../components/ListsPanel';
+import { SeriesLinks } from '../components/SeriesLinks';
 import { ScoreGauge } from '../components/ScoreGauge';
 import { HistoryPanel, StatusPanel } from '../components/PlaythroughPanels';
 import { EntrySkeleton, SelectSkeleton } from '../components/PageSkeletons';
@@ -63,6 +64,7 @@ function EntryDetail({ entry }: { entry: EntryDto }) {
                                     .filter(Boolean)
                                     .join(' · ')}
                             </p>
+                            <SeriesLinks series={game.series} />
                         </div>
                         {game.igdbRating !== null && (
                             <ScoreGauge value={game.igdbRating} label="IGDB" />

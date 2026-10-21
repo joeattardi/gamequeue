@@ -104,6 +104,7 @@ export const games = sqliteTable('games', {
     releaseDate: text('release_date'), // YYYY-MM-DD
     releasePrecision: text('release_precision').$type<ReleasePrecision>(), // null = unknown
     releaseCheckedAt: integer('release_checked_at'), // last time IGDB was asked for the date
+    seriesCheckedAt: integer('series_checked_at'), // null = never asked IGDB which series it is in
     coverImageId: text('cover_image_id'),
     igdbRating: integer('igdb_rating'), // 0-100
     igdbRatingCount: integer('igdb_rating_count'),
@@ -114,6 +115,45 @@ export const games = sqliteTable('games', {
     ttbCount: integer('ttb_count'),
     fetchedAt: integer('fetched_at').notNull()
 });
+
+/** IGDB series ("collections"). Shared cache, like games. */
+export const series = sqliteTable('series', {
+    id: integer('id').primaryKey(), // IGDB collection id
+    name: text('name').notNull(),
+    membersFetchedAt: integer('members_fetched_at') // null = member list never fetched
+});
+
+export const gameSeries = sqliteTable(
+    'game_series',
+    {
+        gameId: integer('game_id')
+            .notNull()
+            .references(() => games.id, { onDelete: 'cascade' }),
+        seriesId: integer('series_id')
+            .notNull()
+            .references(() => series.id, { onDelete: 'cascade' })
+    },
+    (t) => [
+        primaryKey({ columns: [t.gameId, t.seriesId] }),
+        index('game_series_series').on(t.seriesId)
+    ]
+);
+
+/** The games of a series as IGDB lists them, cached for the series page. Not necessarily in `games`. */
+export const seriesMembers = sqliteTable(
+    'series_members',
+    {
+        seriesId: integer('series_id')
+            .notNull()
+            .references(() => series.id, { onDelete: 'cascade' }),
+        gameId: integer('game_id').notNull(), // IGDB game id
+        name: text('name').notNull(),
+        coverImageId: text('cover_image_id'),
+        releaseDate: text('release_date'),
+        releasePrecision: text('release_precision').$type<ReleasePrecision>()
+    },
+    (t) => [primaryKey({ columns: [t.seriesId, t.gameId] })]
+);
 
 export const gamePlatforms = sqliteTable(
     'game_platforms',

@@ -87,6 +87,7 @@ const COLLECTION_KEYS = [
     'smartList',
     'queue',
     'wishlist',
+    'series',
     'stats'
 ];
 

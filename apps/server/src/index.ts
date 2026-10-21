@@ -8,6 +8,7 @@ import { purgeExpiredSessions } from './auth/sessions.js';
 import { loadConfig } from './config.js';
 import { openDb } from './db/client.js';
 import { createIgdbClient } from './igdb/client.js';
+import { backfillSeries } from './services/games.js';
 
 const config = loadConfig();
 const db = openDb(config.databasePath);
@@ -28,6 +29,8 @@ if (existsSync(webDist)) {
 }
 
 purgeExpiredSessions(db);
+// Games cached before series were stored learn theirs in the background
+void backfillSeries(db, igdb);
 setInterval(() => purgeExpiredSessions(db), 6 * 3600_000).unref();
 
 serve({ fetch: app.fetch, port: config.port }, (info) => {

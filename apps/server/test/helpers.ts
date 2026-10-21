@@ -49,6 +49,7 @@ export function fakeGame(id: number, name: string, extra: Partial<GameRecord> = 
         summary: `${name} summary`,
         releaseDate: '2020-05-01',
         releasePrecision: 'day',
+        series: [],
         coverImageId: `co${id}`,
         igdbRating: 80,
         igdbRatingCount: 100,
@@ -68,7 +69,14 @@ export function fakeGame(id: number, name: string, extra: Partial<GameRecord> = 
 
 /** In-memory IGDB stand-in that counts calls, so tests can prove caching. */
 export function fakeIgdb(catalog: GameRecord[]) {
-    const calls = { search: 0, fetchGame: 0, fetchPlatforms: 0, fetchReleaseDates: 0 };
+    const calls = {
+        search: 0,
+        fetchGame: 0,
+        fetchPlatforms: 0,
+        fetchReleaseDates: 0,
+        fetchGameSeries: 0,
+        fetchSeries: 0
+    };
     const client: IgdbClient = {
         async search(q) {
             calls.search++;
@@ -96,6 +104,31 @@ export function fakeIgdb(catalog: GameRecord[]) {
                     releaseDate: g.releaseDate,
                     releasePrecision: g.releasePrecision
                 }));
+        },
+        async fetchGameSeries(ids) {
+            calls.fetchGameSeries++;
+            return catalog
+                .filter((g) => ids.includes(g.id))
+                .map((g) => ({ id: g.id, series: g.series }));
+        },
+        async fetchSeries(id) {
+            calls.fetchSeries++;
+            const members = catalog.filter((g) => g.series.some((s) => s.id === id));
+            const name = members[0]?.series.find((s) => s.id === id)?.name;
+            if (!name) return null;
+            return {
+                id,
+                name,
+                games: [...members]
+                    .sort((a, b) => (a.releaseDate ?? '9').localeCompare(b.releaseDate ?? '9'))
+                    .map((g) => ({
+                        id: g.id,
+                        name: g.name,
+                        coverImageId: g.coverImageId,
+                        releaseDate: g.releaseDate,
+                        releasePrecision: g.releasePrecision
+                    }))
+            };
         },
         async fetchPlatforms() {
             calls.fetchPlatforms++;

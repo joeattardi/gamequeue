@@ -100,11 +100,16 @@ function merge(
         if (!cached.has(g.igdbId)) {
             saveGame(
                 db,
-                { id: g.igdbId, ...g.game, releasePrecision: g.game.releasePrecision ?? null },
+                {
+                    id: g.igdbId,
+                    ...g.game,
+                    releasePrecision: g.game.releasePrecision ?? null,
+                    series: []
+                },
                 now,
                 {
                     keepExistingPlatforms: true,
-                    release: 'unchecked'
+                    fromImport: true
                 }
             );
             cached.add(g.igdbId);
@@ -498,11 +503,16 @@ function mergeWishlist(
         if (!cached.has(w.igdbId)) {
             saveGame(
                 db,
-                { id: w.igdbId, ...w.game, releasePrecision: w.game.releasePrecision ?? null },
+                {
+                    id: w.igdbId,
+                    ...w.game,
+                    releasePrecision: w.game.releasePrecision ?? null,
+                    series: []
+                },
                 now,
                 {
                     keepExistingPlatforms: true,
-                    release: 'unchecked'
+                    fromImport: true
                 }
             );
             cached.add(w.igdbId);

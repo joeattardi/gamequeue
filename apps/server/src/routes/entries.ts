@@ -14,7 +14,7 @@ import {
     patchEntry
 } from '../services/entries.js';
 
-const FACET_KEYS = ['status', 'platform', 'genre', 'tag'];
+const FACET_KEYS = ['status', 'platform', 'genre', 'series', 'tag'];
 
 /** Facet params may repeat; everything else is single-valued. */
 function parseEntryQuery(raw: Record<string, string[]>) {
