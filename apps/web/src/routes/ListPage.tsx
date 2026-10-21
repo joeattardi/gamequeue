@@ -15,7 +15,7 @@ import {
     verticalListSortingStrategy
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import type { EntryDto } from '@gamequeue/shared';
+import { MAX_LIST_DESCRIPTION, type EntryDto } from '@gamequeue/shared';
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import { useEntries } from '../api/collection';
@@ -25,7 +25,7 @@ import {
     useDeleteList,
     useList,
     useRemoveFromList,
-    useRenameList,
+    useUpdateList,
     useMoveInList
 } from '../api/lists';
 import { useQueue } from '../api/queue';
@@ -69,7 +69,9 @@ export function ListPage() {
                 <Link to="/lists">Back to lists</Link>
             </div>
         );
-    return <ListView id={id} name={list.head?.name ?? ''} paged={list} />;
+    return (
+        <ListView id={id} name={list.head.name} description={list.head.description} paged={list} />
+    );
 }
 
 export function QueuePage() {
@@ -106,11 +108,13 @@ type Paged = Pick<
 function ListView({
     id,
     name,
+    description = '',
     paged,
     isQueue = false
 }: {
     id: number;
     name: string;
+    description?: string;
     paged: Paged;
     isQueue?: boolean;
 }) {
@@ -125,6 +129,7 @@ function ListView({
     const [layout, setLayout] = useLayout(LAYOUT_KEY, 'list');
     const [order, setOrder] = useState(entries);
     const [error, setError] = useState<string>();
+    const [editing, setEditing] = useState(false);
     useEffect(() => setOrder(entries), [entries]);
 
     const sensors = useSensors(
@@ -182,7 +187,14 @@ function ListView({
                     </a>
                     {!isQueue && (
                         <>
-                            <RenameButton id={id} name={name} />
+                            <button
+                                className="btn"
+                                onClick={() => setEditing((on) => !on)}
+                                aria-expanded={editing}
+                            >
+                                <Pencil />
+                                Edit
+                            </button>
                             <button
                                 className="btn btn--danger"
                                 disabled={del.isPending}
@@ -204,6 +216,17 @@ function ListView({
                     )}
                 </div>
             </div>
+
+            {editing ? (
+                <EditListForm
+                    id={id}
+                    name={name}
+                    description={description}
+                    onDone={() => setEditing(false)}
+                />
+            ) : (
+                description && <p className="list-description">{description}</p>
+            )}
 
             <AddGames listId={id} isQueue={isQueue} />
             <p className="form-error" role="alert">
@@ -376,59 +399,71 @@ function Row({
     );
 }
 
-function RenameButton({ id, name }: { id: number; name: string }) {
-    const rename = useRenameList(id);
-    const [editing, setEditing] = useState(false);
-    const [text, setText] = useState(name);
+/** Name and description of a list, edited in place under the heading. */
+function EditListForm({
+    id,
+    name,
+    description,
+    onDone
+}: {
+    id: number;
+    name: string;
+    description: string;
+    onDone: () => void;
+}) {
+    const update = useUpdateList(id);
+    const [nameText, setNameText] = useState(name);
+    const [descText, setDescText] = useState(description);
     const [error, setError] = useState<string>();
     function submit(e: FormEvent) {
         e.preventDefault();
         setError(undefined);
-        rename.mutate(text.trim(), {
-            onSuccess: () => setEditing(false),
-            onError: (err) =>
-                setError(err instanceof ApiRequestError ? err.message : 'Something went wrong.')
-        });
-    }
-    if (!editing)
-        return (
-            <button
-                className="btn"
-                onClick={() => {
-                    setText(name);
-                    setEditing(true);
-                }}
-            >
-                <Pencil />
-                Rename
-            </button>
+        update.mutate(
+            { name: nameText.trim(), description: descText.trim() },
+            {
+                onSuccess: onDone,
+                onError: (err) =>
+                    setError(err instanceof ApiRequestError ? err.message : 'Something went wrong.')
+            }
         );
+    }
     return (
-        <form className="inline-form" onSubmit={submit}>
+        <form className="panel stack" onSubmit={submit}>
             <label className="field">
-                <span className="sr-only">List name</span>
+                <span>Name</span>
                 <input
-                    value={text}
-                    onChange={(e) => setText(e.target.value)}
+                    value={nameText}
+                    onChange={(e) => setNameText(e.target.value)}
                     maxLength={60}
                     autoFocus
                 />
             </label>
-            <button
-                className="btn btn--primary"
-                type="submit"
-                disabled={rename.isPending || !text.trim()}
-            >
-                Save
-            </button>
-            <button className="btn btn--ghost" type="button" onClick={() => setEditing(false)}>
-                Cancel
-            </button>
+            <label className="field">
+                <span>Description (optional)</span>
+                <textarea
+                    value={descText}
+                    onChange={(e) => setDescText(e.target.value)}
+                    maxLength={MAX_LIST_DESCRIPTION}
+                    rows={3}
+                />
+            </label>
             {error && (
                 <span className="form-error" role="alert">
                     {error}
                 </span>
             )}
+            <div className="row">
+                <button
+                    className="btn btn--primary"
+                    type="submit"
+                    disabled={update.isPending || !nameText.trim()}
+                >
+                    Save
+                </button>
+                <button className="btn btn--ghost" type="button" onClick={onDone}>
+                    Cancel
+                </button>
+            </div>
         </form>
     );
 }

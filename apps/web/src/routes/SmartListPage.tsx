@@ -92,8 +92,9 @@ function SmartListView({ paged }: { paged: ReturnType<typeof useSmartList> }) {
                 </div>
             </div>
 
+            {list.description && <p className="list-description">{list.description}</p>}
             <ul className="rule-summary" aria-label="Rules">
-                {list.description.map((d) => (
+                {list.ruleText.map((d) => (
                     <li key={d} className="badge">
                         {d}
                     </li>

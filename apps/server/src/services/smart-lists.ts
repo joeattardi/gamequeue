@@ -89,7 +89,7 @@ export function listSmartLists(db: Db, userId: number, now = Date.now()): SmartL
         covers: l.entries
             .flatMap((e) => (e.game.coverImageId ? [e.game.coverImageId] : []))
             .slice(0, TILE_COVERS),
-        description: l.description
+        ruleText: l.ruleText
     }));
 }
 
@@ -108,7 +108,8 @@ function toDetail(
         rules,
         sort: sortOf(row),
         dir: row.dir,
-        description: describeRules(rules, platformNamer(db, rules)),
+        description: row.description,
+        ruleText: describeRules(rules, platformNamer(db, rules)),
         entries: page ? entries.slice(page.offset, page.offset + page.limit) : entries,
         total: entries.length
     };
@@ -149,6 +150,7 @@ export function createSmartList(db: Db, userId: number, input: SmartListInput) {
         .values({
             userId,
             name: input.name,
+            description: input.description,
             rules: JSON.stringify(input.rules),
             sort: input.sort,
             dir: input.dir ?? defaultSmartDir(input.sort)
@@ -164,6 +166,7 @@ export function updateSmartList(db: Db, userId: number, id: number, input: Smart
     db.update(smartLists)
         .set({
             name: input.name,
+            description: input.description,
             rules: JSON.stringify(input.rules),
             sort: input.sort,
             dir: input.dir ?? defaultSmartDir(input.sort)
@@ -186,5 +189,11 @@ export function listSmartListRows(db: Db, userId: number) {
         .where(eq(smartLists.userId, userId))
         .orderBy(asc(smartLists.id))
         .all()
-        .map((row) => ({ name: row.name, rules: rulesOf(row), sort: sortOf(row), dir: row.dir }));
+        .map((row) => ({
+            name: row.name,
+            description: row.description,
+            rules: rulesOf(row),
+            sort: sortOf(row),
+            dir: row.dir
+        }));
 }

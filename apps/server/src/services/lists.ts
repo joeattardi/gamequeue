@@ -1,6 +1,12 @@
 import { and, asc, count, eq, isNotNull, max, sql } from 'drizzle-orm';
 import { FIRST_PAGE } from '@gamequeue/shared';
-import type { EntryDto, ListDetailDto, ListSummaryDto, PageQuery } from '@gamequeue/shared';
+import type {
+    EntryDto,
+    ListDetailDto,
+    ListSummaryDto,
+    PageQuery,
+    PatchListInput
+} from '@gamequeue/shared';
 import type { Db } from '../db/client.js';
 import { entries, games, listItems, lists } from '../db/schema.js';
 import { HttpError } from '../errors.js';
@@ -92,17 +98,25 @@ export function getList(db: Db, userId: number, id: number, page?: PageQuery): L
         .map((r) => r.entryId);
     // hydrate() keeps the order it's given
     const dtos: EntryDto[] = hydrate(db, userId, ids);
-    return { id: list.id, name: list.name, kind: list.kind, entries: dtos, total };
+    return {
+        id: list.id,
+        name: list.name,
+        kind: list.kind,
+        description: list.description,
+        entries: dtos,
+        total
+    };
 }
 
-export function createList(db: Db, userId: number, name: string): ListSummaryDto {
-    const row = db.insert(lists).values({ userId, name }).returning().get();
+export function createList(db: Db, userId: number, name: string, description = ''): ListSummaryDto {
+    const row = db.insert(lists).values({ userId, name, description }).returning().get();
     return { id: row.id, name: row.name, count: 0, covers: [] };
 }
 
-export function renameList(db: Db, userId: number, id: number, name: string) {
-    assertPlainList(requireList(db, userId, id), 'renamed');
-    db.update(lists).set({ name }).where(eq(lists.id, id)).run();
+/** Renames and/or re-describes a list; fields left out stay as they are. */
+export function updateList(db: Db, userId: number, id: number, patch: PatchListInput) {
+    assertPlainList(requireList(db, userId, id), 'renamed or described');
+    db.update(lists).set(patch).where(eq(lists.id, id)).run();
 }
 
 export function deleteList(db: Db, userId: number, id: number) {

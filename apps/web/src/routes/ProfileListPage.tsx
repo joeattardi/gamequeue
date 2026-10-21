@@ -35,8 +35,11 @@ export function ProfileListPage({ kind }: { kind: 'lists' | 'smart-lists' }) {
                             {name ?? <span className="skeleton skeleton--title" />}
                         </h1>
                         {list.head?.description && (
+                            <p className="list-description">{list.head.description}</p>
+                        )}
+                        {list.head?.ruleText && (
                             <ul className="rule-summary" aria-label="Rules">
-                                {list.head.description.map((d) => (
+                                {list.head.ruleText.map((d) => (
                                     <li key={d} className="badge">
                                         {d}
                                     </li>

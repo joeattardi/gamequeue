@@ -35,7 +35,7 @@ describe('smart lists', () => {
         expect(created.smartList).toMatchObject({
             sort: 'title',
             dir: 'asc',
-            description: ['Tagged cozy']
+            ruleText: ['Tagged cozy']
         });
 
         expect((await call('/smart-lists')).smartLists).toEqual([
@@ -44,7 +44,7 @@ describe('smart lists', () => {
                 name: 'Cozy',
                 count: 2,
                 covers: ['co2', 'co4'],
-                description: ['Tagged cozy']
+                ruleText: ['Tagged cozy']
             }
         ]);
 
@@ -80,7 +80,7 @@ describe('smart lists', () => {
         const { make, names } = await setup();
         const { smartList } = await make({ rules: [{ field: 'platform', anyOf: [SWITCH.id] }] });
         expect(names(smartList)).toEqual(['Celeste']);
-        expect(smartList.description).toEqual([`Platform is ${SWITCH.name}`]);
+        expect(smartList.ruleText).toEqual([`Platform is ${SWITCH.name}`]);
     });
 
     it('uses time to beat with overrides and treats unknown as no match', async () => {
@@ -153,7 +153,7 @@ describe('smart lists', () => {
         const rules = [{ field: 'finishedYear', anyOf: [2026] }];
         const { smartList } = await make({ rules });
         expect(names(smartList)).toEqual(['Celeste', 'Hades']);
-        expect(smartList.description).toEqual(['Finished in 2026']);
+        expect(smartList.ruleText).toEqual(['Finished in 2026']);
         expect(
             names(
                 (await make({ rules: [{ field: 'finishedYear', anyOf: [2025, 2026] }] })).smartList
@@ -310,6 +310,7 @@ describe('smart lists in export, import and the public profile', () => {
         expect(file.smartLists).toEqual([
             {
                 name: 'Cozy',
+                description: '',
                 rules: [{ field: 'tag', anyOf: ['cozy'] }],
                 sort: 'rating',
                 dir: 'desc'
@@ -351,7 +352,6 @@ describe('smart lists in export, import and the public profile', () => {
             {
                 id: expect.any(Number),
                 name: 'Cozy',
-                description: ['Tagged cozy'],
                 total: 2,
                 covers: expect.any(Array)
             }
@@ -361,7 +361,7 @@ describe('smart lists in export, import and the public profile', () => {
         ).text();
         expect(JSON.parse(page)).toMatchObject({
             name: 'Cozy',
-            description: ['Tagged cozy'],
+            ruleText: ['Tagged cozy'],
             total: 2,
             entries: [
                 expect.objectContaining({ game: expect.objectContaining({ name: 'Celeste' }) }),

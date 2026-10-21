@@ -4032,3 +4032,10 @@ fieldset.stars:disabled .stars__star {
     margin-right: 6px;
     vertical-align: -0.1em;
 }
+/* What the owner wrote about a list, under its title; keeps their line breaks */
+.list-description {
+    margin: 0 0 16px;
+    max-width: 65ch;
+    white-space: pre-line;
+    overflow-wrap: anywhere;
+}

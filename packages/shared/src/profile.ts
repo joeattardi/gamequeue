@@ -37,7 +37,7 @@ export interface ProfileDto {
     /** Tiles only: the games themselves are on each list's own page */
     lists: ProfileListTileDto[];
     /** Smart lists as they match right now, with their rules in words */
-    smartLists: (ProfileListTileDto & { description: string[] })[];
+    smartLists: ProfileListTileDto[];
 }
 
 export interface ProfileListTileDto {
@@ -52,8 +52,10 @@ export interface ProfileListTileDto {
 /** One list on the profile, a page at a time (`/profiles/:username/lists/:id`, `/smart-lists/:id`). */
 export interface ProfileListPageDto {
     name: string;
+    /** What the owner wrote about the list; empty if nothing */
+    description: string;
     /** Smart lists only: the rules in words */
-    description?: string[];
+    ruleText?: string[];
     entries: PublicEntryDto[];
     total: number;
 }

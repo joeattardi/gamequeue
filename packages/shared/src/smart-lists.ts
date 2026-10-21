@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { listDescription } from './lists.js';
 import { ENTRY_STATUSES, type EntryDto, type EntryStatus } from './collection.js';
 
 /**
@@ -106,6 +107,7 @@ const smartName = z.string().trim().min(1, 'Give the list a name').max(60);
 
 export const smartListInputSchema = z.object({
     name: smartName,
+    description: listDescription.default(''),
     rules: smartRulesSchema,
     sort: z.enum(SMART_SORTS).default('title'),
     /** Omit for the sort's natural direction */
@@ -114,7 +116,7 @@ export const smartListInputSchema = z.object({
 export type SmartListInput = z.infer<typeof smartListInputSchema>;
 
 /** The editor's live preview: rules and sort without a name, since nothing is saved */
-export const smartListPreviewSchema = smartListInputSchema.omit({ name: true });
+export const smartListPreviewSchema = smartListInputSchema.omit({ name: true, description: true });
 export type SmartListPreviewInput = z.infer<typeof smartListPreviewSchema>;
 
 export interface SmartListSummaryDto {
@@ -124,7 +126,7 @@ export interface SmartListSummaryDto {
     /** Cover image ids of the first few matching games, for the tile */
     covers: string[];
     /** The rules in words, one line each */
-    description: string[];
+    ruleText: string[];
 }
 
 export interface SmartListDetailDto {
@@ -133,7 +135,10 @@ export interface SmartListDetailDto {
     rules: SmartRule[];
     sort: SmartSort;
     dir: SortDir;
-    description: string[];
+    /** The rules in words, one line each */
+    ruleText: string[];
+    /** What the owner wrote about the list; empty if nothing */
+    description: string;
     /** One page of the matching games, in sort order */
     entries: EntryDto[];
     /** Games matching right now */

@@ -89,8 +89,7 @@ export function getProfile(db: Db, username: string): ProfileDto {
             id: l.id,
             name: l.name,
             total: l.count,
-            covers: l.covers,
-            description: l.description
+            covers: l.covers
         }))
     };
 }
@@ -104,13 +103,18 @@ export function getProfileList(
 ): ProfileListPageDto {
     const user = requireUser(db, username);
     const list = db
-        .select({ id: lists.id, name: lists.name })
+        .select({ id: lists.id, name: lists.name, description: lists.description })
         .from(lists)
         .where(and(eq(lists.id, listId), eq(lists.userId, user.id), eq(lists.kind, 'list')))
         .get();
     if (!list) throw new HttpError(404, 'Not found');
     const { entries, total } = getList(db, user.id, list.id, page);
-    return { name: list.name, entries: entries.map(toPublic), total };
+    return {
+        name: list.name,
+        description: list.description,
+        entries: entries.map(toPublic),
+        total
+    };
 }
 
 export function getProfileSmartList(
@@ -120,8 +124,13 @@ export function getProfileSmartList(
     page: PageQuery
 ): ProfileListPageDto {
     const user = requireUser(db, username);
-    const { name, description, entries, total } = getSmartList(db, user.id, smartListId, page);
-    return { name, description, entries: entries.map(toPublic), total };
+    const { name, description, ruleText, entries, total } = getSmartList(
+        db,
+        user.id,
+        smartListId,
+        page
+    );
+    return { name, description, ruleText, entries: entries.map(toPublic), total };
 }
 
 /** Read-only and public: the year in review, no notes (see `RecapDto`). */

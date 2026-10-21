@@ -1,5 +1,11 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
-import type { ListDetailDto, ListSummaryDto, PickInput, PickResultDto } from '@gamequeue/shared';
+import type {
+    ListDetailDto,
+    ListSummaryDto,
+    PatchListInput,
+    PickInput,
+    PickResultDto
+} from '@gamequeue/shared';
 import { api } from './client';
 import { usePagedQuery, withPage } from './paging';
 import { useInvalidateAfterDelete, useInvalidateCollection } from './collection';
@@ -23,17 +29,17 @@ export const useList = (id: number) =>
 export function useCreateList() {
     const invalidate = useInvalidateCollection();
     return useMutation({
-        mutationFn: async (name: string) =>
-            (await api<{ list: ListSummaryDto }>('/lists', { method: 'POST', body: { name } }))
-                .list,
+        mutationFn: async (input: { name: string; description?: string }) =>
+            (await api<{ list: ListSummaryDto }>('/lists', { method: 'POST', body: input })).list,
         onSuccess: invalidate
     });
 }
 
-export function useRenameList(id: number) {
+export function useUpdateList(id: number) {
     const invalidate = useInvalidateCollection();
     return useMutation({
-        mutationFn: (name: string) => api(`/lists/${id}`, { method: 'PATCH', body: { name } }),
+        mutationFn: (patch: PatchListInput) =>
+            api(`/lists/${id}`, { method: 'PATCH', body: patch }),
         onSuccess: invalidate
     });
 }

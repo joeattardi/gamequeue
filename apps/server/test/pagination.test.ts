@@ -204,3 +204,88 @@ describe('releasing soon', () => {
         expect(soon.items.map((i: any) => i.game.name)).toEqual(['Sooner', 'Later']);
     });
 });
+
+describe('list descriptions', () => {
+    it('are set at creation or edit time, trimmed, limited, and kept when only renaming', async () => {
+        const { call, app } = await setup(2);
+        const { list } = await call('/lists', 'POST', {
+            name: 'Cozy',
+            description: '  Rainy days  '
+        });
+        expect((await call(`/lists/${list.id}`)).list.description).toBe('Rainy days');
+
+        await call(`/lists/${list.id}`, 'PATCH', { name: 'Cosy' });
+        expect((await call(`/lists/${list.id}`)).list).toMatchObject({
+            name: 'Cosy',
+            description: 'Rainy days'
+        });
+        await call(`/lists/${list.id}`, 'PATCH', { description: '' });
+        expect((await call(`/lists/${list.id}`)).list.description).toBe('');
+
+        expect((await call('/lists', 'POST', { name: 'x' })).list.description).toBeUndefined();
+        expect((await call(`/lists/${list.id}`, 'PATCH', {})).status).toBe(400);
+        expect(
+            (await call('/lists', 'POST', { name: 'Long', description: 'x'.repeat(501) })).status
+        ).toBe(400);
+        // the queue can't be described
+        const queue = (await call('/queue')).list;
+        expect(queue.description).toBe('');
+        expect((await call(`/lists/${queue.id}`, 'PATCH', { description: 'no' })).status).toBe(400);
+        void app;
+    });
+
+    it('shows on the public list pages, for lists and smart lists', async () => {
+        const { call, app } = await setup(2);
+        const { list } = await call('/lists', 'POST', { name: 'Cozy', description: 'Rainy days' });
+        const made = await call('/smart-lists', 'POST', {
+            name: 'Unplayed',
+            description: 'Still in shrink-wrap',
+            rules: [{ field: 'status', anyOf: ['unplayed'] }]
+        });
+        expect(made.smartList.description).toBe('Still in shrink-wrap');
+        const me = (await call('/auth/me')).user.username as string;
+        const get = async (path: string) =>
+            (await app.request(`/api/profiles/${me}${path}`)).json();
+        expect((await get(`/lists/${list.id}`)).description).toBe('Rainy days');
+        expect(await get(`/smart-lists/${made.smartList.id}`)).toMatchObject({
+            description: 'Still in shrink-wrap',
+            ruleText: ['Status is unplayed']
+        });
+
+        const updated = await call(`/smart-lists/${made.smartList.id}`, 'PUT', {
+            name: 'Unplayed',
+            description: 'Changed',
+            rules: [{ field: 'status', anyOf: ['unplayed'] }]
+        });
+        expect(updated.smartList.description).toBe('Changed');
+    });
+
+    it('travel through export and import, without overwriting your own', async () => {
+        const { call } = await setup(2);
+        const { list } = await call('/lists', 'POST', { name: 'Cozy', description: 'Rainy days' });
+        await call('/smart-lists', 'POST', {
+            name: 'S',
+            description: 'Smart words',
+            rules: [{ field: 'status', anyOf: ['unplayed'] }]
+        });
+        const file = await call('/data/export');
+        expect(file.lists[0].description).toBe('Rainy days');
+        expect(file.smartLists[0].description).toBe('Smart words');
+
+        // an older file has no descriptions at all: still valid, and nothing is cleared
+        const old = JSON.parse(JSON.stringify(file));
+        for (const l of [...old.lists, ...old.smartLists]) delete l.description;
+        const res = await call('/data/import?commit=true', 'POST', old);
+        expect(res.status).toBe(200);
+        expect((await call(`/lists/${list.id}`)).list.description).toBe('Rainy days');
+
+        // an empty description is filled from the file
+        await call(`/lists/${list.id}`, 'PATCH', { description: '' });
+        await call('/data/import?commit=true', 'POST', file);
+        expect((await call(`/lists/${list.id}`)).list.description).toBe('Rainy days');
+        // but a different one of your own stays
+        await call(`/lists/${list.id}`, 'PATCH', { description: 'Mine' });
+        await call('/data/import?commit=true', 'POST', file);
+        expect((await call(`/lists/${list.id}`)).list.description).toBe('Mine');
+    });
+});

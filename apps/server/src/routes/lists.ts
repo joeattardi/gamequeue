@@ -24,7 +24,7 @@ import {
     getQueue,
     listLists,
     removeFromList,
-    renameList,
+    updateList,
     moveInList,
     reorderList
 } from '../services/lists.js';
@@ -46,12 +46,10 @@ export function listRoutes({ db, config }: AppDeps) {
     const uid = (c: { get(k: 'user'): { id: number } }) => c.get('user').id;
 
     r.get('/', (c) => c.json({ lists: listLists(db, uid(c)) }));
-    r.post('/', async (c) =>
-        c.json(
-            { list: createList(db, uid(c), validate(createListSchema, await body(c)).name) },
-            201
-        )
-    );
+    r.post('/', async (c) => {
+        const input = validate(createListSchema, await body(c));
+        return c.json({ list: createList(db, uid(c), input.name, input.description) }, 201);
+    });
     r.get('/:id', (c) =>
         c.json({
             list: getList(
@@ -68,7 +66,7 @@ export function listRoutes({ db, config }: AppDeps) {
     });
     r.patch('/:id', async (c) => {
         const id = parseId(c.req.param('id'));
-        renameList(db, uid(c), id, validate(patchListSchema, await body(c)).name);
+        updateList(db, uid(c), id, validate(patchListSchema, await body(c)));
         return c.json({ list: getList(db, uid(c), id, FIRST_PAGE) });
     });
     r.delete('/:id', (c) => {

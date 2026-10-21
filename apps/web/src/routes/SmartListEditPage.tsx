@@ -1,4 +1,5 @@
 import {
+    MAX_LIST_DESCRIPTION,
     SMART_NUMBER_FIELDS,
     SMART_NUMBER_FIELD_INFO,
     SMART_SORTS,
@@ -111,6 +112,7 @@ function Editor({ existing }: { existing?: SmartListDetailDto }) {
     const keys = useRef(0);
     const makeRow = (rule: SmartRule): Row => ({ key: keys.current++, rule });
     const [name, setName] = useState(existing?.name ?? '');
+    const [description, setDescription] = useState(existing?.description ?? '');
     const [rows, setRows] = useState<Row[]>(() => (existing?.rules ?? []).map(makeRow));
     const [sort, setSort] = useState<SmartSort>(existing?.sort ?? 'title');
     const [dir, setDir] = useState<SortDir>(existing?.dir ?? 'asc');
@@ -137,7 +139,7 @@ function Editor({ existing }: { existing?: SmartListDetailDto }) {
     function submit(e: FormEvent) {
         e.preventDefault();
         setError(undefined);
-        const input = { name: name.trim(), rules, sort, dir };
+        const input = { name: name.trim(), description: description.trim(), rules, sort, dir };
         const opts = {
             onSuccess: (saved: SmartListDetailDto) => navigate(`/smart-lists/${saved.id}`),
             onError: (err: unknown) =>
@@ -175,6 +177,17 @@ function Editor({ existing }: { existing?: SmartListDetailDto }) {
                         maxLength={60}
                         placeholder="e.g. Quick wins"
                         autoFocus={!existing}
+                    />
+                </label>
+
+                <label className="field">
+                    <span>Description (optional)</span>
+                    <textarea
+                        value={description}
+                        onChange={(e) => setDescription(e.target.value)}
+                        maxLength={MAX_LIST_DESCRIPTION}
+                        rows={2}
+                        placeholder="What is this list for?"
                     />
                 </label>
 
