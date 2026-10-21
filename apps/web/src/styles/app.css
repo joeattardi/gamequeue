@@ -2202,9 +2202,12 @@ fieldset.stars:disabled .stars__star {
 .layout-toggle + .public-grid,
 .layout-toggle + .game-rows,
 .layout-toggle + .rows,
-.layout-toggle + .grid,
-.layout-toggle + .empty {
+.layout-toggle + .grid {
     margin-top: 10px;
+}
+/* Same distance as between the search bar and the toggle (20px + 16px) */
+.layout-toggle + .empty {
+    margin-top: 36px;
 }
 .public-grid {
     list-style: none;
