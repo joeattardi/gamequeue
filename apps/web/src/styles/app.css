@@ -4026,3 +4026,9 @@ fieldset.stars:disabled .stars__star {
 .load-more p {
     margin: 0;
 }
+.list-card__smart {
+    width: 1em;
+    height: 1em;
+    margin-right: 6px;
+    vertical-align: -0.1em;
+}

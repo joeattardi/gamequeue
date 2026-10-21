@@ -14,8 +14,7 @@ import {
     ListTodo,
     Pause,
     Play,
-    Trophy,
-    WandSparkles
+    Trophy
 } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { Link, useParams } from 'react-router';
@@ -154,6 +153,34 @@ function Stats({ username, summary }: { username: string; summary: ProfileDto['s
     );
 }
 
+/** Lists and smart lists together as tiles, by name; smart ones carry a wand. */
+function ProfileLists({ profile }: { profile: ProfileDto }) {
+    const tiles = [
+        ...profile.lists.map((l) => ({ ...l, smart: false })),
+        ...profile.smartLists.map((l) => ({ ...l, smart: true }))
+    ].sort(
+        (a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }) || a.id - b.id
+    );
+    if (tiles.length === 0) return null;
+    return (
+        <section aria-labelledby="p-lists">
+            <h2 id="p-lists">Lists</h2>
+            <ul className="list-cards">
+                {tiles.map((l) => (
+                    <ListCard
+                        key={`${l.smart ? 'smart' : 'list'}-${l.id}`}
+                        to={`/u/${profile.username}/${l.smart ? 'smart-lists' : 'lists'}/${l.id}`}
+                        name={l.name}
+                        count={l.total}
+                        covers={l.covers}
+                        smart={l.smart}
+                    />
+                ))}
+            </ul>
+        </section>
+    );
+}
+
 export function ProfilePage() {
     const { username = '' } = useParams();
     const profile = useProfile(username);
@@ -220,42 +247,7 @@ export function ProfilePage() {
                             />
                         </section>
 
-                        {profile.data.lists.length > 0 && (
-                            <section aria-labelledby="p-lists">
-                                <h2 id="p-lists">Lists</h2>
-                                <ul className="list-cards">
-                                    {profile.data.lists.map((l) => (
-                                        <ListCard
-                                            key={l.id}
-                                            to={`/u/${profile.data.username}/lists/${l.id}`}
-                                            name={l.name}
-                                            count={l.total}
-                                            covers={l.covers}
-                                        />
-                                    ))}
-                                </ul>
-                            </section>
-                        )}
-
-                        {profile.data.smartLists.length > 0 && (
-                            <section aria-labelledby="p-smart">
-                                <h2 id="p-smart">
-                                    <WandSparkles aria-hidden="true" />
-                                    Smart lists
-                                </h2>
-                                <ul className="list-cards">
-                                    {profile.data.smartLists.map((l) => (
-                                        <ListCard
-                                            key={l.id}
-                                            to={`/u/${profile.data.username}/smart-lists/${l.id}`}
-                                            name={l.name}
-                                            count={l.total}
-                                            covers={l.covers}
-                                        />
-                                    ))}
-                                </ul>
-                            </section>
-                        )}
+                        <ProfileLists profile={profile.data} />
                     </>
                 )}
             </main>

@@ -1,4 +1,5 @@
 import { coverSrcSet, coverUrl } from '@gamequeue/shared';
+import { WandSparkles } from 'lucide-react';
 import { Link } from 'react-router';
 
 /** A list as a tile: its first covers, name and game count. Used by the Lists page and profiles. */
@@ -6,12 +7,15 @@ export function ListCard({
     to,
     name,
     count,
-    covers
+    covers,
+    smart = false
 }: {
     to: string;
     name: string;
     count: number;
     covers: string[];
+    /** A smart list: marked with a wand */
+    smart?: boolean;
 }) {
     return (
         <li>
@@ -30,7 +34,16 @@ export function ListCard({
                     </span>
                 )}
                 <span className="list-card__text">
-                    <strong>{name}</strong>
+                    <strong>
+                        {smart && (
+                            <WandSparkles
+                                role="img"
+                                aria-label="Smart list"
+                                className="list-card__smart"
+                            />
+                        )}
+                        {name}
+                    </strong>
                     <span className="list-card__count">
                         {count} {count === 1 ? 'game' : 'games'}
                     </span>
