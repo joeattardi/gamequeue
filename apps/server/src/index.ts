@@ -8,7 +8,9 @@ import { purgeExpiredSessions } from './auth/sessions.js';
 import { loadConfig } from './config.js';
 import { openDb } from './db/client.js';
 import { createIgdbClient } from './igdb/client.js';
-import { reportError, pruneErrors } from './services/error-log.js';
+import { createErrorAlerter } from './services/error-alerts.js';
+import { reportError, pruneErrors, setErrorAlerter } from './services/error-log.js';
+import { createNotifier } from './services/notify.js';
 import { backfillSeries } from './services/games.js';
 
 const config = loadConfig();
@@ -32,6 +34,7 @@ const igdb =
         : undefined;
 if (!igdb)
     console.warn('IGDB_CLIENT_ID / IGDB_CLIENT_SECRET not set: search and add-game are disabled.');
+setErrorAlerter(createErrorAlerter(db, createNotifier(config)));
 const app = createApp({ db, config, igdb });
 
 // Production: serve the built web app from the same process/port, with SPA fallback.

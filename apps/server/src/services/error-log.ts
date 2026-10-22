@@ -10,6 +10,12 @@ const MAX_TEXT = 4000;
 
 const clip = (s: string) => (s.length > MAX_TEXT ? `${s.slice(0, MAX_TEXT)}…` : s);
 
+let alerter: ((kind: ErrorKind) => void) | undefined;
+/** Registers what runs after each recorded error (the email alert); set once at startup. */
+export const setErrorAlerter = (fn: ((kind: ErrorKind) => void) | undefined) => {
+    alerter = fn;
+};
+
 export interface ErrorInfo {
     status?: number | null;
     route?: string | null;
@@ -42,6 +48,7 @@ export function reportError(
                 context: info.context ? clip(JSON.stringify(info.context)) : null
             })
             .run();
+        alerter?.(kind);
     } catch (dbErr) {
         console.error('Could not record the error:', dbErr);
     }
