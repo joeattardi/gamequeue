@@ -127,6 +127,13 @@
       "when": 1792660423956,
       "tag": "0017_sharp_nuke",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "6",
+      "when": 1792661081751,
+      "tag": "0018_wakeful_longshot",
+      "breakpoints": true
     }
   ]
 }

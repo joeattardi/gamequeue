@@ -2,14 +2,16 @@ import { ArrowLeft, Bug, CircleCheck } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router';
 import { useState } from 'react';
 import {
+    ERROR_GROUPS,
     ERROR_HISTORY_DAYS,
     ERROR_KINDS,
     type ErrorEventDto,
+    type ErrorGroup,
     type ErrorKind
 } from '@gamequeue/shared';
 import { useAdminErrors, useClearAdminErrors } from '../api/admin';
 import { useConfirm } from '../components/Confirm';
-import { ErrorHistoryChart, ErrorHistorySkeleton } from '../components/ErrorHistoryChart';
+import { DayChart, DayChartSkeleton } from '../components/DayChart';
 import { ErrorListSkeleton } from '../components/PageSkeletons';
 import { timeAgo, usePageTitle } from '../lib';
 
@@ -135,7 +137,19 @@ export function AdminErrorsPage() {
                 {(q.isPending || (d && d.kinds.length > 0)) && (
                     <section className="panel" aria-labelledby="errors-history-h">
                         <h2 id="errors-history-h">Last {ERROR_HISTORY_DAYS} days</h2>
-                        {d ? <ErrorHistoryChart history={d.history} /> : <ErrorHistorySkeleton />}
+                        {d ? (
+                            <DayChart
+                                days={d.history}
+                                series={(Object.keys(ERROR_GROUPS) as ErrorGroup[]).map((g) => ({
+                                    key: g,
+                                    label: ERROR_GROUPS[g].label
+                                }))}
+                                marker={{ label: 'Server started', count: (day) => day.starts }}
+                                label="Errors per day"
+                            />
+                        ) : (
+                            <DayChartSkeleton label="Loading error history" />
+                        )}
                     </section>
                 )}
 

@@ -55,6 +55,29 @@ export const errorEvents = sqliteTable(
     (t) => [index('error_events_at_idx').on(t.at), index('error_events_kind_idx').on(t.kind)]
 );
 
+/** IGDB requests per UTC day (see services/igdb-history.ts); kept so trends outlive a restart. */
+export const igdbDaily = sqliteTable('igdb_daily', {
+    day: text('day').primaryKey(),
+    ok: integer('ok').notNull().default(0),
+    rateLimited: integer('rate_limited').notNull().default(0),
+    failed: integer('failed').notNull().default(0)
+});
+
+/** One row per server process start (see services/server-runs.ts). */
+export const serverRuns = sqliteTable(
+    'server_runs',
+    {
+        id: integer('id').primaryKey({ autoIncrement: true }),
+        startedAt: integer('started_at').notNull(),
+        version: text('version').notNull(),
+        /** Updated about once a minute while running, so a hard kill still has an end time */
+        lastSeenAt: integer('last_seen_at').notNull(),
+        endedAt: integer('ended_at'),
+        ended: text('ended', { enum: ['clean', 'crash', 'unclean'] })
+    },
+    (t) => [index('server_runs_started_idx').on(t.startedAt)]
+);
+
 /** Uploaded avatar image (already cropped and re-encoded by the client); kept out of `users` so user lookups never load the blob. */
 export const avatars = sqliteTable('avatars', {
     userId: integer('user_id')

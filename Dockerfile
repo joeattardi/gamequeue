@@ -17,7 +17,10 @@ RUN npm run build
 RUN rm -rf node_modules && npm ci --omit=dev --workspace @gamequeue/server --include-workspace-root=false
 
 FROM base AS runtime
-ENV NODE_ENV=production \
+# Shown on the admin Server page and recorded with each start; CI passes the commit SHA
+ARG GIT_COMMIT=unknown
+ENV GIT_COMMIT=$GIT_COMMIT \
+    NODE_ENV=production \
     PORT=3000 \
     DATABASE_PATH=/data/gamequeue.db
 COPY --from=build --chown=node:node /app/node_modules ./node_modules

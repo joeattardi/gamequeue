@@ -23,6 +23,7 @@ import {
 import { max } from 'drizzle-orm';
 import { games } from '../db/schema.js';
 import { purgeExpiredSessionsNow, purgeUnusedGames, vacuum } from '../services/maintenance.js';
+import { igdbHistory } from '../services/igdb-history.js';
 import { readServerInfo } from '../services/server-info.js';
 import { getAdminSettings, updateAdminSettings } from '../services/settings.js';
 import { readDatabaseStats } from '../services/database-stats.js';
@@ -55,7 +56,7 @@ export function adminRoutes({ db, config, igdb }: AppDeps) {
     r.post('/maintenance/vacuum', (c) => c.json(vacuum(db, config)));
 
     // Process, configuration (no secrets) and free disk space
-    r.get('/server', (c) => c.json(readServerInfo(config)));
+    r.get('/server', (c) => c.json(readServerInfo(db, config)));
 
     // Runtime settings
     r.get('/settings', (c) => c.json(getAdminSettings(db, config)));
@@ -80,7 +81,8 @@ export function adminRoutes({ db, config, igdb }: AppDeps) {
             requests24h: live?.requests24h ?? { total: 0, failed: 0 },
             lastSuccessAt: live?.lastSuccessAt ?? null,
             lastError: live?.lastError ?? null,
-            lastReleaseCheckAt
+            lastReleaseCheckAt,
+            history: igdbHistory(db)
         };
         return c.json(status);
     });

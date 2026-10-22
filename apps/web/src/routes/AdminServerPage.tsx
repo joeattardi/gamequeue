@@ -1,9 +1,9 @@
 import { ArrowLeft, Server, TriangleAlert } from 'lucide-react';
 import { Link } from 'react-router';
-import type { ServerInfoDto } from '@gamequeue/shared';
+import type { ServerInfoDto, ServerRunDto } from '@gamequeue/shared';
 import { useAdminServer } from '../api/admin';
 import { DatabaseSkeleton } from '../components/PageSkeletons';
-import { diskIsLow, formatBytes, formatDuration, usePageTitle } from '../lib';
+import { diskIsLow, formatBytes, formatDuration, timeAgo, usePageTitle } from '../lib';
 
 const yesNo = (v: boolean) => (v ? 'Yes' : 'No');
 
@@ -17,6 +17,52 @@ function Facts({ rows }: { rows: [string, string][] }) {
                 </div>
             ))}
         </dl>
+    );
+}
+
+const ENDED: Record<string, string> = {
+    clean: 'Stopped normally',
+    crash: 'Crashed',
+    unclean: 'Stopped without shutting down (killed, out of memory or power loss)'
+};
+
+const shortVersion = (v: string) => (v.length > 12 ? v.slice(0, 7) : v);
+
+function Runs({ runs }: { runs: ServerRunDto[] }) {
+    return (
+        <section className="panel" aria-labelledby="runs-h">
+            <h2 id="runs-h">Recent starts</h2>
+            <p className="muted">
+                Every time the server started, with the version it ran and how that run ended. A run
+                that ended without shutting down is also reported on the Errors page.
+            </p>
+            {runs.length === 0 ? (
+                <p className="muted">No starts recorded yet.</p>
+            ) : (
+                <ul className="error-list">
+                    {runs.map((r) => (
+                        <li key={r.id} className="error-item">
+                            <div className="error-item__head">
+                                <span className="error-item__kind">
+                                    {new Date(r.startedAt).toLocaleString()}
+                                </span>
+                                <span className="muted">{timeAgo(r.startedAt)}</span>
+                                <code title={r.version}>{shortVersion(r.version)}</code>
+                            </div>
+                            <p className={r.ended === 'clean' || r.ended === null ? 'muted' : ''}>
+                                {r.ended === null
+                                    ? 'Running'
+                                    : `${ENDED[r.ended]}, ran for ${formatDuration(
+                                          Math.round(
+                                              ((r.endedAt ?? r.lastSeenAt) - r.startedAt) / 1000
+                                          )
+                                      )}`}
+                            </p>
+                        </li>
+                    ))}
+                </ul>
+            )}
+        </section>
     );
 }
 
@@ -79,6 +125,7 @@ function Info({ d }: { d: ServerInfoDto }) {
                     rows={[
                         ['Uptime', formatDuration(d.uptimeSeconds)],
                         ['Started', new Date(d.startedAt).toLocaleString()],
+                        ['Version', shortVersion(d.version)],
                         ['Node.js', d.nodeVersion],
                         ['Platform', `${d.platform} ${d.arch}`],
                         ['Memory (RSS)', formatBytes(d.memory.rssBytes)],
@@ -86,6 +133,7 @@ function Info({ d }: { d: ServerInfoDto }) {
                     ]}
                 />
             </section>
+            <Runs runs={d.runs} />
             <section className="panel" aria-labelledby="conf-h">
                 <h2 id="conf-h">Configuration</h2>
                 <p className="muted">

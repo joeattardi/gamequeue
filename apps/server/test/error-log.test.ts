@@ -76,9 +76,27 @@ describe('error log service', () => {
         reportError(db, 'igdb_429', 'too old', {}, now - 40 * DAY);
         const { history } = listErrors(db, { limit: 1, offset: 0 }, now);
         expect(history).toHaveLength(30);
-        expect(history.at(-1)).toEqual({ day: '2026-10-20', rateLimit: 2, igdb: 0, server: 0 });
-        expect(history.at(-2)).toEqual({ day: '2026-10-19', rateLimit: 0, igdb: 1, server: 0 });
-        expect(history.at(-4)).toEqual({ day: '2026-10-17', rateLimit: 0, igdb: 0, server: 2 });
+        expect(history.at(-1)).toEqual({
+            day: '2026-10-20',
+            rateLimit: 2,
+            igdb: 0,
+            server: 0,
+            starts: 0
+        });
+        expect(history.at(-2)).toEqual({
+            day: '2026-10-19',
+            rateLimit: 0,
+            igdb: 1,
+            server: 0,
+            starts: 0
+        });
+        expect(history.at(-4)).toEqual({
+            day: '2026-10-17',
+            rateLimit: 0,
+            igdb: 0,
+            server: 2,
+            starts: 0
+        });
         expect(history[0]!.day).toBe('2026-09-21');
         expect(history.reduce((n, d) => n + d.rateLimit + d.igdb + d.server, 0)).toBe(5);
 
@@ -87,7 +105,13 @@ describe('error log service', () => {
         const west = makeApp().db;
         reportError(west, 'igdb_429', 'late', {}, late);
         const local = listErrors(west, { limit: 1, offset: 0, tzOffsetMin: 300 }, late).history;
-        expect(local.at(-1)).toEqual({ day: '2026-10-20', rateLimit: 1, igdb: 0, server: 0 });
+        expect(local.at(-1)).toEqual({
+            day: '2026-10-20',
+            rateLimit: 1,
+            igdb: 0,
+            server: 0,
+            starts: 0
+        });
         spy.mockRestore();
     });
 

@@ -74,7 +74,7 @@ export interface IgdbClient {
     fetchScreenshots(igdbId: number): Promise<string[] | null>;
     fetchSeries(seriesId: number): Promise<SeriesRecord | null>;
     /** Counters for the admin page; the real client keeps them, test fakes needn't */
-    status?(): Omit<IgdbStatusDto, 'configured' | 'lastReleaseCheckAt'>;
+    status?(): Omit<IgdbStatusDto, 'configured' | 'lastReleaseCheckAt' | 'history'>;
     /** One cheap request to prove credentials and connectivity work */
     ping?(): Promise<IgdbPingDto>;
 }

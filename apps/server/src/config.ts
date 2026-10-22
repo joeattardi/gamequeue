@@ -10,6 +10,8 @@ export interface Config {
     resendApiKey?: string;
     notifyEmail?: string;
     notifyFrom: string;
+    /** Git commit of the build, from the GIT_COMMIT build arg; shown on the admin Server page */
+    version: string;
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
@@ -31,6 +33,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
         resendApiKey: env.RESEND_API_KEY || undefined,
         notifyEmail: env.NOTIFY_EMAIL || undefined,
         // Resend's shared sender only delivers to the address on your Resend account
-        notifyFrom: env.NOTIFY_FROM || 'GameQueue <onboarding@resend.dev>'
+        notifyFrom: env.NOTIFY_FROM || 'GameQueue <onboarding@resend.dev>',
+        version: env.GIT_COMMIT || 'unknown'
     };
 }

@@ -8,6 +8,8 @@ import { purgeExpiredSessions } from './auth/sessions.js';
 import { loadConfig } from './config.js';
 import { openDb } from './db/client.js';
 import { createIgdbClient } from './igdb/client.js';
+import { recordIgdbAttempt, pruneIgdbHistory } from './services/igdb-history.js';
+import { endRun, HEARTBEAT_MS, heartbeat, pruneRuns, startRun } from './services/server-runs.js';
 import { createErrorAlerter } from './services/error-alerts.js';
 import { reportError, pruneErrors, setErrorAlerter } from './services/error-log.js';
 import { createNotifier } from './services/notify.js';
@@ -20,6 +22,7 @@ const igdb =
         ? createIgdbClient({
               clientId: config.igdbClientId,
               clientSecret: config.igdbClientSecret,
+              onAttempt: (a) => recordIgdbAttempt(db, a.ok, a.status),
               onError: (f) =>
                   reportError(
                       db,
@@ -35,6 +38,8 @@ const igdb =
 if (!igdb)
     console.warn('IGDB_CLIENT_ID / IGDB_CLIENT_SECRET not set: search and add-game are disabled.');
 setErrorAlerter(createErrorAlerter(db, createNotifier(config)));
+// After the alerter is set, so an unclean previous run is reported like any other error
+const runId = startRun(db, config.version);
 const app = createApp({ db, config, igdb });
 
 // Production: serve the built web app from the same process/port, with SPA fallback.
@@ -50,16 +55,30 @@ if (existsSync(webDist)) {
 for (const event of ['uncaughtException', 'unhandledRejection'] as const)
     process.on(event, (err) => {
         reportError(db, 'process_crash', err, { context: { event } });
+        endRun(db, runId, 'crash');
         process.exit(1);
     });
 
+// A stop we asked for (docker stop, a deploy, Ctrl-C) is recorded as clean; anything else leaves the
+// run open and the next start reports it
+for (const signal of ['SIGTERM', 'SIGINT'] as const)
+    process.on(signal, () => {
+        endRun(db, runId, 'clean');
+        process.exit(0);
+    });
+setInterval(() => heartbeat(db, runId), HEARTBEAT_MS).unref();
+
 purgeExpiredSessions(db);
 pruneErrors(db);
+pruneIgdbHistory(db);
+pruneRuns(db);
 // Games cached before series were stored learn theirs in the background
 void backfillSeries(db, igdb);
 setInterval(() => {
     purgeExpiredSessions(db);
     pruneErrors(db);
+    pruneIgdbHistory(db);
+    pruneRuns(db);
 }, 6 * 3600_000).unref();
 
 serve({ fetch: app.fetch, port: config.port }, (info) => {

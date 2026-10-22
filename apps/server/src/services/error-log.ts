@@ -10,7 +10,7 @@ import {
     type ErrorsDto
 } from '@gamequeue/shared';
 import type { Db } from '../db/client.js';
-import { errorEvents } from '../db/schema.js';
+import { errorEvents, serverRuns } from '../db/schema.js';
 
 export const ERROR_RETENTION_DAYS = 30;
 /** A crash loop or a down IGDB must not grow the table without bound */
@@ -83,7 +83,8 @@ function errorHistory(db: Db, tzOffsetMin: number, now: number): ErrorHistoryDay
         day: new Date((first + i) * DAY_MS).toISOString().slice(0, 10),
         rateLimit: 0,
         igdb: 0,
-        server: 0
+        server: 0,
+        starts: 0
     }));
     // Bound numbers reach SQLite as floats, so truncate explicitly instead of relying on integer division
     const dayOf = sql<number>`cast((${errorEvents.at} - ${shift}) / ${DAY_MS} as integer)`;
@@ -97,6 +98,17 @@ function errorHistory(db: Db, tzOffsetMin: number, now: number): ErrorHistoryDay
         .where(gte(errorEvents.at, first * DAY_MS + shift))
         .groupBy(dayOf, errorEvents.kind)
         .all();
+    const startedAt = sql<number>`cast((${serverRuns.startedAt} - ${shift}) / ${DAY_MS} as integer)`;
+    const starts = db
+        .select({ d: startedAt, n: count() })
+        .from(serverRuns)
+        .where(gte(serverRuns.startedAt, first * DAY_MS + shift))
+        .groupBy(startedAt)
+        .all();
+    for (const s of starts) {
+        const day = days[s.d - first];
+        if (day) day.starts += s.n;
+    }
     for (const r of rows) {
         const group = GROUP_OF.get(r.kind);
         const day = days[r.d - first];

@@ -3,6 +3,7 @@ import { Link } from 'react-router';
 import type { IgdbPingDto, IgdbStatusDto } from '@gamequeue/shared';
 import { useAdminIgdb, usePingIgdb } from '../api/admin';
 import { ApiRequestError } from '../api/client';
+import { DayChart, DayChartSkeleton } from '../components/DayChart';
 import { DatabaseSkeleton } from '../components/PageSkeletons';
 import { timeAgo, usePageTitle } from '../lib';
 
@@ -114,10 +115,10 @@ function Status({ d }: { d: IgdbStatusDto }) {
                 ))}
             </dl>
             <p className="muted">
-                Counters live in memory and start again when the server restarts (counting since{' '}
-                {new Date(d.since).toLocaleString()}). Each retry counts as its own request. The
-                access token is fetched on first use and renewed an hour before it expires, so "None
-                yet" after a restart is normal.
+                The figures above live in memory and start again when the server restarts (counting
+                since {new Date(d.since).toLocaleString()}). Each retry counts as its own request.
+                The access token is fetched on first use and renewed an hour before it expires, so
+                "None yet" after a restart is normal.
             </p>
         </div>
     );
@@ -154,6 +155,31 @@ export function AdminIgdbPage() {
                         <Status d={q.data} />
                     )}
                 </section>
+                {(q.isPending || q.data?.configured) && (
+                    <section className="panel" aria-labelledby="igdb-history-h">
+                        <h2 id="igdb-history-h">Requests, last 30 days</h2>
+                        {q.data ? (
+                            <>
+                                <DayChart
+                                    days={q.data.history}
+                                    series={[
+                                        { key: 'ok', label: 'Succeeded' },
+                                        { key: 'rateLimited', label: 'Rate limited (429)' },
+                                        { key: 'failed', label: 'Other failures' }
+                                    ]}
+                                    label="IGDB requests per day"
+                                />
+                                <p className="muted">
+                                    Counted per UTC day and kept for 90 days, so it survives
+                                    restarts. Every retry is its own request. IGDB allows 4 requests
+                                    a second.
+                                </p>
+                            </>
+                        ) : (
+                            <DayChartSkeleton label="Loading request history" />
+                        )}
+                    </section>
+                )}
                 {q.data?.configured && <Ping />}
             </div>
         </section>

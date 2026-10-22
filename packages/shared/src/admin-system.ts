@@ -19,6 +19,32 @@ export interface IgdbStatusDto {
     lastError: { at: number; message: string; status: number | null } | null;
     /** Most recent time the app asked IGDB for a game's release date (from the cache table) */
     lastReleaseCheckAt: number | null;
+    /** Stored per UTC day, so it survives restarts (unlike the counters above); oldest first */
+    history: IgdbHistoryDay[];
+}
+
+/** IGDB requests on one UTC day (`YYYY-MM-DD`); every retry is its own request. */
+export interface IgdbHistoryDay {
+    day: string;
+    ok: number;
+    /** 429 answers */
+    rateLimited: number;
+    /** Any other failed attempt */
+    failed: number;
+}
+
+/** How a server run ended. `null` while it is still running. */
+export type ServerRunEnd = 'clean' | 'crash' | 'unclean';
+
+export interface ServerRunDto {
+    id: number;
+    startedAt: number;
+    /** Last heartbeat while running; the end time otherwise (best known for `unclean`) */
+    lastSeenAt: number;
+    endedAt: number | null;
+    ended: ServerRunEnd | null;
+    /** Git commit of the image, `unknown` when the build didn't say */
+    version: string;
 }
 
 export interface IgdbPingDto {
@@ -34,6 +60,10 @@ export interface ServerInfoDto {
     arch: string;
     nodeEnv: string;
     startedAt: number;
+    /** Git commit the running image was built from (`unknown` for a local build) */
+    version: string;
+    /** Most recent runs of the server, newest first; this one is first */
+    runs: ServerRunDto[];
     uptimeSeconds: number;
     memory: { rssBytes: number; heapUsedBytes: number };
     config: {
@@ -83,7 +113,8 @@ export const ERROR_KINDS = {
     job_screenshots: 'Screenshot fetch',
     series_refresh: 'Series refresh',
     email_failed: 'Notification email',
-    process_crash: 'Process crash'
+    process_crash: 'Process crash',
+    unclean_shutdown: 'Stopped without shutting down'
 } as const;
 export type ErrorKind = keyof typeof ERROR_KINDS;
 
@@ -100,12 +131,16 @@ export const ERROR_GROUPS = {
             'series_refresh'
         ]
     },
-    server: { label: 'Server and other', kinds: ['server_500', 'process_crash', 'email_failed'] }
+    server: {
+        label: 'Server and other',
+        kinds: ['server_500', 'process_crash', 'unclean_shutdown', 'email_failed']
+    }
 } as const satisfies Record<string, { label: string; kinds: readonly ErrorKind[] }>;
 export type ErrorGroup = keyof typeof ERROR_GROUPS;
 
 /** One day of the history chart: `day` is `YYYY-MM-DD` in the viewer's time zone. */
-export type ErrorHistoryDay = { day: string } & Record<ErrorGroup, number>;
+/** `starts` is how many times the server started that day, shown as markers rather than a series. */
+export type ErrorHistoryDay = { day: string; starts: number } & Record<ErrorGroup, number>;
 
 /** How many days the history chart covers (the retention period). */
 export const ERROR_HISTORY_DAYS = 30;

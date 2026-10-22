@@ -50,6 +50,8 @@ jobs:
                   platforms: linux/arm64
                   push: true
                   provenance: false
+                  build-args: |
+                      GIT_COMMIT=${{ github.sha }}
                   tags: |
                       ghcr.io/joeattardi/gamequeue:latest
                       ghcr.io/joeattardi/gamequeue:${{ github.sha }}

@@ -42,6 +42,8 @@ export interface IgdbClientOptions {
     now?: () => number;
     /** Called for every failed attempt (a retried 429 included) so the server can keep a record */
     onError?: (failure: IgdbFailure) => void;
+    /** Called for every HTTP attempt, successful or not, for request counts that outlive a restart */
+    onAttempt?: (attempt: { ok: boolean; status: number | null }) => void;
 }
 
 /** APICalypse string literals: backslash and double quote must be escaped. */
@@ -78,6 +80,7 @@ export function createIgdbClient(opts: IgdbClientOptions): IgdbClient {
             // Failed attempts that were retried successfully are recorded inside `send`
             if (!(e instanceof IgdbError)) {
                 record(false, { message: (e as Error).message });
+                opts.onAttempt?.({ ok: false, status: null });
                 opts.onError?.({
                     message: (e as Error).message,
                     status: null,
@@ -105,10 +108,12 @@ export function createIgdbClient(opts: IgdbClientOptions): IgdbClient {
             );
             if (res.ok) {
                 record(true);
+                opts.onAttempt?.({ ok: true, status: res.status });
                 return (await res.json()) as T;
             }
             const message = `IGDB request to ${endpoint} failed (${res.status})`;
             record(false, { message, status: res.status });
+            opts.onAttempt?.({ ok: false, status: res.status });
             const willRetry =
                 (res.status === 401 && !refreshedToken) ||
                 (res.status === 429 && attempt < MAX_429_RETRIES);

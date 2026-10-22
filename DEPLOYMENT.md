@@ -381,7 +381,7 @@ The healthchecks.io check only proves the Pi and cron were alive at 03:00; it wo
 3. Add your email as an alert contact. It emails when the monitor goes down and again when it recovers.
 4. To test it, run `docker compose stop gamequeue` on the Pi, wait for the alert, then `docker compose start gamequeue`.
 
-No app configuration is needed: `/api/health` is public and returns `{"ok":true}`. A crash the app can report itself (an uncaught exception) lands in **Admin > Errors**; a hard kill or a failed start can't, which is what this monitor is for.
+No app configuration is needed: `/api/health` is public and returns `{"ok":true}`. A crash the app can report itself (an uncaught exception) lands in **Admin > Errors**, and so does a hard kill (out of memory, `kill -9`, power loss), reported as "Stopped without shutting down" the next time the app starts. What only this monitor catches is the app staying down: nothing runs to report it.
 
 Run it once by hand and confirm a `.db.gz` file appears in `~/gamequeue/backups`:
 
