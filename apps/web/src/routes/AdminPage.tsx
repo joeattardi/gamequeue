@@ -323,9 +323,6 @@ function SettingsTile() {
                               ? `Overrides SIGNUPS_ENABLED=${s!.signupsDefault} from the environment. Takes effect immediately.`
                               : `Currently from SIGNUPS_ENABLED in the environment. Changing this takes effect immediately and overrides it.`}
                     </p>
-                    <p className="muted">
-                        Admins can always create users from the Users page, whatever this says.
-                    </p>
                 </>
             )}
         </section>
