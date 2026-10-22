@@ -56,6 +56,8 @@ Defined in `apps/server/src/config.ts`. In Docker, `compose.yaml` sets the fixed
 | `ALLOWED_ORIGINS`                      | `https://gamequeue.app` in `.env` (must match the real URL; the CSRF check rejects any other `Origin`) |
 | `SIGNUPS_ENABLED`                      | `true` for the first signup, then `false`                                                              |
 | `IGDB_CLIENT_ID`, `IGDB_CLIENT_SECRET` | Twitch credentials (see step 10)                                                                       |
+| `RESEND_API_KEY`, `NOTIFY_EMAIL`       | Optional signup alerts by email (see Signup email alerts); both must be set, otherwise nothing is sent |
+| `NOTIFY_FROM`                          | Optional sender for those emails; defaults to `GameQueue <onboarding@resend.dev>`                      |
 | `TUNNEL_TOKEN`                         | Cloudflare Tunnel token (see step 4); read by `cloudflared`, not by the app                            |
 
 Without the IGDB credentials the app starts but search and add-game are disabled.
@@ -238,6 +240,40 @@ In the Cloudflare dashboard for `gamequeue.app` (all available on the free plan)
 - **Security > WAF > Rate limiting rules:** optionally add one rule limiting `POST /api/auth/login` per IP. This also covers the `X-Forwarded-For` caveat above, because Cloudflare keys it on the real client IP.
 - Do not put Cloudflare Access (login wall) in front of the whole site: the public profile pages (`/u/:username`) must stay reachable by everyone.
 
+## Signup email alerts
+
+The app can email you when someone creates an account. It uses [Resend](https://resend.com)'s HTTPS API, so there is no SMTP server to run. The email says only that `<username>` signed up (no email address or other details), and it is sent in the background: if Resend is unreachable or rejects the request, the app logs a warning and the signup still succeeds. Accounts created by an admin on the Users page don't trigger it. It is off unless both variables below are set.
+
+### Setup
+
+1. Create a Resend account (the free tier is plenty for this).
+2. In the Resend dashboard open **API Keys** and create a key with the "Sending access" permission. Copy it; it is shown once.
+3. Add to `~/gamequeue/.env` on the Pi:
+
+    ```
+    RESEND_API_KEY=re_xxxxxxxx
+    NOTIFY_EMAIL=you@example.com
+    ```
+
+    `NOTIFY_EMAIL` must be **the address you registered your Resend account with**. Until you verify a domain, Resend's shared sender (`onboarding@resend.dev`, the default) only delivers to that address.
+
+4. Run `docker compose up -d` (a plain restart does not re-read `.env`).
+5. Check it works: with signups on, register a throwaway account and look for "New GameQueue signup" in your inbox (check spam the first time), then delete the account from the Users page.
+
+Treat the API key like a password: `.env` is mode 600 and never committed. If it leaks, delete the key in Resend and make a new one.
+
+### Sending from your own domain (optional)
+
+Only needed if you want a nicer sender or, later, to email other people (password resets, welcome emails). In Resend open **Domains**, add a domain or subdomain (a subdomain such as `mail.gamequeue.app` keeps sending reputation separate), and create the SPF, DKIM and optional DMARC DNS records it shows. Since DNS is on Cloudflare, add them there and set them to **DNS only** (grey cloud). Click Verify, then set:
+
+```
+NOTIFY_FROM=GameQueue <alerts@mail.gamequeue.app>
+```
+
+and run `docker compose up -d` again.
+
+If something is wrong, `docker compose logs gamequeue` shows a `Notification email failed: <status> <Resend's message>` line.
+
 ## Making a user an admin
 
 Roles are `gamer` (default) and `admin`; there is no UI to change them. On the Pi (the host `sqlite3` from step 2 is safe on the live database, and the app picks the change up on the user's next request, no restart or new login):
@@ -372,22 +408,23 @@ Try a restore on a scratch machine once, so the first time is not during an emer
 
 ## Troubleshooting
 
-| Symptom                                                           | Likely cause                                                                                                                                                         |
-| ----------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Cloudflare error 1033 ("Argo Tunnel error")                       | `cloudflared` is not connected: container stopped, wrong `TUNNEL_TOKEN`, or the Pi has no internet. Check `docker compose logs cloudflared`.                         |
-| Cloudflare 502 Bad Gateway                                        | Tunnel is up but the app is not answering: crashed or still starting, or the route's URL is not exactly `http://gamequeue:3000`. Check `docker compose ps` and logs. |
-| Browser certificate error on a brand-new domain                   | Cloudflare is still issuing the edge certificate; wait a few minutes. Also confirm the zone is Active (step 3).                                                      |
-| Site loads but login fails / "forbidden" on writes                | `ALLOWED_ORIGINS` doesn't exactly match `https://gamequeue.app` (scheme, no trailing slash), or you are on plain HTTP.                                               |
-| App container restarts, logs show `SQLITE_CANTOPEN`               | `./data` is missing or not owned by UID 1000: `sudo chown 1000:1000 data`.                                                                                           |
-| Everyone shares one login rate limit                              | `TRUST_PROXY` is not `true` (it is set in `compose.yaml`), so every request appears to come from the tunnel container.                                               |
-| `docker compose` complains about `TUNNEL_TOKEN` / origins         | `.env` is missing or incomplete; compose refuses to start without `TUNNEL_TOKEN` and `ALLOWED_ORIGINS`.                                                              |
-| Search and add-game disabled                                      | IGDB credentials missing or wrong in `.env`; after editing, run `docker compose up -d` (a plain restart does not re-read `.env`).                                    |
-| `curl` DELETE/logout returns 403                                  | Body-less mutations need an `Origin` header (browsers send it; curl must add it).                                                                                    |
-| `docker compose` says `denied` / `unauthorized` pulling the image | The GHCR package is still private: make it public (step 7) or `docker login ghcr.io`.                                                                                |
-| Pushed to `main` but nothing changed on the site                  | Check the Actions run passed (failed checks never publish), then `tail ~/gamequeue/update.log` and that the cron line is installed (`crontab -l`).                   |
-| Build dies with `Killed`                                          | Out of memory while building on the Pi; add swap (step 7), or use the published image instead of building on the Pi.                                                 |
-| `npm ci` in the build reports the lockfile is out of sync         | `.npmrc` (`legacy-peer-deps=true`) is missing from the build context.                                                                                                |
-| Site went down after a power cut                                  | Check the Pi booted and `docker compose ps`; if the filesystem is damaged, restore from a backup onto a fresh card/SSD.                                              |
+| Symptom                                                           | Likely cause                                                                                                                                                                                                                                                  |
+| ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Cloudflare error 1033 ("Argo Tunnel error")                       | `cloudflared` is not connected: container stopped, wrong `TUNNEL_TOKEN`, or the Pi has no internet. Check `docker compose logs cloudflared`.                                                                                                                  |
+| Cloudflare 502 Bad Gateway                                        | Tunnel is up but the app is not answering: crashed or still starting, or the route's URL is not exactly `http://gamequeue:3000`. Check `docker compose ps` and logs.                                                                                          |
+| Browser certificate error on a brand-new domain                   | Cloudflare is still issuing the edge certificate; wait a few minutes. Also confirm the zone is Active (step 3).                                                                                                                                               |
+| Site loads but login fails / "forbidden" on writes                | `ALLOWED_ORIGINS` doesn't exactly match `https://gamequeue.app` (scheme, no trailing slash), or you are on plain HTTP.                                                                                                                                        |
+| App container restarts, logs show `SQLITE_CANTOPEN`               | `./data` is missing or not owned by UID 1000: `sudo chown 1000:1000 data`.                                                                                                                                                                                    |
+| Everyone shares one login rate limit                              | `TRUST_PROXY` is not `true` (it is set in `compose.yaml`), so every request appears to come from the tunnel container.                                                                                                                                        |
+| `docker compose` complains about `TUNNEL_TOKEN` / origins         | `.env` is missing or incomplete; compose refuses to start without `TUNNEL_TOKEN` and `ALLOWED_ORIGINS`.                                                                                                                                                       |
+| Search and add-game disabled                                      | IGDB credentials missing or wrong in `.env`; after editing, run `docker compose up -d` (a plain restart does not re-read `.env`).                                                                                                                             |
+| No signup alert email arrives                                     | `RESEND_API_KEY` or `NOTIFY_EMAIL` unset, or `docker compose up -d` not run after editing `.env`. Without a verified domain, `NOTIFY_EMAIL` must be your Resend account's own address. Check `docker compose logs gamequeue` for `Notification email failed`. |
+| `curl` DELETE/logout returns 403                                  | Body-less mutations need an `Origin` header (browsers send it; curl must add it).                                                                                                                                                                             |
+| `docker compose` says `denied` / `unauthorized` pulling the image | The GHCR package is still private: make it public (step 7) or `docker login ghcr.io`.                                                                                                                                                                         |
+| Pushed to `main` but nothing changed on the site                  | Check the Actions run passed (failed checks never publish), then `tail ~/gamequeue/update.log` and that the cron line is installed (`crontab -l`).                                                                                                            |
+| Build dies with `Killed`                                          | Out of memory while building on the Pi; add swap (step 7), or use the published image instead of building on the Pi.                                                                                                                                          |
+| `npm ci` in the build reports the lockfile is out of sync         | `.npmrc` (`legacy-peer-deps=true`) is missing from the build context.                                                                                                                                                                                         |
+| Site went down after a power cut                                  | Check the Pi booted and `docker compose ps`; if the filesystem is damaged, restore from a backup onto a fresh card/SSD.                                                                                                                                       |
 
 Useful commands: `docker compose ps`, `docker compose logs -f gamequeue`, `docker compose logs -f cloudflared`, `docker stats`, `docker compose exec gamequeue sh`.
 
