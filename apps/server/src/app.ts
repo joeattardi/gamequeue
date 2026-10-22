@@ -22,6 +22,7 @@ import { entryActionRoutes, playthroughRoutes } from './routes/playthroughs.js';
 import { HttpError } from './errors.js';
 import type { IgdbClient } from './igdb/types.js';
 import type { AuthVars } from './auth/middleware.js';
+import { reportError } from './services/error-log.js';
 import { createNotifier, type Notify } from './services/notify.js';
 
 export interface AppDeps {
@@ -69,7 +70,13 @@ export function createApp(deps: AppDeps) {
     };
     app.route(
         '/api/auth',
-        authRoutes({ ...deps, limiters, notify: deps.notify ?? createNotifier(config) })
+        authRoutes({
+            ...deps,
+            limiters,
+            notify:
+                deps.notify ??
+                createNotifier(config, fetch, (e) => reportError(deps.db, 'email_failed', e))
+        })
     );
 
     app.route('/api/account', accountRoutes({ ...deps, limiters }));
@@ -97,7 +104,10 @@ export function createApp(deps: AppDeps) {
         if (err instanceof HTTPException) return err.getResponse();
         if (err instanceof HttpError)
             return c.json({ error: err.message, ...err.extra }, err.status);
-        console.error(err);
+        reportError(deps.db, 'server_500', err, {
+            status: 500,
+            route: `${c.req.method} ${c.req.path}`
+        });
         return c.json({ error: 'Internal server error' }, 500);
     });
     return app;

@@ -24,6 +24,14 @@ const DETAIL_FIELDS = `${RELEASE_FIELDS},collections.name,screenshots.image_id`;
 const MAX_429_RETRIES = 3;
 const DAY_MS = 24 * 3600_000;
 
+export interface IgdbFailure {
+    message: string;
+    status: number | null;
+    endpoint: string;
+    /** The client will try again (a 429 backoff or a fresh token) */
+    willRetry: boolean;
+}
+
 export interface IgdbClientOptions {
     clientId: string;
     clientSecret: string;
@@ -32,6 +40,8 @@ export interface IgdbClientOptions {
     tokens?: TokenProvider;
     sleep?: (ms: number) => Promise<void>;
     now?: () => number;
+    /** Called for every failed attempt (a retried 429 included) so the server can keep a record */
+    onError?: (failure: IgdbFailure) => void;
 }
 
 /** APICalypse string literals: backslash and double quote must be escaped. */
@@ -66,7 +76,15 @@ export function createIgdbClient(opts: IgdbClientOptions): IgdbClient {
             return await send<T>(endpoint, body);
         } catch (e) {
             // Failed attempts that were retried successfully are recorded inside `send`
-            if (!(e instanceof IgdbError)) record(false, { message: (e as Error).message });
+            if (!(e instanceof IgdbError)) {
+                record(false, { message: (e as Error).message });
+                opts.onError?.({
+                    message: (e as Error).message,
+                    status: null,
+                    endpoint,
+                    willRetry: false
+                });
+            }
             throw e;
         }
     }
@@ -89,10 +107,12 @@ export function createIgdbClient(opts: IgdbClientOptions): IgdbClient {
                 record(true);
                 return (await res.json()) as T;
             }
-            record(false, {
-                message: `IGDB request to ${endpoint} failed (${res.status})`,
-                status: res.status
-            });
+            const message = `IGDB request to ${endpoint} failed (${res.status})`;
+            record(false, { message, status: res.status });
+            const willRetry =
+                (res.status === 401 && !refreshedToken) ||
+                (res.status === 429 && attempt < MAX_429_RETRIES);
+            opts.onError?.({ message, status: res.status, endpoint, willRetry });
             if (res.status === 401 && !refreshedToken) {
                 refreshedToken = true;
                 tokens.invalidate();

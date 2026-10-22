@@ -3,6 +3,8 @@ import {
     adminCreateUserSchema,
     adminResetPasswordSchema,
     adminSettingsSchema,
+    ERROR_KINDS,
+    type ErrorKind,
     type IgdbStatusDto,
     adminUpdateUserSchema
 } from '@gamequeue/shared';
@@ -24,6 +26,7 @@ import { purgeExpiredSessionsNow, purgeUnusedGames, vacuum } from '../services/m
 import { readServerInfo } from '../services/server-info.js';
 import { getAdminSettings, updateAdminSettings } from '../services/settings.js';
 import { readDatabaseStats } from '../services/database-stats.js';
+import { clearErrors, listErrors } from '../services/error-log.js';
 import { readBackupReport } from '../services/backup-status.js';
 import type { AppDeps } from '../app.js';
 import { requireAdmin, requireAuth, type AuthVars } from '../auth/middleware.js';
@@ -85,6 +88,19 @@ export function adminRoutes({ db, config, igdb }: AppDeps) {
         if (!igdb?.ping) throw new HttpError(409, 'IGDB is not configured');
         return c.json(await igdb.ping());
     });
+
+    // Recorded errors (see services/error-log.ts)
+    const errorKind = (raw: string | undefined) => {
+        if (raw === undefined || raw === '') return undefined;
+        if (!(raw in ERROR_KINDS)) throw new HttpError(400, 'Unknown error kind');
+        return raw as ErrorKind;
+    };
+    r.get('/errors', (c) => {
+        const limit = Math.min(Math.max(Number(c.req.query('limit')) || 50, 1), 200);
+        const offset = Math.max(Number(c.req.query('offset')) || 0, 0);
+        return c.json(listErrors(db, { kind: errorKind(c.req.query('kind')), limit, offset }));
+    });
+    r.delete('/errors', (c) => c.json(clearErrors(db, errorKind(c.req.query('kind')))));
 
     // User management
     r.get('/users', (c) => c.json({ users: listUsers(db) }));

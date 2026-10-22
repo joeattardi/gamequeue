@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
     AdminCreateUserInput,
     AdminResetPasswordInput,
@@ -8,6 +8,8 @@ import type {
     AdminSettingsDto,
     AdminSettingsInput,
     DatabaseStatsDto,
+    ErrorKind,
+    ErrorsDto,
     IgdbPingDto,
     IgdbStatusDto,
     PurgeSessionsResult,
@@ -143,3 +145,24 @@ function useMaintenance<T>(action: string) {
 export const usePurgeUnusedGames = () => useMaintenance<PurgeUnusedGamesResult>('purge-games');
 export const usePurgeSessions = () => useMaintenance<PurgeSessionsResult>('purge-sessions');
 export const useVacuum = () => useMaintenance<VacuumResult>('vacuum');
+
+export const useAdminErrors = (kind: ErrorKind | undefined, limit = 50) =>
+    useQuery({
+        queryKey: ['admin', 'errors', kind ?? 'all', limit],
+        queryFn: () => api<ErrorsDto>(`/admin/errors?limit=${limit}${kind ? `&kind=${kind}` : ''}`),
+        // Keeps the list on screen while a filter or "Load more" fetches
+        placeholderData: keepPreviousData,
+        refetchOnWindowFocus: true
+    });
+
+export function useClearAdminErrors() {
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: (kind?: ErrorKind) =>
+            api<{ deleted: number }>(`/admin/errors${kind ? `?kind=${kind}` : ''}`, {
+                method: 'DELETE',
+                body: {}
+            }),
+        onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'errors'] })
+    });
+}

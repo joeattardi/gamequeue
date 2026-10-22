@@ -39,6 +39,22 @@ export const settings = sqliteTable('settings', {
     updatedAt: integer('updated_at').notNull().default(now)
 });
 
+/** Errors the server hit, for the admin page (see services/error-log.ts); pruned by age and count. */
+export const errorEvents = sqliteTable(
+    'error_events',
+    {
+        id: integer('id').primaryKey({ autoIncrement: true }),
+        at: integer('at').notNull(),
+        kind: text('kind').notNull(),
+        message: text('message').notNull(),
+        status: integer('status'),
+        route: text('route'),
+        stack: text('stack'),
+        context: text('context')
+    },
+    (t) => [index('error_events_at_idx').on(t.at), index('error_events_kind_idx').on(t.kind)]
+);
+
 /** Uploaded avatar image (already cropped and re-encoded by the client); kept out of `users` so user lookups never load the blob. */
 export const avatars = sqliteTable('avatars', {
     userId: integer('user_id')

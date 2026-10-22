@@ -8,7 +8,8 @@ const RESEND_URL = 'https://api.resend.com/emails';
 /** Emails the owner through Resend's HTTP API; a no-op unless the key and recipient are set. */
 export function createNotifier(
     config: Pick<Config, 'resendApiKey' | 'notifyEmail' | 'notifyFrom'>,
-    fetchImpl: typeof fetch = fetch
+    fetchImpl: typeof fetch = fetch,
+    onFailure: (error: unknown) => void = (e) => console.warn('Notification email failed:', e)
 ): Notify {
     const { resendApiKey, notifyEmail, notifyFrom } = config;
     if (!resendApiKey || !notifyEmail) return () => {};
@@ -25,9 +26,9 @@ export function createNotifier(
                     signal: AbortSignal.timeout(10_000)
                 });
                 if (!res.ok)
-                    console.warn(`Notification email failed: ${res.status} ${await res.text()}`);
+                    onFailure(new Error(`Resend answered ${res.status}: ${await res.text()}`));
             } catch (e) {
-                console.warn('Notification email failed:', e instanceof Error ? e.message : e);
+                onFailure(e);
             }
         })();
     };

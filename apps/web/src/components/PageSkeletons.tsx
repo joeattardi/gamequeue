@@ -365,3 +365,20 @@ export function RecapSkeleton() {
         </div>
     );
 }
+
+/** Placeholder rows for the admin error log. */
+export function ErrorListSkeleton({ count = 5 }: { count?: number }) {
+    return (
+        <ul className="error-list" role="status" aria-label="Loading errors">
+            {Array.from({ length: count }, (_, i) => (
+                <li key={i} className="error-item" aria-hidden="true">
+                    <span className="skeleton skeleton--line" style={{ width: 90 }} />
+                    <span
+                        className="skeleton skeleton--line"
+                        style={{ width: `${55 + ((i * 17) % 35)}%` }}
+                    />
+                </li>
+            ))}
+        </ul>
+    );
+}

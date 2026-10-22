@@ -13,6 +13,7 @@ import {
     themes
 } from '../db/schema.js';
 import { HttpError } from '../errors.js';
+import { reportError } from './error-log.js';
 import { IgdbError, type GameRecord, type IgdbClient } from '../igdb/types.js';
 
 export function requireIgdb(igdb: IgdbClient | undefined): IgdbClient {
@@ -168,7 +169,7 @@ export async function ensureScreenshots(
             .run();
         return true;
     } catch (e) {
-        console.error('Screenshot fetch failed', e);
+        reportError(db, 'job_screenshots', e, { context: { igdbId } });
         return false;
     }
 }
@@ -199,7 +200,7 @@ export async function backfillSeries(db: Db, igdb: IgdbClient | undefined, now =
             });
         }
     } catch (e) {
-        console.error('Series backfill failed', e);
+        reportError(db, 'job_series_backfill', e);
     } finally {
         backfilling = false;
     }
@@ -255,7 +256,7 @@ export async function refreshReleaseDates(
                     .run();
         });
     } catch (e) {
-        console.error('Release date refresh failed', e);
+        reportError(db, 'job_release_refresh', e, { context: { games: due.length } });
     }
 }
 

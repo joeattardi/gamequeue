@@ -14,6 +14,7 @@ import {
 } from '../db/schema.js';
 import { HttpError } from '../errors.js';
 import type { IgdbClient } from '../igdb/types.js';
+import { reportError } from './error-log.js';
 import { callIgdb, requireIgdb } from './games.js';
 import { addToList, ensureQueue } from './lists.js';
 
@@ -33,7 +34,7 @@ async function ensureMembers(db: Db, igdb: IgdbClient | undefined, id: number, n
         record = await callIgdb(() => requireIgdb(igdb).fetchSeries(id));
     } catch (e) {
         if (row?.membersFetchedAt != null) {
-            console.error('Series refresh failed', e);
+            reportError(db, 'series_refresh', e, { context: { seriesId: id } });
             return row;
         }
         throw e;

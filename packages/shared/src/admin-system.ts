@@ -72,3 +72,44 @@ export interface VacuumResult {
     beforeBytes: number;
     afterBytes: number;
 }
+
+/** Everything the server records in `error_events`, with the label the admin page shows. */
+export const ERROR_KINDS = {
+    igdb_429: 'IGDB rate limit (429)',
+    igdb_error: 'IGDB request failed',
+    server_500: 'Unhandled request error',
+    job_series_backfill: 'Series backfill',
+    job_release_refresh: 'Release date refresh',
+    job_screenshots: 'Screenshot fetch',
+    series_refresh: 'Series refresh',
+    email_failed: 'Notification email',
+    process_crash: 'Process crash'
+} as const;
+export type ErrorKind = keyof typeof ERROR_KINDS;
+
+export interface ErrorEventDto {
+    id: number;
+    at: number;
+    kind: ErrorKind;
+    message: string;
+    /** HTTP status of the failing request, when there was one */
+    status: number | null;
+    /** `METHOD /path` for request errors */
+    route: string | null;
+    /** Stack trace, when the error had one */
+    stack: string | null;
+    /** Extra detail as JSON text (IGDB endpoint, whether it was retried, ...) */
+    context: string | null;
+}
+
+export interface ErrorsDto {
+    /** Events matching the filter, newest first */
+    events: ErrorEventDto[];
+    /** Matching events in total, for "Load more" */
+    total: number;
+    /** Per kind, over all stored events (ignores the filter) */
+    kinds: { kind: ErrorKind; last24h: number; total: number }[];
+    last24h: number;
+    /** How many days events are kept */
+    retentionDays: number;
+}

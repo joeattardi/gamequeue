@@ -1,5 +1,6 @@
 import {
     backupHealth,
+    ERROR_KINDS,
     type BackupHealth,
     type BackupReportDto,
     type BackupStatusDto
@@ -7,6 +8,7 @@ import {
 import {
     CircleAlert,
     CircleCheck,
+    Bug,
     Database,
     DatabaseBackup,
     Gamepad2,
@@ -19,6 +21,7 @@ import {
 import {
     useAdminBackup,
     useAdminDatabase,
+    useAdminErrors,
     useAdminIgdb,
     useAdminServer,
     useAdminSettings,
@@ -219,6 +222,37 @@ function IgdbTile() {
     );
 }
 
+function ErrorsTile() {
+    const q = useAdminErrors(undefined, 1);
+    const d = q.data;
+    const worst = d?.kinds[0];
+    return (
+        <AdminTile
+            id="errors-heading"
+            icon={<Bug aria-hidden="true" />}
+            title="Errors"
+            state={state(q)}
+            stats={
+                d
+                    ? [
+                          { label: 'Last 24h', value: d.last24h },
+                          { label: `Last ${d.retentionDays} days`, value: d.total }
+                      ]
+                    : []
+            }
+            to="/admin/errors"
+            linkLabel="Error log"
+        >
+            {worst && worst.last24h > 0 && (
+                <p className="admin-warn" role="status">
+                    <TriangleAlert aria-hidden="true" /> Most common today:{' '}
+                    {ERROR_KINDS[worst.kind]} ({worst.last24h}).
+                </p>
+            )}
+        </AdminTile>
+    );
+}
+
 function ServerTile() {
     const q = useAdminServer();
     const d = q.data;
@@ -317,6 +351,7 @@ export function AdminPage() {
                 <UsersTile />
                 <DatabaseTile />
                 <IgdbTile />
+                <ErrorsTile />
                 <ServerTile />
                 <SettingsTile />
                 <section className="panel" aria-labelledby="backup-heading">

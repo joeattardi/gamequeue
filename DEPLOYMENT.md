@@ -372,6 +372,17 @@ The admin panel only helps when you look at it, and it can't notice a dead Pi or
 
 Pings never fail the backup (short timeout, a few retries, errors ignored). `update.sh` runs the backup before each update, so those runs ping too; extra pings are harmless. Healthchecks does not email on every success, only on down and recovery.
 
+### Uptime monitoring with UptimeRobot
+
+The healthchecks.io check only proves the Pi and cron were alive at 03:00; it would take up to a day to notice a crashed app. The container's own `HEALTHCHECK` only marks it unhealthy (and `update.sh` reads it), nothing notifies you. So an outside service polls the public URL, which also covers the Docker, app and Cloudflare tunnel path end to end.
+
+1. In [UptimeRobot](https://uptimerobot.com) add a monitor: type **HTTP(s)**, URL `https://gamequeue.app/api/health`, interval 5 minutes (the free plan's minimum).
+2. Optionally set keyword monitoring for `"ok":true`, so a Cloudflare error page that still returns 200 counts as down.
+3. Add your email as an alert contact. It emails when the monitor goes down and again when it recovers.
+4. To test it, run `docker compose stop gamequeue` on the Pi, wait for the alert, then `docker compose start gamequeue`.
+
+No app configuration is needed: `/api/health` is public and returns `{"ok":true}`. A crash the app can report itself (an uncaught exception) lands in **Admin > Errors**; a hard kill or a failed start can't, which is what this monitor is for.
+
 Run it once by hand and confirm a `.db.gz` file appears in `~/gamequeue/backups`:
 
 ```sh
