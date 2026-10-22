@@ -9,6 +9,7 @@ services:
             # Only cloudflared can reach the app (no published ports), so X-Forwarded-For comes from the tunnel
             TRUST_PROXY: 'true'
             ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:?set ALLOWED_ORIGINS in .env}
+            PUBLIC_URL: ${PUBLIC_URL:-}
             SIGNUPS_ENABLED: ${SIGNUPS_ENABLED:-true}
             IGDB_CLIENT_ID: ${IGDB_CLIENT_ID:-}
             IGDB_CLIENT_SECRET: ${IGDB_CLIENT_SECRET:-}
