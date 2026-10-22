@@ -22,12 +22,15 @@ import { entryActionRoutes, playthroughRoutes } from './routes/playthroughs.js';
 import { HttpError } from './errors.js';
 import type { IgdbClient } from './igdb/types.js';
 import type { AuthVars } from './auth/middleware.js';
+import { createNotifier, type Notify } from './services/notify.js';
 
 export interface AppDeps {
     db: Db;
     config: Config;
     /** Undefined when IGDB credentials aren't configured; IGDB-backed routes then return 503 */
     igdb?: IgdbClient;
+    /** Owner alerts; defaults to Resend email when configured. Overridable for tests */
+    notify?: Notify;
     /** Overridable for tests */
     limiters?: { loginByAccount: FailureLimiter; loginByIp: FailureLimiter };
 }
@@ -64,7 +67,10 @@ export function createApp(deps: AppDeps) {
         loginByAccount: new FailureLimiter(5, 15 * 60_000),
         loginByIp: new FailureLimiter(30, 15 * 60_000)
     };
-    app.route('/api/auth', authRoutes({ ...deps, limiters }));
+    app.route(
+        '/api/auth',
+        authRoutes({ ...deps, limiters, notify: deps.notify ?? createNotifier(config) })
+    );
 
     app.route('/api/account', accountRoutes({ ...deps, limiters }));
     app.route('/api/admin', adminRoutes(deps));

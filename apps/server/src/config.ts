@@ -7,6 +7,9 @@ export interface Config {
     trustProxy: boolean;
     igdbClientId?: string;
     igdbClientSecret?: string;
+    resendApiKey?: string;
+    notifyEmail?: string;
+    notifyFrom: string;
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
@@ -23,6 +26,11 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
         // Only enable behind a reverse proxy you control (Caddy); otherwise X-Forwarded-For is spoofable
         trustProxy: (env.TRUST_PROXY ?? 'false').toLowerCase() === 'true',
         igdbClientId: env.IGDB_CLIENT_ID || undefined,
-        igdbClientSecret: env.IGDB_CLIENT_SECRET || undefined
+        igdbClientSecret: env.IGDB_CLIENT_SECRET || undefined,
+        // Owner alerts (new signups) by email through Resend; off unless both key and address are set
+        resendApiKey: env.RESEND_API_KEY || undefined,
+        notifyEmail: env.NOTIFY_EMAIL || undefined,
+        // Resend's shared sender only delivers to the address on your Resend account
+        notifyFrom: env.NOTIFY_FROM || 'GameQueue <onboarding@resend.dev>'
     };
 }
