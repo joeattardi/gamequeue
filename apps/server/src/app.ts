@@ -12,6 +12,8 @@ import { dataRoutes } from './routes/data.js';
 import { profileRoutes } from './routes/profile.js';
 import { entryRoutes } from './routes/entries.js';
 import { igdbRoutes } from './routes/igdb.js';
+import { ogRoutes } from './routes/og.js';
+import { createCardRenderer, type CardRenderer } from './og/render.js';
 import { listRoutes, pickRoutes, queueRoutes, smartListRoutes } from './routes/lists.js';
 import { recapRoutes } from './routes/recap.js';
 import { statsRoutes } from './routes/stats.js';
@@ -32,6 +34,8 @@ export interface AppDeps {
     igdb?: IgdbClient;
     /** Owner alerts; defaults to Resend email when configured. Overridable for tests */
     notify?: Notify;
+    /** Share-card renderer (holds the in-memory card cache); overridable for tests */
+    cards?: CardRenderer;
     /** Overridable for tests */
     limiters?: { loginByAccount: FailureLimiter; loginByIp: FailureLimiter };
 }
@@ -98,6 +102,7 @@ export function createApp(deps: AppDeps) {
     app.route('/api/data', dataRoutes(deps));
     // Public: no login required
     app.route('/api/profiles', profileRoutes(deps));
+    app.route('/api/og', ogRoutes({ ...deps, cards: deps.cards ?? createCardRenderer() }));
 
     app.notFound((c) => c.json({ error: 'Not found' }, 404));
     app.onError((err, c) => {

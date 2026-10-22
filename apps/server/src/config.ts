@@ -3,6 +3,8 @@ export interface Config {
     databasePath: string;
     signupsEnabled: boolean;
     allowedOrigins: string[];
+    /** Public address of the site, no trailing slash; share cards and link previews need absolute URLs */
+    publicUrl: string;
     secureCookies: boolean;
     trustProxy: boolean;
     igdbClientId?: string;
@@ -15,15 +17,21 @@ export interface Config {
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
+    const allowedOrigins = (env.ALLOWED_ORIGINS ?? 'http://localhost:5173')
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean);
     return {
         port: Number(env.PORT ?? 3000),
         databasePath: env.DATABASE_PATH ?? './data/gamequeue.db',
         // Default OFF if unset would lock the owner out of first signup; default on, documented in .env.example
         signupsEnabled: (env.SIGNUPS_ENABLED ?? 'true').toLowerCase() === 'true',
-        allowedOrigins: (env.ALLOWED_ORIGINS ?? 'http://localhost:5173')
-            .split(',')
-            .map((s) => s.trim())
-            .filter(Boolean),
+        allowedOrigins,
+        // In production ALLOWED_ORIGINS is already the real URL, so that is the default
+        publicUrl: (env.PUBLIC_URL || allowedOrigins[0] || 'http://localhost:3000').replace(
+            /\/+$/,
+            ''
+        ),
         secureCookies: env.NODE_ENV === 'production',
         // Only enable behind a reverse proxy you control (Caddy); otherwise X-Forwarded-For is spoofable
         trustProxy: (env.TRUST_PROXY ?? 'false').toLowerCase() === 'true',
