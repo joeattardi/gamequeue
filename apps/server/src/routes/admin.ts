@@ -98,7 +98,12 @@ export function adminRoutes({ db, config, igdb }: AppDeps) {
     r.get('/errors', (c) => {
         const limit = Math.min(Math.max(Number(c.req.query('limit')) || 50, 1), 200);
         const offset = Math.max(Number(c.req.query('offset')) || 0, 0);
-        return c.json(listErrors(db, { kind: errorKind(c.req.query('kind')), limit, offset }));
+        // The viewer's Date.getTimezoneOffset(), so the history chart buckets days the way they see them
+        const tz = Math.round(Number(c.req.query('tz')) || 0);
+        const tzOffsetMin = Math.min(Math.max(tz, -14 * 60), 12 * 60);
+        return c.json(
+            listErrors(db, { kind: errorKind(c.req.query('kind')), limit, offset, tzOffsetMin })
+        );
     });
     r.delete('/errors', (c) => c.json(clearErrors(db, errorKind(c.req.query('kind')))));
 

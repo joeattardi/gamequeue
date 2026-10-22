@@ -1,5 +1,14 @@
-import { count, desc, eq, lt, notInArray, sql } from 'drizzle-orm';
-import { ERROR_KINDS, type ErrorEventDto, type ErrorKind, type ErrorsDto } from '@gamequeue/shared';
+import { count, desc, eq, gte, lt, notInArray, sql } from 'drizzle-orm';
+import {
+    ERROR_GROUPS,
+    ERROR_HISTORY_DAYS,
+    ERROR_KINDS,
+    type ErrorEventDto,
+    type ErrorGroup,
+    type ErrorHistoryDay,
+    type ErrorKind,
+    type ErrorsDto
+} from '@gamequeue/shared';
 import type { Db } from '../db/client.js';
 import { errorEvents } from '../db/schema.js';
 
@@ -54,10 +63,52 @@ export function reportError(
     }
 }
 
+const DAY_MS = 24 * 3600_000;
+const GROUP_OF = new Map<string, ErrorGroup>(
+    (Object.keys(ERROR_GROUPS) as ErrorGroup[]).flatMap((g) =>
+        ERROR_GROUPS[g].kinds.map((k) => [k, g] as const)
+    )
+);
+
+/**
+ * Errors per day for the last `ERROR_HISTORY_DAYS`, in the viewer's time zone (`tzOffsetMin` is
+ * `Date.getTimezoneOffset()`: minutes UTC is ahead of local time). Today's offset is applied to
+ * the whole window, which can put an event near midnight on the wrong side of a DST change.
+ */
+function errorHistory(db: Db, tzOffsetMin: number, now: number): ErrorHistoryDay[] {
+    const shift = tzOffsetMin * 60_000;
+    const today = Math.floor((now - shift) / DAY_MS);
+    const first = today - (ERROR_HISTORY_DAYS - 1);
+    const days: ErrorHistoryDay[] = Array.from({ length: ERROR_HISTORY_DAYS }, (_, i) => ({
+        day: new Date((first + i) * DAY_MS).toISOString().slice(0, 10),
+        rateLimit: 0,
+        igdb: 0,
+        server: 0
+    }));
+    // Bound numbers reach SQLite as floats, so truncate explicitly instead of relying on integer division
+    const dayOf = sql<number>`cast((${errorEvents.at} - ${shift}) / ${DAY_MS} as integer)`;
+    const rows = db
+        .select({
+            d: dayOf,
+            kind: errorEvents.kind,
+            n: count()
+        })
+        .from(errorEvents)
+        .where(gte(errorEvents.at, first * DAY_MS + shift))
+        .groupBy(dayOf, errorEvents.kind)
+        .all();
+    for (const r of rows) {
+        const group = GROUP_OF.get(r.kind);
+        const day = days[r.d - first];
+        if (group && day) day[group] += r.n;
+    }
+    return days;
+}
+
 /** Newest first. `kind` narrows the list; the per-kind counts always cover everything stored. */
 export function listErrors(
     db: Db,
-    opts: { kind?: ErrorKind; limit: number; offset: number },
+    opts: { kind?: ErrorKind; limit: number; offset: number; tzOffsetMin?: number },
     now = Date.now()
 ): ErrorsDto {
     const where = opts.kind ? eq(errorEvents.kind, opts.kind) : undefined;
@@ -91,6 +142,7 @@ export function listErrors(
         total,
         kinds,
         last24h: kinds.reduce((n, k) => n + k.last24h, 0),
+        history: errorHistory(db, opts.tzOffsetMin ?? 0, now),
         retentionDays: ERROR_RETENTION_DAYS
     };
 }

@@ -87,6 +87,29 @@ export const ERROR_KINDS = {
 } as const;
 export type ErrorKind = keyof typeof ERROR_KINDS;
 
+/** The chart folds the kinds into three series (more would need hues the palette can't separate). */
+export const ERROR_GROUPS = {
+    rateLimit: { label: 'IGDB rate limit', kinds: ['igdb_429'] },
+    igdb: {
+        label: 'IGDB and background jobs',
+        kinds: [
+            'igdb_error',
+            'job_series_backfill',
+            'job_release_refresh',
+            'job_screenshots',
+            'series_refresh'
+        ]
+    },
+    server: { label: 'Server and other', kinds: ['server_500', 'process_crash', 'email_failed'] }
+} as const satisfies Record<string, { label: string; kinds: readonly ErrorKind[] }>;
+export type ErrorGroup = keyof typeof ERROR_GROUPS;
+
+/** One day of the history chart: `day` is `YYYY-MM-DD` in the viewer's time zone. */
+export type ErrorHistoryDay = { day: string } & Record<ErrorGroup, number>;
+
+/** How many days the history chart covers (the retention period). */
+export const ERROR_HISTORY_DAYS = 30;
+
 export interface ErrorEventDto {
     id: number;
     at: number;
@@ -110,6 +133,8 @@ export interface ErrorsDto {
     /** Per kind, over all stored events (ignores the filter) */
     kinds: { kind: ErrorKind; last24h: number; total: number }[];
     last24h: number;
+    /** Per day for the last `ERROR_HISTORY_DAYS`, oldest first, zero-filled, ignoring the filter */
+    history: ErrorHistoryDay[];
     /** How many days events are kept */
     retentionDays: number;
 }

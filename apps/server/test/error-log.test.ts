@@ -63,6 +63,34 @@ describe('error log service', () => {
         spy.mockRestore();
     });
 
+    it('builds a zero-filled daily history in the viewer time zone, grouped into three series', () => {
+        const spy = quiet();
+        const { db } = makeApp();
+        const base = Date.UTC(2026, 9, 20, 12); // 20 Oct 2026, noon UTC
+        const now = base + 3 * 3600_000;
+        reportError(db, 'igdb_429', 'a', {}, now - 1000);
+        reportError(db, 'igdb_429', 'b', {}, now - 2000);
+        reportError(db, 'job_screenshots', 'c', {}, now - DAY);
+        reportError(db, 'server_500', 'd', {}, now - 3 * DAY);
+        reportError(db, 'email_failed', 'e', {}, now - 3 * DAY);
+        reportError(db, 'igdb_429', 'too old', {}, now - 40 * DAY);
+        const { history } = listErrors(db, { limit: 1, offset: 0 }, now);
+        expect(history).toHaveLength(30);
+        expect(history.at(-1)).toEqual({ day: '2026-10-20', rateLimit: 2, igdb: 0, server: 0 });
+        expect(history.at(-2)).toEqual({ day: '2026-10-19', rateLimit: 0, igdb: 1, server: 0 });
+        expect(history.at(-4)).toEqual({ day: '2026-10-17', rateLimit: 0, igdb: 0, server: 2 });
+        expect(history[0]!.day).toBe('2026-09-21');
+        expect(history.reduce((n, d) => n + d.rateLimit + d.igdb + d.server, 0)).toBe(5);
+
+        // 23:30 in UTC-5 on the 20th is 04:30 UTC on the 21st; the offset moves it back a day
+        const late = Date.UTC(2026, 9, 21, 4, 30);
+        const west = makeApp().db;
+        reportError(west, 'igdb_429', 'late', {}, late);
+        const local = listErrors(west, { limit: 1, offset: 0, tzOffsetMin: 300 }, late).history;
+        expect(local.at(-1)).toEqual({ day: '2026-10-20', rateLimit: 1, igdb: 0, server: 0 });
+        spy.mockRestore();
+    });
+
     it('prunes by age and by row count', () => {
         const spy = quiet();
         const { db } = makeApp();

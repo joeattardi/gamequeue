@@ -1,9 +1,15 @@
 import { ArrowLeft, Bug, CircleCheck } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router';
 import { useState } from 'react';
-import { ERROR_KINDS, type ErrorEventDto, type ErrorKind } from '@gamequeue/shared';
+import {
+    ERROR_HISTORY_DAYS,
+    ERROR_KINDS,
+    type ErrorEventDto,
+    type ErrorKind
+} from '@gamequeue/shared';
 import { useAdminErrors, useClearAdminErrors } from '../api/admin';
 import { useConfirm } from '../components/Confirm';
+import { ErrorHistoryChart, ErrorHistorySkeleton } from '../components/ErrorHistoryChart';
 import { ErrorListSkeleton } from '../components/PageSkeletons';
 import { timeAgo, usePageTitle } from '../lib';
 
@@ -125,6 +131,13 @@ export function AdminErrorsPage() {
                         </table>
                     )}
                 </section>
+
+                {(q.isPending || (d && d.kinds.length > 0)) && (
+                    <section className="panel" aria-labelledby="errors-history-h">
+                        <h2 id="errors-history-h">Last {ERROR_HISTORY_DAYS} days</h2>
+                        {d ? <ErrorHistoryChart history={d.history} /> : <ErrorHistorySkeleton />}
+                    </section>
+                )}
 
                 {d && d.kinds.length > 0 && (
                     <section className="panel" aria-labelledby="errors-list-h">

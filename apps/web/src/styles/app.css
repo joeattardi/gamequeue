@@ -4114,3 +4114,171 @@ fieldset.stars:disabled .stars__star {
     white-space: pre-line;
     overflow-wrap: anywhere;
 }
+
+/* Error history chart. Series colours validated with the dataviz script, all-pairs, against the
+   page surface in each scheme (aqua is under 3:1 on light, so the legend, tooltip and a table carry
+   the same information). */
+.err-chart {
+    --err-1: #2a78d6;
+    --err-2: #eb6834;
+    --err-3: #1baf7a;
+    margin: 0;
+    display: grid;
+    gap: 8px;
+}
+@media (prefers-color-scheme: dark) {
+    .err-chart {
+        --err-1: #3987e5;
+        --err-2: #d95926;
+        --err-3: #199e70;
+    }
+}
+.err-chart__legend {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 16px;
+    font-size: 0.85rem;
+    color: var(--ink-muted);
+}
+.err-chart__legend li {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.err-chart__key {
+    flex: none;
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+}
+.err-chart__key--rateLimit,
+.err-chart__seg--rateLimit {
+    background: var(--err-1);
+}
+.err-chart__key--igdb,
+.err-chart__seg--igdb {
+    background: var(--err-2);
+}
+.err-chart__key--server,
+.err-chart__seg--server {
+    background: var(--err-3);
+}
+.err-chart__body {
+    display: grid;
+    grid-template-columns: 28px 1fr;
+    gap: 8px;
+}
+.err-chart__axis {
+    position: relative;
+    height: 180px;
+    font-size: 0.75rem;
+    color: var(--ink-muted);
+    font-variant-numeric: tabular-nums;
+}
+.err-chart__axis span {
+    position: absolute;
+    right: 0;
+    transform: translateY(50%);
+    line-height: 1;
+}
+.err-chart__plot {
+    position: relative;
+    height: 180px;
+    border-radius: var(--radius-sm);
+}
+.err-chart__plot:focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 4px;
+}
+.err-chart__grid {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 0;
+    border-top: 1px solid var(--line);
+}
+.err-chart__cols {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: flex-end;
+}
+.err-chart__col {
+    flex: 1 1 0;
+    min-width: 0;
+    height: 100%;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+}
+.err-chart__stack {
+    width: min(100% - 4px, 24px);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    transition: opacity 0.12s;
+}
+.err-chart__seg {
+    min-height: 3px;
+}
+.err-chart__seg.is-top {
+    border-radius: 4px 4px 0 0;
+}
+.err-chart__plot:has(.is-active) .err-chart__col:not(.is-active) .err-chart__stack {
+    opacity: 0.55;
+}
+.err-chart__tip {
+    position: absolute;
+    top: 0;
+    z-index: 2;
+    pointer-events: none;
+    min-width: 190px;
+    padding: 8px 10px;
+    display: grid;
+    gap: 4px;
+    font-size: 0.85rem;
+    background: var(--surface);
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow);
+}
+.err-chart__tip[data-flip='right'] {
+    transform: translateX(14px);
+}
+.err-chart__tip[data-flip='left'] {
+    transform: translateX(calc(-100% - 14px));
+}
+.err-chart__tip-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.err-chart__tip-value {
+    min-width: 2ch;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+.err-chart__x {
+    margin-left: 36px;
+    display: flex;
+    font-size: 0.75rem;
+    color: var(--ink-muted);
+}
+.err-chart__x span {
+    flex: 1 1 0;
+    min-width: 0;
+    overflow: visible;
+    white-space: nowrap;
+    text-align: center;
+}
+.err-chart__skeleton {
+    height: 220px;
+}
+@media (prefers-reduced-motion: reduce) {
+    .err-chart__stack {
+        transition: none;
+    }
+}

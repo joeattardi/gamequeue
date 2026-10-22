@@ -149,7 +149,10 @@ export const useVacuum = () => useMaintenance<VacuumResult>('vacuum');
 export const useAdminErrors = (kind: ErrorKind | undefined, limit = 50) =>
     useQuery({
         queryKey: ['admin', 'errors', kind ?? 'all', limit],
-        queryFn: () => api<ErrorsDto>(`/admin/errors?limit=${limit}${kind ? `&kind=${kind}` : ''}`),
+        queryFn: () =>
+            api<ErrorsDto>(
+                `/admin/errors?limit=${limit}&tz=${new Date().getTimezoneOffset()}${kind ? `&kind=${kind}` : ''}`
+            ),
         // Keeps the list on screen while a filter or "Load more" fetches
         placeholderData: keepPreviousData,
         refetchOnWindowFocus: true
