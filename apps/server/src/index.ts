@@ -36,7 +36,10 @@ const igdb =
         : undefined;
 if (!igdb)
     console.warn('IGDB_CLIENT_ID / IGDB_CLIENT_SECRET not set: search and add-game are disabled.');
-setErrorAlerter(createErrorAlerter(db, createNotifier(config)));
+// Errors are always recorded, but only a production server emails about them: they are expected
+// while developing
+if (process.env.NODE_ENV === 'production')
+    setErrorAlerter(createErrorAlerter(db, createNotifier(config)));
 // After the alerter is set, so an unclean previous run is reported like any other error
 const runId = startRun(db, config.version);
 const app = createApp({ db, config, igdb });
