@@ -110,6 +110,7 @@ export const ERROR_KINDS = {
     server_500: 'Unhandled request error',
     job_series_backfill: 'Series backfill',
     job_release_refresh: 'Release date refresh',
+    job_price_refresh: 'Price refresh',
     job_screenshots: 'Screenshot fetch',
     series_refresh: 'Series refresh',
     email_failed: 'Notification email',
@@ -127,6 +128,7 @@ export const ERROR_GROUPS = {
             'igdb_error',
             'job_series_backfill',
             'job_release_refresh',
+            'job_price_refresh',
             'job_screenshots',
             'series_refresh'
         ]

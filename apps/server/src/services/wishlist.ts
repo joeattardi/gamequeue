@@ -12,6 +12,8 @@ import type { Db } from '../db/client.js';
 import { entries, games, platforms, wishlistItems, wishlists } from '../db/schema.js';
 import { HttpError } from '../errors.js';
 import type { IgdbClient } from '../igdb/types.js';
+import type { ItadClient } from '../itad/types.js';
+import { loadPrices, refreshPrices } from './prices.js';
 import { moveInOrder } from './order.js';
 import { ensureGame, existingPlatformIds, loadGames, refreshReleaseDates } from './games.js';
 
@@ -104,7 +106,9 @@ function toItems(
         platform: typeof platforms.$inferSelect | null;
     }[]
 ): WishlistItemDto[] {
-    const gameDtos = loadGames(db, [...new Set(rows.map((r) => r.item.gameId))]);
+    const ids = [...new Set(rows.map((r) => r.item.gameId))];
+    const gameDtos = loadGames(db, ids);
+    const prices = loadPrices(db, ids);
     return rows.flatMap(({ item, platform }) => {
         const game = gameDtos.get(item.gameId);
         return game
@@ -114,7 +118,8 @@ function toItems(
                       game,
                       platform: platform as PlatformDto | null,
                       note: item.note,
-                      addedAt: item.addedAt
+                      addedAt: item.addedAt,
+                      price: prices.get(item.gameId) ?? null
                   }
               ]
             : [];
@@ -134,6 +139,25 @@ export async function refreshWishlistReleases(
         .all()
         .map((r) => r.id);
     await refreshReleaseDates(db, igdb, ids);
+}
+
+/** Brings the prices of one page of the wishlist up to date (see `refreshPrices`). */
+export async function refreshWishlistPrices(
+    db: Db,
+    itad: ItadClient | undefined,
+    wishlistId: number,
+    page: PageQuery
+) {
+    const ids = db
+        .select({ id: wishlistItems.gameId })
+        .from(wishlistItems)
+        .where(eq(wishlistItems.wishlistId, wishlistId))
+        .orderBy(asc(wishlistItems.position))
+        .limit(page.limit)
+        .offset(page.offset)
+        .all()
+        .map((r) => r.id);
+    await refreshPrices(db, itad, ids);
 }
 
 export function getWishlist(db: Db, userId: number, id: number, page?: PageQuery): WishlistDto {

@@ -9,6 +9,10 @@ export interface Config {
     trustProxy: boolean;
     igdbClientId?: string;
     igdbClientSecret?: string;
+    /** IsThereAnyDeal API key; wishlist prices are off without it */
+    itadApiKey?: string;
+    /** Two-letter country whose shops and currency ITAD prices use */
+    itadCountry: string;
     resendApiKey?: string;
     notifyEmail?: string;
     notifyFrom: string;
@@ -37,6 +41,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
         trustProxy: (env.TRUST_PROXY ?? 'false').toLowerCase() === 'true',
         igdbClientId: env.IGDB_CLIENT_ID || undefined,
         igdbClientSecret: env.IGDB_CLIENT_SECRET || undefined,
+        itadApiKey: env.ITAD_API_KEY || undefined,
+        itadCountry: (env.ITAD_COUNTRY || 'US').toUpperCase(),
         // Owner alerts (new signups) by email through Resend; off unless both key and address are set
         resendApiKey: env.RESEND_API_KEY || undefined,
         notifyEmail: env.NOTIFY_EMAIL || undefined,

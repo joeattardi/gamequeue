@@ -6,6 +6,7 @@ import { purgeExpiredSessions } from './auth/sessions.js';
 import { loadConfig } from './config.js';
 import { openDb } from './db/client.js';
 import { createIgdbClient } from './igdb/client.js';
+import { createItadClient } from './itad/client.js';
 import { recordIgdbAttempt, pruneIgdbHistory } from './services/igdb-history.js';
 import { endRun, HEARTBEAT_MS, heartbeat, pruneRuns, startRun } from './services/server-runs.js';
 import { createErrorAlerter } from './services/error-alerts.js';
@@ -42,7 +43,10 @@ if (process.env.NODE_ENV === 'production')
     setErrorAlerter(createErrorAlerter(db, createNotifier(config)));
 // After the alerter is set, so an unclean previous run is reported like any other error
 const runId = startRun(db, config.version);
-const app = createApp({ db, config, igdb });
+const itad = config.itadApiKey
+    ? createItadClient({ apiKey: config.itadApiKey, country: config.itadCountry })
+    : undefined;
+const app = createApp({ db, config, igdb, itad });
 
 // Production: serve the built web app from the same process/port, with SPA fallback.
 const webDist = resolve(process.env.WEB_DIST ?? '../web/dist');

@@ -2,6 +2,24 @@ import { z } from 'zod';
 import type { GameDto, PlatformDto } from './collection.js';
 import { moveItemSchema } from './pagination.js';
 
+/** The best current price of a game, from IsThereAnyDeal. Amounts are minor units (cents). */
+export interface GamePriceDto {
+    currency: string;
+    /** Cheapest current price across the shops */
+    amount: number;
+    /** That shop's regular price; equals `amount` when nothing is discounted */
+    regular: number;
+    /** Percent off, 0 when not on sale */
+    cut: number;
+    shop: string;
+    /** ITAD link that forwards to the shop's page for the game */
+    url: string;
+    /** Lowest price ever recorded, if ITAD has one */
+    historyLow: number | null;
+    /** When ITAD was last asked (ms since epoch) */
+    checkedAt: number;
+}
+
 /** A game the user wants but doesn't own: it has no status, playthroughs or slot. */
 export interface WishlistItemDto {
     igdbId: number;
@@ -10,6 +28,8 @@ export interface WishlistItemDto {
     platform: PlatformDto | null;
     note: string;
     addedAt: number;
+    /** Null when prices are off, the game wasn't found at ITAD, or no shop sells it */
+    price: GamePriceDto | null;
 }
 
 export interface WishlistDto {

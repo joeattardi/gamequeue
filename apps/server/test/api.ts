@@ -10,6 +10,8 @@ import {
     SWITCH
 } from './helpers.js';
 
+import type { ItadClient } from '../src/itad/types.js';
+
 export { PC, PS5, SWITCH, json, cookieFrom };
 
 export const CATALOG = [
@@ -23,8 +25,8 @@ export const CATALOG = [
 ];
 
 /** An app with one signed-in user and small helpers for the JSON API. */
-export async function setupApi(catalog = CATALOG) {
-    const { app, db } = makeApp({}, fakeIgdb(catalog).client);
+export async function setupApi(catalog = CATALOG, itad?: ItadClient) {
+    const { app, db } = makeApp({}, fakeIgdb(catalog).client, itad);
     const cookie = cookieFrom(await register(app));
     const request = (path: string, method = 'GET', body?: unknown, who = cookie) =>
         app.request(`/api${path}`, {

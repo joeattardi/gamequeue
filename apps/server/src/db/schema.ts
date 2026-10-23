@@ -165,6 +165,27 @@ export const games = sqliteTable('games', {
     fetchedAt: integer('fetched_at').notNull()
 });
 
+/**
+ * Cached IsThereAnyDeal prices, one row per game for the server's configured country. Shared like
+ * `games`. `itadId` is null when ITAD doesn't know the game (matched by title, so it can miss);
+ * the amounts are null when no shop sells it.
+ */
+export const gamePrices = sqliteTable('game_prices', {
+    gameId: integer('game_id')
+        .primaryKey()
+        .references(() => games.id, { onDelete: 'cascade' }),
+    itadId: text('itad_id'),
+    currency: text('currency'),
+    amount: integer('amount'), // minor units
+    regular: integer('regular'),
+    cut: integer('cut'),
+    shop: text('shop'),
+    url: text('url'),
+    historyLow: integer('history_low'),
+    country: text('country').notNull(), // prices are for this country's shops and currency
+    checkedAt: integer('checked_at').notNull()
+});
+
 /** IGDB series ("collections"). Shared cache, like games. */
 export const series = sqliteTable('series', {
     id: integer('id').primaryKey(), // IGDB collection id

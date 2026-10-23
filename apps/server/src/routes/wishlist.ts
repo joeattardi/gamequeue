@@ -17,6 +17,7 @@ import {
     moveInWishlist,
     releasingSoon,
     patchWishlistItem,
+    refreshWishlistPrices,
     refreshWishlistReleases,
     removeFromWishlist,
     reorderWishlist
@@ -28,7 +29,7 @@ const body = (c: { req: { json(): Promise<unknown> } }) => c.req.json().catch(()
  * The user's wishlist. There is one today; the services all take a wishlist id, so supporting
  * several later means adding `/api/wishlists/:id/...` routes over the same functions.
  */
-export function wishlistRoutes({ db, config, igdb }: AppDeps) {
+export function wishlistRoutes({ db, config, igdb, itad }: AppDeps) {
     const r = new Hono<{ Variables: AuthVars }>();
     r.use('*', requireAuth(db, config));
     const uid = (c: { get(k: 'user'): { id: number } }) => c.get('user').id;
@@ -36,10 +37,10 @@ export function wishlistRoutes({ db, config, igdb }: AppDeps) {
 
     r.get('/', async (c) => {
         const id = wishlistId(c);
+        const page = validate(pageQuerySchema, c.req.query());
         await refreshWishlistReleases(db, igdb, id);
-        return c.json({
-            wishlist: getWishlist(db, uid(c), id, validate(pageQuerySchema, c.req.query()))
-        });
+        await refreshWishlistPrices(db, itad, id, page);
+        return c.json({ wishlist: getWishlist(db, uid(c), id, page) });
     });
     // Home page: unreleased wishlisted games with an exact release day coming up
     r.get('/releasing-soon', (c) => {

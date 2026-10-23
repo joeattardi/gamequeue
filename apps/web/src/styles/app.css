@@ -586,6 +586,21 @@ select:disabled {
     font-size: 0.62rem;
     text-align: center;
 }
+.price-line {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px 12px;
+    align-items: baseline;
+    font-size: 0.9rem;
+}
+.price-line__cut {
+    color: var(--status-good);
+    font-weight: 600;
+}
+.price-credit {
+    margin-top: 16px;
+    font-size: 0.85rem;
+}
 .card__note {
     display: -webkit-box;
     -webkit-line-clamp: 3;

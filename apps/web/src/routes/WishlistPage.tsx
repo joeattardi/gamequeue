@@ -15,7 +15,12 @@ import {
     verticalListSortingStrategy
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { MAX_WISHLIST_NOTE, type SearchResultDto, type WishlistItemDto } from '@gamequeue/shared';
+import {
+    MAX_WISHLIST_NOTE,
+    type GamePriceDto,
+    type SearchResultDto,
+    type WishlistItemDto
+} from '@gamequeue/shared';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
 import {
@@ -31,7 +36,7 @@ import { LoadMore } from '../components/LoadMore';
 import { GridSkeletons, RowSkeletons } from '../components/GridSkeletons';
 import { ListLoading } from '../components/ListLoading';
 import { MetaLine } from '../components/MetaLine';
-import { releaseBadgeText, releaseText, usePageTitle } from '../lib';
+import { formatPrice, releaseBadgeText, releaseText, usePageTitle } from '../lib';
 import { ChevronDown, ChevronUp, Gift, Plus, ShoppingCart, X } from 'lucide-react';
 
 const LAYOUT_KEY = 'gq_wishlist_layout';
@@ -176,6 +181,19 @@ function WishlistView({ paged }: { paged: ReturnType<typeof useWishlist> }) {
                             </SortableContext>
                         </DndContext>
                     )}
+                    {order.some((i) => i.price) && (
+                        <p className="muted price-credit">
+                            Prices from{' '}
+                            <a
+                                href="https://isthereanydeal.com/"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                            >
+                                IsThereAnyDeal
+                            </a>
+                            , refreshed every few hours.
+                        </p>
+                    )}
                     <LoadMore
                         shown={order.length}
                         total={total}
@@ -225,6 +243,37 @@ function ReleaseBadge({ game }: { game: WishlistItemDto['game'] }) {
     );
 }
 
+/** Cheapest current price, with the discount and the lowest price ever when ITAD has them. */
+function PriceLine({ price, name }: { price: GamePriceDto; name: string }) {
+    const money = (n: number) => formatPrice(n, price.currency);
+    return (
+        <span className="price-line">
+            <a
+                href={price.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={`${name}: ${money(price.amount)} at ${price.shop}${
+                    price.cut ? `, ${price.cut}% off` : ''
+                } (opens in a new tab)`}
+            >
+                <strong>{money(price.amount)}</strong> at {price.shop}
+            </a>
+            {price.cut > 0 && (
+                <span className="price-line__cut">
+                    −{price.cut}% <s className="muted">{money(price.regular)}</s>
+                </span>
+            )}
+            {price.historyLow !== null && (
+                <span className="muted">
+                    {price.amount <= price.historyLow
+                        ? 'Lowest price ever'
+                        : `Lowest ever ${money(price.historyLow)}`}
+                </span>
+            )}
+        </span>
+    );
+}
+
 /** Box art for a wishlisted game; it isn't owned, so there's no game page to open. */
 function WishlistTile({ item, position }: { item: WishlistItemDto; position: number }) {
     const { game } = item;
@@ -237,7 +286,16 @@ function WishlistTile({ item, position }: { item: WishlistItemDto; position: num
                     <div className="card__info">
                         <strong className="card__title">{game.name}</strong>
                         <span className="muted card__sub">
-                            <MetaLine parts={[releaseText(game), item.platform?.name]} />
+                            <MetaLine
+                                parts={[
+                                    releaseText(game),
+                                    item.platform?.name,
+                                    item.price &&
+                                        `${formatPrice(item.price.amount, item.price.currency)}${
+                                            item.price.cut ? ` (−${item.price.cut}%)` : ''
+                                        }`
+                                ]}
+                            />
                         </span>
                         {item.note && <span className="muted card__note">{item.note}</span>}
                     </div>
@@ -325,6 +383,7 @@ function Row({
                     <strong>{game.name}</strong>
                 </Link>
                 <span className="muted">{releaseText(game)}</span>
+                {item.price && <PriceLine price={item.price} name={game.name} />}
                 <div className="wish-fields">
                     <label className="field">
                         <span className="sr-only">Platform to buy {game.name} on</span>
