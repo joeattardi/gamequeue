@@ -132,7 +132,7 @@ export function startPlaythrough(
             .values({ userId, entryId, platformId, startedOn: input.date ?? utcToday() })
             .run();
         t.update(entries)
-            .set({ status: to, updatedAt: Date.now() })
+            .set({ status: input.paused ? 'paused' : to, updatedAt: Date.now() })
             .where(eq(entries.id, entryId))
             .run();
         dequeue(t, userId, entryId);

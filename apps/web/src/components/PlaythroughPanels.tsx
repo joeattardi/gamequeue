@@ -50,6 +50,7 @@ function PlatformSelect({
 /** Status plus whatever actions are allowed from it. */
 export function StatusPanel({ entry }: { entry: EntryDto }) {
     const act = useEntryAction(entry.id);
+    const log = useLogPlaythrough(entry.id);
     const [mode, setMode] = useState<'finish' | 'abandon' | null>(null);
     const [error, setError] = useState<string>();
     const actions = availableActions(entry.status);
@@ -93,6 +94,23 @@ export function StatusPanel({ entry }: { entry: EntryDto }) {
                     pending={act.isPending}
                     onStart={(body) => run({ action: 'start', body })}
                 />
+            )}
+            {entry.status === 'unplayed' && (
+                <div className="row">
+                    <button
+                        className="btn"
+                        disabled={log.isPending}
+                        onClick={() => {
+                            setError(undefined);
+                            log.mutate(
+                                { outcome: 'abandoned' },
+                                { onError: (e) => setError(errorText(e)) }
+                            );
+                        }}
+                    >
+                        Mark abandoned
+                    </button>
+                </div>
             )}
 
             <div className="row">
@@ -159,16 +177,23 @@ function StartForm({
     entry: EntryDto;
     replay: boolean;
     pending: boolean;
-    onStart: (body: { platformId?: number; date: string }) => void;
+    onStart: (body: { platformId?: number; date: string; paused?: boolean }) => void;
 }) {
     const [date, setDate] = useState(todayLocal());
     const [platformId, setPlatformId] = useState(
         entry.platforms.length === 1 ? String(entry.platforms[0]!.id) : ''
     );
+    const start = (paused: boolean) =>
+        onStart({
+            date,
+            ...(platformId ? { platformId: Number(platformId) } : {}),
+            ...(paused ? { paused } : {})
+        });
     function submit(e: FormEvent) {
         e.preventDefault();
-        onStart({ date, ...(platformId ? { platformId: Number(platformId) } : {}) });
+        start(false);
     }
+    const blocked = pending || (entry.platforms.length > 1 && !platformId);
     return (
         <form className="inline-form" onSubmit={submit}>
             {entry.platforms.length > 1 && (
@@ -188,13 +213,19 @@ function StartForm({
                     required
                 />
             </label>
-            <button
-                className="btn btn--primary"
-                type="submit"
-                disabled={pending || (entry.platforms.length > 1 && !platformId)}
-            >
+            <button className="btn btn--primary" type="submit" disabled={blocked}>
                 {replay ? 'Play again' : 'Start playing'}
             </button>
+            {!replay && (
+                <button
+                    className="btn"
+                    type="button"
+                    disabled={blocked}
+                    onClick={() => start(true)}
+                >
+                    Mark paused
+                </button>
+            )}
         </form>
     );
 }

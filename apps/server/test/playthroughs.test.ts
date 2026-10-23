@@ -64,6 +64,24 @@ describe('start, pause, resume, finish', () => {
         expect((await entry(e.id)).status).toBe('finished');
     });
 
+    it('can start a game already paused, or log it abandoned with no dates', async () => {
+        const { add, act, history } = await setup();
+        const a = await add(1);
+        const paused = await act(a.id, 'start', { date: '2025-03-01', paused: true });
+        expect(paused.entry).toMatchObject({
+            status: 'paused',
+            openPlaythrough: { startedOn: '2025-03-01' }
+        });
+        expect((await act(a.id, 'resume')).entry.status).toBe('playing');
+
+        const b = await add(2);
+        const logged = await act(b.id, 'playthroughs', { outcome: 'abandoned' });
+        expect(logged.entry.status).toBe('abandoned');
+        expect(await history(b.id)).toMatchObject([
+            { startedOn: null, endedOn: null, outcome: 'abandoned' }
+        ]);
+    });
+
     it('defaults dates to today and the platform to the only one owned', async () => {
         const { add, act } = await setup();
         const e = await add(1);

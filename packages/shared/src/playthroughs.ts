@@ -19,7 +19,9 @@ const platformIdSchema = z.number().int().positive();
 
 export const startSchema = z.object({
     platformId: platformIdSchema.optional(),
-    date: isoDateSchema.optional()
+    date: isoDateSchema.optional(),
+    /** Open the playthrough already paused, for a game you started before tracking it */
+    paused: z.boolean().optional()
 });
 
 export const closeSchema = z.object({
