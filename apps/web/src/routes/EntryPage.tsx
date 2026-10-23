@@ -14,7 +14,7 @@ import { HistoryPanel, StatusPanel } from '../components/PlaythroughPanels';
 import { EntrySkeleton, SelectSkeleton } from '../components/PageSkeletons';
 import { PlatformTag } from '../components/PlatformIcon';
 import { formatMinutes, yearOf, usePageTitle } from '../lib';
-import { ArrowLeft, Trash2, X } from 'lucide-react';
+import { ArrowLeft, Heart, Trash2, X } from 'lucide-react';
 
 export function EntryPage() {
     const id = Number(useParams().id);
@@ -68,9 +68,19 @@ function EntryDetail({ entry }: { entry: EntryDto }) {
                             </p>
                             <SeriesLinks series={game.series} />
                         </div>
-                        {game.igdbRating !== null && (
-                            <ScoreGauge value={game.igdbRating} label="IGDB" />
-                        )}
+                        <div className="entry__badges">
+                            <FavoriteButton
+                                favorite={
+                                    patch.isPending && patch.variables?.favorite !== undefined
+                                        ? patch.variables.favorite
+                                        : entry.favorite
+                                }
+                                onToggle={(favorite) => save({ favorite })}
+                            />
+                            {game.igdbRating !== null && (
+                                <ScoreGauge value={game.igdbRating} label="IGDB" />
+                            )}
+                        </div>
                     </header>
                     {game.summary && <p className="summary">{game.summary}</p>}
 
@@ -245,6 +255,28 @@ function PlatformsEditor({ entry, onSave }: { entry: EntryDto; onSave: (ids: num
                 </button>
             </div>
         </section>
+    );
+}
+
+/** Heart toggle; shown as already switched while the save is in flight. */
+function FavoriteButton({
+    favorite,
+    onToggle
+}: {
+    favorite: boolean;
+    onToggle: (favorite: boolean) => void;
+}) {
+    return (
+        <button
+            type="button"
+            className="favorite-btn"
+            aria-pressed={favorite}
+            aria-label="Favorite"
+            title={favorite ? 'Remove from favorites' : 'Add to favorites'}
+            onClick={() => onToggle(!favorite)}
+        >
+            <Heart aria-hidden="true" />
+        </button>
     );
 }
 

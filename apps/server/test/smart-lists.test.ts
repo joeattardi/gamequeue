@@ -260,7 +260,7 @@ describe('CSV export', () => {
             'Outer Wilds'
         ]);
         expect(lines[1]).toContain(
-            'Celeste,unplayed,Nintendo Switch,cozy,Role-playing (RPG),,80,8,'
+            'Celeste,unplayed,Nintendo Switch,cozy,Role-playing (RPG),,no,80,8,'
         );
     });
 

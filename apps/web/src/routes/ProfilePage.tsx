@@ -10,6 +10,7 @@ import {
     BarChart3,
     CalendarDays,
     Gift,
+    Heart,
     Library,
     ListOrdered,
     ListTodo,
@@ -118,6 +119,13 @@ function Stats({ username, summary }: { username: string; summary: ProfileDto['s
                         label={st.label}
                     />
                 ))}
+                <Counter
+                    className="counter--favorites"
+                    to={`/u/${username}/favorites`}
+                    icon={<Heart aria-hidden="true" />}
+                    value={summary.favorites}
+                    label="Favorites"
+                />
                 <Counter
                     className="counter--queued"
                     to={`/u/${username}/queue`}

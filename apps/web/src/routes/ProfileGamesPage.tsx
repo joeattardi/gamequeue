@@ -17,6 +17,7 @@ import { usePageTitle } from '../lib';
 const VIEWS: Record<ProfileView, { title: string; empty: string; numbered?: boolean }> = {
     queue: { title: 'Queue', empty: 'Nothing queued up.', numbered: true },
     collection: { title: 'Collection', empty: 'No games yet.' },
+    favorites: { title: 'Favorites', empty: 'No favorites yet.' },
     backlog: { title: 'Backlog', empty: 'The backlog is empty.' },
     playing: { title: 'Playing', empty: 'Not playing anything right now.' },
     paused: { title: 'Paused', empty: 'Nothing is paused.' },

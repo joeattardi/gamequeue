@@ -264,6 +264,7 @@ export const entries = sqliteTable(
             .notNull()
             .default('unplayed'),
         rating: integer('rating'), // 1-5 stars
+        favorite: integer('favorite', { mode: 'boolean' }).notNull().default(false),
         notes: text('notes').notNull().default(''),
         ttbOverrideMinutes: integer('ttb_override_minutes'),
         addedAt: integer('added_at').notNull().default(now),

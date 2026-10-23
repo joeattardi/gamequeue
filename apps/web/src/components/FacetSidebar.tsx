@@ -4,7 +4,7 @@ import { useState } from 'react';
 
 const WIDE = '(min-width: 900px)';
 
-export const FACET_KEYS = ['status', 'platform', 'genre', 'series', 'tag'] as const;
+export const FACET_KEYS = ['status', 'platform', 'genre', 'series', 'tag', 'favorite'] as const;
 export type FacetKey = (typeof FACET_KEYS)[number];
 
 interface Option {
@@ -83,6 +83,11 @@ export function FacetSidebar({
                       label: t.name,
                       count: t.count
                   }))
+              },
+              {
+                  key: 'favorite',
+                  title: 'Favorites',
+                  options: [{ value: 'true', label: 'Favorites only', count: facets.favorites }]
               }
           ]
         : [];

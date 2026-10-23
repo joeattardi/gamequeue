@@ -21,6 +21,7 @@ function entry(over: Record<string, unknown> = {}, game: Record<string, unknown>
         id: nextId++,
         status: 'unplayed',
         rating: null,
+        favorite: false,
         ttbMinutes: null,
         addedAt: NOW,
         updatedAt: NOW,
@@ -34,6 +35,16 @@ function entry(over: Record<string, unknown> = {}, game: Record<string, unknown>
 }
 
 const rule = (r: SmartRule) => r;
+
+describe('favorite rule', () => {
+    it('matches only favorites and reads in words', () => {
+        const r: SmartRule = { field: 'favorite' };
+        expect(smartRuleSchema.safeParse(r).success).toBe(true);
+        expect(matchesRule(entry({ favorite: true }), r, NOW)).toBe(true);
+        expect(matchesRule(entry(), r, NOW)).toBe(false);
+        expect(describeRule(r)).toBe('Is a favorite');
+    });
+});
 
 describe('matchesRule', () => {
     it('matches set rules on any-of, ignoring case for names', () => {

@@ -156,6 +156,7 @@ function mergeGame(
                 gameId: g.igdbId,
                 status: g.status,
                 rating: g.rating,
+                favorite: g.favorite ?? false,
                 notes: g.notes,
                 ttbOverrideMinutes: g.ttbOverrideMinutes,
                 addedAt: g.addedAt || now,
@@ -180,6 +181,8 @@ function mergeGame(
         } else if (g.rating !== null && g.rating !== existing.rating) {
             note(`${name}: kept your rating of ${existing.rating} (the file has ${g.rating})`);
         }
+        // Never un-favorites: a file can only add the mark
+        if (g.favorite && !existing.favorite) set.favorite = true;
         if (existing.notes === '') {
             if (g.notes !== '') set.notes = g.notes;
         } else if (g.notes !== '' && g.notes !== existing.notes) {
@@ -195,7 +198,12 @@ function mergeGame(
         }
         if (Object.keys(set).length > 0) {
             db.update(entries)
-                .set({ ...set, updatedAt: now })
+                // A favorite mark alone isn't a change to the game (see patchEntry)
+                .set(
+                    Object.keys(set).every((k) => k === 'favorite')
+                        ? set
+                        : { ...set, updatedAt: now }
+                )
                 .where(eq(entries.id, entryId))
                 .run();
             changed = true;

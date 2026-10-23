@@ -159,6 +159,7 @@ export function buildExport(db: Db, userId: number, now = new Date()): ExportFil
         game: snapshot(g),
         status: e.status,
         rating: e.rating,
+        favorite: e.favorite,
         notes: e.notes,
         ttbOverrideMinutes: e.ttbOverrideMinutes,
         addedAt: e.addedAt,

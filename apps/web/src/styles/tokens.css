@@ -22,6 +22,7 @@
     --status-bad: #c62f2f;
     --status-mid: #b87a00;
     --status-good: #1a8f3a;
+    --favorite: #d6246e;
 
     /* Categorical chart hues for the stats page; each chart uses one so sections read apart */
     --viz-1: #1d4ed8;
@@ -66,6 +67,7 @@
         --status-bad: #e5584f;
         --status-mid: #d99a1e;
         --status-good: #34b055;
+        --favorite: #ff6b9d;
         --shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 4px 16px -6px rgb(0 0 0 / 0.5);
     }
 }

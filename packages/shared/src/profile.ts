@@ -4,13 +4,22 @@ import type { SocialLinks } from './social.js';
 /** The part of an entry that is safe to show to anyone: no notes, no list/slot internals. */
 export type PublicEntryDto = Pick<
     EntryDto,
-    'id' | 'status' | 'rating' | 'ttbMinutes' | 'lastFinishedOn' | 'game' | 'platforms' | 'tags'
+    | 'id'
+    | 'status'
+    | 'rating'
+    | 'favorite'
+    | 'ttbMinutes'
+    | 'lastFinishedOn'
+    | 'game'
+    | 'platforms'
+    | 'tags'
 >;
 
 export const toPublicEntry = (e: EntryDto): PublicEntryDto => ({
     id: e.id,
     status: e.status,
     rating: e.rating,
+    favorite: e.favorite,
     ttbMinutes: e.ttbMinutes,
     lastFinishedOn: e.lastFinishedOn,
     game: e.game,
@@ -32,6 +41,7 @@ export interface ProfileDto {
         total: number;
         queued: number;
         wishlisted: number;
+        favorites: number;
         byStatus: Record<EntryStatus, number>;
     };
     /** Tiles only: the games themselves are on each list's own page */
@@ -64,6 +74,7 @@ export interface ProfileListPageDto {
 export const PROFILE_VIEWS = [
     'queue',
     'collection',
+    'favorites',
     'backlog',
     'playing',
     'paused',

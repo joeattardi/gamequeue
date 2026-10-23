@@ -30,13 +30,15 @@ import { CheckSkeletons, EditorSkeleton } from '../components/PageSkeletons';
 import { useDebounced, usePageTitle } from '../lib';
 import { ArrowLeft, Save, Trash2, WandSparkles } from 'lucide-react';
 
-type RuleKind = 'status' | 'platform' | 'genre' | 'tag' | 'finishedYear' | SmartNumberField;
+type RuleKind =
+    'status' | 'platform' | 'genre' | 'tag' | 'finishedYear' | 'favorite' | SmartNumberField;
 const RULE_KINDS: RuleKind[] = [
     'status',
     'platform',
     'genre',
     'tag',
     'finishedYear',
+    'favorite',
     ...SMART_NUMBER_FIELDS
 ];
 const SET_LABELS = {
@@ -44,7 +46,8 @@ const SET_LABELS = {
     platform: 'Platform',
     genre: 'Genre',
     tag: 'Tag',
-    finishedYear: 'Year finished'
+    finishedYear: 'Year finished',
+    favorite: 'Favorite'
 } as const;
 const kindLabel = (k: RuleKind) =>
     k in SET_LABELS
@@ -73,6 +76,8 @@ function defaultRule(kind: RuleKind): SmartRule {
             return { field: 'tag', anyOf: [] };
         case 'finishedYear':
             return { field: 'finishedYear', anyOf: [new Date().getFullYear()] };
+        case 'favorite':
+            return { field: 'favorite' };
         default:
             return { field: kind, op: 'gte', value: DEFAULT_VALUE[kind] };
     }
@@ -416,6 +421,7 @@ function RuleBody({
             />
         );
     }
+    if (rule.field === 'favorite') return <p className="rule__hint">Is a favorite</p>;
     if (rule.field === 'finishedYear') {
         // Keep years saved on the rule visible even if nothing is finished in them now
         const options = [...new Set([...years, ...rule.anyOf])]

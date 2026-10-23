@@ -70,6 +70,8 @@ export const smartRuleSchema = z.union([
         op: z.enum(['gte', 'lte']),
         value: count
     }),
+    // Marked as a favorite
+    z.object({ field: z.literal('favorite') }),
     // "has no value", e.g. a finished game you never rated
     z.object({ field: z.enum(SMART_NUMBER_FIELDS), op: z.literal('unknown') })
 ]);
@@ -156,6 +158,7 @@ type SmartEntry = Pick<
     | 'tags'
     | 'ttbMinutes'
     | 'rating'
+    | 'favorite'
     | 'addedAt'
     | 'updatedAt'
     | 'lastFinishedOn'
@@ -207,6 +210,8 @@ export function matchesRule(e: SmartEntry, rule: SmartRule, now: number): boolea
             const wanted = lowerSet(rule.anyOf);
             return e.game.genres.some((g) => wanted.has(g.toLowerCase()));
         }
+        case 'favorite':
+            return e.favorite;
         case 'finishedYear':
             return e.finishedYears.some((y) => rule.anyOf.includes(y));
         case 'tag': {
@@ -313,6 +318,8 @@ export function describeRule(
             return `Genre is ${joinOr(rule.anyOf)}`;
         case 'tag':
             return `Tagged ${joinOr(rule.anyOf)}`;
+        case 'favorite':
+            return 'Is a favorite';
         case 'finishedYear':
             return `Finished in ${joinOr(rule.anyOf.map(String))}`;
         default: {

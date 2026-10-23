@@ -73,6 +73,8 @@ export const exportEntrySchema = z
         game: exportGameSchema,
         status: z.enum(ENTRY_STATUSES),
         rating: rating.nullable(),
+        /** Optional so files from before favorites still read as v1 */
+        favorite: z.boolean().optional(),
         notes: z.string().max(10_000),
         ttbOverrideMinutes: z.number().int().min(1).max(60_000).nullable(),
         addedAt: z.number().int().min(0),

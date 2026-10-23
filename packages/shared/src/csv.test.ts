@@ -39,7 +39,7 @@ describe('entriesToCsv', () => {
         const lines = entriesToCsv([e]).slice(1).split('\r\n');
         expect(lines[0]).toBe(ENTRY_CSV_HEADER.join(','));
         expect(lines[1]).toBe(
-            'Celeste,finished,PC; Switch,cozy; short,Platform,5,91,1.5,2018-01-25,2025-03-04,2025-04-01,2,"Loved it, ""really""",7'
+            'Celeste,finished,PC; Switch,cozy; short,Platform,5,no,91,1.5,2018-01-25,2025-03-04,2025-04-01,2,"Loved it, ""really""",7'
         );
         expect(lines[2]).toBe('');
     });

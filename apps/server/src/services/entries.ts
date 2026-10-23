@@ -153,12 +153,16 @@ export function patchEntry(db: Db, userId: number, entryId: number, patch: Patch
 
     db.transaction((tx) => {
         const t = tx as unknown as Db;
-        const set: Partial<typeof entries.$inferInsert> = { updatedAt: Date.now() };
+        const set: Partial<typeof entries.$inferInsert> = {};
+        // Favoriting alone isn't a change to the game: it must not reset "last changed"
+        if (Object.keys(patch).some((k) => k !== 'favorite')) set.updatedAt = Date.now();
+        if (patch.favorite !== undefined) set.favorite = patch.favorite;
         if (patch.rating !== undefined) set.rating = patch.rating;
         if (patch.notes !== undefined) set.notes = patch.notes;
         if (patch.ttbOverrideMinutes !== undefined)
             set.ttbOverrideMinutes = patch.ttbOverrideMinutes;
-        t.update(entries).set(set).where(eq(entries.id, entryId)).run();
+        if (Object.keys(set).length > 0)
+            t.update(entries).set(set).where(eq(entries.id, entryId)).run();
         if (platformIds) {
             t.delete(entryPlatforms).where(eq(entryPlatforms.entryId, entryId)).run();
             t.insert(entryPlatforms)
@@ -215,7 +219,7 @@ function buildOrder(q: EntryQuery): SQL[] {
     return [sql`${k} IS NULL`, d(k), asc(sql`lower(${games.name})`), asc(entries.id)];
 }
 
-type Facet = 'status' | 'platform' | 'genre' | 'series' | 'tag';
+type Facet = 'status' | 'platform' | 'genre' | 'series' | 'tag' | 'favorite';
 
 /** Conditions for a query. `omit` leaves one facet out, which is how facet counts are computed. */
 function filterWhere(db: Db, userId: number, q: EntryQuery, omit?: Facet): SQL[] {
@@ -282,6 +286,7 @@ function filterWhere(db: Db, userId: number, q: EntryQuery, omit?: Facet): SQL[]
                     )
             )
         );
+    if (q.favorite && omit !== 'favorite') where.push(eq(entries.favorite, true));
     if (q.q) where.push(sql`instr(lower(${games.name}), lower(${q.q})) > 0`);
     return where;
 }
@@ -467,6 +472,7 @@ export function hydrate(db: Db, userId: number, ids: number[]): EntryDto[] {
                 id: e.id,
                 status: e.status,
                 rating: e.rating,
+                favorite: e.favorite,
                 notes: e.notes,
                 ttbOverrideMinutes: e.ttbOverrideMinutes,
                 ttbMinutes: e.ttbOverrideMinutes ?? minutes(g.ttbNormallySeconds),
@@ -618,6 +624,14 @@ export function getFacetCounts(db: Db, userId: number, q: EntryQuery): FacetCoun
             .all()
     );
 
+    const favorites =
+        db
+            .select({ n })
+            .from(entries)
+            .innerJoin(games, eq(games.id, entries.gameId))
+            .where(and(scoped('favorite'), eq(entries.favorite, true)))
+            .get()?.n ?? 0;
+
     return {
         // The backlog view is already "unplayed only", so other statuses would be dead options
         statuses: ENTRY_STATUSES.filter((s) => q.view === 'all' || s === 'unplayed').map((s) => ({
@@ -631,6 +645,7 @@ export function getFacetCounts(db: Db, userId: number, q: EntryQuery): FacetCoun
             name: s.name,
             count: bySeries.get(s.id) ?? 0
         })),
-        tags: base.tags.map((name) => ({ name, count: byTag.get(name.toLowerCase()) ?? 0 }))
+        tags: base.tags.map((name) => ({ name, count: byTag.get(name.toLowerCase()) ?? 0 })),
+        favorites
     };
 }

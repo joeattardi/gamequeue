@@ -45,11 +45,12 @@ export function getProfile(db: Db, username: string): ProfileDto {
         number
     >;
     const statuses = db
-        .select({ status: entries.status })
+        .select({ status: entries.status, favorite: entries.favorite })
         .from(entries)
         .where(eq(entries.userId, user.id))
         .all();
     for (const { status } of statuses) byStatus[status]++;
+    const favorites = statuses.filter((s) => s.favorite).length;
 
     const queued =
         db
@@ -78,7 +79,7 @@ export function getProfile(db: Db, username: string): ProfileDto {
             name: s.name,
             entry: s.entry ? toPublic(s.entry) : null
         })),
-        summary: { total: statuses.length, queued, wishlisted, byStatus },
+        summary: { total: statuses.length, queued, wishlisted, favorites, byStatus },
         lists: listLists(db, user.id).map((l) => ({
             id: l.id,
             name: l.name,
@@ -181,7 +182,13 @@ export function getProfileGames(
             db,
             user.id,
             entryQuerySchema.parse(
-                view === 'collection' ? {} : view === 'backlog' ? { view } : { status: view }
+                view === 'collection'
+                    ? {}
+                    : view === 'favorites'
+                      ? { favorite: 'true' }
+                      : view === 'backlog'
+                        ? { view }
+                        : { status: view }
             ),
             page
         );

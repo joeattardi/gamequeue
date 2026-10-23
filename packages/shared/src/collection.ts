@@ -73,12 +73,14 @@ export interface EntryDto {
     id: number;
     status: EntryStatus;
     rating: number | null;
+    /** Marked as a favorite; independent of rating and lists */
+    favorite: boolean;
     notes: string;
     ttbOverrideMinutes: number | null;
     /** Override if set, otherwise IGDB "normally" */
     ttbMinutes: number | null;
     addedAt: number;
-    /** Last time its status, rating, notes, tags or platforms changed, ms since epoch */
+    /** Last time its status, rating, notes, tags or platforms changed (not favoriting), ms since epoch */
     updatedAt: number;
     game: GameDto;
     playthroughCount: number;
@@ -121,6 +123,8 @@ export interface FacetCountsDto {
     /** Only series with at least two of the user's games, since one-game series filter nothing */
     series: { id: number; name: string; count: number }[];
     tags: { name: string; count: number }[];
+    /** Games marked as favorites, given the other active facets */
+    favorites: number;
 }
 
 const tagSchema = z.string().trim().min(1).max(40);
@@ -137,6 +141,7 @@ export type AddEntryInput = z.infer<typeof addEntrySchema>;
 export const patchEntrySchema = z
     .object({
         rating: ratingSchema.nullable(),
+        favorite: z.boolean(),
         notes: z.string().max(10_000),
         ttbOverrideMinutes: z.number().int().min(1).max(60_000).nullable(),
         platformIds: z
@@ -160,6 +165,8 @@ export const entryQuerySchema = z.object({
     genre: multi(positiveInt).optional(),
     series: multi(positiveInt).optional(),
     tag: multi(z.string().trim().min(1)).optional(),
+    /** `favorite=true`: favorites only */
+    favorite: z.literal('true').optional(),
     q: z.string().trim().min(1).max(100).optional(),
     sort: z.enum(ENTRY_SORTS).default('title'),
     dir: z.enum(['asc', 'desc']).optional()
