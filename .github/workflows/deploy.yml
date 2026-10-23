@@ -1,10 +1,12 @@
-# Checks every push and PR; on main, builds the arm64 image and publishes it to GHCR.
-# The Raspberry Pi pulls it (scripts/update.sh), so the Pi needs no inbound access. See DEPLOYMENT.md.
+# Checks every push and PR; on main, builds the multi-arch image (arm64 for the Raspberry Pi, amd64 for
+# the cloud Droplet) and publishes it to GHCR. The servers pull it (scripts/update.sh), so they need no
+# inbound access. See DEPLOYMENT.md and CLOUD_MIGRATION.md.
 name: CI and publish
 
 on:
     push:
-        branches: [main]
+        # TEMPORARY: multi-arch-image publishes a test tag only (never latest); remove before merging
+        branches: [main, multi-arch-image]
     pull_request:
 
 permissions:
@@ -31,29 +33,40 @@ jobs:
 
     publish:
         needs: check
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: github.event_name == 'push'
         runs-on: ubuntu-24.04-arm
         permissions:
             contents: read
             packages: write
         steps:
             - uses: actions/checkout@v4
+            # The runner is arm64, so the amd64 half of the image is built under emulation
+            - uses: docker/setup-qemu-action@v3
+              with:
+                  platforms: amd64
             - uses: docker/setup-buildx-action@v3
             - uses: docker/login-action@v3
               with:
                   registry: ghcr.io
                   username: ${{ github.actor }}
                   password: ${{ secrets.GITHUB_TOKEN }}
+            # Only main moves latest (what the servers pull); the temporary branch gets a test tag
+            - id: tags
+              run: |
+                  image=ghcr.io/joeattardi/gamequeue
+                  if [ "$GITHUB_REF" = refs/heads/main ]; then
+                      echo "list=$image:latest,$image:$GITHUB_SHA" >> "$GITHUB_OUTPUT"
+                  else
+                      echo "list=$image:test-multiarch" >> "$GITHUB_OUTPUT"
+                  fi
             - uses: docker/build-push-action@v6
               with:
                   context: .
-                  platforms: linux/arm64
+                  platforms: linux/amd64,linux/arm64
                   push: true
                   provenance: false
                   build-args: |
                       GIT_COMMIT=${{ github.sha }}
-                  tags: |
-                      ghcr.io/joeattardi/gamequeue:latest
-                      ghcr.io/joeattardi/gamequeue:${{ github.sha }}
+                  tags: ${{ steps.tags.outputs.list }}
                   cache-from: type=gha
                   cache-to: type=gha,mode=max
