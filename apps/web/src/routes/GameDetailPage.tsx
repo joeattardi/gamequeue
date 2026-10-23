@@ -5,6 +5,7 @@ import { ApiRequestError } from '../api/client';
 import { useGameDetail } from '../api/collection';
 import { useAddToWishlist, useRemoveFromWishlist } from '../api/wishlist';
 import { AddGameDialog } from '../components/AddGameDialog';
+import { GameOffers } from '../components/GameOffers';
 import { Cover } from '../components/Cover';
 import { Screenshots } from '../components/Screenshots';
 import { EntrySkeleton } from '../components/PageSkeletons';
@@ -124,6 +125,8 @@ function GameDetail({ detail }: { detail: GameDetailDto }) {
                             {error}
                         </p>
                     </section>
+
+                    <GameOffers igdbId={game.id} />
 
                     <section aria-labelledby="ttb-h" className="panel">
                         <h2 id="ttb-h">Time to beat</h2>

@@ -12,6 +12,7 @@ import type {
     FacetCountsDto,
     FacetsDto,
     GameDetailDto,
+    GameOffersResponse,
     PatchEntryInput,
     PlatformDto,
     SearchResultDto
@@ -102,6 +103,15 @@ export const useGameDetail = (igdbId: number) =>
     useQuery({
         queryKey: ['game', igdbId],
         queryFn: () => api<GameDetailDto>(`/igdb/games/${igdbId}`),
+        retry: false
+    });
+
+/** Every shop's price for a game; separate from the detail so ITAD never delays the page. */
+export const useGameOffers = (igdbId: number) =>
+    useQuery({
+        queryKey: ['game-offers', igdbId],
+        queryFn: () => api<GameOffersResponse>(`/igdb/games/${igdbId}/prices`),
+        staleTime: 30 * 60_000,
         retry: false
     });
 

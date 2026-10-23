@@ -1,8 +1,10 @@
-import { inArray } from 'drizzle-orm';
-import type { GamePriceDto } from '@gamequeue/shared';
+import { eq, inArray } from 'drizzle-orm';
+import type { GameOffersResponse, GamePriceDto } from '@gamequeue/shared';
 import type { Db } from '../db/client.js';
 import { gamePrices, games } from '../db/schema.js';
 import type { ItadClient } from '../itad/types.js';
+import { HttpError } from '../errors.js';
+import { TtlCache } from '../igdb/search-cache.js';
 import { reportError } from './error-log.js';
 
 /** Prices move daily at most; asking every few hours keeps us far below ITAD's rate limit. */
@@ -109,5 +111,38 @@ export async function refreshPrices(
         });
     } catch (e) {
         reportError(db, 'job_price_refresh', e, { context: { games: due.length } });
+    }
+}
+
+/** Offers change slowly and a game page may be reopened often; keep them for a short while. */
+export const offersCache = () => new TtlCache<GameOffersResponse['offers']>(30 * 60_000, 200);
+
+/**
+ * Every shop's price for one game, for its detail page. Uses the ITAD id from the price cache when
+ * the game is on someone's wishlist, otherwise matches by title. Unlike the wishlist refresh this is
+ * a direct answer to the user's request, so an ITAD failure is reported as a 502 for the page to show.
+ */
+export async function gameOffers(
+    db: Db,
+    itad: ItadClient | undefined,
+    cache: TtlCache<GameOffersResponse['offers']>,
+    gameId: number
+): Promise<GameOffersResponse> {
+    if (!itad) return { enabled: false, offers: null };
+    const hit = cache.get(`${itad.country}:${gameId}`);
+    if (hit !== undefined) return { enabled: true, offers: hit };
+    try {
+        const game = db.select({ name: games.name }).from(games).where(eq(games.id, gameId)).get();
+        if (!game) throw new HttpError(404, 'Game not found');
+        const row = db.select().from(gamePrices).where(eq(gamePrices.gameId, gameId)).get();
+        const itadId =
+            row?.itadId && row.country === itad.country ? row.itadId : await itad.lookup(game.name);
+        const offers = itadId ? await itad.offers(itadId) : null;
+        cache.set(`${itad.country}:${gameId}`, offers);
+        return { enabled: true, offers };
+    } catch (e) {
+        if (e instanceof HttpError) throw e;
+        reportError(db, 'job_price_refresh', e, { context: { gameId } });
+        throw new HttpError(502, 'Could not load prices right now');
     }
 }

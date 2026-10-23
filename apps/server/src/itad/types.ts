@@ -9,6 +9,25 @@ export interface ItadPrice {
     historyLow: number | null;
 }
 
+/** One shop's offer for a game; amounts are minor units. */
+export interface ItadDeal {
+    shop: string;
+    amount: number;
+    regular: number;
+    cut: number;
+    url: string;
+    /** Operating systems the offer covers (Windows, Mac, Linux) */
+    platforms: string[];
+    drm: string[];
+}
+
+export interface ItadOffers {
+    currency: string;
+    historyLow: number | null;
+    /** Cheapest first */
+    deals: ItadDeal[];
+}
+
 /** The slice of the IsThereAnyDeal API this app uses; faked in tests. */
 export interface ItadClient {
     /** Country the prices are for; cached prices for another country are stale */
@@ -17,6 +36,8 @@ export interface ItadClient {
     lookup(title: string): Promise<string | null>;
     /** Cheapest current price per ITAD id; null when no shop sells the game. */
     prices(ids: string[]): Promise<Map<string, ItadPrice | null>>;
+    /** Every shop's current offer for one game, cheapest first; null when no shop sells it. */
+    offers(id: string): Promise<ItadOffers | null>;
 }
 
 export class ItadError extends Error {

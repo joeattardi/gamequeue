@@ -1,4 +1,4 @@
-import { ItadError, type ItadClient, type ItadPrice } from './types.js';
+import { ItadError, type ItadClient, type ItadOffers, type ItadPrice } from './types.js';
 
 const BASE = 'https://api.isthereanydeal.com';
 /** `/games/prices/v3` takes at most 200 ids per request */
@@ -14,6 +14,8 @@ interface RawDeal {
     regular: RawAmount;
     cut: number;
     url: string;
+    platforms?: { name: string }[];
+    drm?: { name: string }[];
 }
 interface RawPrices {
     id: string;
@@ -60,6 +62,18 @@ export function createItadClient(opts: ItadClientOptions): ItadClient {
         return (await res.json()) as T;
     }
 
+    async function fetchPrices(ids: string[]): Promise<RawPrices[]> {
+        const rows: RawPrices[] = [];
+        for (let i = 0; i < ids.length; i += PRICE_BATCH)
+            rows.push(
+                ...(await call<RawPrices[]>(
+                    `/games/prices/v3?country=${encodeURIComponent(opts.country)}`,
+                    { method: 'POST', body: JSON.stringify(ids.slice(i, i + PRICE_BATCH)) }
+                ))
+            );
+        return rows;
+    }
+
     return {
         country: opts.country,
         async lookup(title) {
@@ -71,33 +85,47 @@ export function createItadClient(opts: ItadClientOptions): ItadClient {
         },
         async prices(ids) {
             const out = new Map<string, ItadPrice | null>();
-            for (let i = 0; i < ids.length; i += PRICE_BATCH) {
-                const rows = await call<RawPrices[]>(
-                    `/games/prices/v3?country=${encodeURIComponent(opts.country)}`,
-                    { method: 'POST', body: JSON.stringify(ids.slice(i, i + PRICE_BATCH)) }
+            for (const row of await fetchPrices(ids)) {
+                const best = (row.deals ?? []).reduce<RawDeal | undefined>(
+                    (a, d) => (!a || d.price.amountInt < a.price.amountInt ? d : a),
+                    undefined
                 );
-                for (const row of rows) {
-                    const best = (row.deals ?? []).reduce<RawDeal | undefined>(
-                        (a, d) => (!a || d.price.amountInt < a.price.amountInt ? d : a),
-                        undefined
-                    );
-                    out.set(
-                        row.id,
-                        best
-                            ? {
-                                  currency: best.price.currency,
-                                  amount: best.price.amountInt,
-                                  regular: best.regular.amountInt,
-                                  cut: best.cut,
-                                  shop: best.shop.name,
-                                  url: best.url,
-                                  historyLow: row.historyLow?.all?.amountInt ?? null
-                              }
-                            : null
-                    );
-                }
+                out.set(
+                    row.id,
+                    best
+                        ? {
+                              currency: best.price.currency,
+                              amount: best.price.amountInt,
+                              regular: best.regular.amountInt,
+                              cut: best.cut,
+                              shop: best.shop.name,
+                              url: best.url,
+                              historyLow: row.historyLow?.all?.amountInt ?? null
+                          }
+                        : null
+                );
             }
             return out;
+        },
+        async offers(id): Promise<ItadOffers | null> {
+            const row = (await fetchPrices([id]))[0];
+            const deals = [...(row?.deals ?? [])].sort(
+                (a, b) => a.price.amountInt - b.price.amountInt
+            );
+            if (!row || deals.length === 0) return null;
+            return {
+                currency: deals[0]!.price.currency,
+                historyLow: row.historyLow?.all?.amountInt ?? null,
+                deals: deals.map((d) => ({
+                    shop: d.shop.name,
+                    amount: d.price.amountInt,
+                    regular: d.regular.amountInt,
+                    cut: d.cut,
+                    url: d.url,
+                    platforms: (d.platforms ?? []).map((p) => p.name),
+                    drm: (d.drm ?? []).map((p) => p.name)
+                }))
+            };
         }
     };
 }

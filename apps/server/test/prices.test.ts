@@ -16,7 +16,7 @@ const HADES: ItadPrice = {
 
 /** Knows Hades and Celeste (Celeste is not sold anywhere); counts calls. */
 function fakeItad(fail = false) {
-    const calls = { lookup: 0, prices: 0 };
+    const calls = { lookup: 0, prices: 0, offers: 0 };
     const client: ItadClient = {
         country: 'US',
         async lookup(title) {
@@ -27,6 +27,36 @@ function fakeItad(fail = false) {
         async prices(ids) {
             calls.prices++;
             return new Map(ids.map((id) => [id, id === 'itad-hades' ? HADES : null]));
+        },
+        async offers(id) {
+            calls.offers++;
+            if (fail) throw new ItadError('boom', 500);
+            return id === 'itad-hades'
+                ? {
+                      currency: 'USD',
+                      historyLow: 999,
+                      deals: [
+                          {
+                              shop: 'Steam',
+                              amount: 1249,
+                              regular: 2499,
+                              cut: 50,
+                              url: 'u1',
+                              platforms: ['Windows', 'Mac'],
+                              drm: []
+                          },
+                          {
+                              shop: 'GOG',
+                              amount: 1999,
+                              regular: 2499,
+                              cut: 20,
+                              url: 'u2',
+                              platforms: ['Windows'],
+                              drm: []
+                          }
+                      ]
+                  }
+                : null;
         }
     };
     return { client, calls };
@@ -54,7 +84,7 @@ describe('wishlist prices', () => {
         await call('/wishlist/items', 'POST', { igdbId: 1 });
         await call('/wishlist');
         await call('/wishlist');
-        expect(calls).toEqual({ lookup: 1, prices: 1 });
+        expect(calls).toMatchObject({ lookup: 1, prices: 1 });
     });
 
     it('refresh when stale, without looking the game up again', async () => {
@@ -63,7 +93,7 @@ describe('wishlist prices', () => {
         await call('/wishlist/items', 'POST', { igdbId: 1 });
         await call('/wishlist');
         await refreshPrices(db, client, [1], Date.now() + 7 * 3600_000);
-        expect(calls).toEqual({ lookup: 1, prices: 2 });
+        expect(calls).toMatchObject({ lookup: 1, prices: 2 });
     });
 
     it('survive an ITAD failure: the wishlist still loads, and the error is logged', async () => {
@@ -73,6 +103,34 @@ describe('wishlist prices', () => {
         const res = await call('/wishlist');
         expect(res.status).toBe(200);
         expect(res.wishlist.items[0].price).toBeNull();
+    });
+});
+
+describe('game offers', () => {
+    it('list every shop, and are cached', async () => {
+        const { client, calls } = fakeItad();
+        const { call } = await setupApi(CATALOG, client);
+        const res = await call('/igdb/games/1/prices');
+        expect(res).toMatchObject({ enabled: true, offers: { historyLow: 999 } });
+        expect(res.offers.deals.map((d: any) => d.shop)).toEqual(['Steam', 'GOG']);
+        await call('/igdb/games/1/prices');
+        expect(calls).toMatchObject({ lookup: 1, offers: 1 });
+    });
+
+    it('are null for a game ITAD does not know, and disabled without a key', async () => {
+        const { client } = fakeItad();
+        expect(
+            (await (await setupApi(CATALOG, client)).call('/igdb/games/3/prices')).offers
+        ).toBeNull();
+        expect(await (await setupApi()).call('/igdb/games/1/prices')).toMatchObject({
+            enabled: false,
+            offers: null
+        });
+    });
+
+    it('answer 502 when ITAD fails', async () => {
+        const { call } = await setupApi(CATALOG, fakeItad(true).client);
+        expect((await call('/igdb/games/1/prices')).status).toBe(502);
     });
 });
 
@@ -125,6 +183,29 @@ describe('ITAD client', () => {
         const out = await itad.prices(['a', 'b']);
         expect(out.get('a')).toMatchObject({ shop: 'Steam', amount: 1000, historyLow: 500 });
         expect(out.get('b')).toBeNull();
+    });
+
+    it('lists all offers, cheapest first', async () => {
+        const amt = (amountInt: number) => ({ amountInt, currency: 'USD' });
+        const deal = (shop: string, p: number) => ({
+            shop: { name: shop },
+            price: amt(p),
+            regular: amt(2000),
+            cut: 0,
+            url: `https://x/${shop}`,
+            platforms: [{ name: 'Windows' }],
+            drm: [{ name: 'DRM-free' }]
+        });
+        const itad = createItadClient({
+            apiKey: 'k',
+            country: 'US',
+            fetchFn: fetchFn({
+                'prices/v3': [{ id: 'a', deals: [deal('GOG', 1500), deal('Steam', 1000)] }]
+            })
+        });
+        const offers = await itad.offers('a');
+        expect(offers?.deals.map((d) => d.shop)).toEqual(['Steam', 'GOG']);
+        expect(offers?.deals[0]).toMatchObject({ platforms: ['Windows'], drm: ['DRM-free'] });
     });
 
     it('throws ItadError on HTTP errors', async () => {

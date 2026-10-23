@@ -16,10 +16,12 @@ import {
     loadGames,
     requireIgdb
 } from '../services/games.js';
+import { gameOffers, offersCache } from '../services/prices.js';
 
-export function igdbRoutes({ db, config, igdb }: AppDeps) {
+export function igdbRoutes({ db, config, igdb, itad }: AppDeps) {
     const r = new Hono<{ Variables: AuthVars }>();
     const cache = new TtlCache<IgdbSearchHit[]>();
+    const offers = offersCache();
     r.use('*', requireAuth(db, config));
 
     r.get('/search', async (c) => {
@@ -79,6 +81,15 @@ export function igdbRoutes({ db, config, igdb }: AppDeps) {
             wishlisted: wished.has(h.id)
         }));
         return c.json({ results });
+    });
+
+    // Every shop's current price for a cached game (the detail page loads this separately, so a
+    // slow or failing ITAD never holds up the page)
+    r.get('/games/:igdbId/prices', async (c) => {
+        const igdbId = Number(c.req.param('igdbId'));
+        if (!Number.isInteger(igdbId) || igdbId <= 0) throw new HttpError(400, 'Invalid game id');
+        await ensureGame(db, igdb, igdbId);
+        return c.json(await gameOffers(db, itad, offers, igdbId));
     });
 
     // One game by IGDB id, for the detail page. IGDB is only called if we have never cached it.

@@ -83,3 +83,29 @@ export const releasingSoonQuerySchema = z.object({
         .regex(/^\d{4}-\d{2}-\d{2}$/)
         .optional()
 });
+
+/** One shop's offer for a game. Amounts are minor units (cents). */
+export interface PriceDealDto {
+    shop: string;
+    amount: number;
+    regular: number;
+    cut: number;
+    url: string;
+    /** Operating systems the offer covers, e.g. Windows, Mac, Linux */
+    platforms: string[];
+    drm: string[];
+}
+
+/** Every current offer for a game, cheapest first. */
+export interface GameOffersDto {
+    currency: string;
+    historyLow: number | null;
+    deals: PriceDealDto[];
+}
+
+/** `GET /igdb/games/:igdbId/prices`: `enabled` is false when the server has no ITAD key. */
+export interface GameOffersResponse {
+    enabled: boolean;
+    /** Null when ITAD doesn't know the game or no shop sells it */
+    offers: GameOffersDto | null;
+}
