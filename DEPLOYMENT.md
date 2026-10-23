@@ -47,19 +47,20 @@ On the Pi:
 
 Defined in `apps/server/src/config.ts`. In Docker, `compose.yaml` sets the fixed values and reads the rest from `.env`.
 
-| Variable                               | Value in production                                                                                        |
-| -------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| `NODE_ENV`                             | `production` (set in the image; makes the session cookie `Secure` and serves the web app on one port)      |
-| `PORT`                                 | `3000` (set in the image)                                                                                  |
-| `DATABASE_PATH`                        | `/data/gamequeue.db` (set in the image; `/data` is the mounted `./data` directory)                         |
-| `TRUST_PROXY`                          | `true` (set in `compose.yaml`; the login rate limit then sees the client IP, see the caveat below)         |
-| `ALLOWED_ORIGINS`                      | `https://gamequeue.app` in `.env` (must match the real URL; the CSRF check rejects any other `Origin`)     |
-| `PUBLIC_URL`                           | Optional; the site's address for link previews (`og:image`). Defaults to the first `ALLOWED_ORIGINS` entry |
-| `SIGNUPS_ENABLED`                      | `true` for the first signup, then `false`                                                                  |
-| `IGDB_CLIENT_ID`, `IGDB_CLIENT_SECRET` | Twitch credentials (see step 10)                                                                           |
-| `RESEND_API_KEY`, `NOTIFY_EMAIL`       | Optional signup alerts by email (see Signup email alerts); both must be set, otherwise nothing is sent     |
-| `NOTIFY_FROM`                          | Optional sender for those emails; defaults to `GameQueue <onboarding@resend.dev>`                          |
-| `TUNNEL_TOKEN`                         | Cloudflare Tunnel token (see step 4); read by `cloudflared`, not by the app                                |
+| Variable                               | Value in production                                                                                                                             |
+| -------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `NODE_ENV`                             | `production` (set in the image; makes the session cookie `Secure` and serves the web app on one port)                                           |
+| `PORT`                                 | `3000` (set in the image)                                                                                                                       |
+| `DATABASE_PATH`                        | `/data/gamequeue.db` (set in the image; `/data` is the mounted `./data` directory)                                                              |
+| `TRUST_PROXY`                          | `true` (set in `compose.yaml`; the login rate limit then sees the client IP, see the caveat below)                                              |
+| `ALLOWED_ORIGINS`                      | `https://gamequeue.app` in `.env` (must match the real URL; the CSRF check rejects any other `Origin`)                                          |
+| `PUBLIC_URL`                           | Optional; the site's address for link previews (`og:image`). Defaults to the first `ALLOWED_ORIGINS` entry                                      |
+| `SIGNUPS_ENABLED`                      | `true` for the first signup, then `false`                                                                                                       |
+| `IGDB_CLIENT_ID`, `IGDB_CLIENT_SECRET` | Twitch credentials (see step 10)                                                                                                                |
+| `ITAD_API_KEY`, `ITAD_COUNTRY`         | Optional IsThereAnyDeal key for prices on the wishlist and game pages (see Game prices); `ITAD_COUNTRY` (default `US`) picks shops and currency |
+| `RESEND_API_KEY`, `NOTIFY_EMAIL`       | Optional signup alerts by email (see Signup email alerts); both must be set, otherwise nothing is sent                                          |
+| `NOTIFY_FROM`                          | Optional sender for those emails; defaults to `GameQueue <onboarding@resend.dev>`                                                               |
+| `TUNNEL_TOKEN`                         | Cloudflare Tunnel token (see step 4); read by `cloudflared`, not by the app                                                                     |
 
 Without the IGDB credentials the app starts but search and add-game are disabled.
 
@@ -218,6 +219,17 @@ If you see Cloudflare error 1033 or 502, see Troubleshooting.
 
 1. Open `https://gamequeue.app` and create your account.
 2. Set `SIGNUPS_ENABLED=false` in `~/gamequeue/.env`, then `docker compose up -d` (this recreates the app container with the new value). Registration now returns 403. Flip it on briefly if a friend needs an account. Admins can also change this without a restart from the Settings tile on `/admin`; a saved choice there overrides the environment value.
+
+### Game prices (optional)
+
+Wishlist and game-page prices come from [IsThereAnyDeal](https://isthereanydeal.com/). Register an app at <https://isthereanydeal.com/apps/> to get an API key, then add to `~/gamequeue/.env`:
+
+```
+ITAD_API_KEY=your-key
+ITAD_COUNTRY=US
+```
+
+Run `docker compose up -d` (a plain restart does not re-read `.env`). Without a key the app works as before and simply shows no prices. Prices are cached (6 hours on the wishlist, 30 minutes on game pages), well inside ITAD's limit of 1000 requests per 5 minutes. Treat the key like a password. Failures show up on `/admin/errors` as "Price refresh".
 
 ### 10. IGDB credentials
 
@@ -429,6 +441,7 @@ Try a restore on a scratch machine once, so the first time is not during an emer
 | App container restarts, logs show `SQLITE_CANTOPEN`               | `./data` is missing or not owned by UID 1000: `sudo chown 1000:1000 data`.                                                                                                                                                                                    |
 | Everyone shares one login rate limit                              | `TRUST_PROXY` is not `true` (it is set in `compose.yaml`), so every request appears to come from the tunnel container.                                                                                                                                        |
 | `docker compose` complains about `TUNNEL_TOKEN` / origins         | `.env` is missing or incomplete; compose refuses to start without `TUNNEL_TOKEN` and `ALLOWED_ORIGINS`.                                                                                                                                                       |
+| No prices on the wishlist or game pages                           | `ITAD_API_KEY` unset or wrong in `.env`, or `docker compose up -d` not run after editing it. Check `/admin/errors` for "Price refresh" entries.                                                                                                               |
 | Search and add-game disabled                                      | IGDB credentials missing or wrong in `.env`; after editing, run `docker compose up -d` (a plain restart does not re-read `.env`).                                                                                                                             |
 | No signup alert email arrives                                     | `RESEND_API_KEY` or `NOTIFY_EMAIL` unset, or `docker compose up -d` not run after editing `.env`. Without a verified domain, `NOTIFY_EMAIL` must be your Resend account's own address. Check `docker compose logs gamequeue` for `Notification email failed`. |
 | `curl` DELETE/logout returns 403                                  | Body-less mutations need an `Origin` header (browsers send it; curl must add it).                                                                                                                                                                             |
