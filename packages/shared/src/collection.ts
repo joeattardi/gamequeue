@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type { PlaythroughDto } from './playthroughs.js';
+import { isValidIsoDate } from './status.js';
 import type { ReleasePrecision } from './release.js';
 import type { SeriesRefDto } from './series.js';
 
@@ -134,7 +135,13 @@ export const addEntrySchema = z.object({
     igdbId: z.number().int().positive(),
     platformIds: z.array(z.number().int().positive()).min(1, 'Pick at least one platform').max(30),
     /** Omit to pre-fill from IGDB genres and themes */
-    tags: tagsSchema.optional()
+    tags: tagsSchema.optional(),
+    /**
+     * Add a game you already have history with. `paused` opens a playthrough (started on `date`,
+     * default today) and pauses it; `abandoned` logs a closed playthrough with unknown dates.
+     */
+    status: z.enum(['unplayed', 'paused', 'abandoned']).optional(),
+    date: z.string().refine(isValidIsoDate, 'Use a valid date (YYYY-MM-DD)').optional()
 });
 export type AddEntryInput = z.infer<typeof addEntrySchema>;
 

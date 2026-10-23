@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router';
 import { useAddEntry, useAllPlatforms, useGameSearch } from '../api/collection';
 import { useAddToWishlist } from '../api/wishlist';
 import { ApiRequestError } from '../api/client';
-import { useDebounced } from '../lib';
+import { todayLocal, useDebounced } from '../lib';
 import { MetaLine } from './MetaLine';
 import { PlatformIcon, PlatformTags } from './PlatformIcon';
 import { Cover } from './Cover';
@@ -13,6 +13,8 @@ import { ResultSkeletons } from './ResultSkeletons';
 import { useModalDialog } from './useModalDialog';
 import { ScoreGauge } from './ScoreGauge';
 import { SearchX, X } from 'lucide-react';
+
+type AddStatus = 'unplayed' | 'paused' | 'abandoned';
 
 export type AddGameMode = 'collection' | 'wishlist';
 
@@ -232,6 +234,7 @@ function PlatformStep({
                       : []
             )
     );
+    const [status, setStatus] = useState<AddStatus>('unplayed');
     const [error, setError] = useState<string>();
     const known = new Map(game.platforms.map((p) => [p.id, p]));
     const extras = (all.data ?? []).filter((p) => chosen.has(p.id) && !known.has(p.id));
@@ -248,7 +251,11 @@ function PlatformStep({
         setError(undefined);
         if (chosen.size === 0) return setError('Pick at least one platform.');
         add.mutate(
-            { igdbId: game.igdbId, platformIds: [...chosen] },
+            {
+                igdbId: game.igdbId,
+                platformIds: [...chosen],
+                ...(status === 'unplayed' ? {} : { status, date: todayLocal() })
+            },
             {
                 onSuccess: (entry) => {
                     onDone();
@@ -298,6 +305,14 @@ function PlatformStep({
                             ))}
                     </select>
                 )}
+            </label>
+            <label className="field">
+                <span>Add as</span>
+                <select value={status} onChange={(e) => setStatus(e.target.value as AddStatus)}>
+                    <option value="unplayed">Unplayed</option>
+                    <option value="paused">Paused (already started)</option>
+                    <option value="abandoned">Abandoned (dates unknown)</option>
+                </select>
             </label>
             <p className="form-error" role="alert">
                 {error}

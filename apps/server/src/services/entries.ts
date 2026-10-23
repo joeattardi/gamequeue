@@ -87,6 +87,8 @@ export function setTags(db: Db, userId: number, entryId: number, names: string[]
         .run();
 }
 
+const utcToday = () => new Date().toISOString().slice(0, 10);
+
 export async function addEntry(
     db: Db,
     igdb: IgdbClient | undefined,
@@ -111,7 +113,7 @@ export async function addEntry(
         const t = tx as unknown as Db;
         const row = t
             .insert(entries)
-            .values({ userId, gameId: input.igdbId })
+            .values({ userId, gameId: input.igdbId, status: input.status ?? 'unplayed' })
             .returning({ id: entries.id })
             .get();
         t.insert(entryPlatforms)
@@ -134,6 +136,19 @@ export async function addEntry(
                     .all()
             ].map((r) => r.name.toLowerCase());
         setTags(t, userId, row.id, input.tags ?? fromIgdb());
+        // Pre-existing history: one playthrough that matches the status (never slotted or queued)
+        if (input.status === 'paused' || input.status === 'abandoned') {
+            t.insert(playthroughs)
+                .values({
+                    userId,
+                    entryId: row.id,
+                    platformId: platformIds.length === 1 ? platformIds[0]! : null,
+                    startedOn: input.status === 'paused' ? (input.date ?? utcToday()) : null,
+                    endedOn: null,
+                    outcome: input.status === 'abandoned' ? 'abandoned' : null
+                })
+                .run();
+        }
         // Owning it ends the wish
         dropFromWishlists(t, userId, input.igdbId);
         return row.id;

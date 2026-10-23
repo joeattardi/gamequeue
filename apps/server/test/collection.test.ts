@@ -106,6 +106,37 @@ describe('adding games', () => {
         expect((await add(3, [PC.id], [])).tags).toEqual([]);
     });
 
+    it('can add a game already paused or abandoned, with matching history', async () => {
+        const { post, call } = await setup();
+        const paused = (
+            await (
+                await post('/entries', {
+                    igdbId: 1,
+                    platformIds: [PC.id],
+                    status: 'paused',
+                    date: '2026-01-05'
+                })
+            ).json()
+        ).entry;
+        expect(paused.status).toBe('paused');
+        let history = (await (await call(`/entries/${paused.id}/playthroughs`)).json())
+            .playthroughs;
+        expect(history).toMatchObject([{ startedOn: '2026-01-05', outcome: null }]);
+
+        const abandoned = (
+            await (
+                await post('/entries', { igdbId: 2, platformIds: [PC.id], status: 'abandoned' })
+            ).json()
+        ).entry;
+        expect(abandoned.status).toBe('abandoned');
+        history = (await (await call(`/entries/${abandoned.id}/playthroughs`)).json()).playthroughs;
+        expect(history).toMatchObject([{ startedOn: null, endedOn: null, outcome: 'abandoned' }]);
+
+        // A paused game can then be resumed like any other
+        const resumed = await post(`/entries/${paused.id}/resume`, {});
+        expect(resumed.status).toBe(200);
+    });
+
     it('rejects duplicates with the existing entry id', async () => {
         const { add, post } = await setup();
         const e = await add(1);
