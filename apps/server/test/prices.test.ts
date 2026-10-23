@@ -185,6 +185,33 @@ describe('ITAD client', () => {
         expect(out.get('b')).toBeNull();
     });
 
+    it('prefers a well-known shop for the best price, even when a key reseller is cheaper', async () => {
+        const amt = (amountInt: number) => ({ amountInt, currency: 'USD' });
+        const deal = (shop: string, p: number) => ({
+            shop: { name: shop },
+            price: amt(p),
+            regular: amt(2000),
+            cut: 0,
+            url: `https://x/${shop}`
+        });
+        const itad = createItadClient({
+            apiKey: 'k',
+            country: 'US',
+            fetchFn: fetchFn({
+                'prices/v3': [
+                    {
+                        id: 'a',
+                        deals: [deal('Kinguin', 500), deal('Steam', 1000), deal('GOG', 1200)]
+                    },
+                    { id: 'b', deals: [deal('Kinguin', 700), deal('Gamivo', 600)] }
+                ]
+            })
+        });
+        const out = await itad.prices(['a', 'b']);
+        expect(out.get('a')).toMatchObject({ shop: 'Steam', amount: 1000 });
+        expect(out.get('b')).toMatchObject({ shop: 'Gamivo', amount: 600 });
+    });
+
     it('lists all offers, cheapest first', async () => {
         const amt = (amountInt: number) => ({ amountInt, currency: 'USD' });
         const deal = (shop: string, p: number) => ({

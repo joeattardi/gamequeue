@@ -1,3 +1,4 @@
+import { isMajorShop } from '@gamequeue/shared';
 import { ItadError, type ItadClient, type ItadOffers, type ItadPrice } from './types.js';
 
 const BASE = 'https://api.isthereanydeal.com';
@@ -86,7 +87,10 @@ export function createItadClient(opts: ItadClientOptions): ItadClient {
         async prices(ids) {
             const out = new Map<string, ItadPrice | null>();
             for (const row of await fetchPrices(ids)) {
-                const best = (row.deals ?? []).reduce<RawDeal | undefined>(
+                // Prefer well-known shops, as the game page does; any shop if there is none
+                const all = row.deals ?? [];
+                const major = all.filter((d) => isMajorShop(d.shop.name));
+                const best = (major.length ? major : all).reduce<RawDeal | undefined>(
                     (a, d) => (!a || d.price.amountInt < a.price.amountInt ? d : a),
                     undefined
                 );
