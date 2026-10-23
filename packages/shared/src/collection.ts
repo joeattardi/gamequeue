@@ -128,7 +128,7 @@ export interface FacetCountsDto {
     favorites: number;
 }
 
-const tagSchema = z.string().trim().min(1).max(40);
+const tagSchema = z.string().trim().min(1).max(60);
 export const tagsSchema = z.array(tagSchema).max(50);
 
 export const addEntrySchema = z.object({

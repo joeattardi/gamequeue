@@ -338,7 +338,7 @@ function TagsEditor({ tags, onSave }: { tags: string[]; onSave: (tags: string[])
                     <input
                         value={draft}
                         onChange={(e) => setDraft(e.target.value)}
-                        maxLength={40}
+                        maxLength={60}
                         placeholder="e.g. turn-based"
                     />
                 </label>
