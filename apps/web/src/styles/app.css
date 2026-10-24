@@ -5744,8 +5744,7 @@ button.tier-tile__button {
 
 /* Public profile: the collection tiles are a side column on wide screens, so the rest of the
    profile (playing now, activity, lists) isn't pushed below them. Narrow screens stack, tiles first. */
-.profile-main > section:first-child h2,
-.profile-side h2 {
+.profile-main > section:first-child h2 {
     margin-top: 0;
 }
 @media (min-width: 900px) {

@@ -424,8 +424,7 @@ export function ProfilePage() {
                         </div>
 
                         <div className="profile-layout">
-                            <section aria-labelledby="p-collection" className="profile-side">
-                                <h2 id="p-collection">Collection</h2>
+                            <section aria-label="Collection" className="profile-side">
                                 <Stats
                                     username={profile.data.username}
                                     summary={profile.data.summary}
