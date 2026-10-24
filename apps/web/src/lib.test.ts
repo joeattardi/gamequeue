@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatBytes, greeting, timeAgo } from './lib';
+import { formatBytes, greeting, isRecapSeason, timeAgo } from './lib';
 
 describe('greeting', () => {
     const at = (h: number) => new Date(2026, 0, 1, h);
@@ -43,5 +43,14 @@ describe('formatBytes', () => {
     });
     it('moves up a unit instead of showing 1024', () => {
         expect(formatBytes(1023.9 * MB)).toBe('1.0 GB');
+    });
+});
+
+describe('isRecapSeason', () => {
+    it('is December and January only', () => {
+        expect(isRecapSeason(new Date(2026, 11, 1))).toBe(true);
+        expect(isRecapSeason(new Date(2027, 0, 31))).toBe(true);
+        expect(isRecapSeason(new Date(2026, 1, 1))).toBe(false);
+        expect(isRecapSeason(new Date(2026, 10, 30))).toBe(false);
     });
 });

@@ -1,26 +1,23 @@
 import type { UserDto } from '@gamequeue/shared';
 import { useEffect, useRef, useState } from 'react';
-import { Link, NavLink, Outlet, useLocation } from 'react-router';
+import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router';
 import { useLogout } from '../api/auth';
-import { Avatar } from './Avatar';
+import { isRecapSeason } from '../lib';
 import { Footer } from './Footer';
 import { Logo } from './Logo';
+import { UserMenu } from './UserMenu';
 import {
-    Database,
+    Bookmark,
     ChartColumn,
-    Sparkles,
     Dices,
-    Play,
-    Search,
     Gift,
-    Library,
-    List,
-    ListOrdered,
-    ListTodo,
-    LogOut,
+    Inbox,
+    Joystick,
+    LibraryBig,
     Menu,
-    Settings,
-    ShieldCheck,
+    Search,
+    SkipForward,
+    Sparkles,
     X
 } from 'lucide-react';
 
@@ -45,6 +42,7 @@ export function Shell({ user }: { user: UserDto }) {
     const menuButton = useRef<HTMLButtonElement>(null);
     const closeButton = useRef<HTMLButtonElement>(null);
     const { pathname } = useLocation();
+    const navigate = useNavigate();
     // The drawer only exists on narrow screens; while it is open the rest of the page is inert
     const drawerOpen = narrow && open;
 
@@ -61,6 +59,19 @@ export function Shell({ user }: { user: UserDto }) {
         document.addEventListener('keydown', onKey);
         return () => document.removeEventListener('keydown', onKey);
     }, [drawerOpen]);
+
+    // "/" jumps to search, unless the user is typing somewhere
+    useEffect(() => {
+        const onKey = (e: KeyboardEvent) => {
+            if (e.key !== '/' || e.ctrlKey || e.metaKey || e.altKey) return;
+            const el = e.target as HTMLElement | null;
+            if (el?.closest('input, textarea, select, [contenteditable]')) return;
+            e.preventDefault();
+            navigate('/search');
+        };
+        document.addEventListener('keydown', onKey);
+        return () => document.removeEventListener('keydown', onKey);
+    }, [navigate]);
 
     return (
         <>
@@ -111,89 +122,78 @@ export function Shell({ user }: { user: UserDto }) {
                             <X />
                         </button>
                     </div>
+                    <NavLink className="nav-search" to="/search">
+                        <Search />
+                        <span>Search games</span>
+                        <kbd aria-hidden="true">/</kbd>
+                    </NavLink>
                     <nav className="nav" aria-label="Main">
-                        <NavLink to="/" end>
-                            <Play />
-                            Now playing
-                        </NavLink>
-                        <NavLink to="/search">
-                            <Search />
-                            Search
-                        </NavLink>
-                        <NavLink to="/collection">
-                            <Library />
-                            Collection
-                        </NavLink>
-                        <NavLink to="/backlog">
-                            <ListTodo />
-                            Backlog
-                        </NavLink>
-                        <NavLink to="/queue">
-                            <ListOrdered />
-                            Queue
-                        </NavLink>
-                        <NavLink to="/lists">
-                            <List />
-                            Lists
-                        </NavLink>
-                        <NavLink to="/wishlist">
-                            <Gift />
-                            Wishlist
-                        </NavLink>
-                        <NavLink to="/pick">
-                            <Dices />
-                            Pick
-                        </NavLink>
-                        <NavLink to="/stats">
-                            <ChartColumn />
-                            Stats
-                        </NavLink>
-                        <NavLink to="/recap">
-                            <Sparkles />
-                            Recap
-                        </NavLink>
-                        <NavLink to="/data">
-                            <Database />
-                            Data
-                        </NavLink>
-                        {user.role === 'admin' && (
-                            <NavLink to="/admin">
-                                <ShieldCheck />
-                                Admin
+                        <div className="nav__group" role="group" aria-labelledby="nav-play">
+                            <h2 className="nav__label" id="nav-play">
+                                Play
+                            </h2>
+                            <NavLink to="/" end>
+                                <Joystick />
+                                Now playing
                             </NavLink>
-                        )}
+                            <NavLink to="/queue">
+                                <SkipForward />
+                                Queue
+                            </NavLink>
+                            <NavLink to="/pick">
+                                <Dices />
+                                Pick
+                            </NavLink>
+                        </div>
+                        <div className="nav__group" role="group" aria-labelledby="nav-library">
+                            <h2 className="nav__label" id="nav-library">
+                                Library
+                            </h2>
+                            <NavLink to="/collection">
+                                <LibraryBig />
+                                Collection
+                            </NavLink>
+                            <NavLink to="/backlog">
+                                <Inbox />
+                                Backlog
+                            </NavLink>
+                            <NavLink to="/lists">
+                                <Bookmark />
+                                Lists
+                            </NavLink>
+                            <NavLink to="/wishlist">
+                                <Gift />
+                                Wishlist
+                            </NavLink>
+                        </div>
+                        <div className="nav__group" role="group" aria-labelledby="nav-insights">
+                            <h2 className="nav__label" id="nav-insights">
+                                Insights
+                            </h2>
+                            <NavLink to="/stats">
+                                <ChartColumn />
+                                Stats
+                            </NavLink>
+                            {/* Always in the footer's site map; promoted here for the season */}
+                            {isRecapSeason() && (
+                                <NavLink className="nav__season" to="/recap">
+                                    <Sparkles />
+                                    Recap
+                                </NavLink>
+                            )}
+                        </div>
                     </nav>
-                    <div className="sidebar__user">
-                        <Link
-                            className="btn btn--ghost sidebar__username"
-                            to={`/u/${user.username}`}
-                        >
-                            <Avatar
-                                username={user.username}
-                                size={24}
-                                avatarUpdatedAt={user.avatarUpdatedAt}
-                            />
-                            <span>{user.username}</span>
-                        </Link>
-                        <NavLink className="btn btn--ghost" to="/account">
-                            <Settings />
-                            Account
-                        </NavLink>
-                        <button
-                            className="btn btn--ghost"
-                            onClick={() => logout.mutate()}
-                            disabled={logout.isPending}
-                        >
-                            <LogOut />
-                            Sign out
-                        </button>
-                    </div>
+                    <UserMenu
+                        user={user}
+                        onSignOut={() => logout.mutate()}
+                        signingOut={logout.isPending}
+                    />
                 </aside>
                 <div className="content" inert={drawerOpen}>
                     <main id="main" className="page" tabIndex={-1}>
                         <Outlet />
                     </main>
-                    <Footer />
+                    <Footer sitemap />
                 </div>
             </div>
         </>

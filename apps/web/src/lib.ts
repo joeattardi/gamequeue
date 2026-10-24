@@ -125,3 +125,6 @@ export const formatPrice = (minor: number, currency: string) => {
         return `${(minor / 100).toFixed(2)} ${currency}`;
     }
 };
+
+/** December and January: when the year-in-review is promoted in the navigation. */
+export const isRecapSeason = (now = new Date()) => now.getMonth() === 11 || now.getMonth() === 0;
