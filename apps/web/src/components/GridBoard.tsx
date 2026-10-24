@@ -43,9 +43,7 @@ export function GridBoard({
                                 </span>
                             )}
                         </span>
-                        <span className="grid-cell__name">
-                            {c.game ? c.game.name : editable ? 'Choose a game' : ''}
-                        </span>
+                        <span className="grid-cell__name">{c.game?.name}</span>
                     </>
                 );
                 const classes = [
