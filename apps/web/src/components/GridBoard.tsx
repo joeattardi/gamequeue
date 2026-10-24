@@ -36,6 +36,7 @@ export function GridBoard({
                                     imageId={c.game.coverImageId}
                                     name={c.game.name}
                                     size="cover_big"
+                                    draggable={editable && !!onSwap}
                                 />
                             ) : (
                                 <span className="grid-cell__empty" aria-hidden="true">

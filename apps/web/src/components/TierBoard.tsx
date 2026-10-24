@@ -79,11 +79,19 @@ export function TierBoard({ list, onItem, onTier, onDrop }: Props) {
                                 aria-label={`${it.game.name}: move or remove`}
                                 title={it.game.name}
                             >
-                                <Cover imageId={it.game.coverImageId} name={it.game.name} />
+                                <Cover
+                                    imageId={it.game.coverImageId}
+                                    name={it.game.name}
+                                    draggable={editable && !!onDrop}
+                                />
                             </button>
                         ) : (
                             <span className="tier-tile__button" title={it.game.name}>
-                                <Cover imageId={it.game.coverImageId} name={it.game.name} />
+                                <Cover
+                                    imageId={it.game.coverImageId}
+                                    name={it.game.name}
+                                    draggable={editable && !!onDrop}
+                                />
                             </span>
                         )}
                     </li>

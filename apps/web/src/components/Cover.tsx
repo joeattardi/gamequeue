@@ -4,11 +4,13 @@ import { coverSrcSet, coverUrl, type CoverSize } from '@gamequeue/shared';
 export function Cover({
     imageId,
     name,
-    size = 'cover_big'
+    size = 'cover_big',
+    draggable
 }: {
     imageId: string | null;
     name: string;
     size?: CoverSize;
+    draggable?: boolean;
 }) {
     if (!imageId)
         return (
@@ -25,6 +27,7 @@ export function Cover({
             loading="lazy"
             width={264}
             height={352}
+            draggable={draggable}
         />
     );
 }
