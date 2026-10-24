@@ -354,7 +354,7 @@ flowchart LR
     MC -- "only if the mirror can't" --> LIVE["Live IgdbClient"]
 ```
 
-- **Rebuilt every day by a cron job, not by the app.** `scripts/mirror.sh` runs the importer in a short-lived container that shares the data folder, then pings healthchecks.io. Each run leaves a small status file; the admin page (**Admin > IGDB mirror**) shows it, and a failed run is logged and emailed like any other error.
+- **Rebuilt every day by a cron job, not by the app.** `scripts/mirror.sh` runs the importer in a short-lived container that shares the data folder, then pings healthchecks.io. Each run leaves a small status file; the admin page (**Admin > IGDB mirror**) shows it, and a failed run is shown there and added to the error log (an email comes from the healthchecks.io check, if you set one up).
 - **A separate file.** It is never part of your user database or its backups, because it can always be rebuilt. The build streams each CSV straight into SQLite, checks the result (enough games, no big drop, intact search index) and only then swaps it in, so a failed download never damages the working copy. The running server notices the new file within a few seconds; no restart is needed.
 - **The same answers as the live client.** The mirror client implements the same `IgdbClient` interface, so nothing else in the app knows which one it is talking to. Search, a game's details, release dates, series, screenshots, similar games and the platform list all come from the file.
 - **Live IGDB is the safety net.** A game newer than the last dump, a search with no local match (a typo, say) or a missing mirror file all fall through to the live client, as before.
