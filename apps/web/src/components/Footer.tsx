@@ -19,7 +19,7 @@ const SITE_MAP = [
 ] as const;
 
 /**
- * Copyright line and the IGDB attribution. Shown in the app shell and on the public profile pages.
+ * Copyright line, the IGDB attribution and a link to the credits page. Shown in the app shell and on the public profile pages.
  * `sitemap` adds plain links to the signed-in pages, including the ones the sidebar tucks away.
  */
 export function Footer({ sitemap = false }: { sitemap?: boolean }) {
@@ -40,6 +40,8 @@ export function Footer({ sitemap = false }: { sitemap?: boolean }) {
                 <a href="https://www.igdb.com" target="_blank" rel="noreferrer">
                     IGDB.com
                 </a>
+                {' · '}
+                <Link to="/credits">Credits</Link>
             </span>
         </footer>
     );

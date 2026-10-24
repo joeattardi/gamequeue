@@ -1,3 +1,4 @@
+import type { AvatarIconChoice } from '@gamequeue/shared';
 import {
     BODY,
     CARD_HEIGHT,
@@ -31,6 +32,7 @@ export interface GridCardData {
     host: string;
     username: string;
     avatarVersion: number | null;
+    avatarIcon: AvatarIconChoice | null;
     /** Null when the title has characters the cards can't draw */
     title: string | null;
     cols: number;
@@ -60,6 +62,7 @@ export interface TierCardData {
     host: string;
     username: string;
     avatarVersion: number | null;
+    avatarIcon: AvatarIconChoice | null;
     title: string | null;
     /** Tiers that have games, best first, at most `TIER_CARD_ROWS` */
     tiers: TierCardTier[];
@@ -83,6 +86,7 @@ function leftColumn(
     d: {
         username: string;
         avatarVersion: number | null;
+        avatarIcon: AvatarIconChoice | null;
         title: string | null;
         host: string;
         path: string;
@@ -111,7 +115,7 @@ function leftColumn(
             h(
                 'div',
                 { style: { alignItems: 'center', gap: 20 } },
-                avatar(d.username, a.avatar, 72),
+                avatar(d.username, d.avatarIcon, a.avatar, 72),
                 pill(label)
             ),
             h(

@@ -415,7 +415,12 @@ function EditUser({ id }: { id: number }) {
     return (
         <div className="stack">
             <div className="admin-user-head">
-                <Avatar username={user.username} size={48} avatarUpdatedAt={user.avatarUpdatedAt} />
+                <Avatar
+                    username={user.username}
+                    size={48}
+                    avatarUpdatedAt={user.avatarUpdatedAt}
+                    avatarIcon={user.avatarIcon}
+                />
                 <div>
                     <h1>{user.username}</h1>
                     <p className="muted">

@@ -117,6 +117,7 @@ describe('card renderer cache', () => {
         host: 'x.example',
         username: 'joe',
         avatarVersion: null,
+        avatarIcon: null,
         playing: false,
         total: 1,
         finished: 0,
@@ -350,7 +351,7 @@ describe('grid and tier list share cards', () => {
                 updatedAt: 0,
                 tiers: [1, 2, 3, 4, 5, 6, 7].map((i) => tier(i, 9))
             },
-            null,
+            { version: null, icon: null },
             'x.example'
         );
         expect(data.tiers).toHaveLength(5);

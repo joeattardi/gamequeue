@@ -1,3 +1,4 @@
+import type { AvatarIconChoice } from './avatar-icons.js';
 import type { EntryDto, NoteDto, EntryStatus, GameDto } from './collection.js';
 import type { GridSummaryDto } from './grids.js';
 import type { TierListSummaryDto } from './tiers.js';
@@ -38,6 +39,7 @@ export interface ProfileDto {
     username: string;
     /** See `UserDto.avatarUpdatedAt` */
     avatarUpdatedAt: number | null;
+    avatarIcon: AvatarIconChoice | null;
     /** Real name; only present when the user chose to show it on their profile */
     realName: string | null;
     /** `founder` for the configured founder account, `staff` for other admins; null for everyone else */

@@ -29,7 +29,7 @@ import {
 } from '../db/schema.js';
 import { HttpError } from '../errors.js';
 import { pageActivity } from './activity.js';
-import { avatarVersion } from './avatars.js';
+import { avatarIconOf, avatarVersion } from './avatars.js';
 import { profileBadge, socialLinksOf } from './users.js';
 import { hydrate, listEntries, pageEntries } from './entries.js';
 import { loadGames } from './games.js';
@@ -91,6 +91,7 @@ export function getProfile(db: Db, username: string, founderUserId?: number): Pr
     return {
         username: user.username,
         avatarUpdatedAt: avatarVersion(db, user.id),
+        avatarIcon: avatarIconOf(user),
         realName: user.showRealName ? fullName(user) : null,
         badge: profileBadge(user, founderUserId),
         bio: user.bio,

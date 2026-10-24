@@ -87,7 +87,12 @@ export function UserMenu({
                 aria-haspopup="true"
                 onClick={() => setOpen((o) => !o)}
             >
-                <Avatar username={user.username} size={28} avatarUpdatedAt={user.avatarUpdatedAt} />
+                <Avatar
+                    username={user.username}
+                    size={28}
+                    avatarUpdatedAt={user.avatarUpdatedAt}
+                    avatarIcon={user.avatarIcon}
+                />
                 <span className="user-menu__name">{user.username}</span>
                 <ChevronsUpDown aria-hidden="true" />
             </button>

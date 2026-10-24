@@ -1,11 +1,11 @@
 import { Hono } from 'hono';
 import { bodyLimit } from 'hono/body-limit';
-import { AVATAR_MAX_BYTES, avatarUploadSchema } from '@gamequeue/shared';
+import { AVATAR_MAX_BYTES, avatarIconSchema, avatarUploadSchema } from '@gamequeue/shared';
 import type { AppDeps } from '../app.js';
 import { requireAuth, type AuthVars } from '../auth/middleware.js';
 import { HttpError } from '../errors.js';
 import { validate } from '../http.js';
-import { removeAvatar, setAvatar } from '../services/avatars.js';
+import { removeAvatar, setAvatar, setAvatarIcon } from '../services/avatars.js';
 
 /** The signed-in user's own avatar. Reading one is public and lives in `routes/profile.ts`. */
 export function avatarRoutes({ db, config }: AppDeps) {
@@ -24,13 +24,21 @@ export function avatarRoutes({ db, config }: AppDeps) {
             if (raw === undefined) throw new HttpError(400, 'Invalid request');
             const input = validate(avatarUploadSchema, raw);
             const avatarUpdatedAt = setAvatar(db, c.get('user').id, input.contentType, input.data);
-            return c.json({ avatarUpdatedAt });
+            return c.json({ avatarUpdatedAt, avatarIcon: null });
         }
     );
 
+    r.put('/icon', async (c) => {
+        const raw: unknown = await c.req.json().catch(() => undefined);
+        if (raw === undefined) throw new HttpError(400, 'Invalid request');
+        const avatarIcon = validate(avatarIconSchema, raw);
+        setAvatarIcon(db, c.get('user').id, avatarIcon);
+        return c.json({ avatarUpdatedAt: null, avatarIcon });
+    });
+
     r.delete('/', (c) => {
         removeAvatar(db, c.get('user').id);
-        return c.json({ avatarUpdatedAt: null });
+        return c.json({ avatarUpdatedAt: null, avatarIcon: null });
     });
 
     return r;

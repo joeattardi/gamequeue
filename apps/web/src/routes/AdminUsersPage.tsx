@@ -43,6 +43,7 @@ export function AdminUsersPage() {
                                     username={u.username}
                                     size={36}
                                     avatarUpdatedAt={u.avatarUpdatedAt}
+                                    avatarIcon={u.avatarIcon}
                                 />
                                 <div className="admin-user__main">
                                     <div>

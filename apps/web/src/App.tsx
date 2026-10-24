@@ -42,6 +42,7 @@ import { ProfileGamesPage } from './routes/ProfileGamesPage';
 import { ProfileWishlistPage } from './routes/ProfileWishlistPage';
 import { ProfileRecapPage, RecapPage } from './routes/RecapPage';
 import { ProfileStatsPage, StatsPage } from './routes/StatsPage';
+import { CreditsPage } from './routes/CreditsPage';
 import { DiscoverPage } from './routes/DiscoverPage';
 import { WishlistPage } from './routes/WishlistPage';
 
@@ -61,6 +62,7 @@ export function App() {
                 <Route index element={<LandingPage />} />
                 <Route path="/login" element={<AuthPage mode="login" />} />
                 <Route path="/register" element={<AuthPage mode="register" />} />
+                <Route path="/credits" element={<CreditsPage />} />
                 <Route path="/u/:username" element={<ProfilePage />} />
                 <Route path="/u/:username/wishlist" element={<ProfileWishlistPage />} />
                 <Route path="/u/:username/lists/:id" element={<ProfileListPage kind="lists" />} />
@@ -86,6 +88,7 @@ export function App() {
             {/* Logging in or registering flips `me` while the URL is still the auth page. */}
             <Route path="/login" element={<Navigate to="/" replace />} />
             <Route path="/register" element={<Navigate to="/" replace />} />
+            <Route path="/credits" element={<CreditsPage />} />
             <Route path="/u/:username" element={<ProfilePage />} />
             <Route path="/u/:username/wishlist" element={<ProfileWishlistPage />} />
             <Route path="/u/:username/lists/:id" element={<ProfileListPage kind="lists" />} />

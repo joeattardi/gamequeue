@@ -1,5 +1,8 @@
 import { useRef, useState, type ChangeEvent, type FormEvent } from 'react';
 import {
+    AVATAR_COLORS,
+    AVATAR_COLOR_NAMES,
+    AVATAR_ICONS,
     BIO_MAX,
     SOCIAL_LABELS,
     SOCIAL_SERVICES,
@@ -17,7 +20,7 @@ import {
     useUpdateSearchIndexing,
     useUpdateSocialLinks
 } from '../api/account';
-import { useRemoveAvatar, useUploadAvatar } from '../api/avatar';
+import { useRemoveAvatar, useSetAvatarIcon, useUploadAvatar } from '../api/avatar';
 import { useMe } from '../api/auth';
 import { ApiRequestError } from '../api/client';
 import { prepareAvatar } from '../avatarImage';
@@ -531,12 +534,24 @@ export function AccountPage() {
     const me = useMe().data;
     const upload = useUploadAvatar();
     const remove = useRemoveAvatar();
+    const setIcon = useSetAvatarIcon();
     const input = useRef<HTMLInputElement>(null);
     const [error, setError] = useState<string>();
     const [preparing, setPreparing] = useState(false);
+    // The colour applies to the next icon pick too, so it is remembered even before one is chosen
+    const [color, setColor] = useState<number | null>(null);
     if (!me) return null;
 
-    const busy = preparing || upload.isPending || remove.isPending;
+    const busy = preparing || upload.isPending || remove.isPending || setIcon.isPending;
+    const activeColor = color ?? me.avatarIcon?.color ?? 0;
+
+    function pickIcon(icon: string, nextColor: number) {
+        setError(undefined);
+        setIcon.mutate(
+            { icon, color: nextColor },
+            { onError: () => setError('Could not save the icon.') }
+        );
+    }
 
     async function choose(e: ChangeEvent<HTMLInputElement>) {
         const file = e.target.files?.[0];
@@ -618,14 +633,17 @@ export function AccountPage() {
                             username={me.username}
                             size={96}
                             avatarUpdatedAt={me.avatarUpdatedAt}
+                            avatarIcon={me.avatarIcon}
                         />
                         <div className="avatar-edit__body">
                             <p>
-                                {me.avatarUpdatedAt === null
-                                    ? 'You are using the avatar generated from your username.'
-                                    : 'Your picture is shown on your profile.'}{' '}
-                                It's public, like the rest of your profile. Images are cropped to a
-                                square and shrunk in your browser before upload.
+                                {me.avatarUpdatedAt !== null
+                                    ? 'Your picture is shown on your profile.'
+                                    : me.avatarIcon !== null
+                                      ? 'Your icon is shown on your profile.'
+                                      : 'You are using the avatar generated from your username.'}{' '}
+                                It's public, like the rest of your profile. Uploaded images are
+                                cropped to a square and shrunk in your browser.
                             </p>
                             <div className="avatar-edit__actions">
                                 <input
@@ -643,7 +661,7 @@ export function AccountPage() {
                                     <ImageUp aria-hidden="true" />
                                     {busy ? 'Saving…' : 'Upload a picture'}
                                 </button>
-                                {me.avatarUpdatedAt !== null && (
+                                {(me.avatarUpdatedAt !== null || me.avatarIcon !== null) && (
                                     <button
                                         className="btn btn--danger"
                                         onClick={clear}
@@ -657,6 +675,50 @@ export function AccountPage() {
                             {error && <p role="alert">{error}</p>}
                         </div>
                     </div>
+                    <fieldset className="icon-picker">
+                        <legend>Or pick an icon</legend>
+                        <div className="icon-picker__colors" role="group" aria-label="Colour">
+                            {AVATAR_COLORS.map((hex, i) => (
+                                <button
+                                    key={hex}
+                                    type="button"
+                                    className="icon-picker__color"
+                                    style={{ backgroundColor: hex }}
+                                    aria-label={AVATAR_COLOR_NAMES[i]}
+                                    aria-pressed={activeColor === i}
+                                    disabled={busy}
+                                    onClick={() => {
+                                        setColor(i);
+                                        if (me.avatarIcon && me.avatarUpdatedAt === null)
+                                            pickIcon(me.avatarIcon.icon, i);
+                                    }}
+                                />
+                            ))}
+                        </div>
+                        <div className="icon-picker__grid">
+                            {AVATAR_ICONS.map((icon) => (
+                                <button
+                                    key={icon.key}
+                                    type="button"
+                                    className="icon-picker__icon"
+                                    aria-label={icon.label}
+                                    title={icon.label}
+                                    aria-pressed={me.avatarIcon?.icon === icon.key}
+                                    disabled={busy}
+                                    onClick={() => pickIcon(icon.key, activeColor)}
+                                >
+                                    <Avatar
+                                        username={me.username}
+                                        size={44}
+                                        avatarIcon={{ icon: icon.key, color: activeColor }}
+                                    />
+                                </button>
+                            ))}
+                        </div>
+                        <p className="muted">
+                            Icons from <Link to="/credits">game-icons.net</Link>.
+                        </p>
+                    </fieldset>
                 </section>
 
                 <section aria-labelledby="danger-h" className="panel panel--danger">

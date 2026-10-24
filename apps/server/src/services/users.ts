@@ -13,7 +13,7 @@ import type { Db } from '../db/client.js';
 import { hashPassword, verifyPassword } from '../auth/password.js';
 import { hashToken } from '../auth/sessions.js';
 import { sessions, users } from '../db/schema.js';
-import { avatarVersion } from './avatars.js';
+import { avatarIconOf, avatarVersion } from './avatars.js';
 
 type UserRow = typeof users.$inferSelect;
 
@@ -43,6 +43,7 @@ export function getUserDto(db: Db, userId: number): UserDto {
         email: row.email,
         role: row.role,
         avatarUpdatedAt: avatarVersion(db, row.id),
+        avatarIcon: avatarIconOf(row),
         firstName: row.firstName,
         lastName: row.lastName,
         showRealName: row.showRealName,

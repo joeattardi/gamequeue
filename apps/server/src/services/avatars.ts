@@ -1,5 +1,5 @@
 import { eq } from 'drizzle-orm';
-import { AVATAR_MAX_BYTES, type AvatarContentType } from '@gamequeue/shared';
+import { AVATAR_MAX_BYTES, type AvatarContentType, type AvatarIconChoice } from '@gamequeue/shared';
 import type { Db } from '../db/client.js';
 import { avatars, users } from '../db/schema.js';
 import { HttpError } from '../errors.js';
@@ -31,11 +31,49 @@ export function setAvatar(db: Db, userId: number, contentType: AvatarContentType
         .values({ userId, contentType, data, updatedAt })
         .onConflictDoUpdate({ target: avatars.userId, set: { contentType, data, updatedAt } })
         .run();
+    // One kind of avatar at a time: an upload replaces a chosen icon
+    db.update(users).set({ avatarIcon: null, avatarColor: null }).where(eq(users.id, userId)).run();
     return updatedAt;
 }
 
+/** Picks a preset icon, which replaces any uploaded picture. */
+export function setAvatarIcon(db: Db, userId: number, choice: AvatarIconChoice) {
+    db.transaction((tx) => {
+        tx.delete(avatars).where(eq(avatars.userId, userId)).run();
+        tx.update(users)
+            .set({ avatarIcon: choice.icon, avatarColor: choice.color })
+            .where(eq(users.id, userId))
+            .run();
+    });
+}
+
+/** Back to the generated identicon, whichever kind of avatar was set. */
 export function removeAvatar(db: Db, userId: number) {
-    db.delete(avatars).where(eq(avatars.userId, userId)).run();
+    db.transaction((tx) => {
+        tx.delete(avatars).where(eq(avatars.userId, userId)).run();
+        tx.update(users)
+            .set({ avatarIcon: null, avatarColor: null })
+            .where(eq(users.id, userId))
+            .run();
+    });
+}
+
+/** The icon choice stored on a user row, null when none (or when the stored key is no longer known). */
+export function avatarIconOf(row: {
+    avatarIcon: string | null;
+    avatarColor: number | null;
+}): AvatarIconChoice | null {
+    if (row.avatarIcon === null || row.avatarColor === null) return null;
+    return { icon: row.avatarIcon, color: row.avatarColor };
+}
+
+export function avatarIconOfUser(db: Db, userId: number): AvatarIconChoice | null {
+    const row = db
+        .select({ avatarIcon: users.avatarIcon, avatarColor: users.avatarColor })
+        .from(users)
+        .where(eq(users.id, userId))
+        .get();
+    return row ? avatarIconOf(row) : null;
 }
 
 /** Version (last change, ms) of a user's avatar, null when they use the generated one. */

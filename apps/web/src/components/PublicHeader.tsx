@@ -1,4 +1,5 @@
 import { Link } from 'react-router';
+import type { AvatarIconChoice } from '@gamequeue/shared';
 import { Avatar } from './Avatar';
 import { Logo } from './Logo';
 
@@ -10,6 +11,7 @@ export interface HeaderIdentity {
     username: string;
     realName: string | null;
     avatarUpdatedAt: number | null;
+    avatarIcon: AvatarIconChoice | null;
     shown: boolean;
 }
 
@@ -29,6 +31,7 @@ export function PublicHeader({ identity }: { identity?: HeaderIdentity }) {
                         username={identity.username}
                         size={28}
                         avatarUpdatedAt={identity.avatarUpdatedAt}
+                        avatarIcon={identity.avatarIcon}
                     />
                     <span className="topbar__identity-name">
                         {identity.realName ?? identity.username}

@@ -372,6 +372,7 @@ export function ProfilePage() {
                         username: profile.data.username,
                         realName: profile.data.realName,
                         avatarUpdatedAt: profile.data.avatarUpdatedAt,
+                        avatarIcon: profile.data.avatarIcon,
                         shown: heroGone
                     }
                 }
@@ -390,6 +391,7 @@ export function ProfilePage() {
                                 username={profile.data.username}
                                 size={72}
                                 avatarUpdatedAt={profile.data.avatarUpdatedAt}
+                                avatarIcon={profile.data.avatarIcon}
                             />
                             <div>
                                 <div className="profile-hero__title">

@@ -143,17 +143,18 @@ It holds three kinds of things:
 2. **Response types** (DTOs, "data transfer objects"). For example `EntryDto` is the shape of a game in your collection as the API returns it. When the server changes a DTO, the web app fails to typecheck until it's updated, which catches mismatches early.
 3. **Pure logic.** Functions with no database or network access, so they're easy to test and can run on either side:
 
-| File             | What it decides                                                  |
-| ---------------- | ---------------------------------------------------------------- |
-| `status.ts`      | Which status changes are allowed (unplayed → playing, and so on) |
-| `pick.ts`        | The random "what should I play" choice                           |
-| `smart-lists.ts` | Whether a game matches a smart list's rules                      |
-| `stats.ts`       | All stats arithmetic                                             |
-| `recap.ts`       | The year-in-review numbers and your "archetype"                  |
-| `release.ts`     | Release date labels like "Q4 2027" or "in 3 weeks"               |
-| `csv.ts`         | Writing spreadsheet-safe CSV                                     |
-| `avatar.ts`      | The generated identicon picture from a username                  |
-| `export.ts`      | The export file format                                           |
+| File              | What it decides                                                  |
+| ----------------- | ---------------------------------------------------------------- |
+| `status.ts`       | Which status changes are allowed (unplayed → playing, and so on) |
+| `pick.ts`         | The random "what should I play" choice                           |
+| `smart-lists.ts`  | Whether a game matches a smart list's rules                      |
+| `stats.ts`        | All stats arithmetic                                             |
+| `recap.ts`        | The year-in-review numbers and your "archetype"                  |
+| `release.ts`      | Release date labels like "Q4 2027" or "in 3 weeks"               |
+| `csv.ts`          | Writing spreadsheet-safe CSV                                     |
+| `avatar.ts`       | The generated identicon picture from a username                  |
+| `avatar-icons.ts` | Preset avatar icons (game-icons.net) and background colours      |
+| `export.ts`       | The export file format                                           |
 
 A good rule of thumb: if a piece of logic doesn't need the database, it probably belongs here, with a unit test next to it.
 
@@ -573,11 +574,13 @@ Code: `services/export.ts`, `services/import.ts`, `packages/shared/src/export.ts
 
 `/account` collects the personal settings:
 
-- **Avatar.** By default, a generated identicon based on your username (computed in the browser; nothing stored). You can upload a picture instead: the browser crops and shrinks it to a small square image before sending it, and the server checks its type and size and stores it in the `avatars` table.
+- **Avatar.** By default, a generated identicon based on your username (computed in the browser; nothing stored). You can pick one of about 50 preset game icons on a colour of your choice (stored as just a name and a colour number), or upload a picture instead. Choosing one replaces the other. The upload works like this: the browser crops and shrinks it to a small square image before sending it, and the server checks its type and size and stores it in the `avatars` table.
 - **Real name.** Optional first and last name. Private unless you tick "show on profile". The first name is used for greetings on the home page.
 - **Gaming accounts.** Steam, Xbox, PlayStation and Discord names, shown as links on your public profile once filled in.
 - **Password change.** Needs your current password, and signs out your other sessions.
 - **Delete account.** Needs your password and a confirmation. The database cascades the delete through every table that belongs to you. (Anything new keyed by `user_id` must cascade too, or this breaks.)
+
+The icons come from game-icons.net and are credited on the `/credits` page (linked from every footer).
 
 Code: `routes/account.ts`, `routes/avatar.ts`, `services/users.ts`, `services/avatars.ts`.
 

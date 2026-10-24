@@ -1,4 +1,11 @@
-import { AVATAR_GRID, generateIdenticon } from '@gamequeue/shared';
+import {
+    AVATAR_COLORS,
+    AVATAR_GRID,
+    AVATAR_ICON_VIEWBOX,
+    findAvatarIcon,
+    generateIdenticon,
+    type AvatarIconChoice
+} from '@gamequeue/shared';
 
 /**
  * The two share cards (1200x630) as satori element trees. satori speaks a flexbox-only subset of CSS and
@@ -12,8 +19,9 @@ export const CARD_HEIGHT = 630;
 export interface ProfileCardData {
     host: string;
     username: string;
-    /** Bumps when the uploaded avatar changes; null means the identicon */
+    /** Bumps when the uploaded avatar changes; null means no upload (a preset icon or the identicon) */
     avatarVersion: number | null;
+    avatarIcon: AvatarIconChoice | null;
     /** The slots hold a game, so the card says "now playing" and fans their covers */
     playing: boolean;
     total: number;
@@ -27,6 +35,7 @@ export interface RecapCardData {
     host: string;
     username: string;
     avatarVersion: number | null;
+    avatarIcon: AvatarIconChoice | null;
     year: number;
     headline: { value: number; label: string };
     /** Finished games compared with the year before; null when neither year has any */
@@ -153,8 +162,17 @@ const hsl = (h: number, s: number, l: number) => {
     return `#${f(0)}${f(8)}${f(4)}`;
 };
 
-/** The user's avatar: an uploaded image, or the identicon in the app's dark palette. */
-export function avatar(username: string, uploaded: string | null, size: number): El {
+/** Same margin as the web component (14% each side), done with the viewBox because satori drops path transforms. */
+const ICON_PAD = Math.round((AVATAR_ICON_VIEWBOX * 0.14) / 0.72);
+const ICON_SPAN = AVATAR_ICON_VIEWBOX + 2 * ICON_PAD;
+
+/** The user's avatar: an uploaded image, a preset icon, or the identicon in the app's dark palette. */
+export function avatar(
+    username: string,
+    icon: AvatarIconChoice | null,
+    uploaded: string | null,
+    size: number
+): El {
     const frame = {
         width: size,
         height: size,
@@ -173,6 +191,29 @@ export function avatar(username: string, uploaded: string | null, size: number):
                 height: size - 6,
                 style: { objectFit: 'cover' }
             })
+        );
+    }
+    const preset = icon && findAvatarIcon(icon.icon);
+    if (preset && icon) {
+        return h(
+            'div',
+            { style: frame },
+            h(
+                'svg',
+                {
+                    width: size - 6,
+                    height: size - 6,
+                    viewBox: `${-ICON_PAD} ${-ICON_PAD} ${ICON_SPAN} ${ICON_SPAN}`
+                },
+                h('rect', {
+                    x: -ICON_PAD,
+                    y: -ICON_PAD,
+                    width: ICON_SPAN,
+                    height: ICON_SPAN,
+                    fill: AVATAR_COLORS[icon.color] ?? AVATAR_COLORS[0]
+                }),
+                h('path', { d: preset.path, fill: '#ffffff' })
+            )
         );
     }
     const { hue, cells } = generateIdenticon(username);
@@ -407,7 +448,7 @@ export function profileCard(d: ProfileCardData, a: CardAssets): El {
                 h(
                     'div',
                     { style: { alignItems: 'center', gap: 22 } },
-                    avatar(d.username, a.avatar, 96),
+                    avatar(d.username, d.avatarIcon, a.avatar, 96),
                     pill(
                         d.playing ? 'Now playing' : d.total > 0 ? 'Game collection' : 'New player',
                         d.playing ? '#34d399' : undefined
@@ -514,7 +555,7 @@ export function recapCard(d: RecapCardData, a: CardAssets): El {
                         },
                         d.username
                     ),
-                    avatar(d.username, a.avatar, 52)
+                    avatar(d.username, d.avatarIcon, a.avatar, 52)
                 )
             ),
             h(

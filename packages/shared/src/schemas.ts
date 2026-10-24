@@ -1,3 +1,4 @@
+import type { AvatarIconChoice } from './avatar-icons.js';
 import type { SocialLinks } from './social.js';
 import { z } from 'zod';
 
@@ -104,6 +105,8 @@ export interface UserDto {
     role: UserRole;
     /** When the uploaded avatar last changed (ms); null = none, show the generated identicon */
     avatarUpdatedAt: number | null;
+    /** A preset icon avatar; null = none. Never set together with `avatarUpdatedAt` */
+    avatarIcon: AvatarIconChoice | null;
     /** Optional real name, private to the user unless `showRealName` is on */
     firstName: string | null;
     lastName: string | null;

@@ -84,3 +84,54 @@ describe('avatar upload', () => {
         expect(res.status).toBe(401);
     });
 });
+
+describe('avatar icon', () => {
+    const putIcon = (
+        app: Awaited<ReturnType<typeof setup>>['app'],
+        body: unknown,
+        cookie: string
+    ) => app.request('/api/avatar/icon', { ...json(body, { cookie, origin }), method: 'PUT' });
+
+    it('stores a preset icon and shows it on me and the public profile', async () => {
+        const { app, cookie, me } = await setup();
+        expect((await me()).avatarIcon).toBeNull();
+        const res = await putIcon(app, { icon: 'crossed-swords', color: 3 }, cookie);
+        expect(res.status).toBe(200);
+        expect((await me()).avatarIcon).toEqual({ icon: 'crossed-swords', color: 3 });
+        const profile = (await (await app.request('/api/profiles/joe')).json()).profile;
+        expect(profile.avatarIcon).toEqual({ icon: 'crossed-swords', color: 3 });
+        expect(profile.avatarUpdatedAt).toBeNull();
+    });
+
+    it('rejects an unknown icon or colour', async () => {
+        const { app, cookie, me } = await setup();
+        expect((await putIcon(app, { icon: 'nope', color: 0 }, cookie)).status).toBe(400);
+        expect((await putIcon(app, { icon: 'crossed-swords', color: 8 }, cookie)).status).toBe(400);
+        expect((await me()).avatarIcon).toBeNull();
+    });
+
+    it('is exclusive with an uploaded picture, either way round', async () => {
+        const { app, cookie, upload, me } = await setup();
+        await upload({ contentType: 'image/png', data: PNG.toString('base64') });
+        await putIcon(app, { icon: 'owl', color: 1 }, cookie);
+        expect((await me()).avatarUpdatedAt).toBeNull();
+        expect((await app.request('/api/profiles/joe/avatar')).status).toBe(404);
+
+        await upload({ contentType: 'image/png', data: PNG.toString('base64') });
+        const user = await me();
+        expect(user.avatarIcon).toBeNull();
+        expect(user.avatarUpdatedAt).not.toBeNull();
+    });
+
+    it('goes back to the identicon when removed', async () => {
+        const { app, cookie, me } = await setup();
+        await putIcon(app, { icon: 'owl', color: 1 }, cookie);
+        await app.request('/api/avatar', { method: 'DELETE', headers: { cookie, origin } });
+        expect((await me()).avatarIcon).toBeNull();
+    });
+
+    it('requires login', async () => {
+        const { app } = await setup();
+        expect((await putIcon(app, { icon: 'owl', color: 1 }, '')).status).toBe(401);
+    });
+});

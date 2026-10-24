@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import { eq } from 'drizzle-orm';
 import {
     TIER_COLORS,
+    type AvatarIconChoice,
     type ProfileDto,
     type PublicGridDto,
     type PublicTierListDto,
@@ -18,7 +19,7 @@ import {
     type TierCardData
 } from '../og/social-cards.js';
 import { drawable } from '../og/text.js';
-import { avatarVersion } from './avatars.js';
+import { avatarIconOf, avatarVersion } from './avatars.js';
 import { getPublicGrid } from './grids.js';
 import { getProfile, getProfileRecap } from './profile.js';
 import { getPublicTierList } from './tier-lists.js';
@@ -38,6 +39,7 @@ export function profileCardData(profile: ProfileDto, host: string): ProfileCardD
         host,
         username: profile.username,
         avatarVersion: profile.avatarUpdatedAt,
+        avatarIcon: profile.avatarIcon,
         playing: profile.summary.byStatus.playing > 0,
         total: profile.summary.total,
         finished: profile.summary.byStatus.finished,
@@ -53,7 +55,7 @@ const tidyGenre = (name: string) => name.replace(/\s*\([^)]*\)\s*$/, '');
 
 export function recapCardData(
     recap: RecapDto,
-    user: { username: string; avatarVersion: number | null },
+    user: { username: string; avatarVersion: number | null; avatarIcon: AvatarIconChoice | null },
     host: string
 ): RecapCardData {
     const ids = [...recap.topRated, ...[...recap.games].reverse()].flatMap(
@@ -79,6 +81,7 @@ export function recapCardData(
         host,
         username: user.username,
         avatarVersion: user.avatarVersion,
+        avatarIcon: user.avatarIcon,
         year: recap.year,
         headline,
         delta: showDelta
@@ -106,34 +109,47 @@ export function getRecapCardData(
     host: string
 ): RecapCardData {
     const user = db
-        .select({ id: users.id, username: users.username })
+        .select({
+            id: users.id,
+            username: users.username,
+            avatarIcon: users.avatarIcon,
+            avatarColor: users.avatarColor
+        })
         .from(users)
         .where(eq(users.username, username))
         .get();
     if (!user) throw new HttpError(404, 'Not found');
     return recapCardData(
         getProfileRecap(db, username, year),
-        { username: user.username, avatarVersion: avatarVersion(db, user.id) },
+        {
+            username: user.username,
+            avatarVersion: avatarVersion(db, user.id),
+            avatarIcon: avatarIconOf(user)
+        },
         host
     );
 }
 
-const avatarOfUsername = (db: Db, username: string) => {
-    const user = db.select({ id: users.id }).from(users).where(eq(users.username, username)).get();
-    return user ? avatarVersion(db, user.id) : null;
+interface CardAvatar {
+    version: number | null;
+    icon: AvatarIconChoice | null;
+}
+
+const avatarOfUsername = (db: Db, username: string): CardAvatar => {
+    const user = db.select().from(users).where(eq(users.username, username)).get();
+    return user
+        ? { version: avatarVersion(db, user.id), icon: avatarIconOf(user) }
+        : { version: null, icon: null };
 };
 
-export function gridCardData(
-    grid: PublicGridDto,
-    avatarVersion: number | null,
-    host: string
-): GridCardData {
+export function gridCardData(grid: PublicGridDto, avatar: CardAvatar, host: string): GridCardData {
     const cells = grid.cells.map((c) => (c.game ? { cover: c.game.coverImageId } : null));
     return {
         kind: 'grid',
         host,
         username: grid.username,
-        avatarVersion,
+        avatarVersion: avatar.version,
+        avatarIcon: avatar.icon,
         title: drawable(grid.title),
         cols: grid.cols,
         rows: grid.rows,
@@ -146,7 +162,7 @@ export function gridCardData(
 
 export function tierCardData(
     list: PublicTierListDto,
-    avatarVersion: number | null,
+    avatar: CardAvatar,
     host: string
 ): TierCardData {
     const filled = list.tiers.filter((t) => t.items.length > 0);
@@ -161,7 +177,8 @@ export function tierCardData(
         kind: 'tier',
         host,
         username: list.username,
-        avatarVersion,
+        avatarVersion: avatar.version,
+        avatarIcon: avatar.icon,
         title: drawable(list.title),
         tiers,
         ranked: filled.reduce((n, t) => n + t.items.length, 0),
