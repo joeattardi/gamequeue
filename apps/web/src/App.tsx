@@ -1,4 +1,4 @@
-import { Route, Routes } from 'react-router';
+import { Navigate, Route, Routes } from 'react-router';
 import { useMe } from './api/auth';
 import { Splash } from './components/Splash';
 import { Shell } from './components/Shell';
@@ -79,6 +79,9 @@ export function App() {
     }
     return (
         <Routes>
+            {/* Logging in or registering flips `me` while the URL is still the auth page. */}
+            <Route path="/login" element={<Navigate to="/" replace />} />
+            <Route path="/register" element={<Navigate to="/" replace />} />
             <Route path="/u/:username" element={<ProfilePage />} />
             <Route path="/u/:username/wishlist" element={<ProfileWishlistPage />} />
             <Route path="/u/:username/lists/:id" element={<ProfileListPage kind="lists" />} />
