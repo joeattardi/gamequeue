@@ -23,6 +23,7 @@ import { useConfirm } from '../components/Confirm';
 import { DownloadGridImage } from '../components/DownloadGridImage';
 import { GameSearchPicker } from '../components/GameSearchPicker';
 import { GridBoard, GridBoardSkeleton } from '../components/GridBoard';
+import { LabelCombobox } from '../components/LabelCombobox';
 import { ShareLink } from '../components/ShareLink';
 import { useModalDialog } from '../components/useModalDialog';
 import { usePageTitle } from '../lib';
@@ -285,21 +286,15 @@ function CellEditor({
                     <X />
                 </button>
             </div>
-            <label className="field">
-                <span>Label</span>
-                <input
-                    value={label}
-                    onChange={(e) => setLabel(e.target.value)}
-                    maxLength={MAX_CELL_LABEL}
-                    list="grid-label-prompts"
-                    placeholder="e.g. Best soundtrack"
-                />
-                <datalist id="grid-label-prompts">
-                    {GRID_LABEL_PROMPTS.map((p) => (
-                        <option key={p} value={p} />
-                    ))}
-                </datalist>
-            </label>
+            <LabelCombobox
+                label="Label"
+                value={label}
+                onChange={setLabel}
+                suggestions={GRID_LABEL_PROMPTS}
+                exclude={grid.cells.filter((c) => c.position !== position).map((c) => c.label)}
+                maxLength={MAX_CELL_LABEL}
+                placeholder="e.g. Best soundtrack"
+            />
             <p className="form-error" role="alert">
                 {error}
             </p>

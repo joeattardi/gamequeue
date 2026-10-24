@@ -5231,3 +5231,59 @@ button.grid-cell__button:hover {
 .dialog__body--fill.dialog__body--cell:has(.results) {
     grid-template-rows: auto auto auto auto minmax(0, 1fr);
 }
+
+/* Label field with a styled suggestion list */
+.combo {
+    position: relative;
+}
+.combo label {
+    display: block;
+}
+.combo__popup {
+    position: absolute;
+    z-index: 5;
+    inset: calc(100% + 4px) 0 auto 0;
+    overflow: hidden;
+    background: var(--surface);
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+}
+.combo__head {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+}
+.combo__head .lucide {
+    width: 14px;
+    height: 14px;
+    color: var(--accent);
+}
+.combo__popup ul {
+    list-style: none;
+    margin: 0;
+    padding: 0 6px 6px;
+    max-height: 232px;
+    overflow-y: auto;
+}
+.combo__option {
+    padding: 9px 10px;
+    border-radius: var(--radius-sm);
+    font-weight: 500;
+    cursor: pointer;
+}
+.combo__option.is-active {
+    background: var(--accent-soft);
+    color: var(--ink);
+}
+.combo__option mark {
+    background: none;
+    color: var(--accent);
+    font-weight: 700;
+}
