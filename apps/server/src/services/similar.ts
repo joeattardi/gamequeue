@@ -12,6 +12,21 @@ export const MAX_SIMILAR = 12;
 
 export const similarCache = () => new TtlCache<IgdbSearchHit[]>(SIMILAR_TTL_MS, 200);
 
+/** IGDB's raw similar list for a game, through the cache */
+export async function similarHits(
+    igdb: IgdbClient | undefined,
+    cache: TtlCache<IgdbSearchHit[]>,
+    igdbId: number
+): Promise<IgdbSearchHit[]> {
+    const key = String(igdbId);
+    let hits = cache.get(key);
+    if (!hits) {
+        hits = await callIgdb(() => requireIgdb(igdb).fetchSimilarGames(igdbId));
+        cache.set(key, hits);
+    }
+    return hits;
+}
+
 /**
  * IGDB's similar games for one game, best rated first (unrated last), each marked with whether
  * the user owns or wishlisted it. The IGDB list is cached; the marks are per user and never are.
@@ -23,13 +38,7 @@ export async function similarGames(
     userId: number,
     igdbId: number
 ): Promise<SimilarGameDto[]> {
-    const key = String(igdbId);
-    let hits = cache.get(key);
-    if (!hits) {
-        hits = await callIgdb(() => requireIgdb(igdb).fetchSimilarGames(igdbId));
-        cache.set(key, hits);
-    }
-    const top = hits
+    const top = (await similarHits(igdb, cache, igdbId))
         .filter((h) => h.id !== igdbId)
         .sort((a, b) => (b.rating ?? -1) - (a.rating ?? -1))
         .slice(0, MAX_SIMILAR);

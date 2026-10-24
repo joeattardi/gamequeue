@@ -32,6 +32,7 @@ import { ProfileGamesPage } from './routes/ProfileGamesPage';
 import { ProfileWishlistPage } from './routes/ProfileWishlistPage';
 import { ProfileRecapPage, RecapPage } from './routes/RecapPage';
 import { ProfileStatsPage, StatsPage } from './routes/StatsPage';
+import { DiscoverPage } from './routes/DiscoverPage';
 import { WishlistPage } from './routes/WishlistPage';
 
 export function App() {
@@ -89,6 +90,7 @@ export function App() {
                 <Route path="games/igdb/:igdbId" element={<GameDetailPage />} />
                 <Route path="queue" element={<QueuePage />} />
                 <Route path="wishlist" element={<WishlistPage />} />
+                <Route path="discover" element={<DiscoverPage />} />
                 <Route path="series/:id" element={<SeriesPage />} />
                 <Route path="lists" element={<ListsPage />} />
                 <Route path="lists/:id" element={<ListPage />} />

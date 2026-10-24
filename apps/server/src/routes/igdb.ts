@@ -17,13 +17,15 @@ import {
     requireIgdb
 } from '../services/games.js';
 import { gameOffers, offersCache } from '../services/prices.js';
-import { similarCache, similarGames } from '../services/similar.js';
+import { similarGames } from '../services/similar.js';
 
-export function igdbRoutes({ db, config, igdb, itad }: AppDeps) {
+export function igdbRoutes(
+    { db, config, igdb, itad }: AppDeps,
+    similar: TtlCache<IgdbSearchHit[]>
+) {
     const r = new Hono<{ Variables: AuthVars }>();
     const cache = new TtlCache<IgdbSearchHit[]>();
     const offers = offersCache();
-    const similar = similarCache();
     r.use('*', requireAuth(db, config));
 
     r.get('/search', async (c) => {

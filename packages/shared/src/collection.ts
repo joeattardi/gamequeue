@@ -48,6 +48,23 @@ export interface SimilarGameDto {
     wishlisted: boolean;
 }
 
+/** `GET /discover`: suggestions drawn from IGDB's similar-game lists for the games you love */
+export interface DiscoverDto {
+    /** How many loved games (favorites and 4+ stars) the suggestions come from; 0 means none yet */
+    seedCount: number;
+    /** Best suggestions overall, most seeds in common first */
+    picks: DiscoverPickDto[];
+    /** The same suggestions grouped under the game that led to them */
+    rows: { seed: { igdbId: number; name: string; entryId: number }; games: SimilarGameDto[] }[];
+}
+
+export interface DiscoverPickDto extends SimilarGameDto {
+    /** Names of up to three loved games it is similar to */
+    becauseOf: string[];
+    /** How many loved games it is similar to in all */
+    seedMatches: number;
+}
+
 export interface GameDto {
     id: number;
     name: string;

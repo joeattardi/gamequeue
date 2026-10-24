@@ -12,6 +12,7 @@ import { UserMenu } from './UserMenu';
 import {
     Bookmark,
     ChartColumn,
+    Compass,
     Dices,
     Gift,
     Inbox,
@@ -256,6 +257,12 @@ export function Shell({ user }: { user: UserDto }) {
                                 icon={<Gift />}
                                 label="Wishlist"
                                 count={counts.wishlist}
+                                collapsed={collapsed}
+                            />
+                            <NavItem
+                                to="/discover"
+                                icon={<Compass />}
+                                label="Discover"
                                 collapsed={collapsed}
                             />
                         </div>

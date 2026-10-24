@@ -430,6 +430,20 @@ export const wishlistItems = sqliteTable(
     ]
 );
 
+// Games the user told Discover not to suggest again. Keyed by IGDB id with no games FK: a suggestion
+// is usually a game we have never cached.
+export const dismissedGames = sqliteTable(
+    'dismissed_games',
+    {
+        userId: integer('user_id')
+            .notNull()
+            .references(() => users.id, { onDelete: 'cascade' }),
+        gameId: integer('game_id').notNull(),
+        dismissedAt: integer('dismissed_at').notNull().default(now)
+    },
+    (t) => [primaryKey({ columns: [t.userId, t.gameId] })]
+);
+
 // A saved set of rules; its games are computed from the collection each time (see shared
 // smart-lists.ts), so there are no items. `rules` is validated JSON.
 export const smartLists = sqliteTable(

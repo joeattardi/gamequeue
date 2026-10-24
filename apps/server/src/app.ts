@@ -11,6 +11,7 @@ import { authRoutes } from './routes/auth.js';
 import { dataRoutes } from './routes/data.js';
 import { profileRoutes } from './routes/profile.js';
 import { entryRoutes } from './routes/entries.js';
+import { discoverRoutes } from './routes/discover.js';
 import { igdbRoutes } from './routes/igdb.js';
 import { ogRoutes } from './routes/og.js';
 import { createCardRenderer, type CardRenderer } from './og/render.js';
@@ -28,6 +29,7 @@ import type { ItadClient } from './itad/types.js';
 import type { AuthVars } from './auth/middleware.js';
 import { reportError } from './services/error-log.js';
 import { createNotifier, type Notify } from './services/notify.js';
+import { similarCache } from './services/similar.js';
 
 export interface AppDeps {
     db: Db;
@@ -90,7 +92,10 @@ export function createApp(deps: AppDeps) {
     app.route('/api/account', accountRoutes({ ...deps, limiters }));
     app.route('/api/admin', adminRoutes(deps));
     app.route('/api/avatar', avatarRoutes(deps));
-    app.route('/api/igdb', igdbRoutes(deps));
+    // IGDB's similar-game lists are shared by the game pages and Discover
+    const similar = similarCache();
+    app.route('/api/igdb', igdbRoutes(deps, similar));
+    app.route('/api/discover', discoverRoutes(deps, similar));
     app.route('/api/entries', entryRoutes(deps));
     app.route('/api/entries', entryActionRoutes(deps));
     app.route('/api/playthroughs', playthroughRoutes(deps));

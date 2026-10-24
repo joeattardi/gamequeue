@@ -877,6 +877,15 @@ select:disabled {
     grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
     gap: 14px;
 }
+/* Discover: wishlist and dismiss buttons under each suggestion */
+.discover-card__actions {
+    display: flex;
+    gap: 6px;
+    margin-top: 8px;
+}
+.discover-row {
+    margin-top: 28px;
+}
 .similar__title {
     display: block;
     margin-top: 6px;
