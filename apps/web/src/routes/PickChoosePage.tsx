@@ -12,6 +12,7 @@ import { fetchAll } from '../api/paging';
 import { useList, useLists } from '../api/lists';
 import { useQueue } from '../api/queue';
 import { Cover } from '../components/Cover';
+import { Knockout } from '../components/Knockout';
 import {
     PickResult,
     PickResultSkeleton,
@@ -47,8 +48,11 @@ export function PickChoosePage() {
     const [winner, setWinner] = useState<Contender>();
     const [wrapped, setWrapped] = useState(false);
     const [rolling, setRolling] = useState(false);
+    const [lastStanding, setLastStanding] = useState(false);
+    /** A knockout in progress; the winner appears when it ends */
+    const [knockout, setKnockout] = useState<Contender>();
 
-    const building = !rolling && !winner;
+    const building = !rolling && !winner && !knockout;
 
     function add(games: Contender[]) {
         setChosen((cur) => {
@@ -58,6 +62,16 @@ export function PickChoosePage() {
     }
 
     function run(exclude: number[]) {
+        if (lastStanding) {
+            // Every knockout is a fresh draw from everyone, so there is no "already shown" list
+            const pick = chosen[Math.floor(Math.random() * chosen.length)];
+            if (!pick) return;
+            setWinner(undefined);
+            setKnockout(pick);
+            setWrapped(false);
+            setSeen([]);
+            return;
+        }
         const outcome = pickRandom(
             chosen.map((g) => ({ id: g.igdbId })),
             { excludeIds: exclude }
@@ -99,6 +113,14 @@ export function PickChoosePage() {
                         onRemove={(id) => setChosen((c) => c.filter((g) => g.igdbId !== id))}
                         onClear={() => setChosen([])}
                     />
+                    <label className="check">
+                        <input
+                            type="checkbox"
+                            checked={lastStanding}
+                            onChange={(e) => setLastStanding(e.target.checked)}
+                        />
+                        Last man standing: eliminate games one by one until a single game is left
+                    </label>
                     <div>
                         <button
                             className="btn btn--primary"
@@ -117,6 +139,18 @@ export function PickChoosePage() {
                     <FromList onAdd={add} />
                     <Search chosen={chosen} onAdd={(g) => add([g])} />
                 </div>
+            )}
+
+            {knockout && (
+                <Knockout
+                    key={knockout.igdbId}
+                    games={chosen}
+                    winnerId={knockout.igdbId}
+                    onDone={() => {
+                        setWinner(knockout);
+                        setKnockout(undefined);
+                    }}
+                />
             )}
 
             <div aria-live="polite">

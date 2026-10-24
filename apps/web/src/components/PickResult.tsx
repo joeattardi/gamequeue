@@ -25,7 +25,7 @@ export function rollDelay(): Promise<void> {
 export const ROLL_LINES = ['Shuffling your games…', 'Weighing the options…', 'Consulting fate…'];
 
 /** Fisher-Yates, so the covers don't flash by in the order the games were added. */
-function shuffled<T>(xs: T[]): T[] {
+export function shuffled<T>(xs: T[]): T[] {
     const a = [...xs];
     for (let i = a.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));

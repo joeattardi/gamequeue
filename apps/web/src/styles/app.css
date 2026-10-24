@@ -3092,6 +3092,29 @@ fieldset.stars:disabled .stars__star {
     width: 100%;
     height: auto;
 }
+.knockout__card {
+    transition:
+        opacity 0.35s ease,
+        transform 0.35s ease,
+        filter 0.35s ease;
+}
+.knockout__card--out {
+    opacity: 0.18;
+    filter: grayscale(1);
+    transform: scale(0.88);
+}
+.knockout__card--winner {
+    transform: scale(1.08);
+}
+.knockout__card--winner .cover {
+    outline: 3px solid var(--accent);
+    outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+    .knockout__card {
+        transition: none;
+    }
+}
 .pick-contender__remove {
     position: absolute;
     top: -6px;
