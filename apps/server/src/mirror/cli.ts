@@ -1,29 +1,38 @@
 import { loadConfig } from '../config.js';
-import { createDumpSource } from './dumps.js';
-import { runMirror } from './run.js';
+import { createDumpSource, type DumpSource } from './dumps.js';
+import { runMirrorJob } from './job.js';
 
-/** `npm run igdb:mirror [-- --force]`: downloads IGDB's dumps and rebuilds the local mirror. */
+/**
+ * `npm run igdb:mirror [-- --force]` (`node dist/mirror/cli.js` in production, started daily by
+ * `scripts/mirror.sh`): downloads IGDB's dumps and rebuilds the local mirror, leaves
+ * `mirror-status.json` behind for the admin page, and exits 1 when the run failed.
+ */
 async function main() {
     const config = loadConfig();
-    if (!config.igdbClientId || !config.igdbClientSecret) {
-        console.error('IGDB_CLIENT_ID and IGDB_CLIENT_SECRET must be set');
-        process.exit(1);
-    }
-    const started = Date.now();
-    const log = (message: string) => console.log(`[mirror] ${message}`);
-    const result = await runMirror({
-        source: createDumpSource({
-            clientId: config.igdbClientId,
-            clientSecret: config.igdbClientSecret
-        }),
+    const { igdbClientId, igdbClientSecret } = config;
+    // Missing credentials are a failure like any other: the admin page should say so
+    const source: DumpSource =
+        igdbClientId && igdbClientSecret
+            ? createDumpSource({ clientId: igdbClientId, clientSecret: igdbClientSecret })
+            : {
+                  list: async () => {
+                      throw new Error('IGDB_CLIENT_ID and IGDB_CLIENT_SECRET must be set');
+                  },
+                  open: async () => {
+                      throw new Error('IGDB_CLIENT_ID and IGDB_CLIENT_SECRET must be set');
+                  }
+              };
+    const run = await runMirrorJob({
+        source,
         path: config.igdbMirrorPath,
         force: process.argv.includes('--force'),
-        log
+        log: (message) => console.log(`[mirror] ${message}`)
     });
-    log(`${result.status} in ${((Date.now() - started) / 1000).toFixed(1)}s`);
+    if (run.ok) console.log(`[mirror] ${run.result} in ${run.seconds}s`);
+    else {
+        console.error(`[mirror] failed: ${run.error}`);
+        process.exit(1);
+    }
 }
 
-main().catch((e) => {
-    console.error(`[mirror] failed: ${e instanceof Error ? e.message : e}`);
-    process.exit(1);
-});
+void main();

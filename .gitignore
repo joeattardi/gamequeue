@@ -6,4 +6,5 @@ dist
 .DS_Store
 data/
 .update.lock
+.mirror.lock
 backups/

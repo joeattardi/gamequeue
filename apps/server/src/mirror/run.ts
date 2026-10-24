@@ -28,8 +28,10 @@ export const MAX_SHRINK = 0.2;
 export interface MirrorInfo {
     schemaVersion: number;
     dump: string | null;
+    /** Epoch seconds */
     builtAt: number | null;
     games: number;
+    searchable: number;
 }
 
 /** What a mirror file says about itself, or null when it's missing or unreadable. */
@@ -47,7 +49,8 @@ export function readMirrorInfo(path: string): MirrorInfo | null {
             schemaVersion: Number(meta.schema_version ?? 0),
             dump: meta.dump ?? null,
             builtAt: meta.built_at ? Number(meta.built_at) : null,
-            games: Number(meta.games ?? 0)
+            games: Number(meta.games ?? 0),
+            searchable: Number(meta.searchable ?? 0)
         };
     } catch {
         return null;
@@ -92,6 +95,8 @@ export interface RunOptions {
     /** Rebuild even when the dumps haven't changed since the last build */
     force?: boolean;
     minGames?: number;
+    /** Called once a build is going to happen (not when the mirror is current); throw to stop it */
+    beforeBuild?: () => void;
     log?: (message: string) => void;
 }
 
@@ -119,6 +124,7 @@ export async function runMirror(opts: RunOptions): Promise<RunResult> {
     }
 
     mkdirSync(dirname(opts.path), { recursive: true });
+    opts.beforeBuild?.();
     const next = `${opts.path}.new`;
     try {
         const stats = await buildMirror({

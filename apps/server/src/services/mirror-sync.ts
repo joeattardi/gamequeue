@@ -8,7 +8,7 @@ import { saveSeriesMembers } from './series.js';
 import { read, write } from './settings.js';
 
 /** Which mirror dump the cached games were last refreshed from. */
-const SYNCED_DUMP = 'igdb_mirror_synced_dump';
+export const SYNCED_DUMP = 'igdb_mirror_synced_dump';
 /** Games refreshed per transaction; the event loop gets a turn between batches. */
 const BATCH = 200;
 /** How often the server looks for a newly built mirror. */

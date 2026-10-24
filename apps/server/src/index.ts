@@ -16,6 +16,7 @@ import { reportError, pruneErrors, setErrorAlerter } from './services/error-log.
 import { createNotifier } from './services/notify.js';
 import { backfillSeries } from './services/games.js';
 import { MIRROR_SYNC_CHECK_MS, syncFromMirrorIfNew } from './services/mirror-sync.js';
+import { reportMirrorRunFailure } from './services/mirror-status.js';
 import { mountWeb } from './web.js';
 
 const config = loadConfig();
@@ -99,8 +100,12 @@ pruneRuns(db);
 // Games cached before series were stored learn theirs in the background
 void backfillSeries(db, igdb);
 // Cached games take the mirror's metadata whenever a newly built mirror appears
-void syncFromMirrorIfNew(db, igdb);
-setInterval(() => void syncFromMirrorIfNew(db, igdb), MIRROR_SYNC_CHECK_MS).unref();
+const checkMirror = () => {
+    void syncFromMirrorIfNew(db, igdb);
+    reportMirrorRunFailure(db, config);
+};
+checkMirror();
+setInterval(checkMirror, MIRROR_SYNC_CHECK_MS).unref();
 setInterval(() => {
     purgeExpiredSessions(db);
     pruneErrors(db);

@@ -113,6 +113,7 @@ export const ERROR_KINDS = {
     job_price_refresh: 'Price refresh',
     job_screenshots: 'Screenshot fetch',
     job_mirror_sync: 'Mirror sync',
+    job_mirror_build: 'Mirror build',
     series_refresh: 'Series refresh',
     discover_lookup: 'Discover lookup',
     email_failed: 'Notification email',
@@ -133,6 +134,7 @@ export const ERROR_GROUPS = {
             'job_price_refresh',
             'job_screenshots',
             'job_mirror_sync',
+            'job_mirror_build',
             'series_refresh',
             'discover_lookup'
         ]

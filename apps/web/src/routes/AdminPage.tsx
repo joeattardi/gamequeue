@@ -1,5 +1,6 @@
 import {
     backupHealth,
+    mirrorHealth,
     trafficTotals,
     ERROR_KINDS,
     type BackupHealth,
@@ -13,6 +14,7 @@ import {
     Bug,
     Database,
     DatabaseBackup,
+    DatabaseZap,
     Gamepad2,
     Server,
     ShieldCheck,
@@ -25,6 +27,7 @@ import {
     useAdminDatabase,
     useAdminErrors,
     useAdminIgdb,
+    useAdminMirror,
     useAdminServer,
     useAdminTraffic,
     useAdminSettings,
@@ -34,6 +37,14 @@ import {
 import { AdminTile } from '../components/AdminTile';
 import { BackupSkeleton, CheckSkeletons } from '../components/PageSkeletons';
 import { diskIsLow, formatBytes, formatDuration, timeAgo, usePageTitle } from '../lib';
+
+const MIRROR_STATUS_LABEL = {
+    healthy: 'Up to date',
+    stale: 'Overdue',
+    failed: 'Failed',
+    never: 'Not built',
+    missing: 'File missing'
+} as const;
 
 const when = (ms: number) => ({
     ago: timeAgo(ms),
@@ -225,6 +236,53 @@ function IgdbTile() {
     );
 }
 
+function MirrorTile() {
+    const q = useAdminMirror();
+    const d = q.data;
+    const health = d ? mirrorHealth(d, Date.now()) : undefined;
+    return (
+        <AdminTile
+            id="mirror-heading"
+            icon={<DatabaseZap aria-hidden="true" />}
+            title="IGDB mirror"
+            state={state(q)}
+            stats={
+                d
+                    ? [
+                          { label: 'Status', value: MIRROR_STATUS_LABEL[health!] },
+                          {
+                              label: 'Games',
+                              value: d.mirror ? d.mirror.games.toLocaleString() : 'None'
+                          },
+                          {
+                              label: 'Updated',
+                              value: d.run?.lastSuccessAt ? timeAgo(d.run.lastSuccessAt) : 'Never',
+                              title: d.run?.lastSuccessAt
+                                  ? new Date(d.run.lastSuccessAt).toLocaleString()
+                                  : undefined
+                          }
+                      ]
+                    : []
+            }
+            to="/admin/mirror"
+            linkLabel="Mirror details"
+        >
+            {health && health !== 'healthy' && (
+                <p className="admin-warn" role="status">
+                    <TriangleAlert aria-hidden="true" />{' '}
+                    {health === 'failed'
+                        ? `The last update failed: ${d?.run?.error ?? 'unknown error'}`
+                        : health === 'never'
+                          ? 'No mirror built yet, so IGDB is queried live.'
+                          : health === 'missing'
+                            ? 'The mirror file is missing.'
+                            : 'The daily update is overdue.'}
+                </p>
+            )}
+        </AdminTile>
+    );
+}
+
 function TrafficTile() {
     const q = useAdminTraffic();
     const d = q.data;
@@ -382,6 +440,7 @@ export function AdminPage() {
                 <UsersTile />
                 <DatabaseTile />
                 <IgdbTile />
+                <MirrorTile />
                 <TrafficTile />
                 <ErrorsTile />
                 <ServerTile />

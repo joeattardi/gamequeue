@@ -34,6 +34,7 @@ Files in the repo that make this work:
 | `scripts/update.sh`            | Run by cron on the Pi: pulls the repo and image, and if either changed, backs up, restarts and rolls back on failure                |
 | `scripts/backup.sh`            | Safe snapshot of the live SQLite file, 14-day retention, optional off-machine copy                                                  |
 | `scripts/resources.sh`         | Run by cron every 5 minutes: checks disk, memory, Pi temperature and power, and pings healthchecks.io                               |
+| `scripts/mirror.sh`            | Run by cron once a day: rebuilds the local copy of IGDB's data from its data dump (see IGDB mirror), and pings healthchecks.io      |
 
 On the Pi:
 
@@ -41,6 +42,7 @@ On the Pi:
 ~/gamequeue/            git clone of the repo
 ~/gamequeue/.env        settings and secrets (mode 600, never committed)
 ~/gamequeue/data/       gamequeue.db (+ -wal and -shm files); mounted into the container at /data
+                        igdb.db (the IGDB mirror, rebuildable, not backed up) and mirror-status.json
 ~/gamequeue/backups/    nightly and pre-update snapshots
 ```
 
@@ -52,6 +54,7 @@ Defined in `apps/server/src/config.ts`. In Docker, `compose.yaml` sets the fixed
 | -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `NODE_ENV`                             | `production` (set in the image; makes the session cookie `Secure` and serves the web app on one port)                                                                                    |
 | `PORT`                                 | `3000` (set in the image)                                                                                                                                                                |
+| `IGDB_MIRROR_PATH`                     | `/data/igdb.db` (set in the image): the local copy of IGDB's data built by `scripts/mirror.sh`; the app uses it when the file exists (see IGDB mirror)                                   |
 | `DATABASE_PATH`                        | `/data/gamequeue.db` (set in the image; `/data` is the mounted `./data` directory)                                                                                                       |
 | `TRUST_PROXY`                          | `true` (set in `compose.yaml`; the login rate limit then sees the client IP, see the caveat below)                                                                                       |
 | `ALLOWED_ORIGINS`                      | `https://gamequeue.app` in `.env` (must match the real URL; the CSRF check rejects any other `Origin`)                                                                                   |
@@ -341,15 +344,16 @@ chmod +x ~/gamequeue/scripts/*.sh
 crontab -e
 ```
 
-Add these three lines (replace `<user>`):
+Add these four lines (replace `<user>`; the fourth is explained under IGDB mirror):
 
 ```
 */2 * * * * /home/<user>/gamequeue/scripts/update.sh >> /home/<user>/gamequeue/update.log 2>&1
 0 3 * * * /home/<user>/gamequeue/scripts/backup.sh >> /home/<user>/gamequeue/backup.log 2>&1
 */5 * * * * /home/<user>/gamequeue/scripts/resources.sh >> /home/<user>/gamequeue/resources.log 2>&1
+30 6 * * * /home/<user>/gamequeue/scripts/mirror.sh >> /home/<user>/gamequeue/mirror.log 2>&1
 ```
 
-The first line keeps the app current, the second is the nightly backup, the third watches the machine's resources (see Resource monitoring). Cron runs with a minimal environment; if `docker` is not found, add `PATH=/usr/local/bin:/usr/bin:/bin` as the first line of the crontab. Run `~/gamequeue/scripts/update.sh` by hand once and check `docker compose ps`.
+The first line keeps the app current, the second is the nightly backup, the third watches the machine's resources (see Resource monitoring), the fourth refreshes the local copy of IGDB's data (see IGDB mirror; its time is in the Pi's local time zone, so read that section before copying it). Cron runs with a minimal environment; if `docker` is not found, add `PATH=/usr/local/bin:/usr/bin:/bin` as the first line of the crontab. Run `~/gamequeue/scripts/update.sh` by hand once and check `docker compose ps`.
 
 ### Everyday use
 
@@ -471,6 +475,49 @@ docker compose start gamequeue
 
 Try a restore on a scratch machine once, so the first time is not during an emergency.
 
+## IGDB mirror
+
+IGDB gives data partners a full copy of its database every day. GameQueue keeps a trimmed copy of the parts it uses in its own SQLite file, `~/gamequeue/data/igdb.db` (about 250 MB, 380,000 games), and answers search, game pages, series, similar games, screenshots and release dates from it. Live IGDB is asked only for what the copy lacks (a game newer than the last dump, or a search with no local match, such as a typo). The server also refreshes every game it has cached from the copy, so ratings, time to beat and release dates stay current. Design and measurements are in `IGDB_MIRROR.md`.
+
+It needs IGDB's data partner access; without it `scripts/mirror.sh` fails and the app simply keeps using live IGDB, exactly as before. The mirror is **not backed up**: it is rebuilt from IGDB, `backup.sh` only snapshots `gamequeue.db`, and deleting `igdb.db` is always safe.
+
+### Setup
+
+1. Deploy a version that includes the mirror (the normal update flow). The image already knows where the file lives (`IGDB_MIRROR_PATH=/data/igdb.db`); no `.env` change is needed.
+2. Build it once by hand so you don't wait for tomorrow: `~/gamequeue/scripts/mirror.sh`. It takes about a minute on a Mac; expect a few minutes on a Pi (not measured there yet). Watch the output, then open **Admin > IGDB mirror** in the app. The server picks the file up within seconds, no restart needed.
+3. Add the fourth cron line from "Updating". `mirror.sh` runs the importer in a throw-away container from the app image (`docker compose run --rm --no-deps`) that shares `./data` with the app, so it works even while the app is restarting and its memory doesn't count against the web process. Output goes to `~/gamequeue/mirror.log`.
+4. Optional but recommended: a healthchecks.io check for it (below).
+
+### When it runs
+
+IGDB regenerates its dumps around 06:00 UTC (the one inspected on 2026-10-24 was complete by 06:01:13), so the job runs at **06:30 UTC**. Cron uses the Pi's local time zone (`timedatectl` shows it), so convert: on a Pi set to UTC the line is `30 6 * * *`; for US Eastern it is `30 2 * * *` in summer (UTC-4) and `30 1 * * *` in winter (UTC-5). It doesn't need to be exact. Anything after about 06:15 UTC works, and an hour of drift when daylight saving changes is harmless, because a run is cheap and idempotent: it asks IGDB which dump is current and stops in a couple of seconds if the mirror was already built from it. Running it more often than daily is therefore also fine, and `mirror.sh --force` rebuilds even when nothing changed.
+
+### What a run does
+
+1. Asks IGDB for the list of dumps. If the `games` dump is the one the file was built from, it stops (status "current").
+2. Checks that at least 1 GB is free on the data disk, before downloading anything. A build peaks at about 570 MB (the new file plus a scratch database, next to the 250 MB current file); nothing is written to disk but the database itself, because the CSVs are streamed straight into SQLite.
+3. Builds `igdb.db.new`, verifies it (integrity check, at least 100,000 games, no more than a 20% drop from the current file, complete search index), and only then renames it over `igdb.db`. A failed or rejected run leaves the old mirror untouched.
+4. Writes `data/mirror-status.json`, whatever happened.
+
+### Monitoring
+
+- **Admin > IGDB mirror** shows the file (games, size, when it was built, which IGDB dump it came from), the last run and last success, and whether the cached games have been refreshed from it. The dashboard tile shows a warning line when no run has succeeded for 36 hours or the last run failed.
+- A failed run is also recorded in the error log (kind "Mirror build") by the server, which reads the status file every 10 minutes, so it triggers the owner email alert if you set that up.
+- **healthchecks.io**: create a fourth check, period **1 day**, grace **3 hours**, email integration, and put its ping URL in `~/gamequeue/.env` as `HEALTHCHECK_MIRROR_URL=https://hc-ping.com/<uuid>`. `mirror.sh` pings `/start`, then a plain ping with the last output line on success or `/fail` with the last lines on failure, and reads only that one line from `.env`. Treat the URL as a secret.
+
+### If something goes wrong
+
+| Symptom                                                       | Likely cause                                                                                                                                  |
+| ------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| Admin says "No mirror has been built yet"                     | The job hasn't run or has failed every time. Run `~/gamequeue/scripts/mirror.sh` by hand and read the output (also `~/gamequeue/mirror.log`). |
+| `Only N MB free ... needs at least 1024 MB`                   | The data disk is nearly full (also watch the resource check). Free space; the old mirror keeps working meanwhile.                             |
+| `Dump ... is not available (401/403)` or `Listing ... failed` | The Twitch app lacks IGDB data-partner access, or `IGDB_CLIENT_ID`/`IGDB_CLIENT_SECRET` are wrong. Search keeps working through live IGDB.    |
+| `Cannot find module .../mirror/cli.js`                        | The running image predates the mirror. Let `update.sh` deploy a newer one (or `docker compose pull`), then run the script again.              |
+| `Mirror shrank` / `has only N games`                          | A truncated or odd dump: the new file was rejected and the old one kept. If it repeats for days, look at IGDB's dump listing.                 |
+| Admin shows the mirror but search results look old            | The file is only as new as the last successful run; check "Last success". The server notices a new file within seconds.                       |
+
+To go back to live IGDB only, delete `~/gamequeue/data/igdb.db` and remove the cron line; the app notices the missing file within seconds.
+
 ## Troubleshooting
 
 | Symptom                                                           | Likely cause                                                                                                                                                                                                                                                  |
@@ -511,7 +558,8 @@ Partial unique indexes and the Drizzle query-builder code carry over largely unc
 
 For one to a few users, IGDB's limit (4 requests/second) is not a concern. What already keeps requests down:
 
-- Game metadata is fetched once per game and shared across users (`ensureGame` in `services/games.ts`); cached metadata is never re-fetched.
+- With the IGDB mirror (see IGDB mirror), search, game details, series, similar games and release dates make no IGDB requests at all except for games newer than the last dump; the rest of this list is what applies without it, or for those fallbacks.
+- Game metadata is fetched once per game and shared across users (`ensureGame` in `services/games.ts`); without a mirror, cached metadata is never re-fetched.
 - The platform list is synced once, then served from the database.
 - Search results are cached in memory for 5 minutes (`routes/igdb.ts`, `TtlCache`), and the search box is debounced by 300 ms.
 - Requests are throttled by `RequestLimiter`, and the Twitch token is cached.

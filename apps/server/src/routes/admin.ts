@@ -29,6 +29,7 @@ import { getAdminSettings, updateAdminSettings } from '../services/settings.js';
 import { readDatabaseStats } from '../services/database-stats.js';
 import { clearErrors, listErrors } from '../services/error-log.js';
 import { readBackupReport } from '../services/backup-status.js';
+import { getMirrorStatus } from '../services/mirror-status.js';
 import { getTraffic, trafficCache } from '../services/traffic.js';
 import type { AppDeps } from '../app.js';
 import { requireAdmin, requireAuth, type AuthVars } from '../auth/middleware.js';
@@ -76,6 +77,9 @@ export function adminRoutes({ db, config, igdb, cloudflare }: AppDeps) {
     );
 
     // IGDB client counters and a live connectivity check
+    // The local IGDB mirror: the file, the daily job's last report, and the cache sync (see IGDB_MIRROR.md)
+    r.get('/mirror', (c) => c.json(getMirrorStatus(db, config)));
+
     r.get('/igdb', (c) => {
         const lastReleaseCheckAt =
             db

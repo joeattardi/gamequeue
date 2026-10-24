@@ -12,6 +12,7 @@ import type {
     ErrorsDto,
     IgdbPingDto,
     IgdbStatusDto,
+    MirrorStatusDto,
     PurgeSessionsResult,
     PurgeUnusedGamesResult,
     ServerInfoDto,
@@ -94,6 +95,14 @@ export const useAdminIgdb = () =>
     useQuery({
         queryKey: ['admin', 'igdb'],
         queryFn: () => api<IgdbStatusDto>('/admin/igdb'),
+        refetchOnWindowFocus: true
+    });
+
+/** The local IGDB mirror: the file, the daily job's last run, and the cache sync. */
+export const useAdminMirror = () =>
+    useQuery({
+        queryKey: ['admin', 'mirror'],
+        queryFn: () => api<MirrorStatusDto>('/admin/mirror'),
         refetchOnWindowFocus: true
     });
 

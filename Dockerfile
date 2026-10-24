@@ -22,7 +22,8 @@ ARG GIT_COMMIT=unknown
 ENV GIT_COMMIT=$GIT_COMMIT \
     NODE_ENV=production \
     PORT=3000 \
-    DATABASE_PATH=/data/gamequeue.db
+    DATABASE_PATH=/data/gamequeue.db \
+    IGDB_MIRROR_PATH=/data/igdb.db
 COPY --from=build --chown=node:node /app/node_modules ./node_modules
 COPY --from=build --chown=node:node /app/apps/server/dist ./apps/server/dist
 COPY --from=build --chown=node:node /app/apps/server/drizzle ./apps/server/drizzle

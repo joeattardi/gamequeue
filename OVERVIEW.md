@@ -344,7 +344,7 @@ IGDB offers data partners a full copy of its database every day as CSV files. Ga
 
 ```mermaid
 flowchart LR
-    DUMPS["IGDB data dumps<br/>daily CSVs"] -- "npm run igdb:mirror<br/>(once a day)" --> BUILD["Build igdb.db.new<br/>mirror/build.ts"]
+    DUMPS["IGDB data dumps<br/>daily CSVs"] -- "scripts/mirror.sh<br/>(cron, 06:30 UTC)" --> BUILD["Build igdb.db.new<br/>mirror/build.ts"]
     BUILD --> CHECK{"Looks complete?"}
     CHECK -- yes --> SWAP["Rename over igdb.db"]
     CHECK -- no --> KEEP["Keep the old file"]
@@ -354,7 +354,8 @@ flowchart LR
     MC -- "only if the mirror can't" --> LIVE["Live IgdbClient"]
 ```
 
-- **A separate file, rebuilt every day.** It is never part of your user database or its backups, because it can always be rebuilt. The build streams each CSV straight into SQLite, checks the result (enough games, no big drop, intact search index) and only then swaps it in, so a failed download never damages the working copy. The running server notices the new file within a few seconds; no restart is needed.
+- **Rebuilt every day by a cron job, not by the app.** `scripts/mirror.sh` runs the importer in a short-lived container that shares the data folder, then pings healthchecks.io. Each run leaves a small status file; the admin page (**Admin > IGDB mirror**) shows it, and a failed run is logged and emailed like any other error.
+- **A separate file.** It is never part of your user database or its backups, because it can always be rebuilt. The build streams each CSV straight into SQLite, checks the result (enough games, no big drop, intact search index) and only then swaps it in, so a failed download never damages the working copy. The running server notices the new file within a few seconds; no restart is needed.
 - **The same answers as the live client.** The mirror client implements the same `IgdbClient` interface, so nothing else in the app knows which one it is talking to. Search, a game's details, release dates, series, screenshots, similar games and the platform list all come from the file.
 - **Live IGDB is the safety net.** A game newer than the last dump, a search with no local match (a typo, say) or a missing mirror file all fall through to the live client, as before.
 - **Search is its own thing.** The mirror's search index covers game names plus their alternative names, so "ff7", "bg3" and "TotK" work. Results are ranked by how many people rated a game, then adjusted for how well the text matches: a name that contains what you typed beats an alias match, which beats a title that merely has the same words somewhere. "7" and "VII" are treated as the same number and apostrophes are ignored.
@@ -622,6 +623,7 @@ flowchart TB
     DASH --> USERS["Users<br/>create, edit, reset password,<br/>delete, change role"]
     DASH --> DBS["Database<br/>size, row counts,<br/>cache cleanup, vacuum"]
     DASH --> IG["IGDB health<br/>requests per day, last error,<br/>test connection"]
+    DASH --> MI["IGDB mirror<br/>age, games, last run"]
     DASH --> ERR["Error log<br/>30-day chart, filter, clear"]
     DASH --> SRV["Server<br/>version, uptime, disk space,<br/>recent restarts"]
     DASH --> BK["Backups<br/>last run, off-site copy"]
@@ -636,7 +638,7 @@ How the monitoring pieces fit together:
 - **Backups.** The app can't run backups itself. `scripts/backup.sh` (on the host) writes a small status file after each run, and the admin page reads and displays it.
 - **Safety guards.** An admin can't delete themselves from the admin pages, and the last admin can't be demoted or deleted, so you can't lock yourself out.
 
-Code: `routes/admin.ts` and the `services/` files named after each panel (`error-log.ts`, `server-runs.ts`, `igdb-history.ts`, `backup-status.ts`, `database-stats.ts`, `maintenance.ts`, `server-info.ts`, `settings.ts`, `admin-users.ts`).
+Code: `routes/admin.ts` and the `services/` files named after each panel (`error-log.ts`, `server-runs.ts`, `igdb-history.ts`, `backup-status.ts`, `mirror-status.ts`, `database-stats.ts`, `maintenance.ts`, `server-info.ts`, `settings.ts`, `admin-users.ts`).
 
 ---
 
@@ -692,7 +694,10 @@ A few things happen on timers, not in response to a click. All run inside the sa
 | Series backfill                            | Startup and after an import                         | Fill in series for games cached before series were stored |
 | Release date refresh                       | When you open your wishlist, at most daily per game | Unreleased games' dates change                            |
 | Mirror sync                                | Startup, then every 10 minutes (only if a new dump) | Refresh every cached game from the local IGDB mirror      |
+| Mirror failure check                       | Same 10-minute tick                                 | Record a failed daily mirror run in the error log         |
 | Screenshots                                | When you open a game that never had them fetched    | Older cache rows predate screenshots                      |
+
+The daily mirror rebuild is the one job that does _not_ run in this process: cron on the host runs it in its own container (section 7), so a 50-second import never slows the web server.
 
 Background jobs that fail are logged to the error log and simply retried next time. They never break the request that triggered them.
 
