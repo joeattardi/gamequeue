@@ -551,13 +551,20 @@ a {
     color: var(--accent);
 }
 /* What's in the slots: one small cover each, under the logo */
+/* One row: with more slots than fit, the extras are cut off with a fade at the right edge */
 .slot-strip {
     display: flex;
-    flex-wrap: wrap;
     gap: 8px;
     margin: 0;
     padding: 0 12px;
     list-style: none;
+    /* Clipped, so without this a short window would squash it to nothing */
+    flex: none;
+    overflow: hidden;
+    mask-image: linear-gradient(to right, #000 calc(100% - 36px), transparent);
+}
+.slot-strip > li {
+    flex: none;
 }
 .slot-strip__item {
     display: grid;
@@ -578,7 +585,7 @@ a {
 }
 .slot-strip__item:hover {
     outline: 2px solid var(--accent);
-    outline-offset: 1px;
+    outline-offset: -2px;
 }
 .slot-strip__item--paused .cover {
     opacity: 0.55;
@@ -637,8 +644,7 @@ a {
         max-height: 24px;
     }
     .slot-strip {
-        overflow: hidden;
-        max-height: 120px;
+        max-height: 56px;
     }
     .nav__group + .nav__group {
         border-top: 1px solid transparent;
@@ -657,7 +663,6 @@ a {
     }
     /* The strip doesn't fit a rail: it folds away (no wrapping, so nothing reflows on the way) */
     .is-collapsed .slot-strip {
-        flex-wrap: nowrap;
         max-height: 0;
         margin-bottom: -16px;
         opacity: 0;
