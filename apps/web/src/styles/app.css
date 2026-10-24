@@ -4404,15 +4404,35 @@ fieldset.stars:disabled .stars__star {
         grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
     }
     .auth__showcase {
+        position: relative;
+        isolation: isolate;
+        overflow: hidden;
         display: grid;
-        align-content: center;
+        align-content: space-between;
         gap: 28px;
-        padding: clamp(32px, 6vw, 80px);
-        color: var(--recap-ink);
-        background:
-            radial-gradient(circle at 20% 15%, rgb(255 255 255 / 0.14), transparent 45%),
-            linear-gradient(145deg, var(--recap-1), var(--recap-3));
+        padding: clamp(32px, 5vw, 64px);
+        color: #fff;
+        background: #1b1147;
     }
+}
+/* Neon controller photo with a navy scrim top and bottom, so the text stays legible and the controller shows in the middle */
+.auth__photo {
+    position: absolute;
+    inset: 0;
+    z-index: -2;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: 72% 50%;
+}
+.auth__showcase::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background:
+        linear-gradient(to bottom, rgb(10 12 48 / 0.82), rgb(10 12 48 / 0) 38%),
+        linear-gradient(to top, rgb(10 12 48 / 0.86), rgb(10 12 48 / 0) 42%);
 }
 .auth__tagline {
     margin: 0;
@@ -4425,13 +4445,18 @@ fieldset.stars:disabled .stars__star {
     padding: 0;
     display: grid;
     gap: 14px;
-    color: var(--recap-ink-soft);
-    font-size: 1.05rem;
+    color: #fff;
+    font-size: 1.02rem;
 }
 .auth__points li {
     display: flex;
     align-items: center;
     gap: 12px;
+    padding: 8px 14px 8px 8px;
+    border: 1px solid rgb(255 255 255 / 0.18);
+    border-radius: 12px;
+    background: rgb(14 14 60 / 0.4);
+    backdrop-filter: blur(10px);
 }
 .auth__point-icon {
     display: grid;
@@ -4440,8 +4465,8 @@ fieldset.stars:disabled .stars__star {
     width: 36px;
     height: 36px;
     border-radius: 8px;
-    background: rgb(255 255 255 / 0.16);
-    color: var(--recap-ink);
+    background: rgb(255 255 255 / 0.18);
+    color: #fff;
 }
 
 /* ---- Landing page (logged-out home) ---- */
