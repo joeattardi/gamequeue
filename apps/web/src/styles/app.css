@@ -550,6 +550,149 @@ a {
 .user-menu__panel a.active .lucide {
     color: var(--accent);
 }
+/* What's in the slots: one small cover each, under the logo */
+.slot-strip {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 0;
+    padding: 0 12px;
+    list-style: none;
+}
+.slot-strip__item {
+    display: grid;
+    place-items: center;
+    width: 40px;
+    aspect-ratio: 3 / 4;
+    overflow: hidden;
+    border-radius: 5px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-family: var(--font-display);
+    font-weight: 700;
+    text-decoration: none;
+}
+.slot-strip__item .cover {
+    height: 100%;
+    border-radius: 0;
+}
+.slot-strip__item:hover {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+}
+.slot-strip__item--paused .cover {
+    opacity: 0.55;
+}
+.slot-strip__item--empty {
+    border: 1px dashed var(--line-strong);
+    background: none;
+}
+.nav__count {
+    margin-left: auto;
+    font-size: 0.78rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink-muted);
+}
+.nav a.active .nav__count {
+    color: var(--accent);
+}
+.sidebar__collapse {
+    display: none;
+}
+@media (min-width: 900px) {
+    .sidebar__collapse {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-height: 36px;
+        padding: 6px 12px;
+        border: 0;
+        border-radius: var(--radius-sm);
+        background: none;
+        color: var(--ink-muted);
+        font: inherit;
+        font-weight: 500;
+        cursor: pointer;
+    }
+    .sidebar__collapse:hover {
+        background: var(--surface-2);
+        color: var(--ink);
+    }
+    /* Icons only: the labels stay in the DOM (visually hidden) so links keep their names */
+    .app-shell--collapsed {
+        grid-template-columns: 64px minmax(0, 1fr);
+    }
+    .is-collapsed .nav__text,
+    .is-collapsed .nav__label,
+    .is-collapsed .logo__word,
+    .is-collapsed .user-menu__name,
+    .is-collapsed .user-menu__button .lucide:last-child,
+    .is-collapsed .nav-search kbd {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+        white-space: nowrap;
+    }
+    .is-collapsed .sidebar__head,
+    .is-collapsed .slot-strip {
+        justify-content: center;
+        padding: 0;
+    }
+    .is-collapsed .slot-strip {
+        flex-direction: column;
+        align-items: center;
+    }
+    .is-collapsed .sidebar__head .logo,
+    .is-collapsed .logo {
+        padding: 0;
+    }
+    .is-collapsed .nav-search,
+    .is-collapsed .nav a,
+    .is-collapsed .sidebar__collapse,
+    .is-collapsed .user-menu__button {
+        justify-content: center;
+        padding-left: 0;
+        padding-right: 0;
+    }
+    .is-collapsed .nav {
+        gap: 8px;
+    }
+    .is-collapsed .nav__group + .nav__group {
+        padding-top: 8px;
+        border-top: 1px solid var(--line);
+    }
+    .is-collapsed .nav__count {
+        position: absolute;
+        top: -2px;
+        right: -4px;
+        min-width: 15px;
+        padding: 0 3px;
+        border-radius: 8px;
+        background: var(--accent);
+        color: var(--accent-ink);
+        font-size: 0.62rem;
+        line-height: 15px;
+        text-align: center;
+    }
+    .is-collapsed .nav a.active .nav__count {
+        color: var(--accent-ink);
+    }
+    .is-collapsed .nav a.active::before {
+        top: 5px;
+        bottom: 5px;
+    }
+    /* Fixed, because the sidebar scrolls and would clip a panel wider than itself */
+    .is-collapsed .user-menu__panel {
+        position: fixed;
+        left: 72px;
+        right: auto;
+        bottom: 16px;
+        width: 220px;
+    }
+}
 @media (pointer: coarse) {
     .nav a,
     .nav-search,

@@ -1,10 +1,13 @@
 import type { UserDto } from '@gamequeue/shared';
+import type { ReactNode } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router';
 import { useLogout } from '../api/auth';
+import { useNavCounts } from '../api/counts';
 import { isRecapSeason } from '../lib';
 import { Footer } from './Footer';
 import { Logo } from './Logo';
+import { SlotStrip } from './SlotStrip';
 import { UserMenu } from './UserMenu';
 import {
     Bookmark,
@@ -15,6 +18,8 @@ import {
     Joystick,
     LibraryBig,
     Menu,
+    PanelLeftClose,
+    PanelLeftOpen,
     Search,
     SkipForward,
     Sparkles,
@@ -35,9 +40,68 @@ function useNarrow() {
     return narrow;
 }
 
+const COLLAPSED_KEY = 'gq.sidebar.collapsed';
+
+/** The wide-screen sidebar can shrink to icons; the choice is remembered in this browser. */
+function useCollapsed() {
+    const [collapsed, setCollapsed] = useState(() => {
+        try {
+            return localStorage.getItem(COLLAPSED_KEY) === '1';
+        } catch {
+            return false;
+        }
+    });
+    const toggle = () =>
+        setCollapsed((c) => {
+            try {
+                localStorage.setItem(COLLAPSED_KEY, c ? '0' : '1');
+            } catch {
+                // not remembered, still works for this visit
+            }
+            return !c;
+        });
+    return [collapsed, toggle] as const;
+}
+
+/** A nav link: icon, label and an optional count. Collapsed, the label becomes a tooltip. */
+function NavItem({
+    to,
+    end,
+    icon,
+    label,
+    count,
+    className,
+    collapsed
+}: {
+    to: string;
+    end?: boolean;
+    icon: ReactNode;
+    label: string;
+    count?: number;
+    className?: string;
+    collapsed: boolean;
+}) {
+    return (
+        <NavLink to={to} end={end} className={className} title={collapsed ? label : undefined}>
+            {icon}
+            <span className="nav__text">{label}</span>
+            {count ? (
+                <span className="nav__count">
+                    <span aria-hidden="true">{count.toLocaleString()}</span>
+                    <span className="sr-only"> games</span>
+                </span>
+            ) : null}
+        </NavLink>
+    );
+}
+
 export function Shell({ user }: { user: UserDto }) {
     const logout = useLogout();
     const narrow = useNarrow();
+    const [collapsedPref, toggleCollapsed] = useCollapsed();
+    const counts = useNavCounts();
+    // Collapsing is a wide-screen thing: the drawer is always the full nav
+    const collapsed = collapsedPref && !narrow;
     const [open, setOpen] = useState(false);
     const menuButton = useRef<HTMLButtonElement>(null);
     const closeButton = useRef<HTMLButtonElement>(null);
@@ -78,7 +142,7 @@ export function Shell({ user }: { user: UserDto }) {
             <a className="skip-link" href="#main">
                 Skip to content
             </a>
-            <div className="app-shell">
+            <div className={collapsed ? 'app-shell app-shell--collapsed' : 'app-shell'}>
                 <header className="mobile-bar" inert={drawerOpen}>
                     <button
                         ref={menuButton}
@@ -102,7 +166,13 @@ export function Shell({ user }: { user: UserDto }) {
                 />
                 <aside
                     id="main-nav"
-                    className={drawerOpen ? 'sidebar is-open' : 'sidebar'}
+                    className={
+                        drawerOpen
+                            ? 'sidebar is-open'
+                            : collapsed
+                              ? 'sidebar is-collapsed'
+                              : 'sidebar'
+                    }
                     inert={narrow && !open}
                 >
                     <div className="sidebar__head">
@@ -122,9 +192,14 @@ export function Shell({ user }: { user: UserDto }) {
                             <X />
                         </button>
                     </div>
-                    <NavLink className="nav-search" to="/search">
+                    <SlotStrip />
+                    <NavLink
+                        className="nav-search"
+                        to="/search"
+                        title={collapsed ? 'Search games' : undefined}
+                    >
                         <Search />
-                        <span>Search games</span>
+                        <span className="nav__text">Search games</span>
                         <kbd aria-hidden="true">/</kbd>
                     </NavLink>
                     <nav className="nav" aria-label="Main">
@@ -132,57 +207,92 @@ export function Shell({ user }: { user: UserDto }) {
                             <h2 className="nav__label" id="nav-play">
                                 Play
                             </h2>
-                            <NavLink to="/" end>
-                                <Joystick />
-                                Now playing
-                            </NavLink>
-                            <NavLink to="/queue">
-                                <SkipForward />
-                                Queue
-                            </NavLink>
-                            <NavLink to="/pick">
-                                <Dices />
-                                Pick
-                            </NavLink>
+                            <NavItem
+                                to="/"
+                                end
+                                icon={<Joystick />}
+                                label="Now playing"
+                                collapsed={collapsed}
+                            />
+                            <NavItem
+                                to="/queue"
+                                icon={<SkipForward />}
+                                label="Queue"
+                                count={counts.queue}
+                                collapsed={collapsed}
+                            />
+                            <NavItem
+                                to="/pick"
+                                icon={<Dices />}
+                                label="Pick"
+                                collapsed={collapsed}
+                            />
                         </div>
                         <div className="nav__group" role="group" aria-labelledby="nav-library">
                             <h2 className="nav__label" id="nav-library">
                                 Library
                             </h2>
-                            <NavLink to="/collection">
-                                <LibraryBig />
-                                Collection
-                            </NavLink>
-                            <NavLink to="/backlog">
-                                <Inbox />
-                                Backlog
-                            </NavLink>
-                            <NavLink to="/lists">
-                                <Bookmark />
-                                Lists
-                            </NavLink>
-                            <NavLink to="/wishlist">
-                                <Gift />
-                                Wishlist
-                            </NavLink>
+                            <NavItem
+                                to="/collection"
+                                icon={<LibraryBig />}
+                                label="Collection"
+                                collapsed={collapsed}
+                            />
+                            <NavItem
+                                to="/backlog"
+                                icon={<Inbox />}
+                                label="Backlog"
+                                count={counts.backlog}
+                                collapsed={collapsed}
+                            />
+                            <NavItem
+                                to="/lists"
+                                icon={<Bookmark />}
+                                label="Lists"
+                                collapsed={collapsed}
+                            />
+                            <NavItem
+                                to="/wishlist"
+                                icon={<Gift />}
+                                label="Wishlist"
+                                count={counts.wishlist}
+                                collapsed={collapsed}
+                            />
                         </div>
                         <div className="nav__group" role="group" aria-labelledby="nav-insights">
                             <h2 className="nav__label" id="nav-insights">
                                 Insights
                             </h2>
-                            <NavLink to="/stats">
-                                <ChartColumn />
-                                Stats
-                            </NavLink>
+                            <NavItem
+                                to="/stats"
+                                icon={<ChartColumn />}
+                                label="Stats"
+                                collapsed={collapsed}
+                            />
                             {/* Always in the footer's site map; promoted here for the season */}
                             {isRecapSeason() && (
-                                <NavLink className="nav__season" to="/recap">
-                                    <Sparkles />
-                                    Recap
-                                </NavLink>
+                                <NavItem
+                                    to="/recap"
+                                    className="nav__season"
+                                    icon={<Sparkles />}
+                                    label="Recap"
+                                    collapsed={collapsed}
+                                />
                             )}
                         </div>
                     </nav>
+                    <button
+                        type="button"
+                        className="sidebar__collapse"
+                        aria-expanded={!collapsed}
+                        aria-controls="main-nav"
+                        aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+                        title={collapsed ? 'Expand sidebar' : undefined}
+                        onClick={toggleCollapsed}
+                    >
+                        {collapsed ? <PanelLeftOpen /> : <PanelLeftClose />}
+                        <span className="nav__text">Collapse</span>
+                    </button>
                     <UserMenu
                         user={user}
                         onSignOut={() => logout.mutate()}
