@@ -2498,9 +2498,25 @@ fieldset.stars:disabled .stars__star {
     inset: 0;
     border-radius: inherit;
 }
-.counter__link:hover .counter__label {
-    color: var(--accent);
-    text-decoration: underline;
+/* The whole tile lights up in its own colour (the link covers it via ::after) */
+.counter:has(> a.counter__link) {
+    transition:
+        background-color 0.15s,
+        border-color 0.15s;
+}
+.counter:has(> a.counter__link:hover),
+.counter:has(> a.counter__link:focus-visible) {
+    border-color: var(--tone);
+    background: color-mix(in srgb, var(--tone) 12%, var(--surface));
+}
+.counter__link:hover .counter__label,
+.counter__link:focus-visible .counter__label {
+    color: var(--ink);
+}
+@media (prefers-reduced-motion: reduce) {
+    .counter:has(> a.counter__link) {
+        transition: none;
+    }
 }
 .counter__icon {
     grid-area: icon;
