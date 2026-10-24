@@ -10,7 +10,7 @@ import { useSlots } from '../api/slots';
 import { useStats } from '../api/stats';
 import { useWishlistCount } from '../api/wishlist';
 import { Welcome } from '../components/Welcome';
-import { Gamepad2, SlidersHorizontal } from 'lucide-react';
+import { Gamepad2, Sparkles, SlidersHorizontal } from 'lucide-react';
 import { useFirstName } from '../api/auth';
 import { greeting, usePageTitle } from '../lib';
 
@@ -26,9 +26,18 @@ export function Home() {
     // Nothing owned (so nothing queued, listed or slotted either) and nothing wishlisted
     if (stats.data?.overview.total === 0 && wishlisted.data === 0) return <Welcome />;
 
+    const overview = stats.data?.overview;
+    const summary = overview
+        ? `${overview.byStatus.playing} playing · ${overview.byStatus.paused} paused · ${overview.backlogCount} in the backlog`
+        : '\u00a0';
+
     return (
         <div className="home">
-            <h1>{greeting(firstName)}</h1>
+            <header className="home-hero">
+                <Sparkles className="home-hero__icon" aria-hidden="true" />
+                <h1>{greeting(firstName)}</h1>
+                <p className="home-hero__sub">{summary}</p>
+            </header>
             <section aria-labelledby="playing-h" className="home-section home-section--first">
                 <div className="page-head">
                     <div>

@@ -4162,6 +4162,43 @@ fieldset.stars:disabled .stars__star {
 .home-section--first {
     margin-top: 0;
 }
+.home-hero {
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 40px;
+    padding: 28px clamp(20px, 4vw, 36px);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background:
+        radial-gradient(circle at 100% 0%, var(--accent-soft), transparent 60%),
+        linear-gradient(135deg, var(--surface), var(--surface-2));
+}
+.home-hero h1 {
+    position: relative;
+    margin: 0 0 6px;
+}
+.home-hero__sub {
+    position: relative;
+    margin: 0;
+    color: var(--ink-muted);
+    font-weight: 500;
+}
+.home-hero__icon {
+    position: absolute;
+    right: clamp(16px, 4vw, 36px);
+    top: 50%;
+    width: 72px;
+    height: 72px;
+    transform: translateY(-50%);
+    color: var(--accent);
+    opacity: 0.18;
+}
+@media (max-width: 600px) {
+    .home-hero__icon {
+        width: 48px;
+        height: 48px;
+    }
+}
 
 /* ---- Screenshots under the cover (hidden on narrow screens, where the layout is one column) ---- */
 .shots {
