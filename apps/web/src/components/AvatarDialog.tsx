@@ -7,7 +7,6 @@ import {
     type UserDto
 } from '@gamequeue/shared';
 import { ImageUp, RotateCcw, X } from 'lucide-react';
-import { Link } from 'react-router';
 import { useRemoveAvatar, useSetAvatarIcon, useUploadAvatar } from '../api/avatar';
 import { ApiRequestError } from '../api/client';
 import { prepareAvatar } from '../avatarImage';
@@ -206,9 +205,6 @@ function Body({ me, onDone }: { me: UserDto; onDone: () => void }) {
                         </button>
                     ))}
                 </div>
-                <p className="muted">
-                    Icons from <Link to="/credits">game-icons.net</Link>.
-                </p>
             </fieldset>
             <div className="dialog__actions">
                 <button className="btn" onClick={onDone} disabled={saving}>
