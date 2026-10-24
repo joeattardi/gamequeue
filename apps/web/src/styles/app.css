@@ -2430,7 +2430,7 @@ fieldset.stars:disabled .stars__star {
 
 .profile-hero {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 16px;
     margin-bottom: 28px;
     padding: 20px;
