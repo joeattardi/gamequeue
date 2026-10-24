@@ -4088,6 +4088,11 @@ fieldset.stars:disabled .stars__star {
 .name-form > p {
     margin: 0;
 }
+.name-form .field--full {
+    /* The form is a left-aligned flex column, which shrinks fields to their content */
+    align-self: stretch;
+    max-width: 640px;
+}
 .name-form__fields .field {
     /* Hints wrap to different heights; keep labels and inputs aligned across a row */
     align-content: start;

@@ -134,7 +134,7 @@ function BioForm({ me }: { me: UserDto }) {
                 A short line shown under your name on your public profile. Anyone with the link can
                 read it.
             </p>
-            <label className="field">
+            <label className="field field--full">
                 Bio
                 <input
                     value={bio}
