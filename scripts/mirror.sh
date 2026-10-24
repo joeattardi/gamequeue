@@ -40,11 +40,12 @@ fi
 echo "$(date '+%F %T') mirror: start"
 ping_healthcheck /start
 
+# Progress streams to the terminal/log as it happens (a full run takes minutes on a Pi); tee keeps a
+# copy for the healthchecks.io message. The exit code is docker's, not tee's.
 OUT=$(mktemp)
 trap 'rm -f "$OUT"' EXIT
-docker compose run --rm --no-deps -T gamequeue node dist/mirror/cli.js "$@" >"$OUT" 2>&1
-rc=$?
-cat "$OUT"
+docker compose run --rm --no-deps -T gamequeue node dist/mirror/cli.js "$@" 2>&1 | tee "$OUT"
+rc=${PIPESTATUS[0]}
 
 summary=$(tail -n 5 "$OUT")
 if [ $rc -eq 0 ]; then
