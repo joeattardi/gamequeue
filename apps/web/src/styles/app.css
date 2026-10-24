@@ -5137,7 +5137,7 @@ button.grid-cell__button:hover {
 .grid-cell__label {
     font-family: var(--font-display, inherit);
     font-weight: 600;
-    font-size: clamp(0.62rem, 1.7vw, 0.85rem);
+    font-size: clamp(0.72rem, 1.9vw, 0.98rem);
     line-height: 1.2;
     overflow-wrap: anywhere;
     text-wrap: balance;
@@ -5164,7 +5164,7 @@ button.grid-cell__button:hover {
 }
 .grid-cell__name {
     min-height: 1.2em;
-    font-size: clamp(0.6rem, 1.5vw, 0.8rem);
+    font-size: clamp(0.7rem, 1.7vw, 0.9rem);
     color: var(--ink-muted);
     overflow-wrap: anywhere;
 }
