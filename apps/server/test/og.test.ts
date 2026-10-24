@@ -35,6 +35,7 @@ async function setup(fetchImpl = coverFetch()) {
         config,
         igdb: fakeIgdb([fakeGame(1, 'Hades')]).client,
         cards,
+        requestLimits: false,
         limiters: {
             loginByAccount: new FailureLimiter(5, 60_000),
             loginByIp: new FailureLimiter(30, 60_000)

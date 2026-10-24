@@ -4,6 +4,7 @@ import { HTTPException } from 'hono/http-exception';
 import type { Config } from './config.js';
 import type { Db } from './db/client.js';
 import { FailureLimiter } from './auth/rate-limit.js';
+import { requestLimits, type RequestLimitOverrides } from './auth/request-limits.js';
 import { adminRoutes } from './routes/admin.js';
 import { accountRoutes } from './routes/account.js';
 import { avatarRoutes } from './routes/avatar.js';
@@ -49,6 +50,8 @@ export interface AppDeps {
     cards?: CardRenderer;
     /** Overridable for tests */
     limiters?: { loginByAccount: FailureLimiter; loginByIp: FailureLimiter };
+    /** Per-IP request limits; `false` turns them off (the shared test helper does) */
+    requestLimits?: false | { overrides?: RequestLimitOverrides; clock?: () => number };
 }
 
 const MUTATING = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
@@ -59,6 +62,9 @@ export function createApp(deps: AppDeps) {
 
     const sameOrAllowed = (origin: string, requestUrl: string) =>
         origin === new URL(requestUrl).origin || config.allowedOrigins.includes(origin);
+
+    if (deps.requestLimits !== false)
+        app.use('/api/*', requestLimits(config.trustProxy, deps.requestLimits));
 
     app.use('/api/*', csrf({ origin: (origin, c) => sameOrAllowed(origin, c.req.url) }));
 

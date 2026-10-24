@@ -291,6 +291,7 @@ The important ideas:
 - **The cookie is `httpOnly`**, so JavaScript in the page can't read it, and `SameSite=Lax`, which helps against cross-site attacks.
 - **Sessions last 30 days and slide**: if you keep using the app, the expiry keeps moving forward.
 - **Login is rate limited** (in memory): 5 failures per account per 15 minutes, 30 per IP address.
+- **Every API request is rate limited per IP** (in memory): 300 a minute overall, with tighter limits on sign-up, import/export, share-card images and anything that can reach IGDB. IPv6 clients are grouped by their /64 network, and the IP comes from Cloudflare's `CF-Connecting-IP` header.
 - **Errors are vague on purpose.** A wrong username and a wrong password give the same message and take the same time, so nobody can probe which usernames exist.
 
 **Roles.** Every user is a `gamer` or an `admin`. `requireAdmin` guards the admin API. The web app hides admin links from gamers, but that's only cosmetic; the server is what enforces it.

@@ -1,7 +1,6 @@
 import { eq } from 'drizzle-orm';
 import { Hono } from 'hono';
 import { getCookie } from 'hono/cookie';
-import { getConnInfo } from '@hono/node-server/conninfo';
 import type { Context } from 'hono';
 import { DEFAULT_SLOT_NAMES, loginSchema, registerSchema } from '@gamequeue/shared';
 import type { AppDeps } from '../app.js';
@@ -11,6 +10,7 @@ import {
     setSessionCookie,
     type AuthVars
 } from '../auth/middleware.js';
+import { clientIp } from '../auth/client-ip.js';
 import { dummyHash, hashPassword, verifyPassword } from '../auth/password.js';
 import type { FailureLimiter } from '../auth/rate-limit.js';
 import { createSession, destroySession, SESSION_COOKIE } from '../auth/sessions.js';
@@ -21,18 +21,6 @@ import { slots, users } from '../db/schema.js';
 
 type Deps = Pick<AppDeps, 'db' | 'config'> &
     Required<Pick<AppDeps, 'limiters'>> & { notify: Notify };
-
-function clientIp(c: Context, trustProxy: boolean): string {
-    if (trustProxy) {
-        const fwd = c.req.header('x-forwarded-for')?.split(',')[0]?.trim();
-        if (fwd) return fwd;
-    }
-    try {
-        return getConnInfo(c).remote.address ?? 'unknown';
-    } catch {
-        return 'unknown'; // app.request() in tests has no socket
-    }
-}
 
 async function parseBody<T>(
     c: Context,
@@ -112,10 +100,6 @@ export function authRoutes({ db, config, limiters, notify }: Deps) {
         const { username, password } = body.data;
 
         const ip = clientIp(c, config.trustProxy);
-        // Temporary: verify the client IP behind Cloudflare, then remove.
-        console.log(
-            `login ip=${ip} xff=${c.req.header('x-forwarded-for')} cf=${c.req.header('cf-connecting-ip')}`
-        );
         const keys: [FailureLimiter, string][] = [
             [limiters.loginByAccount, `${username}|${ip}`],
             [limiters.loginByIp, ip]

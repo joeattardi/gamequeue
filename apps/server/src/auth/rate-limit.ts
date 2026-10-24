@@ -31,3 +31,30 @@ export class FailureLimiter {
         this.hits.delete(key);
     }
 }
+
+/** In-memory fixed-window counter that counts every hit, not just failures. */
+export class HitLimiter {
+    private hits = new Map<string, { count: number; resetAt: number }>();
+    constructor(
+        readonly max: number,
+        readonly windowMs: number,
+        private clock: () => number = Date.now
+    ) {}
+
+    /** Counts a hit. `retryAfter` is the seconds to wait, or 0 if the request may proceed. */
+    hit(key: string): { retryAfter: number; count: number } {
+        const t = this.clock();
+        let h = this.hits.get(key);
+        if (!h || h.resetAt <= t) {
+            h = { count: 0, resetAt: t + this.windowMs };
+            this.hits.set(key, h);
+            if (this.hits.size > 10_000)
+                for (const [k, v] of this.hits) if (v.resetAt <= t) this.hits.delete(k);
+        }
+        h.count++;
+        return {
+            retryAfter: h.count > this.max ? Math.ceil((h.resetAt - t) / 1000) : 0,
+            count: h.count
+        };
+    }
+}

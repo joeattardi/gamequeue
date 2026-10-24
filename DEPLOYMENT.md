@@ -65,7 +65,7 @@ Defined in `apps/server/src/config.ts`. In Docker, `compose.yaml` sets the fixed
 
 Without the IGDB credentials the app starts but search and add-game are disabled.
 
-**Rate-limit caveat.** The login limiter keys on the _first_ entry of `X-Forwarded-For`. Cloudflare appends the real client IP to whatever the client sent, so a client that sends its own `X-Forwarded-For` can pick the key and sidestep the per-IP limit. Passwords are argon2id and login errors are generic, so the risk is modest for a personal app, but a fix is to read `CF-Connecting-IP` (which Cloudflare always sets to the true client address) in `clientIp` in `apps/server/src/routes/auth.ts`.
+**Rate limits and the client IP.** `clientIp` (in `apps/server/src/auth/client-ip.ts`) reads `CF-Connecting-IP`, which Cloudflare always sets to the true client address, then falls back to the first `X-Forwarded-For` entry, and only when `TRUST_PROXY=true`. IPv6 addresses are collapsed to their /64, since a client can rotate freely inside it. These headers are only trustworthy while the app is reachable solely through the tunnel (no published ports, no open firewall port), so keep it that way on any new host. Blocked requests log `Rate limited: tier=... ip=...` once per client and window (`docker compose logs gamequeue`).
 
 ## Step-by-step setup
 
@@ -270,7 +270,7 @@ In the Cloudflare dashboard for `gamequeue.app` (all available on the free plan)
 
 - **SSL/TLS > Overview:** the encryption mode is irrelevant for tunnel traffic, but set it to **Full (strict)** so nothing ever falls back to a weaker mode.
 - **SSL/TLS > Edge Certificates:** enable **Always Use HTTPS** and **Automatic HTTPS Rewrites**. HSTS is optional here since `.app` is already on the browser preload list.
-- **Security > WAF > Rate limiting rules:** optionally add one rule limiting `POST /api/auth/login` per IP. This also covers the `X-Forwarded-For` caveat above, because Cloudflare keys it on the real client IP.
+- **Security > WAF > Rate limiting rules:** optionally add a rule in front of the app's own limits (e.g. `POST /api/auth/login` or `/api/auth/register` per IP), so abusive traffic never reaches the Pi.
 - Do not put Cloudflare Access (login wall) in front of the whole site: the public profile pages (`/u/:username`) must stay reachable by everyone.
 
 ## Signup email alerts

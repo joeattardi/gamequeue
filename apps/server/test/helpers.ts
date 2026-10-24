@@ -18,7 +18,7 @@ export function makeApp(
         loginByAccount: new FailureLimiter(5, 60_000),
         loginByIp: new FailureLimiter(30, 60_000)
     };
-    const app = createApp({ db, config, limiters, igdb, itad, cloudflare });
+    const app = createApp({ db, config, limiters, igdb, itad, cloudflare, requestLimits: false });
     return { app, db, config };
 }
 
