@@ -6,6 +6,7 @@ import {
     type PublicEntryDto
 } from '@gamequeue/shared';
 import {
+    ArrowRight,
     Ban,
     BarChart3,
     CalendarDays,
@@ -279,6 +280,7 @@ function SignupCta() {
             <p>Track your own games.</p>
             <Link className="btn btn--primary" to="/register">
                 Create your GameQueue
+                <ArrowRight aria-hidden="true" />
             </Link>
         </aside>
     );
