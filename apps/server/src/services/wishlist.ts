@@ -13,6 +13,7 @@ import { entries, games, platforms, wishlistItems, wishlists } from '../db/schem
 import { HttpError } from '../errors.js';
 import type { IgdbClient } from '../igdb/types.js';
 import type { ItadClient } from '../itad/types.js';
+import { recordActivity } from './activity.js';
 import { loadPrices, refreshPrices } from './prices.js';
 import { moveInOrder } from './order.js';
 import { ensureGame, existingPlatformIds, loadGames, refreshReleaseDates } from './games.js';
@@ -197,16 +198,24 @@ export async function addToWishlist(
         .from(wishlistItems)
         .where(eq(wishlistItems.wishlistId, wishlistId))
         .get()!.n;
-    db.insert(wishlistItems)
-        .values({
-            wishlistId,
-            gameId: input.igdbId,
-            position: (top ?? -1) + 1,
-            platformId: input.platformId ?? null,
-            note: input.note ?? ''
-        })
-        .onConflictDoNothing()
-        .run();
+    db.transaction((tx) => {
+        const added = tx
+            .insert(wishlistItems)
+            .values({
+                wishlistId,
+                gameId: input.igdbId,
+                position: (top ?? -1) + 1,
+                platformId: input.platformId ?? null,
+                note: input.note ?? ''
+            })
+            .onConflictDoNothing()
+            .run();
+        if (added.changes > 0)
+            recordActivity(tx as unknown as Db, userId, {
+                type: 'wishlisted',
+                gameId: input.igdbId
+            });
+    });
     return getWishlist(db, userId, wishlistId, FIRST_PAGE);
 }
 

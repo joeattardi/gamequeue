@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import type {
+    ActivityPageDto,
     ProfileDto,
     ProfileGamesDto,
     ProfileListPageDto,
@@ -60,5 +61,18 @@ export const useProfileList = (username: string, kind: 'lists' | 'smart-lists', 
         load: (offset, limit) =>
             api<ProfileListPageDto>(withPage(`/profiles/${username}/${kind}/${id}`, offset, limit)),
         read: (p) => ({ items: p.entries, total: p.total }),
+        retry: false
+    });
+
+export const useProfileActivity = (username: string) =>
+    usePagedQuery({
+        key: ['profile', username, 'activity'],
+        load: async (offset, limit) =>
+            (
+                await api<{ activity: ActivityPageDto }>(
+                    withPage(`/profiles/${username}/activity`, offset, limit)
+                )
+            ).activity,
+        read: (a) => ({ items: a.events, total: a.total }),
         retry: false
     });

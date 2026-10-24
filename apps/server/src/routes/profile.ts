@@ -11,6 +11,7 @@ import { HttpError } from '../errors.js';
 import { parseId, validate } from '../http.js';
 import {
     getProfile,
+    getProfileActivity,
     getProfileList,
     getProfileSmartList,
     getProfileGames,
@@ -38,6 +39,15 @@ export function profileRoutes({ db }: AppDeps) {
     r.get('/:username/wishlist', (c) =>
         c.json({
             wishlist: getProfileWishlist(
+                db,
+                parseUsername(c.req.param('username')),
+                validate(pageQuerySchema, c.req.query())
+            )
+        })
+    );
+    r.get('/:username/activity', (c) =>
+        c.json({
+            activity: getProfileActivity(
                 db,
                 parseUsername(c.req.param('username')),
                 validate(pageQuerySchema, c.req.query())

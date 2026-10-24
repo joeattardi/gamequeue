@@ -27,3 +27,4 @@ export * from './database-stats.js';
 export * from './admin-system.js';
 export * from './admin-traffic.js';
 export * from './showcase.js';
+export * from './activity.js';

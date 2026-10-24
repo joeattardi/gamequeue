@@ -11,6 +11,7 @@ import {
     useChangePassword,
     useDeleteAccount,
     useUpdateAccount,
+    useUpdateActivityVisibility,
     useUpdateSearchIndexing,
     useUpdateSocialLinks
 } from '../api/account';
@@ -88,6 +89,58 @@ function NameForm({ me }: { me: UserDto }) {
             {showRealName && !hasName && (
                 <p className="muted">Nothing will be shown until you enter a name.</p>
             )}
+            <div>
+                <button className="btn btn--primary" disabled={update.isPending}>
+                    {update.isPending ? 'Saving…' : 'Save'}
+                </button>
+            </div>
+            <p role="status" className="muted">
+                {saved ? 'Saved.' : ''}
+            </p>
+            {error && <p role="alert">{error}</p>}
+        </form>
+    );
+}
+
+function ActivityForm({ me }: { me: UserDto }) {
+    const update = useUpdateActivityVisibility();
+    const [showActivity, setShowActivity] = useState(me.showActivity);
+    const [error, setError] = useState<string>();
+    const [saved, setSaved] = useState(false);
+
+    function submit(e: FormEvent) {
+        e.preventDefault();
+        setError(undefined);
+        setSaved(false);
+        update.mutate(
+            { showActivity },
+            {
+                onSuccess: () => setSaved(true),
+                onError: (err) =>
+                    setError(err instanceof ApiRequestError ? err.message : 'Could not save.')
+            }
+        );
+    }
+
+    return (
+        <form onSubmit={submit} className="name-form">
+            <p>
+                Your public profile can show what you do: games you add, start, finish or abandon,
+                ratings, wishlist and queue additions, and the grids, tier lists and lists you
+                create. Notes are never shown.
+            </p>
+            <label className="check">
+                <input
+                    type="checkbox"
+                    checked={showActivity}
+                    onChange={(e) => setShowActivity(e.target.checked)}
+                />
+                Show my activity on my public profile
+            </label>
+            <p className="muted">
+                Turning it off hides the feed but doesn't stop it being recorded, so it comes back
+                if you turn it on again.
+            </p>
             <div>
                 <button className="btn btn--primary" disabled={update.isPending}>
                     {update.isPending ? 'Saving…' : 'Save'}
@@ -479,6 +532,11 @@ export function AccountPage() {
                 <section aria-labelledby="social-h" className="panel">
                     <h2 id="social-h">Gaming accounts</h2>
                     <SocialForm me={me} />
+                </section>
+
+                <section aria-labelledby="activity-h" className="panel">
+                    <h2 id="activity-h">Activity</h2>
+                    <ActivityForm me={me} />
                 </section>
 
                 <section aria-labelledby="search-h" className="panel">

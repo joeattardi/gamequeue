@@ -15,11 +15,13 @@ import { entries, entryPlatforms, platforms, playthroughs, slots } from '../db/s
 import { HttpError } from '../errors.js';
 import { existingPlatformIds } from './games.js';
 import { getEntry } from './entries.js';
+import { recordActivity } from './activity.js';
 import { dequeue } from './lists.js';
 import { toDto } from './playthrough-dto.js';
 
 const DAY_MS = 24 * 3600 * 1000;
 const utcToday = () => new Date().toISOString().slice(0, 10);
+const daysAgo = (n: number) => new Date(Date.now() - n * DAY_MS).toISOString().slice(0, 10);
 
 /** Clients send their local date; allow a day of slack for timezones ahead of UTC. */
 function assertNotFuture(date: string | null | undefined, label: string) {
@@ -136,6 +138,7 @@ export function startPlaythrough(
             .where(eq(entries.id, entryId))
             .run();
         dequeue(t, userId, entryId);
+        recordActivity(t, userId, { type: 'started', gameId: entry.gameId });
     });
     return getEntry(db, userId, entryId)!;
 }
@@ -150,10 +153,17 @@ export function togglePause(
     const entry = requireEntry(db, userId, entryId);
     const to = nextStatus(entry.status, action);
     if (!to) notAllowed(entry.status, action);
-    db.update(entries)
-        .set({ status: to, updatedAt: Date.now() })
-        .where(eq(entries.id, entryId))
-        .run();
+    db.transaction((tx) => {
+        const t = tx as unknown as Db;
+        t.update(entries)
+            .set({ status: to, updatedAt: Date.now() })
+            .where(eq(entries.id, entryId))
+            .run();
+        recordActivity(t, userId, {
+            type: action === 'pause' ? 'paused' : 'resumed',
+            gameId: entry.gameId
+        });
+    });
     return getEntry(db, userId, entryId)!;
 }
 
@@ -189,6 +199,11 @@ export function closePlaythrough(
             .run();
         prefillEntryRating(t, entryId, input.rating);
         vacateSlots(t, entryId);
+        recordActivity(t, userId, {
+            type: to as 'finished' | 'abandoned',
+            gameId: entry.gameId,
+            detail: input.rating
+        });
     });
     return getEntry(db, userId, entryId)!;
 }
@@ -199,7 +214,7 @@ export function logPlaythrough(
     entryId: number,
     input: LogPlaythroughInput
 ): EntryDto {
-    requireEntry(db, userId, entryId);
+    const entry = requireEntry(db, userId, entryId);
     assertNotFuture(input.startedOn, 'The start date');
     assertNotFuture(input.endedOn, 'The end date');
     assertOrder(input.startedOn, input.endedOn);
@@ -220,6 +235,14 @@ export function logPlaythrough(
             .run();
         if (input.outcome === 'finished') prefillEntryRating(t, entryId, input.rating);
         syncStatus(t, entryId);
+        // Logging an old playthrough is filling in history, not something that just happened
+        if (input.endedOn && input.endedOn >= daysAgo(3)) {
+            recordActivity(t, userId, {
+                type: input.outcome,
+                gameId: entry.gameId,
+                detail: input.outcome === 'finished' ? input.rating : null
+            });
+        }
     });
     return getEntry(db, userId, entryId)!;
 }

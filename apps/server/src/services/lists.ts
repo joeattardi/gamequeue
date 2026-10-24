@@ -10,6 +10,7 @@ import type {
 import type { Db } from '../db/client.js';
 import { entries, games, listItems, lists } from '../db/schema.js';
 import { HttpError } from '../errors.js';
+import { forgetSubject, recordActivity } from './activity.js';
 import { hydrate } from './entries.js';
 import { moveInOrder } from './order.js';
 
@@ -109,7 +110,15 @@ export function getList(db: Db, userId: number, id: number, page?: PageQuery): L
 }
 
 export function createList(db: Db, userId: number, name: string, description = ''): ListSummaryDto {
-    const row = db.insert(lists).values({ userId, name, description }).returning().get();
+    const row = db.transaction((tx) => {
+        const created = tx.insert(lists).values({ userId, name, description }).returning().get();
+        recordActivity(tx as unknown as Db, userId, {
+            type: 'list',
+            subjectId: created.id,
+            subjectName: name
+        });
+        return created;
+    });
     return { id: row.id, name: row.name, count: 0, covers: [] };
 }
 
@@ -121,14 +130,17 @@ export function updateList(db: Db, userId: number, id: number, patch: PatchListI
 
 export function deleteList(db: Db, userId: number, id: number) {
     assertPlainList(requireList(db, userId, id), 'deleted');
-    db.delete(lists).where(eq(lists.id, id)).run();
+    db.transaction((tx) => {
+        tx.delete(lists).where(eq(lists.id, id)).run();
+        forgetSubject(tx as unknown as Db, userId, ['list'], id);
+    });
 }
 
 /** Adds to the end. Adding something already in the list is a no-op. */
 export function addToList(db: Db, userId: number, listId: number, entryId: number): ListDetailDto {
-    requireList(db, userId, listId);
+    const list = requireList(db, userId, listId);
     const entry = db
-        .select({ id: entries.id })
+        .select({ id: entries.id, gameId: entries.gameId })
         .from(entries)
         .where(and(eq(entries.id, entryId), eq(entries.userId, userId)))
         .get();
@@ -138,10 +150,15 @@ export function addToList(db: Db, userId: number, listId: number, entryId: numbe
         .from(listItems)
         .where(eq(listItems.listId, listId))
         .get()!.n;
-    db.insert(listItems)
-        .values({ listId, entryId, position: (top ?? -1) + 1 })
-        .onConflictDoNothing()
-        .run();
+    db.transaction((tx) => {
+        const added = tx
+            .insert(listItems)
+            .values({ listId, entryId, position: (top ?? -1) + 1 })
+            .onConflictDoNothing()
+            .run();
+        if (added.changes > 0 && list.kind === 'queue')
+            recordActivity(tx as unknown as Db, userId, { type: 'queued', gameId: entry.gameId });
+    });
     return getList(db, userId, listId, FIRST_PAGE);
 }
 

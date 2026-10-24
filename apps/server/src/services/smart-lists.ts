@@ -19,6 +19,7 @@ import {
 import type { Db } from '../db/client.js';
 import { platforms, smartLists } from '../db/schema.js';
 import { HttpError } from '../errors.js';
+import { forgetSubject, recordActivity } from './activity.js';
 import { listEntries } from './entries.js';
 
 type Row = typeof smartLists.$inferSelect;
@@ -145,18 +146,26 @@ export function previewSmartList(
 }
 
 export function createSmartList(db: Db, userId: number, input: SmartListInput) {
-    const row = db
-        .insert(smartLists)
-        .values({
-            userId,
-            name: input.name,
-            description: input.description,
-            rules: JSON.stringify(input.rules),
-            sort: input.sort,
-            dir: input.dir ?? defaultSmartDir(input.sort)
-        })
-        .returning()
-        .get();
+    const row = db.transaction((tx) => {
+        const created = tx
+            .insert(smartLists)
+            .values({
+                userId,
+                name: input.name,
+                description: input.description,
+                rules: JSON.stringify(input.rules),
+                sort: input.sort,
+                dir: input.dir ?? defaultSmartDir(input.sort)
+            })
+            .returning()
+            .get();
+        recordActivity(tx as unknown as Db, userId, {
+            type: 'smartlist',
+            subjectId: created.id,
+            subjectName: created.name
+        });
+        return created;
+    });
     return getSmartList(db, userId, row.id, FIRST_PAGE);
 }
 
@@ -178,7 +187,10 @@ export function updateSmartList(db: Db, userId: number, id: number, input: Smart
 
 export function deleteSmartList(db: Db, userId: number, id: number) {
     requireRow(db, userId, id);
-    db.delete(smartLists).where(eq(smartLists.id, id)).run();
+    db.transaction((tx) => {
+        tx.delete(smartLists).where(eq(smartLists.id, id)).run();
+        forgetSubject(tx as unknown as Db, userId, ['smartlist'], id);
+    });
 }
 
 /** The definitions only, for export (their games are computed, so there is nothing else to carry). */

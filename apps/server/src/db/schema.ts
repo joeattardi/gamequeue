@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm';
-import { USER_ROLES, type ReleasePrecision } from '@gamequeue/shared';
+import { ACTIVITY_TYPES, USER_ROLES, type ReleasePrecision } from '@gamequeue/shared';
 import {
     blob,
     index,
@@ -31,6 +31,8 @@ export const users = sqliteTable('users', {
     discordName: text('discord_name'),
     // Opt-in: when off (the default) the public profile pages are served with noindex
     searchIndexable: integer('search_indexable', { mode: 'boolean' }).notNull().default(false),
+    // Whether the activity feed shows on the public profile (events are recorded either way)
+    showActivity: integer('show_activity', { mode: 'boolean' }).notNull().default(true),
     createdAt: integer('created_at').notNull().default(now)
 });
 
@@ -581,4 +583,27 @@ export const listItems = sqliteTable(
         primaryKey({ columns: [t.listId, t.entryId] }),
         index('list_items_entry_idx').on(t.entryId)
     ]
+);
+
+// ---------------------------------------------------------------------------
+// Activity feed: what the user did and when, shown on the public profile
+// ---------------------------------------------------------------------------
+
+export const activityEvents = sqliteTable(
+    'activity_events',
+    {
+        id: integer('id').primaryKey({ autoIncrement: true }),
+        userId: integer('user_id')
+            .notNull()
+            .references(() => users.id, { onDelete: 'cascade' }),
+        type: text('type', { enum: ACTIVITY_TYPES }).notNull(),
+        at: integer('at').notNull().default(now),
+        // IGDB game id; the shared cache is never pruned, so no cascade is needed
+        gameId: integer('game_id').references(() => games.id),
+        // Grid / tier list / list id (so deleting one can take its events along) or a slot name
+        subjectId: integer('subject_id'),
+        subjectName: text('subject_name'),
+        detail: integer('detail')
+    },
+    (t) => [index('activity_user_at_idx').on(t.userId, t.at)]
 );

@@ -5499,3 +5499,68 @@ button.tier-tile__button {
 .admin-table--plain .num {
     padding-left: 16px;
 }
+
+/* Activity feed (public profile and its own page) */
+.activity {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 6px;
+}
+.activity__item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 14px;
+    border: 1px solid color-mix(in srgb, var(--line) 55%, var(--surface));
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+}
+.activity__cover,
+.activity__icon {
+    flex: none;
+    width: 36px;
+}
+.activity__cover .cover {
+    width: 36px;
+    aspect-ratio: 264 / 352;
+    height: auto;
+}
+/* Too small for the typographic fallback: show the bare tile (the role="img" label stays) */
+.activity__cover .cover--empty span {
+    display: none;
+}
+.activity__cover--skeleton {
+    height: 48px;
+    border-radius: 4px;
+}
+.activity__icon {
+    display: grid;
+    place-items: center;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--accent-soft);
+    color: var(--accent);
+}
+.activity__icon svg {
+    width: 18px;
+    height: 18px;
+}
+.activity__text {
+    flex: 1;
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+.activity__when {
+    flex: none;
+    font-size: 0.875rem;
+    white-space: nowrap;
+}
+.activity__when--skeleton {
+    width: 64px;
+    height: 14px;
+}
+.activity-more {
+    margin: 12px 0 0;
+}

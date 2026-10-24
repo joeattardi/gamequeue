@@ -1,6 +1,7 @@
 import { and, eq, ne } from 'drizzle-orm';
 import type {
     AccountProfileInput,
+    ActivityVisibilityInput,
     SearchIndexingInput,
     SocialLinks,
     SocialLinksInput,
@@ -35,11 +36,17 @@ export function getUserDto(db: Db, userId: number): UserDto {
         lastName: row.lastName,
         showRealName: row.showRealName,
         socialLinks: socialLinksOf(row),
-        searchIndexable: row.searchIndexable
+        searchIndexable: row.searchIndexable,
+        showActivity: row.showActivity
     };
 }
 
 export function updateSearchIndexing(db: Db, userId: number, input: SearchIndexingInput) {
+    db.update(users).set(input).where(eq(users.id, userId)).run();
+    return getUserDto(db, userId);
+}
+
+export function updateActivityVisibility(db: Db, userId: number, input: ActivityVisibilityInput) {
     db.update(users).set(input).where(eq(users.id, userId)).run();
     return getUserDto(db, userId);
 }

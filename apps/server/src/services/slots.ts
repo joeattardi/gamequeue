@@ -9,6 +9,7 @@ import {
 import type { Db } from '../db/client.js';
 import { entries, slots } from '../db/schema.js';
 import { HttpError } from '../errors.js';
+import { recordActivity } from './activity.js';
 import { getEntry, hydrate } from './entries.js';
 import { startPlaythrough, togglePause } from './playthroughs.js';
 
@@ -152,6 +153,13 @@ export function assignToSlot(
             startPlaythrough(t, userId, entry.id, {
                 platformId: input.platformId,
                 date: input.date
+            });
+        } else {
+            // Starting or resuming is already in the feed; only a move of a game in play is new
+            recordActivity(t, userId, {
+                type: 'slotted',
+                gameId: entry.gameId,
+                subjectName: slot.name
             });
         }
     });

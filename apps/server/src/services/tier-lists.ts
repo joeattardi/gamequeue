@@ -20,6 +20,7 @@ import type { Db } from '../db/client.js';
 import { tierItems, tierLists, tiers, users } from '../db/schema.js';
 import { HttpError } from '../errors.js';
 import type { IgdbClient } from '../igdb/types.js';
+import { forgetSubject, recordActivity } from './activity.js';
 import { ensureGame, loadGames } from './games.js';
 
 type ListRow = typeof tierLists.$inferSelect;
@@ -157,6 +158,11 @@ export function createTierList(db: Db, userId: number, input: CreateTierListInpu
         tx.insert(tiers)
             .values(DEFAULT_TIERS.map((t, position) => ({ tierListId: l.id, position, ...t })))
             .run();
+        recordActivity(tx as unknown as Db, userId, {
+            type: 'tier',
+            subjectId: l.id,
+            subjectName: l.title
+        });
         return toDto(tx as unknown as Db, l);
     });
 }
@@ -183,7 +189,10 @@ export function patchTierList(
 
 export function deleteTierList(db: Db, userId: number, id: number) {
     requireList(db, userId, id);
-    db.delete(tierLists).where(eq(tierLists.id, id)).run();
+    db.transaction((tx) => {
+        tx.delete(tierLists).where(eq(tierLists.id, id)).run();
+        forgetSubject(tx as unknown as Db, userId, ['tier'], id);
+    });
 }
 
 // --- tiers -------------------------------------------------------------------------------------

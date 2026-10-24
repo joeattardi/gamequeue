@@ -2,6 +2,7 @@ import type { EntryDto, EntryStatus } from './collection.js';
 import type { GridSummaryDto } from './grids.js';
 import type { TierListSummaryDto } from './tiers.js';
 import type { SocialLinks } from './social.js';
+import type { ActivityEventDto } from './activity.js';
 
 /** The part of an entry that is safe to show to anyone: no notes, no list/slot internals. */
 export type PublicEntryDto = Pick<
@@ -52,6 +53,8 @@ export interface ProfileDto {
     smartLists: ProfileListTileDto[];
     grids: GridSummaryDto[];
     tierLists: TierListSummaryDto[];
+    /** The latest few events and how many there are in all; null when the owner hides their activity */
+    activity: { events: ActivityEventDto[]; total: number } | null;
 }
 
 export interface ProfileListTileDto {

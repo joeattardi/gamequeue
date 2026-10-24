@@ -14,6 +14,7 @@ import type { Db } from '../db/client.js';
 import { gridCells, grids, users } from '../db/schema.js';
 import { HttpError } from '../errors.js';
 import type { IgdbClient } from '../igdb/types.js';
+import { forgetSubject, recordActivity } from './activity.js';
 import { ensureGame, loadGames } from './games.js';
 
 type GridRow = typeof grids.$inferSelect;
@@ -140,6 +141,11 @@ export function createGrid(db: Db, userId: number, input: CreateGridInput): Grid
                 .values(labels.map((label, position) => ({ gridId: g.id, position, label })))
                 .run();
         }
+        recordActivity(tx as unknown as Db, userId, {
+            type: 'grid',
+            subjectId: g.id,
+            subjectName: g.title
+        });
         return toDto(tx as unknown as Db, g);
     });
 }
@@ -183,7 +189,10 @@ export function patchGrid(db: Db, userId: number, id: number, patch: PatchGridIn
 
 export function deleteGrid(db: Db, userId: number, id: number) {
     requireGrid(db, userId, id);
-    db.delete(grids).where(eq(grids.id, id)).run();
+    db.transaction((tx) => {
+        tx.delete(grids).where(eq(grids.id, id)).run();
+        forgetSubject(tx as unknown as Db, userId, ['grid'], id);
+    });
 }
 
 /**

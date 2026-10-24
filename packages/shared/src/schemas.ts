@@ -99,6 +99,8 @@ export interface UserDto {
     socialLinks: SocialLinks;
     /** Whether search engines may index the public profile pages; off unless the user opts in */
     searchIndexable: boolean;
+    /** Whether the activity feed is shown on the public profile; on unless the user turns it off */
+    showActivity: boolean;
 }
 export interface ApiError {
     error: string;

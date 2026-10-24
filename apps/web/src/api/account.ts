@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type {
     AccountProfileInput,
+    ActivityVisibilityInput,
     ChangePasswordInput,
     DeleteAccountInput,
     SearchIndexingInput,
@@ -26,6 +27,18 @@ export function useUpdateSocialLinks() {
     return useMutation({
         mutationFn: (input: SocialLinksInput) =>
             api<{ user: UserDto }>('/account/social', { method: 'PUT', body: input }),
+        onSuccess: ({ user }) => {
+            qc.setQueryData(['me'], user);
+            qc.invalidateQueries({ queryKey: ['profile'] });
+        }
+    });
+}
+
+export function useUpdateActivityVisibility() {
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: (input: ActivityVisibilityInput) =>
+            api<{ user: UserDto }>('/account/activity', { method: 'PUT', body: input }),
         onSuccess: ({ user }) => {
             qc.setQueryData(['me'], user);
             qc.invalidateQueries({ queryKey: ['profile'] });

@@ -51,6 +51,7 @@ import { HttpError } from '../errors.js';
 import type { IgdbClient } from '../igdb/types.js';
 import { ensureGame, existingPlatformIds, loadGames } from './games.js';
 import { toDto } from './playthrough-dto.js';
+import { forgetGame, recordActivity } from './activity.js';
 import { dropFromWishlists } from './wishlist.js';
 
 const dedupeTags = (names: string[]) => {
@@ -151,6 +152,7 @@ export async function addEntry(
         }
         // Owning it ends the wish
         dropFromWishlists(t, userId, input.igdbId);
+        recordActivity(t, userId, { type: 'added', gameId: input.igdbId });
         return row.id;
     });
     return getEntry(db, userId, id)!;
@@ -158,7 +160,12 @@ export async function addEntry(
 
 export function patchEntry(db: Db, userId: number, entryId: number, patch: PatchEntryInput) {
     const current = db
-        .select({ id: entries.id })
+        .select({
+            id: entries.id,
+            gameId: entries.gameId,
+            rating: entries.rating,
+            favorite: entries.favorite
+        })
         .from(entries)
         .where(and(eq(entries.id, entryId), eq(entries.userId, userId)))
         .get();
@@ -183,16 +190,30 @@ export function patchEntry(db: Db, userId: number, entryId: number, patch: Patch
                 .run();
         }
         if (patch.tags) setTags(t, userId, entryId, patch.tags);
+        if (patch.rating != null && patch.rating !== current.rating)
+            recordActivity(t, userId, {
+                type: 'rated',
+                gameId: current.gameId,
+                detail: patch.rating
+            });
+        if (patch.favorite && !current.favorite)
+            recordActivity(t, userId, { type: 'favorited', gameId: current.gameId });
     });
     return getEntry(db, userId, entryId)!;
 }
 
 export function deleteEntry(db: Db, userId: number, entryId: number): boolean {
+    const entry = db
+        .select({ gameId: entries.gameId })
+        .from(entries)
+        .where(and(eq(entries.id, entryId), eq(entries.userId, userId)))
+        .get();
     const res = db
         .delete(entries)
         .where(and(eq(entries.id, entryId), eq(entries.userId, userId)))
         .run();
     if (res.changes > 0) {
+        if (entry) forgetGame(db, userId, entry.gameId);
         db.delete(tags)
             .where(
                 and(eq(tags.userId, userId), sql`${tags.id} NOT IN (SELECT tag_id FROM entry_tags)`)

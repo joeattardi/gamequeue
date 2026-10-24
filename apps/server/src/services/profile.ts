@@ -6,6 +6,7 @@ import {
     fullName,
     toPublicEntry,
     type EntryDto,
+    type ActivityPageDto,
     type EntryStatus,
     type PageQuery,
     type ProfileDto,
@@ -18,6 +19,7 @@ import {
 import type { Db } from '../db/client.js';
 import { entries, listItems, lists, playthroughs, users, wishlistItems } from '../db/schema.js';
 import { HttpError } from '../errors.js';
+import { pageActivity } from './activity.js';
 import { avatarVersion } from './avatars.js';
 import { socialLinksOf } from './users.js';
 import { listEntries, pageEntries } from './entries.js';
@@ -31,6 +33,9 @@ import { getSmartList, listSmartLists } from './smart-lists.js';
 import { findWishlist, wishlistItemsOf } from './wishlist.js';
 
 const toPublic = toPublicEntry;
+
+/** Events shown on the profile itself; the rest is on the activity page. */
+const PROFILE_ACTIVITY_PREVIEW = 8;
 
 function requireUser(db: Db, username: string) {
     const user = db.select().from(users).where(eq(users.username, username)).get();
@@ -95,7 +100,10 @@ export function getProfile(db: Db, username: string): ProfileDto {
             covers: l.covers
         })),
         grids: listGrids(db, user.id),
-        tierLists: listTierLists(db, user.id)
+        tierLists: listTierLists(db, user.id),
+        activity: user.showActivity
+            ? pageActivity(db, user.id, { limit: PROFILE_ACTIVITY_PREVIEW, offset: 0 })
+            : null
     };
 }
 
@@ -288,4 +296,11 @@ function getFinishedGames(
         total: inYear.length,
         years
     };
+}
+
+/** The activity feed, newest first. A hidden feed is an empty one, same as having done nothing. */
+export function getProfileActivity(db: Db, username: string, page: PageQuery): ActivityPageDto {
+    const user = requireUser(db, username);
+    if (!user.showActivity) return { username: user.username, events: [], total: 0 };
+    return { username: user.username, ...pageActivity(db, user.id, page) };
 }

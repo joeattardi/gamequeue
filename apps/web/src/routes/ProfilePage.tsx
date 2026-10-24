@@ -22,6 +22,7 @@ import type { ReactNode } from 'react';
 import { Link, useParams } from 'react-router';
 import { ApiRequestError } from '../api/client';
 import { useProfile } from '../api/profile';
+import { ActivityList } from '../components/ActivityFeed';
 import { Avatar } from '../components/Avatar';
 import { Cover } from '../components/Cover';
 import { ListCard } from '../components/ListCard';
@@ -246,6 +247,25 @@ function ProfileTierLists({ profile }: { profile: ProfileDto }) {
     );
 }
 
+/** The latest few events; the rest is on the activity page. Absent when the owner hides it. */
+function ProfileActivity({ profile }: { profile: ProfileDto }) {
+    const { activity } = profile;
+    if (!activity || activity.total === 0) return null;
+    return (
+        <section aria-labelledby="p-activity">
+            <h2 id="p-activity">Recent activity</h2>
+            <ActivityList username={profile.username} events={activity.events} />
+            {activity.total > activity.events.length && (
+                <p className="activity-more">
+                    <Link to={`/u/${profile.username}/activity`}>
+                        See all {activity.total} events
+                    </Link>
+                </p>
+            )}
+        </section>
+    );
+}
+
 export function ProfilePage() {
     const { username = '' } = useParams();
     const profile = useProfile(username);
@@ -306,6 +326,8 @@ export function ProfilePage() {
                                 )}
                             />
                         </section>
+
+                        <ProfileActivity profile={profile.data} />
 
                         <ProfileLists profile={profile.data} />
                         <ProfileGrids profile={profile.data} />
