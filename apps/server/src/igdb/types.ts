@@ -1,5 +1,6 @@
 import type {
     IgdbPingDto,
+    MirrorLookupMethod,
     IgdbStatusDto,
     PlatformDto,
     ReleasePrecision,
@@ -73,6 +74,12 @@ export interface LocalIgdb {
     platforms(): PlatformDto[];
 }
 
+/** How a client answered its lookups, per kind: from the local copy or by asking live IGDB. */
+export interface LookupStats {
+    since: number;
+    counts: Record<MirrorLookupMethod, { local: number; live: number }>;
+}
+
 /** Everything the app needs from IGDB. Faked in tests. */
 export interface IgdbClient {
     search(query: string): Promise<IgdbSearchHit[]>;
@@ -89,6 +96,8 @@ export interface IgdbClient {
     fetchSimilarGames(igdbId: number): Promise<IgdbSearchHit[]>;
     /** The local copy behind this client, if it has one and one is built right now */
     local?(): LocalIgdb | null;
+    /** Lookup counters since the server started; only the mirror client keeps them */
+    lookups?(): LookupStats;
     /** Counters for the admin page; the real client keeps them, test fakes needn't */
     status?(): Omit<IgdbStatusDto, 'configured' | 'lastReleaseCheckAt' | 'history'>;
     /** One cheap request to prove credentials and connectivity work */

@@ -17,7 +17,9 @@ export const mirrorRunSchema = z.object({
     /** The games dump the mirror was built from, e.g. `1792821600_games.csv` */
     dump: z.string().nullable(),
     /** How long the run took, in seconds */
-    seconds: z.number().nonnegative().nullable()
+    seconds: z.number().nonnegative().nullable(),
+    /** How many times the build was tried; more than 1 when a download failed and was retried */
+    attempts: z.number().int().min(1).default(1)
 });
 export type MirrorRunDto = z.infer<typeof mirrorRunSchema>;
 
@@ -33,6 +35,28 @@ export interface MirrorFileDto {
     sizeBytes: number;
 }
 
+/** The lookups the `IgdbClient` answers, with the label the admin page shows. */
+export const MIRROR_LOOKUP_METHODS = {
+    search: 'Search',
+    fetchGame: 'Game details',
+    fetchSimilarGames: 'Similar games',
+    fetchSeries: 'Series pages',
+    fetchGameSeries: 'Series of a game',
+    fetchScreenshots: 'Screenshots',
+    fetchReleaseDates: 'Release dates',
+    fetchPlatforms: 'Platform list'
+} as const;
+export type MirrorLookupMethod = keyof typeof MIRROR_LOOKUP_METHODS;
+
+/** How lookups were answered since the server started: from the mirror, or sent on to live IGDB. */
+export interface MirrorLookupsDto {
+    /** When the server started counting (ms) */
+    since: number;
+    local: number;
+    live: number;
+    methods: { method: MirrorLookupMethod; local: number; live: number }[];
+}
+
 export interface MirrorStatusDto {
     /** Null when there is no usable mirror file (never built, deleted or an old schema version) */
     mirror: MirrorFileDto | null;
@@ -42,6 +66,8 @@ export interface MirrorStatusDto {
     runUnreadable: boolean;
     /** The dump the cached games were last refreshed from (see `services/mirror-sync.ts`) */
     syncedDump: string | null;
+    /** Null when the server isn't counting (no mirror client, e.g. IGDB isn't configured) */
+    lookups: MirrorLookupsDto | null;
 }
 
 /** The daily job runs once a day; a day and a half before a missing run counts as a problem. */

@@ -1,6 +1,7 @@
 import { readFileSync, renameSync, statfsSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { mirrorRunSchema, type MirrorRunDto } from '@gamequeue/shared';
+import { PermanentMirrorError } from './errors.js';
 
 /** The job's report sits next to the mirror file, so it is in the mounted `/data` in Docker. */
 export const mirrorStatusPath = (mirrorPath: string) =>
@@ -46,7 +47,7 @@ export function assertFreeSpace(dir: string, minBytes = MIN_FREE_BYTES) {
     const free = s.bavail * s.bsize;
     if (free < minBytes) {
         const mb = (n: number) => Math.round(n / 1024 ** 2);
-        throw new Error(
+        throw new PermanentMirrorError(
             `Only ${mb(free)} MB free in ${dir}; the import needs at least ${mb(minBytes)} MB`
         );
     }

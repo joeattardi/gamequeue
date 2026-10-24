@@ -499,9 +499,12 @@ IGDB regenerates its dumps around 06:00 UTC (the one inspected on 2026-10-24 was
 3. Builds `igdb.db.new`, verifies it (integrity check, at least 100,000 games, no more than a 20% drop from the current file, complete search index), and only then renames it over `igdb.db`. A failed or rejected run leaves the old mirror untouched.
 4. Writes `data/mirror-status.json`, whatever happened.
 
+A download that fails for a transient reason (a dropped connection, a 5xx or a 429 from IGDB) is retried: each request up to three times within a few seconds, and the whole build up to three times in all, after waits of 1 and 5 minutes. The admin page shows "(2 tries)" next to the run time when that happened. Problems that retrying can't fix fail at once: wrong credentials, no data-partner access (401/403), too little free disk, or a rejected build.
+
 ### Monitoring
 
 - **Admin > IGDB mirror** shows the file (games, size, when it was built, which IGDB dump it came from), the last run and last success, and whether the cached games have been refreshed from it. The dashboard tile shows a warning line when no run has succeeded for 36 hours or the last run failed.
+- The **Lookups** panel on that page counts, since the server last started, how many lookups the mirror answered itself and how many were sent on to live IGDB, per kind (search, game details, similar games and so on). After a few days of normal use nearly everything should be local; live ones are games newer than the last dump and searches with no local match, such as typos. This is the way to confirm that requests hit the mirror. The IGDB page's request counter, which counts only live requests, should stay almost flat.
 - A failed run is also recorded in the error log (kind "Mirror build") by the server, which reads the status file every 10 minutes. That is a log entry only: the owner email alert waits for 5 errors of one kind within 10 minutes, which a once-a-day job never produces, so **it sends no email**. For an email when the job fails, use the healthchecks.io check below. Nothing is sent when a run succeeds.
 - **healthchecks.io**: create a fourth check, period **1 day**, grace **3 hours**, email integration, and put its ping URL in `~/gamequeue/.env` as `HEALTHCHECK_MIRROR_URL=https://hc-ping.com/<uuid>`. `mirror.sh` pings `/start`, then a plain ping with the last output line on success or `/fail` with the last lines on failure, and reads only that one line from `.env`. Treat the URL as a secret.
 

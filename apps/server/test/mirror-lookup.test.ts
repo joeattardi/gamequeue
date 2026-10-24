@@ -429,3 +429,69 @@ describe('a rebuilt mirror', () => {
         handle.close();
     });
 });
+
+describe('lookup counters', () => {
+    const live = () =>
+        liveClient({
+            search: vi.fn().mockResolvedValue([]),
+            fetchGame: vi.fn().mockResolvedValue(null),
+            fetchReleaseDates: vi.fn().mockResolvedValue([]),
+            fetchScreenshots: vi.fn().mockResolvedValue(null),
+            fetchSeries: vi.fn().mockResolvedValue(null),
+            fetchSimilarGames: vi.fn().mockResolvedValue([]),
+            fetchPlatforms: vi.fn().mockResolvedValue([])
+        });
+
+    it('counts lookups the mirror answered and those sent on to live IGDB, per kind', async () => {
+        const c = createMirrorIgdbClient({ path, fallback: live(), now: () => 1234 });
+        await c.search('hades'); // mirror
+        await c.search('witcer'); // no local hit: live
+        await c.fetchGame(1); // mirror
+        await c.fetchGame(5000); // not in the mirror: live
+        await c.fetchReleaseDates([1, 4]); // all known: mirror
+        await c.fetchReleaseDates([1, 5000]); // one unknown: live for that one
+        await c.fetchSimilarGames(1); // mirror
+        await c.fetchSeries(100); // mirror
+        await c.fetchSeries(999); // unknown series: live
+        await c.fetchScreenshots(4); // mirror
+
+        const { since, counts } = c.lookups!();
+        expect(since).toBe(1234);
+        expect(counts.search).toEqual({ local: 1, live: 1 });
+        expect(counts.fetchGame).toEqual({ local: 1, live: 1 });
+        expect(counts.fetchReleaseDates).toEqual({ local: 1, live: 1 });
+        expect(counts.fetchSimilarGames).toEqual({ local: 1, live: 0 });
+        expect(counts.fetchSeries).toEqual({ local: 1, live: 1 });
+        expect(counts.fetchScreenshots).toEqual({ local: 1, live: 0 });
+        expect(counts.fetchPlatforms).toEqual({ local: 0, live: 0 });
+    });
+
+    it('counts a miss as answered by the mirror when there is no live client to ask', async () => {
+        const c = createMirrorIgdbClient({ path });
+        await c.fetchGame(5000);
+        await c.search('zzzz');
+        expect(c.lookups!().counts.fetchGame).toEqual({ local: 1, live: 0 });
+        expect(c.lookups!().counts.search).toEqual({ local: 1, live: 0 });
+    });
+
+    it('sends everything to live IGDB when there is no mirror file', async () => {
+        const c = createMirrorIgdbClient({ path: join(dir, 'absent.db'), fallback: live() });
+        await c.search('hades');
+        await c.fetchGame(1);
+        await c.fetchPlatforms();
+        const { counts } = c.lookups!();
+        expect(counts.search).toEqual({ local: 0, live: 1 });
+        expect(counts.fetchGame).toEqual({ local: 0, live: 1 });
+        expect(counts.fetchPlatforms).toEqual({ local: 0, live: 1 });
+    });
+
+    it('hands out a snapshot, and does not count the connection checks', async () => {
+        const ping = vi.fn().mockResolvedValue({ ok: true, ms: 1, error: null });
+        const c = createMirrorIgdbClient({ path, fallback: liveClient({ ping }) });
+        await c.ping!();
+        const first = c.lookups!();
+        first.counts.search.local = 99;
+        expect(c.lookups!().counts.search.local).toBe(0);
+        expect(Object.values(c.lookups!().counts).every((n) => n.local + n.live === 0)).toBe(true);
+    });
+});

@@ -2,6 +2,7 @@ import Database from 'better-sqlite3';
 import { closeSync, existsSync, fsyncSync, mkdirSync, openSync, renameSync, rmSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { buildMirror, type BuildStats } from './build.js';
+import { PermanentMirrorError } from './errors.js';
 import type { DumpSource } from './dumps.js';
 import { MIRROR_SCHEMA_VERSION } from './schema.js';
 
@@ -67,9 +68,11 @@ export function verifyMirror(path: string, opts: { minGames: number; previousGam
         if (check !== 'ok') throw new Error(`Mirror failed the integrity check: ${check}`);
         const games = db.prepare('SELECT count(*) FROM games').pluck().get() as number;
         if (games < opts.minGames)
-            throw new Error(`Mirror has only ${games} games (expected at least ${opts.minGames})`);
+            throw new PermanentMirrorError(
+                `Mirror has only ${games} games (expected at least ${opts.minGames})`
+            );
         if (opts.previousGames && games < opts.previousGames * (1 - MAX_SHRINK))
-            throw new Error(
+            throw new PermanentMirrorError(
                 `Mirror shrank from ${opts.previousGames} to ${games} games; keeping the old one`
             );
         const searchable = db
@@ -82,7 +85,9 @@ export function verifyMirror(path: string, opts: { minGames: number; previousGam
             .pluck()
             .get() as number;
         if (indexed !== searchable)
-            throw new Error(`Search index has ${indexed} rows for ${searchable} searchable games`);
+            throw new PermanentMirrorError(
+                `Search index has ${indexed} rows for ${searchable} searchable games`
+            );
     } finally {
         db.close();
     }
@@ -127,7 +132,7 @@ export async function runMirror(opts: RunOptions): Promise<RunResult> {
     const listing = await opts.source.list();
     for (const endpoint of MIRROR_ENDPOINTS)
         if (!listing.some((d) => d.endpoint === endpoint))
-            throw new Error(`IGDB does not list a dump for "${endpoint}"`);
+            throw new PermanentMirrorError(`IGDB does not list a dump for "${endpoint}"`);
     const dump = listing.find((d) => d.endpoint === 'games')!.fileName;
 
     const current = readMirrorInfo(opts.path);

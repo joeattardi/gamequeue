@@ -1,5 +1,6 @@
 import { loadConfig } from '../config.js';
 import { createDumpSource, type DumpSource } from './dumps.js';
+import { PermanentMirrorError } from './errors.js';
 import { runMirrorJob } from './job.js';
 
 /**
@@ -16,10 +17,14 @@ async function main() {
             ? createDumpSource({ clientId: igdbClientId, clientSecret: igdbClientSecret })
             : {
                   list: async () => {
-                      throw new Error('IGDB_CLIENT_ID and IGDB_CLIENT_SECRET must be set');
+                      throw new PermanentMirrorError(
+                          'IGDB_CLIENT_ID and IGDB_CLIENT_SECRET must be set'
+                      );
                   },
                   open: async () => {
-                      throw new Error('IGDB_CLIENT_ID and IGDB_CLIENT_SECRET must be set');
+                      throw new PermanentMirrorError(
+                          'IGDB_CLIENT_ID and IGDB_CLIENT_SECRET must be set'
+                      );
                   }
               };
     const run = await runMirrorJob({

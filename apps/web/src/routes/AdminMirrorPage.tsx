@@ -1,8 +1,14 @@
 import { ArrowLeft, CircleAlert, CircleCheck, DatabaseZap, TriangleAlert } from 'lucide-react';
 import { Link } from 'react-router';
-import { mirrorHealth, type MirrorHealth, type MirrorStatusDto } from '@gamequeue/shared';
+import {
+    MIRROR_LOOKUP_METHODS,
+    mirrorHealth,
+    type MirrorHealth,
+    type MirrorLookupsDto,
+    type MirrorStatusDto
+} from '@gamequeue/shared';
 import { useAdminMirror } from '../api/admin';
-import { DatabaseSkeleton } from '../components/PageSkeletons';
+import { DatabaseSkeleton, UserStatsSkeleton } from '../components/PageSkeletons';
 import { formatBytes, timeAgo, usePageTitle } from '../lib';
 
 const when = (ms: number | null | undefined) => (ms == null ? 'Never' : timeAgo(ms));
@@ -100,7 +106,14 @@ function Status({ s }: { s: MirrorStatusDto }) {
         },
         {
             label: 'Last run took',
-            value: run?.seconds != null ? `${run.seconds} s` : '-'
+            value:
+                run?.seconds != null
+                    ? `${run.seconds} s${run.attempts > 1 ? ` (${run.attempts} tries)` : ''}`
+                    : '-',
+            title:
+                run && run.attempts > 1
+                    ? 'A download failed and the build was started again, up to three times.'
+                    : undefined
         },
         {
             label: 'Cached games refreshed',
@@ -140,6 +153,56 @@ function Status({ s }: { s: MirrorStatusDto }) {
     );
 }
 
+function Lookups({ l }: { l: MirrorLookupsDto }) {
+    const total = l.local + l.live;
+    const share = total > 0 ? `${Math.round((l.local / total) * 100)}%` : '-';
+    return (
+        <div className="stack">
+            <dl className="admin-stats">
+                <div>
+                    <dd>{l.local.toLocaleString()}</dd>
+                    <dt>Answered by the mirror</dt>
+                </div>
+                <div>
+                    <dd>{l.live.toLocaleString()}</dd>
+                    <dt>Sent to live IGDB</dt>
+                </div>
+                <div>
+                    <dd>{share}</dd>
+                    <dt>Answered locally</dt>
+                </div>
+            </dl>
+            {total > 0 && (
+                <table className="admin-table">
+                    <thead>
+                        <tr>
+                            <th scope="col">Lookup</th>
+                            <th scope="col">Mirror</th>
+                            <th scope="col">Live IGDB</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {l.methods.map((m) => (
+                            <tr key={m.method}>
+                                <th scope="row">{MIRROR_LOOKUP_METHODS[m.method]}</th>
+                                <td>{m.local.toLocaleString()}</td>
+                                <td>{m.live.toLocaleString()}</td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            )}
+            <p className="muted">
+                {total === 0 ? 'No lookups yet since the server started. ' : ''}
+                Counted since {new Date(l.since).toLocaleString()}; a restart starts them again. A
+                lookup counts as sent to live IGDB when the mirror couldn't answer all of it: a game
+                newer than the last dump, a search with no local match (a typo, say), or no mirror
+                built yet.
+            </p>
+        </div>
+    );
+}
+
 /** `/admin/mirror`: the local copy of IGDB's data and the daily job that rebuilds it. */
 export function AdminMirrorPage() {
     usePageTitle('IGDB mirror | Admin');
@@ -173,6 +236,12 @@ export function AdminMirrorPage() {
                         <Status s={q.data} />
                     )}
                 </section>
+                {(q.isPending || q.data?.lookups) && (
+                    <section className="panel" aria-labelledby="mirror-lookups-h">
+                        <h2 id="mirror-lookups-h">Lookups</h2>
+                        {q.data?.lookups ? <Lookups l={q.data.lookups} /> : <UserStatsSkeleton />}
+                    </section>
+                )}
                 <section className="panel" aria-labelledby="mirror-how-h">
                     <h2 id="mirror-how-h">How it works</h2>
                     <p className="muted">

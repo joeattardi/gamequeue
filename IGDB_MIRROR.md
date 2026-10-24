@@ -25,7 +25,7 @@ The side benefit: ratings, time to beat, release dates and series stay current f
 1. **Importer** (`apps/server/src/mirror/`): streams each dump CSV through `csv-parse` straight into SQLite (nothing is written to disk first), reuses the live mapper's release-precision and add-on rules so both sources agree, builds `igdb.db.new`, verifies it and renames it into place. 383,734 games, 338,811 searchable, 251 MB, about 50 s on a Mac.
 2. **Lookup** (`createMirrorIgdbClient`): an `IgdbClient` that answers from the file and asks the live client only for what is missing. The file is re-checked every 5 s, so a rebuild needs no restart. Search is FTS5 over names and alternative names ("ff7", "bg3"), ranked by rating count scaled by match quality, with Roman-numeral and apostrophe handling. IGDB's own ranking was not the target: it puts "Cyberpunk Sex" before Cyberpunk 2077.
 3. **Cache sync** (`services/mirror-sync.ts`): every cached game, the platform list and cached series pages are overwritten from the mirror when a new dump appears and right after an import (so the mirror's metadata wins over a file's).
-4. **Operations**: `scripts/mirror.sh` from host cron at 06:30 UTC in a throw-away container, `mirror-status.json`, a 1 GiB free-space check, a healthchecks.io ping, a failed run in the error log, and **Admin > IGDB mirror**.
+4. **Operations**: `scripts/mirror.sh` from host cron at 06:30 UTC in a throw-away container, `mirror-status.json`, a 1 GiB free-space check, retries (each request three times, the whole build three times for transient failures), a healthchecks.io ping, a failed run in the error log, and **Admin > IGDB mirror** with lookup counters (mirror vs live IGDB since the last restart).
 
 ## Measured
 
@@ -46,7 +46,6 @@ The side benefit: ratings, time to beat, release dates and series stay current f
 
 - **The first Pi run's original error.** The first run on a Raspberry Pi (microSD, 8 GB) got through 8 of 11 dumps in about 90 s and then failed in `release_dates`. Its real error was hidden by a failing `ROLLBACK`, and the build's journal and fsync settings had not taken effect (a 1 MB dump took 16 s). Both were fixed (`configureForBulkLoad`, best-effort rollback) and the next run succeeded in 154.7 s, but the original error was never seen, so its cause is a hypothesis (fsync stalls or an I/O error on the SD card), not a finding. If a run fails again, the status file and `mirror.log` now name the real error.
 - The cron line and a scheduled run (the first one by hand worked, in the real container, as the `node` user on the bind mount).
-- A failed download is not retried until the next day's run. Running `mirror.sh` hourly would self-heal at about a second per run.
 
 ## Open items and ideas
 

@@ -1,7 +1,14 @@
 import { statSync } from 'node:fs';
-import { dumpTime, type MirrorStatusDto } from '@gamequeue/shared';
+import {
+    MIRROR_LOOKUP_METHODS,
+    dumpTime,
+    type MirrorLookupMethod,
+    type MirrorLookupsDto,
+    type MirrorStatusDto
+} from '@gamequeue/shared';
 import type { Config } from '../config.js';
 import type { Db } from '../db/client.js';
+import type { IgdbClient } from '../igdb/types.js';
 import { readMirrorInfo } from '../mirror/run.js';
 import { MIRROR_SCHEMA_VERSION } from '../mirror/schema.js';
 import { readMirrorRun } from '../mirror/status.js';
@@ -12,8 +19,23 @@ import { read, write } from './settings.js';
 /** The `lastRunAt` of the newest failed run already in the error log, so each failure is recorded once. */
 const FAILURE_REPORTED = 'igdb_mirror_failure_reported_at';
 
+function lookupsOf(igdb?: IgdbClient): MirrorLookupsDto | null {
+    const stats = igdb?.lookups?.();
+    if (!stats) return null;
+    const methods = (Object.keys(MIRROR_LOOKUP_METHODS) as MirrorLookupMethod[]).map((method) => ({
+        method,
+        ...stats.counts[method]
+    }));
+    return {
+        since: stats.since,
+        local: methods.reduce((n, m) => n + m.local, 0),
+        live: methods.reduce((n, m) => n + m.live, 0),
+        methods
+    };
+}
+
 /** What the admin page shows: the mirror file, the daily job's last report, and the cache sync. */
-export function getMirrorStatus(db: Db, config: Config): MirrorStatusDto {
+export function getMirrorStatus(db: Db, config: Config, igdb?: IgdbClient): MirrorStatusDto {
     const info = readMirrorInfo(config.igdbMirrorPath);
     const usable = info?.schemaVersion === MIRROR_SCHEMA_VERSION ? info : null;
     const { run, unreadable } = readMirrorRun(config.igdbMirrorPath);
@@ -34,7 +56,8 @@ export function getMirrorStatus(db: Db, config: Config): MirrorStatusDto {
         },
         run,
         runUnreadable: unreadable,
-        syncedDump: read(db, SYNCED_DUMP) ?? null
+        syncedDump: read(db, SYNCED_DUMP) ?? null,
+        lookups: lookupsOf(igdb)
     };
 }
 

@@ -78,7 +78,7 @@ export function adminRoutes({ db, config, igdb, cloudflare }: AppDeps) {
 
     // IGDB client counters and a live connectivity check
     // The local IGDB mirror: the file, the daily job's last report, and the cache sync (see IGDB_MIRROR.md)
-    r.get('/mirror', (c) => c.json(getMirrorStatus(db, config)));
+    r.get('/mirror', (c) => c.json(getMirrorStatus(db, config, igdb)));
 
     r.get('/igdb', (c) => {
         const lastReleaseCheckAt =

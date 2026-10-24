@@ -1,6 +1,7 @@
 import Database from 'better-sqlite3';
 import { statSync } from 'node:fs';
-import type { IgdbClient } from '../igdb/types.js';
+import { MIRROR_LOOKUP_METHODS, type MirrorLookupMethod } from '@gamequeue/shared';
+import type { IgdbClient, LookupStats } from '../igdb/types.js';
 import { MirrorReader } from './reader.js';
 import { MIRROR_SCHEMA_VERSION } from './schema.js';
 
@@ -82,65 +83,114 @@ export function createMirrorIgdbClient(opts: {
     path: string;
     fallback?: IgdbClient;
     handle?: MirrorHandle;
+    now?: () => number;
 }): IgdbClient {
     const handle = opts.handle ?? new MirrorHandle(opts.path);
     const { fallback } = opts;
+    const since = (opts.now ?? Date.now)();
+
+    // One count per lookup: `live` when the live client had to be asked (even for part of it),
+    // `local` when the mirror alone answered, including "not found"
+    const counts = Object.fromEntries(
+        Object.keys(MIRROR_LOOKUP_METHODS).map((m) => [m, { local: 0, live: 0 }])
+    ) as LookupStats['counts'];
+    const tally = (method: MirrorLookupMethod, usedLive: boolean) => {
+        counts[method][usedLive ? 'live' : 'local']++;
+    };
 
     /** Ids the local answer didn't cover, asked of the live client when there is one. */
     const rest = async <T extends { id: number }>(
+        method: MirrorLookupMethod,
         ids: number[],
         local: T[],
         ask: (client: IgdbClient, ids: number[]) => Promise<T[]>
     ): Promise<T[]> => {
         const known = new Set(local.map((r) => r.id));
         const missing = ids.filter((id) => !known.has(id));
-        return fallback && missing.length ? [...local, ...(await ask(fallback, missing))] : local;
+        const useLive = !!fallback && missing.length > 0;
+        tally(method, useLive);
+        return fallback && useLive ? [...local, ...(await ask(fallback, missing))] : local;
+    };
+
+    /** A single answer: the mirror's, else the live client's, else `none`. */
+    const one = async <T>(
+        method: MirrorLookupMethod,
+        local: T | null,
+        live: (() => Promise<T>) | undefined,
+        none: T
+    ): Promise<T> => {
+        if (local !== null) {
+            tally(method, false);
+            return local;
+        }
+        tally(method, !!live);
+        return live ? live() : none;
     };
 
     return {
         ...(fallback?.status && { status: () => fallback.status!() }),
         ...(fallback?.ping && { ping: () => fallback.ping!() }),
         local: () => handle.get(),
+        lookups: () => ({ since, counts: structuredClone(counts) }),
 
         async search(query) {
             const hits = handle.get()?.search(query) ?? [];
-            if (hits.length || !fallback) return hits;
-            return fallback.search(query);
+            const useLive = !hits.length && !!fallback;
+            tally('search', useLive);
+            return useLive ? fallback!.search(query) : hits;
         },
 
         async fetchGame(igdbId) {
-            return handle.get()?.game(igdbId) ?? (fallback ? fallback.fetchGame(igdbId) : null);
+            return one(
+                'fetchGame',
+                handle.get()?.game(igdbId) ?? null,
+                fallback && (() => fallback.fetchGame(igdbId)),
+                null
+            );
         },
 
         async fetchPlatforms() {
             const local = handle.get()?.platforms() ?? [];
-            if (local.length || !fallback) return local;
-            return fallback.fetchPlatforms();
+            const useLive = !local.length && !!fallback;
+            tally('fetchPlatforms', useLive);
+            return useLive ? fallback!.fetchPlatforms() : local;
         },
 
         async fetchReleaseDates(igdbIds) {
             const local = handle.get()?.releaseInfo(igdbIds) ?? [];
-            return rest(igdbIds, local, (c, ids) => c.fetchReleaseDates(ids));
+            return rest('fetchReleaseDates', igdbIds, local, (c, ids) => c.fetchReleaseDates(ids));
         },
 
         async fetchGameSeries(igdbIds) {
             const local = handle.get()?.gameSeries(igdbIds) ?? [];
-            return rest(igdbIds, local, (c, ids) => c.fetchGameSeries(ids));
+            return rest('fetchGameSeries', igdbIds, local, (c, ids) => c.fetchGameSeries(ids));
         },
 
         async fetchScreenshots(igdbId) {
-            const local = handle.get()?.screenshots(igdbId) ?? null;
-            return local ?? (fallback ? fallback.fetchScreenshots(igdbId) : null);
+            return one(
+                'fetchScreenshots',
+                handle.get()?.screenshots(igdbId) ?? null,
+                fallback && (() => fallback.fetchScreenshots(igdbId)),
+                null
+            );
         },
 
         async fetchSeries(seriesId) {
-            const local = handle.get()?.seriesRecord(seriesId) ?? null;
-            return local ?? (fallback ? fallback.fetchSeries(seriesId) : null);
+            return one(
+                'fetchSeries',
+                handle.get()?.seriesRecord(seriesId) ?? null,
+                fallback && (() => fallback.fetchSeries(seriesId)),
+                null
+            );
         },
 
         async fetchSimilarGames(igdbId) {
-            const local = handle.get()?.similar(igdbId) ?? null;
-            return local ?? (fallback ? fallback.fetchSimilarGames(igdbId) : []);
+            return one(
+                'fetchSimilarGames',
+                handle.get()?.similar(igdbId) ?? null,
+                fallback && (() => fallback.fetchSimilarGames(igdbId)),
+                []
+            );
         }
     };
 }

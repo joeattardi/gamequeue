@@ -24,10 +24,12 @@ const status = (over: Partial<MirrorStatusDto> = {}): MirrorStatusDto => ({
         result: 'built',
         lastSuccessAt: NOW - 1000,
         dump: '1792821600_games.csv',
-        seconds: 47
+        seconds: 47,
+        attempts: 1
     },
     runUnreadable: false,
     syncedDump: '1792821600_games.csv',
+    lookups: null,
     ...over
 });
 

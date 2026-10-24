@@ -3,6 +3,16 @@ const REFRESH_MARGIN_MS = 3600_000; // refresh an hour before expiry
 
 type FetchFn = typeof fetch;
 
+/** The Twitch token request failed; `status` is the HTTP status, so callers can tell a bad secret (4xx) from an outage. */
+export class TokenError extends Error {
+    constructor(
+        message: string,
+        public status: number
+    ) {
+        super(message);
+    }
+}
+
 /** Twitch client-credentials token, cached in memory and refreshed ahead of expiry. */
 export class TokenProvider {
     private token?: { value: string; expiresAt: number };
@@ -40,7 +50,8 @@ export class TokenProvider {
             grant_type: 'client_credentials'
         })}`;
         const res = await this.fetchFn(url, { method: 'POST' });
-        if (!res.ok) throw new Error(`Twitch token request failed (${res.status})`);
+        if (!res.ok)
+            throw new TokenError(`Twitch token request failed (${res.status})`, res.status);
         const body = (await res.json()) as { access_token: string; expires_in: number };
         this.token = { value: body.access_token, expiresAt: this.now() + body.expires_in * 1000 };
         return body.access_token;
