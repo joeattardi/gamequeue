@@ -74,44 +74,60 @@ function saveGameSeries(db: Db, gameId: number, list: SeriesRefDto[]) {
             .run();
 }
 
-/** Writes a fetched game and its relations into the shared cache. */
+/**
+ * Writes a fetched game and its relations into the shared cache. A game already cached is left as
+ * it is, unless `overwrite` says the record is authoritative (it comes from the mirror): then its
+ * row is replaced and platforms, genres, themes and series become exactly the record's.
+ */
 export function saveGame(
     db: Db,
     g: GameRecord,
     now = Date.now(),
-    opts: { keepExistingPlatforms?: boolean; fromImport?: boolean } = {}
+    opts: { keepExistingPlatforms?: boolean; fromImport?: boolean; overwrite?: boolean } = {}
 ) {
     db.transaction((tx) => {
         upsertPlatforms(tx as unknown as Db, g.platforms, {
             keepExisting: opts.keepExistingPlatforms
         });
-        for (const x of g.genres) tx.insert(genres).values(x).onConflictDoNothing().run();
-        for (const x of g.themes) tx.insert(themes).values(x).onConflictDoNothing().run();
-        tx.insert(games)
-            .values({
-                id: g.id,
-                name: g.name,
-                slug: g.slug,
-                summary: g.summary,
-                releaseDate: g.releaseDate,
-                releasePrecision: g.releasePrecision,
-                // An import file is only a snapshot: its dates and series are due for a check
-                releaseCheckedAt: opts.fromImport ? null : now,
-                seriesCheckedAt: opts.fromImport ? null : now,
-                coverImageId: g.coverImageId,
-                // An import file carries no screenshots: they are fetched when the game is opened
-                screenshots: opts.fromImport ? null : JSON.stringify(g.screenshots),
-                igdbRating: g.igdbRating,
-                igdbRatingCount: g.igdbRatingCount,
-                gameType: g.gameType,
-                ttbHastilySeconds: g.ttb?.hastilySeconds ?? null,
-                ttbNormallySeconds: g.ttb?.normallySeconds ?? null,
-                ttbCompletelySeconds: g.ttb?.completelySeconds ?? null,
-                ttbCount: g.ttb?.count ?? null,
-                fetchedAt: now
-            })
-            .onConflictDoNothing()
-            .run();
+        for (const [table, list] of [
+            [genres, g.genres],
+            [themes, g.themes]
+        ] as const)
+            for (const x of list) {
+                const insert = tx.insert(table).values(x);
+                if (opts.overwrite)
+                    insert.onConflictDoUpdate({ target: table.id, set: { name: x.name } }).run();
+                else insert.onConflictDoNothing().run();
+            }
+        const row = {
+            name: g.name,
+            slug: g.slug,
+            summary: g.summary,
+            releaseDate: g.releaseDate,
+            releasePrecision: g.releasePrecision,
+            // An import file is only a snapshot: its dates and series are due for a check
+            releaseCheckedAt: opts.fromImport ? null : now,
+            seriesCheckedAt: opts.fromImport ? null : now,
+            coverImageId: g.coverImageId,
+            // An import file carries no screenshots: they are fetched when the game is opened
+            screenshots: opts.fromImport ? null : JSON.stringify(g.screenshots),
+            igdbRating: g.igdbRating,
+            igdbRatingCount: g.igdbRatingCount,
+            gameType: g.gameType,
+            ttbHastilySeconds: g.ttb?.hastilySeconds ?? null,
+            ttbNormallySeconds: g.ttb?.normallySeconds ?? null,
+            ttbCompletelySeconds: g.ttb?.completelySeconds ?? null,
+            ttbCount: g.ttb?.count ?? null,
+            fetchedAt: now
+        };
+        const insertGame = tx.insert(games).values({ id: g.id, ...row });
+        if (opts.overwrite) {
+            insertGame.onConflictDoUpdate({ target: games.id, set: row }).run();
+            tx.delete(gamePlatforms).where(eq(gamePlatforms.gameId, g.id)).run();
+            tx.delete(gameGenres).where(eq(gameGenres.gameId, g.id)).run();
+            tx.delete(gameThemes).where(eq(gameThemes.gameId, g.id)).run();
+            tx.delete(gameSeries).where(eq(gameSeries.gameId, g.id)).run();
+        } else insertGame.onConflictDoNothing().run();
         // Drizzle rejects empty inserts, and IGDB games often lack themes/genres/platforms
         saveGameSeries(tx as unknown as Db, g.id, g.series);
         if (g.platforms.length)

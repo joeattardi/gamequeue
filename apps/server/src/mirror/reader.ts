@@ -356,6 +356,11 @@ export class MirrorReader {
         return this.stmt.allPlatforms.all() as PlatformDto[];
     }
 
+    /** The dump this mirror was built from (see `buildMirror`'s `meta`). */
+    dump(): string | null {
+        return this.meta().dump ?? null;
+    }
+
     meta(): Record<string, string> {
         const rows = this.stmt.meta.all() as { key: string; value: string }[];
         return Object.fromEntries(rows.map((r) => [r.key, r.value]));

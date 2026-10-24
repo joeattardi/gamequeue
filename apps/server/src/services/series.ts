@@ -13,7 +13,7 @@ import {
     wishlists
 } from '../db/schema.js';
 import { HttpError } from '../errors.js';
-import type { IgdbClient } from '../igdb/types.js';
+import type { IgdbClient, SeriesRecord } from '../igdb/types.js';
 import { reportError } from './error-log.js';
 import { callIgdb, requireIgdb } from './games.js';
 import { addToList, ensureQueue } from './lists.js';
@@ -21,25 +21,9 @@ import { addToList, ensureQueue } from './lists.js';
 /** New sequels get announced, so a series' member list is re-read from IGDB after a week. */
 export const SERIES_REFRESH_MS = 7 * 24 * 60 * 60 * 1000;
 
-/**
- * Makes sure the series' game list is cached and not stale. A failed refresh falls back to what
- * we have; only a series we know nothing about is an error (404 if IGDB has no such series).
- */
-async function ensureMembers(db: Db, igdb: IgdbClient | undefined, id: number, now: number) {
-    const row = db.select().from(series).where(eq(series.id, id)).get();
-    const fresh = row?.membersFetchedAt != null && row.membersFetchedAt > now - SERIES_REFRESH_MS;
-    if (fresh) return row;
-    let record;
-    try {
-        record = await callIgdb(() => requireIgdb(igdb).fetchSeries(id));
-    } catch (e) {
-        if (row?.membersFetchedAt != null) {
-            reportError(db, 'series_refresh', e, { context: { seriesId: id } });
-            return row;
-        }
-        throw e;
-    }
-    if (!record) throw new HttpError(404, 'Series not found');
+/** Replaces a series' cached member list with `record`'s. */
+export function saveSeriesMembers(db: Db, record: SeriesRecord, now: number) {
+    const id = record.id;
     db.transaction((tx) => {
         tx.insert(series)
             .values({ id, name: record.name, membersFetchedAt: now })
@@ -63,6 +47,28 @@ async function ensureMembers(db: Db, igdb: IgdbClient | undefined, id: number, n
                 )
                 .run();
     });
+}
+
+/**
+ * Makes sure the series' game list is cached and not stale. A failed refresh falls back to what
+ * we have; only a series we know nothing about is an error (404 if IGDB has no such series).
+ */
+async function ensureMembers(db: Db, igdb: IgdbClient | undefined, id: number, now: number) {
+    const row = db.select().from(series).where(eq(series.id, id)).get();
+    const fresh = row?.membersFetchedAt != null && row.membersFetchedAt > now - SERIES_REFRESH_MS;
+    if (fresh) return row;
+    let record;
+    try {
+        record = await callIgdb(() => requireIgdb(igdb).fetchSeries(id));
+    } catch (e) {
+        if (row?.membersFetchedAt != null) {
+            reportError(db, 'series_refresh', e, { context: { seriesId: id } });
+            return row;
+        }
+        throw e;
+    }
+    if (!record) throw new HttpError(404, 'Series not found');
+    saveSeriesMembers(db, record, now);
     return db.select().from(series).where(eq(series.id, id)).get()!;
 }
 

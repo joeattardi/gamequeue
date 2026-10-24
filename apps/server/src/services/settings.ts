@@ -6,7 +6,7 @@ import { settings } from '../db/schema.js';
 
 const SIGNUPS = 'signups_enabled';
 
-function read(db: Db, key: string): string | undefined {
+export function read(db: Db, key: string): string | undefined {
     return db.select({ value: settings.value }).from(settings).where(eq(settings.key, key)).get()
         ?.value;
 }
@@ -15,6 +15,14 @@ function read(db: Db, key: string): string | undefined {
 export function signupsEnabled(db: Db, config: Config): boolean {
     const saved = read(db, SIGNUPS);
     return saved === undefined ? config.signupsEnabled : saved === 'true';
+}
+
+/** Saves a value under a key of the `settings` table. */
+export function write(db: Db, key: string, value: string) {
+    db.insert(settings)
+        .values({ key, value })
+        .onConflictDoUpdate({ target: settings.key, set: { value, updatedAt: Date.now() } })
+        .run();
 }
 
 export function getAdminSettings(db: Db, config: Config): AdminSettingsDto {

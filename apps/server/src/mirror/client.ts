@@ -100,6 +100,7 @@ export function createMirrorIgdbClient(opts: {
     return {
         ...(fallback?.status && { status: () => fallback.status!() }),
         ...(fallback?.ping && { ping: () => fallback.ping!() }),
+        local: () => handle.get(),
 
         async search(query) {
             const hits = handle.get()?.search(query) ?? [];

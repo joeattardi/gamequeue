@@ -61,6 +61,18 @@ export interface SeriesRecord {
     }[];
 }
 
+/**
+ * A local copy of IGDB that can be read without a request (the mirror), for work that touches many
+ * games at once. Only what is in the copy: nothing here falls back to the live API.
+ */
+export interface LocalIgdb {
+    /** Which data dump the copy was built from; changes whenever it is rebuilt */
+    dump(): string | null;
+    game(igdbId: number): GameRecord | null;
+    seriesRecord(seriesId: number): SeriesRecord | null;
+    platforms(): PlatformDto[];
+}
+
 /** Everything the app needs from IGDB. Faked in tests. */
 export interface IgdbClient {
     search(query: string): Promise<IgdbSearchHit[]>;
@@ -75,6 +87,8 @@ export interface IgdbClient {
     fetchSeries(seriesId: number): Promise<SeriesRecord | null>;
     /** IGDB's `similar_games` for one game (add-ons and editions left out); empty when it lists none */
     fetchSimilarGames(igdbId: number): Promise<IgdbSearchHit[]>;
+    /** The local copy behind this client, if it has one and one is built right now */
+    local?(): LocalIgdb | null;
     /** Counters for the admin page; the real client keeps them, test fakes needn't */
     status?(): Omit<IgdbStatusDto, 'configured' | 'lastReleaseCheckAt' | 'history'>;
     /** One cheap request to prove credentials and connectivity work */

@@ -321,7 +321,7 @@ The pieces:
 - **Token.** IGDB needs a Twitch access token. `token.ts` gets one, caches it, and renews it an hour before it expires. If IGDB says the token is bad (401), it fetches a new one and retries once.
 - **Rate limiting.** IGDB allows 4 requests per second and 8 in flight. Every call waits in the `RequestLimiter` queue to stay under that. If IGDB still answers "too many requests" (429), the call is retried up to 3 times.
 - **Mapping.** IGDB's raw responses are converted into our own types in `mappers.ts`. This is also where add-ons (DLC, mods, packs) are filtered out of search results.
-- **Caching.** Search results are cached for 5 minutes. Game details are saved in the `games` table and almost never fetched again.
+- **Caching.** Search results are cached for 5 minutes. Game details are saved in the `games` table. Without a mirror they are almost never fetched again; with one, they are refreshed from it whenever a new daily copy arrives (below).
 
 **Adding a game to your collection** shows how the cache works:
 
@@ -359,9 +359,11 @@ flowchart LR
 - **Live IGDB is the safety net.** A game newer than the last dump, a search with no local match (a typo, say) or a missing mirror file all fall through to the live client, as before.
 - **Search is its own thing.** The mirror's search index covers game names plus their alternative names, so "ff7", "bg3" and "TotK" work. Results are ranked by how many people rated a game, then adjusted for how well the text matches: a name that contains what you typed beats an alias match, which beats a title that merely has the same words somewhere. "7" and "VII" are treated as the same number and apostrophes are ignored.
 
-Right now the mirror answers the `IgdbClient` calls; the rest of the app (the `games` cache table, the background refresh jobs) is unchanged and still works the same way on top of it. Code: `apps/server/src/mirror/`, plan in `IGDB_MIRROR.md`.
+**Keeping the cache current.** A game you add is copied into the shared `games` table, and that copy used to stay as it was on the day it was added. Now, whenever a new daily mirror appears (the server looks every ten minutes), a short job overwrites every cached game from it: ratings, time to beat, release dates, screenshots, platforms, series. On a real collection of 216 games it takes about a third of a second. Your own data (what you own, ratings, notes, playthroughs) is never touched. A game the mirror doesn't have yet is left alone. Importing a file does the same for the games in it, so the mirror's data wins over whatever the file carried.
 
-**The exceptions to "never fetch again"** are a few background refreshes, covered in section 18: release dates for unreleased wishlisted games, series membership, and screenshots for older games.
+The older refresh jobs (section 18) are still there as the fallback for games newer than the last dump. Code: `apps/server/src/mirror/`, `services/mirror-sync.ts`, plan in `IGDB_MIRROR.md`.
+
+**The exceptions to "never fetch again"** are a few background refreshes, covered in section 18: release dates for unreleased wishlisted games, series membership, and screenshots for older games. With a local mirror, one refresh from it covers all of them.
 
 Code: `apps/server/src/igdb/`, `services/games.ts`, `routes/igdb.ts`.
 
@@ -689,6 +691,7 @@ A few things happen on timers, not in response to a click. All run inside the sa
 | Heartbeat                                  | Every minute                                        | Detect unclean shutdowns on the next start                |
 | Series backfill                            | Startup and after an import                         | Fill in series for games cached before series were stored |
 | Release date refresh                       | When you open your wishlist, at most daily per game | Unreleased games' dates change                            |
+| Mirror sync                                | Startup, then every 10 minutes (only if a new dump) | Refresh every cached game from the local IGDB mirror      |
 | Screenshots                                | When you open a game that never had them fetched    | Older cache rows predate screenshots                      |
 
 Background jobs that fail are logged to the error log and simply retried next time. They never break the request that triggered them.
