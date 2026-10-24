@@ -1276,6 +1276,17 @@ a.game-row:hover {
 .dialog__body--fill:has(.results):has(.search-status) {
     grid-template-rows: auto auto auto auto minmax(0, 1fr);
 }
+.dialog__actions {
+    position: sticky;
+    bottom: -20px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin: 0 -20px -20px;
+    padding: 12px 20px;
+    border-top: 1px solid var(--line);
+    background: var(--surface);
+}
 .dialog__head {
     display: flex;
     justify-content: space-between;

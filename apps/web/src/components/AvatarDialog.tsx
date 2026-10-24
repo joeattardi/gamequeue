@@ -1,12 +1,17 @@
 import { useRef, useState, type ChangeEvent } from 'react';
-import { AVATAR_COLORS, AVATAR_COLOR_NAMES, AVATAR_ICONS, type UserDto } from '@gamequeue/shared';
-import { ImageUp, Trash2, X } from 'lucide-react';
+import {
+    AVATAR_COLORS,
+    AVATAR_COLOR_NAMES,
+    AVATAR_ICONS,
+    type AvatarUploadInput,
+    type UserDto
+} from '@gamequeue/shared';
+import { ImageUp, RotateCcw, X } from 'lucide-react';
 import { Link } from 'react-router';
 import { useRemoveAvatar, useSetAvatarIcon, useUploadAvatar } from '../api/avatar';
 import { ApiRequestError } from '../api/client';
 import { prepareAvatar } from '../avatarImage';
 import { Avatar } from './Avatar';
-import { useConfirm } from './Confirm';
 import { useModalDialog } from './useModalDialog';
 
 /** Everything about choosing a profile picture: the generated one, an uploaded image or a preset icon. */
@@ -33,27 +38,34 @@ export function AvatarDialog({
     );
 }
 
+type Draft =
+    | { type: 'current' }
+    | { type: 'generated' }
+    | { type: 'icon'; icon: string; color: number }
+    | { type: 'upload'; image: AvatarUploadInput };
+
+/** Choices are held here until Save, so the dialog can be cancelled without touching the profile. */
 function Body({ me, onDone }: { me: UserDto; onDone: () => void }) {
-    const confirm = useConfirm();
     const upload = useUploadAvatar();
     const remove = useRemoveAvatar();
     const setIcon = useSetAvatarIcon();
     const input = useRef<HTMLInputElement>(null);
     const [error, setError] = useState<string>();
     const [preparing, setPreparing] = useState(false);
+    const [draft, setDraft] = useState<Draft>({ type: 'current' });
     // The colour applies to the next icon pick too, so it is remembered even before one is chosen
-    const [color, setColor] = useState<number | null>(null);
+    const [color, setColor] = useState(me.avatarIcon?.color ?? 0);
 
-    const busy = preparing || upload.isPending || remove.isPending || setIcon.isPending;
-    const activeColor = color ?? me.avatarIcon?.color ?? 0;
-
-    function pickIcon(icon: string, nextColor: number) {
-        setError(undefined);
-        setIcon.mutate(
-            { icon, color: nextColor },
-            { onError: () => setError('Could not save the icon.') }
-        );
-    }
+    const saving = upload.isPending || remove.isPending || setIcon.isPending;
+    const busy = preparing || saving;
+    const currentIcon = me.avatarUpdatedAt === null ? me.avatarIcon : null;
+    const iconKey =
+        draft.type === 'icon'
+            ? draft.icon
+            : draft.type === 'current'
+              ? (currentIcon?.icon ?? null)
+              : null;
+    const hasCustom = me.avatarUpdatedAt !== null || me.avatarIcon !== null;
 
     async function choose(e: ChangeEvent<HTMLInputElement>) {
         const file = e.target.files?.[0];
@@ -62,10 +74,7 @@ function Body({ me, onDone }: { me: UserDto; onDone: () => void }) {
         setError(undefined);
         setPreparing(true);
         try {
-            upload.mutate(await prepareAvatar(file), {
-                onError: (err) =>
-                    setError(err instanceof ApiRequestError ? err.message : 'Upload failed.')
-            });
+            setDraft({ type: 'upload', image: await prepareAvatar(file) });
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Something went wrong.');
         } finally {
@@ -73,17 +82,43 @@ function Body({ me, onDone }: { me: UserDto; onDone: () => void }) {
         }
     }
 
-    async function clear() {
-        const ok = await confirm({
-            title: 'Remove your picture?',
-            message: 'Your generated avatar will be shown instead.',
-            confirmLabel: 'Remove',
-            tone: 'danger'
-        });
-        if (!ok) return;
+    function save() {
         setError(undefined);
-        remove.mutate(undefined, { onError: () => setError('Could not remove the picture.') });
+        const options = {
+            onSuccess: onDone,
+            onError: (err: Error) =>
+                setError(err instanceof ApiRequestError ? err.message : 'Could not save.')
+        };
+        if (draft.type === 'icon')
+            setIcon.mutate({ icon: draft.icon, color: draft.color }, options);
+        else if (draft.type === 'upload') upload.mutate(draft.image, options);
+        else if (draft.type === 'generated') remove.mutate(undefined, options);
+        else onDone();
     }
+
+    const preview =
+        draft.type === 'upload' ? (
+            <img
+                className="avatar avatar--image"
+                src={`data:${draft.image.contentType};base64,${draft.image.data}`}
+                width={96}
+                height={96}
+                alt=""
+            />
+        ) : (
+            <Avatar
+                username={me.username}
+                size={96}
+                avatarUpdatedAt={draft.type === 'current' ? me.avatarUpdatedAt : null}
+                avatarIcon={
+                    draft.type === 'icon'
+                        ? { icon: draft.icon, color: draft.color }
+                        : draft.type === 'current'
+                          ? me.avatarIcon
+                          : null
+                }
+            />
+        );
 
     return (
         <div className="dialog__body">
@@ -94,32 +129,38 @@ function Body({ me, onDone }: { me: UserDto; onDone: () => void }) {
                 </button>
             </div>
             <div className="avatar-edit">
-                <Avatar
-                    username={me.username}
-                    size={96}
-                    avatarUpdatedAt={me.avatarUpdatedAt}
-                    avatarIcon={me.avatarIcon}
-                />
+                {preview}
                 <div className="avatar-edit__body">
                     <p>
-                        {avatarSummary(me)} It's public, like the rest of your profile. Uploaded
-                        images are cropped to a square and shrunk in your browser.
+                        {draft.type === 'current'
+                            ? avatarSummary(me)
+                            : 'This is how your picture will look once saved.'}{' '}
+                        It's public, like the rest of your profile. Uploaded images are cropped to a
+                        square and shrunk in your browser.
                     </p>
                     <div className="avatar-edit__actions">
                         <input ref={input} type="file" accept="image/*" hidden onChange={choose} />
                         <button
-                            className="btn btn--primary"
+                            className="btn"
                             onClick={() => input.current?.click()}
                             disabled={busy}
                             data-autofocus
                         >
                             <ImageUp aria-hidden="true" />
-                            {busy ? 'Saving…' : 'Upload a picture'}
+                            {preparing ? 'Preparing…' : 'Upload a picture'}
                         </button>
-                        {(me.avatarUpdatedAt !== null || me.avatarIcon !== null) && (
-                            <button className="btn btn--danger" onClick={clear} disabled={busy}>
-                                <Trash2 aria-hidden="true" />
-                                Use generated avatar
+                        {(hasCustom || draft.type !== 'current') && draft.type !== 'generated' && (
+                            <button
+                                className="btn"
+                                onClick={() =>
+                                    setDraft(
+                                        hasCustom ? { type: 'generated' } : { type: 'current' }
+                                    )
+                                }
+                                disabled={busy}
+                            >
+                                <RotateCcw aria-hidden="true" />
+                                {hasCustom ? 'Use generated avatar' : 'Discard'}
                             </button>
                         )}
                     </div>
@@ -136,12 +177,11 @@ function Body({ me, onDone }: { me: UserDto; onDone: () => void }) {
                             className="icon-picker__color"
                             style={{ backgroundColor: hex }}
                             aria-label={AVATAR_COLOR_NAMES[i]}
-                            aria-pressed={activeColor === i}
+                            aria-pressed={color === i}
                             disabled={busy}
                             onClick={() => {
                                 setColor(i);
-                                if (me.avatarIcon && me.avatarUpdatedAt === null)
-                                    pickIcon(me.avatarIcon.icon, i);
+                                if (iconKey) setDraft({ type: 'icon', icon: iconKey, color: i });
                             }}
                         />
                     ))}
@@ -154,14 +194,14 @@ function Body({ me, onDone }: { me: UserDto; onDone: () => void }) {
                             className="icon-picker__icon"
                             aria-label={icon.label}
                             title={icon.label}
-                            aria-pressed={me.avatarIcon?.icon === icon.key}
+                            aria-pressed={iconKey === icon.key}
                             disabled={busy}
-                            onClick={() => pickIcon(icon.key, activeColor)}
+                            onClick={() => setDraft({ type: 'icon', icon: icon.key, color })}
                         >
                             <Avatar
                                 username={me.username}
                                 size={44}
-                                avatarIcon={{ icon: icon.key, color: activeColor }}
+                                avatarIcon={{ icon: icon.key, color }}
                             />
                         </button>
                     ))}
@@ -170,6 +210,18 @@ function Body({ me, onDone }: { me: UserDto; onDone: () => void }) {
                     Icons from <Link to="/credits">game-icons.net</Link>.
                 </p>
             </fieldset>
+            <div className="dialog__actions">
+                <button className="btn" onClick={onDone} disabled={saving}>
+                    Cancel
+                </button>
+                <button
+                    className="btn btn--primary"
+                    onClick={save}
+                    disabled={busy || draft.type === 'current'}
+                >
+                    {saving ? 'Saving…' : 'Save'}
+                </button>
+            </div>
         </div>
     );
 }
