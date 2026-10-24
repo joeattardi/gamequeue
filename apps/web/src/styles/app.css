@@ -636,6 +636,10 @@ a {
     .nav__label {
         max-height: 24px;
     }
+    .slot-strip {
+        overflow: hidden;
+        max-height: 120px;
+    }
     .nav__group + .nav__group {
         border-top: 1px solid transparent;
     }
@@ -651,8 +655,13 @@ a {
         max-height: 0;
         margin-bottom: 0;
     }
+    /* The strip doesn't fit a rail: it folds away (no wrapping, so nothing reflows on the way) */
     .is-collapsed .slot-strip {
-        padding: 0;
+        flex-wrap: nowrap;
+        max-height: 0;
+        margin-bottom: -16px;
+        opacity: 0;
+        visibility: hidden;
     }
     .is-collapsed .logo {
         padding: 0 0 0 4px;
@@ -707,7 +716,16 @@ a {
             max-height 0.2s ease,
             margin 0.2s ease;
     }
-    .slot-strip,
+    .slot-strip {
+        transition:
+            max-height 0.2s ease,
+            margin 0.2s ease,
+            opacity 0.15s ease,
+            visibility 0s linear;
+    }
+    .is-collapsed .slot-strip {
+        transition-delay: 0s, 0s, 0s, 0.2s;
+    }
     .logo,
     .user-menu__button,
     .nav,
