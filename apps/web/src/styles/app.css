@@ -5612,7 +5612,8 @@ button.tier-tile__button {
     }
     .profile-side {
         position: sticky;
-        top: 16px;
+        /* below the sticky header */
+        top: 76px;
     }
     .profile-side .counters {
         grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -5621,5 +5622,36 @@ button.tier-tile__button {
     .profile-side .counter--total,
     .profile-side .counter--nav {
         grid-column: 1 / -1;
+    }
+}
+
+/* Header identity on long public pages: fades in once the page's own heading has scrolled away */
+.topbar__identity {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+    opacity: 0;
+    visibility: hidden;
+    transition:
+        opacity 0.15s,
+        visibility 0.15s;
+}
+.topbar__identity--shown {
+    opacity: 1;
+    visibility: visible;
+}
+.topbar__identity .avatar {
+    flex: none;
+}
+.topbar__identity-name {
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+@media (prefers-reduced-motion: reduce) {
+    .topbar__identity {
+        transition: none;
     }
 }

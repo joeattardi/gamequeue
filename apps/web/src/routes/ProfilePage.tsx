@@ -18,7 +18,7 @@ import {
     Play,
     Trophy
 } from 'lucide-react';
-import type { ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Link, useParams } from 'react-router';
 import { ApiRequestError } from '../api/client';
 import { useProfile } from '../api/profile';
@@ -275,9 +275,30 @@ export function ProfilePage() {
     const notFound =
         profile.error instanceof ApiRequestError ? profile.error.status === 404 : false;
 
+    // Once the hero has scrolled under the sticky header, the header shows who this is
+    const [hero, setHero] = useState<HTMLDivElement | null>(null);
+    const [heroGone, setHeroGone] = useState(false);
+    useEffect(() => {
+        if (!hero) return;
+        const observer = new IntersectionObserver(([e]) => setHeroGone(!e!.isIntersecting), {
+            rootMargin: '-60px 0px 0px 0px'
+        });
+        observer.observe(hero);
+        return () => observer.disconnect();
+    }, [hero]);
+
     return (
         <>
-            <PublicHeader />
+            <PublicHeader
+                identity={
+                    profile.data && {
+                        username: profile.data.username,
+                        realName: profile.data.realName,
+                        avatarUpdatedAt: profile.data.avatarUpdatedAt,
+                        shown: heroGone
+                    }
+                }
+            />
             <main className="page">
                 {profile.isPending && <ProfileSkeleton />}
                 {profile.isError && (
@@ -287,7 +308,7 @@ export function ProfilePage() {
                 )}
                 {profile.data && (
                     <>
-                        <div className="profile-hero">
+                        <div className="profile-hero" ref={setHero}>
                             <Avatar
                                 username={profile.data.username}
                                 size={72}
