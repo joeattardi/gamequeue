@@ -716,12 +716,14 @@ a {
             max-height 0.2s ease,
             margin 0.2s ease;
     }
+    /* Expanding: wait out the width animation (the covers would re-wrap as it grows), then
+       unfold and fade in. Collapsing uses the delays below and folds away at once. */
     .slot-strip {
         transition:
-            max-height 0.2s ease,
-            margin 0.2s ease,
-            opacity 0.15s ease,
-            visibility 0s linear;
+            max-height 0.2s ease 0.2s,
+            margin 0.2s ease 0.2s,
+            opacity 0.2s ease 0.2s,
+            visibility 0s linear 0.2s;
     }
     .is-collapsed .slot-strip {
         transition-delay: 0s, 0s, 0s, 0.2s;
