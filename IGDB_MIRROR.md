@@ -1,6 +1,13 @@
 # Plan: mirror IGDB locally and stay current with webhooks
 
-Status: **proposal, nothing implemented.** Written 2026-10-21 against the code as it is today.
+Status: **superseded in part, step 1 built (2026-10-24).** Written 2026-10-21 against the code as it is today. The owner has since been added to IGDB's data partner program, which changed the approach:
+
+- **Data dumps instead of paging.** Daily CSV dumps (`GET /v4/dumps`) replace the paged initial load and the catch-up job. The daily rebuild is the only update path.
+- **No webhooks for now** (decided by the owner). Everything about the receiver, inbox, registration and CSRF exemption below is deferred; the dump rebuild repairs anything missed.
+- **A separate `igdb.db`** (open question 1 answered: two files). The user database keeps its own `games` rows as a per-app cache; the mirror is a rebuildable, un-backed-up lookup source, replaced atomically.
+- **Spike done:** the live dumps total 1.33 GB of CSV across 80 endpoints; the 10 we use are about 740 MB. The built mirror is 241 MB with screenshots (383,734 games, 338,811 searchable), builds in about 47 s on a Mac, and matched live `fetchGame` on every field for 8 spot-checked games.
+
+Built so far (step 1): `apps/server/src/mirror/` and `npm run igdb:mirror`, described in `ARCHITECTURE.md`. Not built: the lookup behind `IgdbClient` (with popularity-aware FTS ranking; plain `bm25` ranks "Great Witcher" above The Witcher 3), switching features over, the cron job, the admin tile and `DEPLOYMENT.md`. The text below is the original proposal and is kept for its reasoning.
 
 ## Why
 

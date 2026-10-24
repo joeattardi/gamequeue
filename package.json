@@ -16,6 +16,7 @@
         "test": "npm test --workspaces --if-present",
         "typecheck": "npm run typecheck --workspaces --if-present",
         "db:generate": "npm run db:generate -w @gamequeue/server",
+        "igdb:mirror": "npm run igdb:mirror -w @gamequeue/server --",
         "format": "prettier --write .",
         "format:check": "prettier --check ."
     },

@@ -1,0 +1,140 @@
+import Database from 'better-sqlite3';
+import { existsSync, mkdirSync, renameSync, rmSync } from 'node:fs';
+import { dirname } from 'node:path';
+import { buildMirror, type BuildStats } from './build.js';
+import type { DumpSource } from './dumps.js';
+import { MIRROR_SCHEMA_VERSION } from './schema.js';
+
+/** Every dump the mirror reads. */
+export const MIRROR_ENDPOINTS = [
+    'games',
+    'covers',
+    'screenshots',
+    'game_time_to_beats',
+    'release_dates',
+    'platforms',
+    'genres',
+    'themes',
+    'collections',
+    'game_types'
+] as const;
+
+/** A new mirror with fewer games than this is taken for a truncated dump and rejected. */
+export const MIN_GAMES = 100_000;
+/** ...as is one that lost more than this share of the current mirror's games. */
+export const MAX_SHRINK = 0.2;
+
+export interface MirrorInfo {
+    schemaVersion: number;
+    dump: string | null;
+    builtAt: number | null;
+    games: number;
+}
+
+/** What a mirror file says about itself, or null when it's missing or unreadable. */
+export function readMirrorInfo(path: string): MirrorInfo | null {
+    if (!existsSync(path)) return null;
+    let db: Database.Database | undefined;
+    try {
+        db = new Database(path, { readonly: true });
+        const rows = db.prepare('SELECT key, value FROM meta').all() as {
+            key: string;
+            value: string;
+        }[];
+        const meta = Object.fromEntries(rows.map((r) => [r.key, r.value]));
+        return {
+            schemaVersion: Number(meta.schema_version ?? 0),
+            dump: meta.dump ?? null,
+            builtAt: meta.built_at ? Number(meta.built_at) : null,
+            games: Number(meta.games ?? 0)
+        };
+    } catch {
+        return null;
+    } finally {
+        db?.close();
+    }
+}
+
+/** Throws unless the freshly built file looks like a complete mirror. */
+export function verifyMirror(path: string, opts: { minGames: number; previousGames?: number }) {
+    const db = new Database(path, { readonly: true });
+    try {
+        const check = db.pragma('quick_check', { simple: true });
+        if (check !== 'ok') throw new Error(`Mirror failed the integrity check: ${check}`);
+        const games = db.prepare('SELECT count(*) FROM games').pluck().get() as number;
+        if (games < opts.minGames)
+            throw new Error(`Mirror has only ${games} games (expected at least ${opts.minGames})`);
+        if (opts.previousGames && games < opts.previousGames * (1 - MAX_SHRINK))
+            throw new Error(
+                `Mirror shrank from ${opts.previousGames} to ${games} games; keeping the old one`
+            );
+        const searchable = db
+            .prepare('SELECT count(*) FROM games WHERE searchable = 1')
+            .pluck()
+            .get() as number;
+        // `games_fts` itself is an external-content table (it answers count(*) from `games`), so
+        // count the documents the index really holds
+        const indexed = db
+            .prepare('SELECT count(*) FROM games_fts_docsize')
+            .pluck()
+            .get() as number;
+        if (indexed !== searchable)
+            throw new Error(`Search index has ${indexed} rows for ${searchable} searchable games`);
+    } finally {
+        db.close();
+    }
+}
+
+export interface RunOptions {
+    source: DumpSource;
+    /** Where the live mirror lives; replaced atomically on success */
+    path: string;
+    /** Rebuild even when the dumps haven't changed since the last build */
+    force?: boolean;
+    minGames?: number;
+    log?: (message: string) => void;
+}
+
+export type RunResult =
+    { status: 'current'; dump: string } | { status: 'built'; dump: string; stats: BuildStats };
+
+/**
+ * Brings the mirror at `path` up to date: skips when the games dump is the one it was built from,
+ * otherwise builds a new file beside it, verifies it and renames it into place. The old mirror
+ * stays untouched until the new one has passed, so a failed or partial run changes nothing.
+ */
+export async function runMirror(opts: RunOptions): Promise<RunResult> {
+    const log = opts.log ?? (() => {});
+    const listing = await opts.source.list();
+    for (const endpoint of MIRROR_ENDPOINTS)
+        if (!listing.some((d) => d.endpoint === endpoint))
+            throw new Error(`IGDB does not list a dump for "${endpoint}"`);
+    const dump = listing.find((d) => d.endpoint === 'games')!.fileName;
+
+    const current = readMirrorInfo(opts.path);
+    const usable = current?.schemaVersion === MIRROR_SCHEMA_VERSION ? current : null;
+    if (usable?.dump === dump && !opts.force) {
+        log(`Mirror is already built from ${dump}; nothing to do`);
+        return { status: 'current', dump };
+    }
+
+    mkdirSync(dirname(opts.path), { recursive: true });
+    const next = `${opts.path}.new`;
+    try {
+        const stats = await buildMirror({
+            source: opts.source,
+            outPath: next,
+            meta: { dump },
+            log
+        });
+        verifyMirror(next, {
+            minGames: opts.minGames ?? MIN_GAMES,
+            previousGames: usable?.games
+        });
+        renameSync(next, opts.path);
+        log(`Mirror replaced: ${stats.games} games (${stats.searchable} searchable)`);
+        return { status: 'built', dump, stats };
+    } finally {
+        rmSync(next, { force: true });
+    }
+}

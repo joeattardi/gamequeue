@@ -50,17 +50,14 @@ const PRECISION_BY_FORMAT: Record<number, ReleasePrecision | 'tbd'> = {
 const PRECISION_RANK: Record<string, number> = { day: 0, month: 1, quarter: 2, year: 3 };
 
 /**
- * The game's first release date and how exact it is. `first_release_date` is the earliest of the
- * per-platform `release_dates`, so the precision comes from the ones that carry that same date (the
- * most exact wins). A format of TBD, or no matching row, leaves the precision unknown (null).
+ * The release date and how exact it is, from the `date_formats` ids of the per-platform dates that
+ * carry the game's first release date (the most exact wins). A format of TBD, or no usable id,
+ * leaves the precision unknown (null). Shared with the dump import so both agree.
  */
-export function mapRelease(raw: Pick<RawGame, 'first_release_date' | 'release_dates'>) {
-    const date = toIsoDate(raw.first_release_date);
+export function releaseFromFormats(date: string | null, formatIds: (number | undefined)[]) {
     let precision: ReleasePrecision | null = null;
     let tbd = false;
-    for (const r of raw.release_dates ?? []) {
-        if (r.date === undefined || r.date !== raw.first_release_date) continue;
-        const id = typeof r.date_format === 'object' ? r.date_format?.id : r.date_format;
+    for (const id of formatIds) {
         const p = id === undefined ? undefined : PRECISION_BY_FORMAT[id];
         if (p === 'tbd') tbd = true;
         else if (p && (!precision || PRECISION_RANK[p]! < PRECISION_RANK[precision]!))
@@ -69,6 +66,17 @@ export function mapRelease(raw: Pick<RawGame, 'first_release_date' | 'release_da
     return tbd && !precision
         ? { releaseDate: null, releasePrecision: null }
         : { releaseDate: date, releasePrecision: precision };
+}
+
+/**
+ * The game's first release date and how exact it is. `first_release_date` is the earliest of the
+ * per-platform `release_dates`, so the precision comes from the ones that carry that same date.
+ */
+export function mapRelease(raw: Pick<RawGame, 'first_release_date' | 'release_dates'>) {
+    const formats = (raw.release_dates ?? [])
+        .filter((r) => r.date !== undefined && r.date === raw.first_release_date)
+        .map((r) => (typeof r.date_format === 'object' ? r.date_format?.id : r.date_format));
+    return releaseFromFormats(toIsoDate(raw.first_release_date), formats);
 }
 
 export const mapSeriesRefs = (raw: Pick<RawGame, 'collections'>) =>
