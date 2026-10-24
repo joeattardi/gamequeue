@@ -5990,3 +5990,43 @@ button.tier-tile__button {
         display: none;
     }
 }
+
+/* Notes on a game */
+.note-form__actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+.notes {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 14px;
+}
+.note {
+    display: grid;
+    gap: 6px;
+    padding-top: 12px;
+    border-top: 1px solid var(--line);
+}
+.note:first-child {
+    padding-top: 0;
+    border-top: 0;
+}
+.note__meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+}
+.note__meta .muted {
+    margin-right: auto;
+}
+.note__body {
+    margin: 0;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}

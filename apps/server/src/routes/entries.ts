@@ -1,9 +1,11 @@
 import { Hono } from 'hono';
 import {
     addEntrySchema,
+    addNoteSchema,
     entryQuerySchema,
     pageQuerySchema,
-    patchEntrySchema
+    patchEntrySchema,
+    patchNoteSchema
 } from '@gamequeue/shared';
 import type { AppDeps } from '../app.js';
 import { requireAuth, type AuthVars } from '../auth/middleware.js';
@@ -11,13 +13,16 @@ import { HttpError } from '../errors.js';
 import { parseId, validate } from '../http.js';
 import {
     addEntry,
+    addNote,
     deleteEntry,
+    deleteNote,
     getEntry,
     getFacetCounts,
     getFacets,
     pageEntries,
     pageSlotCandidates,
-    patchEntry
+    patchEntry,
+    patchNote
 } from '../services/entries.js';
 import { ensureScreenshots } from '../services/games.js';
 
@@ -93,6 +98,38 @@ export function entryRoutes({ db, config, igdb }: AppDeps) {
             entry: patchEntry(db, c.get('user').id, parseId(c.req.param('id')), patch)
         });
     });
+
+    r.post('/:id/notes', async (c) => {
+        const input = validate(addNoteSchema, await c.req.json().catch(() => undefined));
+        return c.json(
+            { entry: addNote(db, c.get('user').id, parseId(c.req.param('id')), input) },
+            201
+        );
+    });
+
+    r.patch('/:id/notes/:noteId', async (c) => {
+        const patch = validate(patchNoteSchema, await c.req.json().catch(() => undefined));
+        return c.json({
+            entry: patchNote(
+                db,
+                c.get('user').id,
+                parseId(c.req.param('id')),
+                parseId(c.req.param('noteId')),
+                patch
+            )
+        });
+    });
+
+    r.delete('/:id/notes/:noteId', (c) =>
+        c.json({
+            entry: deleteNote(
+                db,
+                c.get('user').id,
+                parseId(c.req.param('id')),
+                parseId(c.req.param('noteId'))
+            )
+        })
+    );
 
     r.delete('/:id', (c) => {
         if (!deleteEntry(db, c.get('user').id, parseId(c.req.param('id'))))

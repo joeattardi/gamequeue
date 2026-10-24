@@ -63,7 +63,7 @@ const FEATURES = [
     {
         icon: Globe,
         title: 'Public profile',
-        text: 'Show off what you are playing and what you have finished. Notes always stay private.'
+        text: 'Show off what you are playing and what you have finished. Notes stay private unless you choose to share them.'
     }
 ];
 

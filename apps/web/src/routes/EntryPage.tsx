@@ -8,6 +8,7 @@ import { StarRating } from '../components/StarRating';
 import { Cover } from '../components/Cover';
 import { SimilarGames } from '../components/SimilarGames';
 import { Screenshots } from '../components/Screenshots';
+import { NotesPanel } from '../components/NotesPanel';
 import { ListsPanel } from '../components/ListsPanel';
 import { SeriesLinks } from '../components/SeriesLinks';
 import { ScoreGauge } from '../components/ScoreGauge';
@@ -114,7 +115,8 @@ function EntryDetail({ entry }: { entry: EntryDto }) {
 
                     <ListsPanel entry={entry} />
                     <PlatformsEditor entry={entry} onSave={(ids) => save({ platformIds: ids })} />
-                    <RatingNotes entry={entry} onSave={save} />
+                    <Rating entry={entry} onSave={save} />
+                    <NotesPanel entry={entry} />
                     <TagsEditor
                         key={entry.tags.join('|')}
                         tags={entry.tags}
@@ -242,27 +244,17 @@ function FavoriteButton({
     );
 }
 
-function RatingNotes({
+function Rating({
     entry,
     onSave
 }: {
     entry: EntryDto;
-    onSave: (b: { rating?: number | null; notes?: string }) => void;
+    onSave: (b: { rating?: number | null }) => void;
 }) {
-    const [notes, setNotes] = useState(entry.notes);
     return (
         <section aria-labelledby="mine-h" className="panel">
             <h2 id="mine-h">My take</h2>
             <StarRating value={entry.rating} onChange={(rating) => onSave({ rating })} />
-            <label className="field">
-                <span>Notes</span>
-                <textarea
-                    rows={5}
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                    onBlur={() => notes !== entry.notes && onSave({ notes })}
-                />
-            </label>
         </section>
     );
 }

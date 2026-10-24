@@ -11,7 +11,8 @@ async function setup() {
         endedOn: '2024-05-05',
         playtimeMinutes: 1200
     });
-    await s.call(`/entries/${hades.id}`, 'PATCH', { rating: 5, notes: 'secret note' });
+    await s.call(`/entries/${hades.id}`, 'PATCH', { rating: 5 });
+    await s.call(`/entries/${hades.id}/notes`, 'POST', { body: 'secret note' });
     await s.call(`/entries/${celeste.id}/playthroughs`, 'POST', { outcome: 'abandoned' });
     return { ...s, hades, celeste };
 }

@@ -4,6 +4,7 @@ import { ApiRequestError } from '../api/client';
 import { useProfileGame } from '../api/profile';
 import { Cover } from '../components/Cover';
 import { EntrySkeleton } from '../components/PageSkeletons';
+import { PublicNotes } from '../components/NotesPanel';
 import { PlatformTags } from '../components/PlatformIcon';
 import { PublicHeader } from '../components/PublicHeader';
 import { ScoreGauge } from '../components/ScoreGauge';
@@ -117,6 +118,8 @@ function ProfileGame({ data }: { data: NonNullable<ReturnType<typeof useProfileG
                         </ul>
                     )}
                 </section>
+
+                <PublicNotes username={username} notes={data.notes} />
 
                 <section aria-labelledby="pg-ttb-h" className="panel">
                     <h2 id="pg-ttb-h">Time to beat</h2>

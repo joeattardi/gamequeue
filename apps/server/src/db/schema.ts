@@ -292,7 +292,6 @@ export const entries = sqliteTable(
             .default('unplayed'),
         rating: integer('rating'), // 1-5 stars
         favorite: integer('favorite', { mode: 'boolean' }).notNull().default(false),
-        notes: text('notes').notNull().default(''),
         addedAt: integer('added_at').notNull().default(now),
         updatedAt: integer('updated_at').notNull().default(now)
     },
@@ -300,6 +299,22 @@ export const entries = sqliteTable(
         uniqueIndex('entries_user_game_idx').on(t.userId, t.gameId),
         index('entries_user_status_idx').on(t.userId, t.status)
     ]
+);
+
+/** The owner's own notes on a game: private unless `public` is set. */
+export const entryNotes = sqliteTable(
+    'entry_notes',
+    {
+        id: integer('id').primaryKey({ autoIncrement: true }),
+        entryId: integer('entry_id')
+            .notNull()
+            .references(() => entries.id, { onDelete: 'cascade' }),
+        body: text('body').notNull(),
+        public: integer('public', { mode: 'boolean' }).notNull().default(false),
+        createdAt: integer('created_at').notNull().default(now),
+        updatedAt: integer('updated_at').notNull().default(now)
+    },
+    (t) => [index('entry_notes_entry_idx').on(t.entryId)]
 );
 
 export const entryPlatforms = sqliteTable(

@@ -31,10 +31,9 @@ async function richCollection(s: Api) {
     await call(`/entries/${knight.id}/pause`, 'POST');
 
     // Outer Wilds: unplayed but personalised
-    await call(`/entries/${wilds.id}`, 'PATCH', {
-        rating: 4,
-        notes: 'Spoiler-free please'
-    });
+    await call(`/entries/${wilds.id}`, 'PATCH', { rating: 4 });
+    await call(`/entries/${wilds.id}/notes`, 'POST', { body: 'Spoiler-free please' });
+    await call(`/entries/${wilds.id}/notes`, 'POST', { body: 'Great opener', public: true });
 
     await call('/slots', 'POST', { name: 'Couch co-op' });
     const queue = (await call('/lists', 'POST', { name: 'Up next' })).list.id;
@@ -224,7 +223,8 @@ describe('merging into existing data', () => {
         // The importing account already has some of the same games, with its own opinions
         const b = await setupApi();
         const hades = await b.add(1, [PC.id], ['mine']);
-        await b.call(`/entries/${hades.id}`, 'PATCH', { rating: 5, notes: 'My own notes' });
+        await b.call(`/entries/${hades.id}`, 'PATCH', { rating: 5 });
+        await b.call(`/entries/${hades.id}/notes`, 'POST', { body: 'My own notes' });
         await b.call(`/entries/${hades.id}/start`, 'POST', { date: '2025-07-01' }); // open playthrough
         const celeste = await b.add(2, [SWITCH.id]);
         const extra = await b.add(4);
@@ -239,7 +239,8 @@ describe('merging into existing data', () => {
         expect(res.status).toBe(200);
 
         const merged = (await b.call(`/entries/${hades.id}`)).entry;
-        expect(merged).toMatchObject({ rating: 5, notes: 'My own notes' });
+        expect(merged).toMatchObject({ rating: 5 });
+        expect(merged.notes.map((n: { body: string }) => n.body)).toEqual(['My own notes']);
         expect(merged.tags).toEqual(['fast', 'mine', 'roguelike']);
         expect(merged.platforms.map((p: { id: number }) => p.id).sort()).toEqual(
             [PC.id, PS5.id].sort()

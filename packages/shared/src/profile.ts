@@ -1,4 +1,4 @@
-import type { EntryDto, EntryStatus, GameDto } from './collection.js';
+import type { EntryDto, NoteDto, EntryStatus, GameDto } from './collection.js';
 import type { GridSummaryDto } from './grids.js';
 import type { TierListSummaryDto } from './tiers.js';
 import type { SocialLinks } from './social.js';
@@ -128,7 +128,7 @@ export interface ProfileGamesDto {
 
 /**
  * One game on someone's public profile (`/profiles/:username/games/:igdbId`): IGDB's cached data
- * plus what that user has of it. No notes.
+ * plus what that user has of it. Only the notes they made public.
  */
 export interface ProfileGameDto {
     username: string;
@@ -137,4 +137,6 @@ export interface ProfileGameDto {
     entry: PublicEntryDto | null;
     /** On their wishlist */
     wishlisted: boolean;
+    /** Their public notes on it, newest first */
+    notes: Pick<NoteDto, 'id' | 'body' | 'createdAt'>[];
 }

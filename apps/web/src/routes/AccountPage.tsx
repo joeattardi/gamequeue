@@ -184,7 +184,7 @@ function ActivityForm({ me }: { me: UserDto }) {
             <p>
                 Your public profile can show what you do: games you add, start, finish or abandon,
                 ratings, wishlist and queue additions, and the grids, tier lists and lists you
-                create. Notes are never shown.
+                create. Notes are only shown if you mark them public.
             </p>
             <label className="check">
                 <input

@@ -292,7 +292,7 @@ describe('CSV export', () => {
 
     it('is private and neutralises formula-like text', async () => {
         const s = await setup();
-        await s.call(`/entries/${s.hades.id}`, 'PATCH', { notes: '=HYPERLINK("http://x")' });
+        await s.call(`/entries/${s.hades.id}/notes`, 'POST', { body: '=HYPERLINK("http://x")' });
         const all = await csvOf(s, '/data/export.csv');
         expect(all.text).toContain(`"'=HYPERLINK(""http://x"")"`);
         expect((await s.app.request('/api/data/export.csv')).status).toBe(401);
@@ -340,7 +340,7 @@ describe('smart lists in export, import and the public profile', () => {
 
     it('shows smart lists on the public profile without notes or private fields', async () => {
         const s = await setup();
-        await s.call(`/entries/${s.celeste.id}`, 'PATCH', { notes: 'secret note' });
+        await s.call(`/entries/${s.celeste.id}/notes`, 'POST', { body: 'secret note' });
         await s.make({ name: 'Cozy', rules: [{ field: 'tag', anyOf: ['cozy'] }] });
         const me = (await s.call('/auth/me')).user.username as string;
         const res = await s.app.request(`/api/profiles/${me}`);

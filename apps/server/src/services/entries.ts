@@ -15,21 +15,25 @@ import {
 } from 'drizzle-orm';
 import type {
     AddEntryInput,
+    AddNoteInput,
     EntriesPageDto,
     EntryDto,
     EntryQuery,
+    NoteDto,
     FacetCountsDto,
     FacetsDto,
     GameDto,
     PageQuery,
     PatchEntryInput,
+    PatchNoteInput,
     PlatformDto,
     PlaythroughDto
 } from '@gamequeue/shared';
-import { ENTRY_STATUSES } from '@gamequeue/shared';
+import { ENTRY_STATUSES, MAX_NOTES_PER_GAME } from '@gamequeue/shared';
 import type { Db } from '../db/client.js';
 import {
     entries,
+    entryNotes,
     entryPlatforms,
     entryTags,
     listItems,
@@ -180,7 +184,6 @@ export function patchEntry(db: Db, userId: number, entryId: number, patch: Patch
         if (Object.keys(patch).some((k) => k !== 'favorite')) set.updatedAt = Date.now();
         if (patch.favorite !== undefined) set.favorite = patch.favorite;
         if (patch.rating !== undefined) set.rating = patch.rating;
-        if (patch.notes !== undefined) set.notes = patch.notes;
         if (Object.keys(set).length > 0)
             t.update(entries).set(set).where(eq(entries.id, entryId)).run();
         if (platformIds) {
@@ -198,6 +201,89 @@ export function patchEntry(db: Db, userId: number, entryId: number, patch: Patch
             });
         if (patch.favorite && !current.favorite)
             recordActivity(t, userId, { type: 'favorited', gameId: current.gameId });
+    });
+    return getEntry(db, userId, entryId)!;
+}
+
+/** Throws 404 unless the entry is the user's. */
+function requireOwnEntry(db: Db, userId: number, entryId: number) {
+    const entry = db
+        .select({ id: entries.id })
+        .from(entries)
+        .where(and(eq(entries.id, entryId), eq(entries.userId, userId)))
+        .get();
+    if (!entry) throw new HttpError(404, 'Entry not found');
+}
+
+/** Notes count as a change to the game (they reset "gathering dust"), like rating and tags. */
+function touch(db: Db, entryId: number, now: number) {
+    db.update(entries).set({ updatedAt: now }).where(eq(entries.id, entryId)).run();
+}
+
+export function addNote(db: Db, userId: number, entryId: number, input: AddNoteInput) {
+    requireOwnEntry(db, userId, entryId);
+    db.transaction((tx) => {
+        const t = tx as unknown as Db;
+        const have = t
+            .select({ n: count() })
+            .from(entryNotes)
+            .where(eq(entryNotes.entryId, entryId))
+            .get()!.n;
+        if (have >= MAX_NOTES_PER_GAME)
+            throw new HttpError(409, `A game can have at most ${MAX_NOTES_PER_GAME} notes`);
+        const now = Date.now();
+        t.insert(entryNotes)
+            .values({
+                entryId,
+                body: input.body,
+                public: input.public,
+                createdAt: now,
+                updatedAt: now
+            })
+            .run();
+        touch(t, entryId, now);
+    });
+    return getEntry(db, userId, entryId)!;
+}
+
+export function patchNote(
+    db: Db,
+    userId: number,
+    entryId: number,
+    noteId: number,
+    patch: PatchNoteInput
+) {
+    requireOwnEntry(db, userId, entryId);
+    db.transaction((tx) => {
+        const t = tx as unknown as Db;
+        const note = t
+            .select()
+            .from(entryNotes)
+            .where(and(eq(entryNotes.id, noteId), eq(entryNotes.entryId, entryId)))
+            .get();
+        if (!note) throw new HttpError(404, 'Note not found');
+        const now = Date.now();
+        const edited = patch.body !== undefined && patch.body !== note.body;
+        t.update(entryNotes)
+            .set({ ...patch, updatedAt: edited ? now : note.updatedAt })
+            .where(eq(entryNotes.id, noteId))
+            .run();
+        // Only changed words count as touching the game, not flipping who can read them
+        if (edited) touch(t, entryId, now);
+    });
+    return getEntry(db, userId, entryId)!;
+}
+
+export function deleteNote(db: Db, userId: number, entryId: number, noteId: number) {
+    requireOwnEntry(db, userId, entryId);
+    db.transaction((tx) => {
+        const t = tx as unknown as Db;
+        const res = t
+            .delete(entryNotes)
+            .where(and(eq(entryNotes.id, noteId), eq(entryNotes.entryId, entryId)))
+            .run();
+        if (res.changes === 0) throw new HttpError(404, 'Note not found');
+        touch(t, entryId, Date.now());
     });
     return getEntry(db, userId, entryId)!;
 }
@@ -420,6 +506,7 @@ export function hydrate(db: Db, userId: number, ids: number[]): EntryDto[] {
     const slotOf = new Map<number, number>();
     const listsOf = new Map<number, { id: number; name: string }[]>();
     const queued = new Set<number>();
+    const noteMap = new Map<number, NoteDto[]>();
     const gameIds = new Set<number>();
 
     for (const chunk of chunks) {
@@ -480,6 +567,20 @@ export function hydrate(db: Db, userId: number, ids: number[]): EntryDto[] {
             });
         }
         for (const r of db
+            .select()
+            .from(entryNotes)
+            .where(inArray(entryNotes.entryId, chunk))
+            .orderBy(desc(entryNotes.createdAt), desc(entryNotes.id))
+            .all()) {
+            (noteMap.get(r.entryId) ?? noteMap.set(r.entryId, []).get(r.entryId)!).push({
+                id: r.id,
+                body: r.body,
+                public: r.public,
+                createdAt: r.createdAt,
+                updatedAt: r.updatedAt
+            });
+        }
+        for (const r of db
             .select({ entryId: entryTags.entryId, name: tags.name })
             .from(entryTags)
             .innerJoin(tags, eq(tags.id, entryTags.tagId))
@@ -503,7 +604,7 @@ export function hydrate(db: Db, userId: number, ids: number[]): EntryDto[] {
                 status: e.status,
                 rating: e.rating,
                 favorite: e.favorite,
-                notes: e.notes,
+                notes: noteMap.get(e.id) ?? [],
                 ttbMinutes: minutes(g.ttbNormallySeconds),
                 addedAt: e.addedAt,
                 updatedAt: e.updatedAt,

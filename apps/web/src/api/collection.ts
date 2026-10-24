@@ -1,5 +1,6 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
+    AddNoteInput,
     AddEntryInput,
     CloseInput,
     LogPlaythroughInput,
@@ -15,6 +16,7 @@ import type {
     GameOffersResponse,
     SimilarGameDto,
     PatchEntryInput,
+    PatchNoteInput,
     PlatformDto,
     SearchResultDto
 } from '@gamequeue/shared';
@@ -182,6 +184,29 @@ export function usePatchEntry(id: number) {
                 .entry,
         onSuccess: invalidate
     });
+}
+
+export function useNoteMutations(entryId: number) {
+    const invalidate = useInvalidateCollection();
+    const base = `/entries/${entryId}/notes`;
+    const entry = async (p: Promise<{ entry: EntryDto }>) => (await p).entry;
+    return {
+        add: useMutation({
+            mutationFn: (input: AddNoteInput) =>
+                entry(api<{ entry: EntryDto }>(base, { method: 'POST', body: input })),
+            onSuccess: invalidate
+        }),
+        patch: useMutation({
+            mutationFn: ({ id, ...patch }: PatchNoteInput & { id: number }) =>
+                entry(api<{ entry: EntryDto }>(`${base}/${id}`, { method: 'PATCH', body: patch })),
+            onSuccess: invalidate
+        }),
+        remove: useMutation({
+            mutationFn: (id: number) =>
+                entry(api<{ entry: EntryDto }>(`${base}/${id}`, { method: 'DELETE' })),
+            onSuccess: invalidate
+        })
+    };
 }
 
 export function useDeleteEntry(id: number) {

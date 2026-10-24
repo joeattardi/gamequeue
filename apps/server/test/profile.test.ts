@@ -26,7 +26,7 @@ describe('public profile', () => {
         const celeste = await add(2);
         expect((await app.request('/api/slots')).status).toBe(401); // the rest of the API stays private
 
-        await put(`/entries/${celeste.id}`, { notes: 'secret note' });
+        await post(`/entries/${celeste.id}/notes`, { body: 'secret note' });
         const list = (await (await post('/lists', { name: 'Favourites' })).json()).list;
         await post(`/lists/${list.id}/items`, { entryId: hades.id });
         await post('/queue/items', { entryId: celeste.id });

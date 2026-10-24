@@ -352,6 +352,9 @@ export function getProfileGame(db: Db, username: string, igdbId: number): Profil
         username: user.username,
         game,
         entry: entry ? toPublic(entry) : null,
-        wishlisted: wished !== undefined
+        wishlisted: wished !== undefined,
+        notes: (entry?.notes ?? [])
+            .filter((n) => n.public)
+            .map((n) => ({ id: n.id, body: n.body, createdAt: n.createdAt }))
     };
 }

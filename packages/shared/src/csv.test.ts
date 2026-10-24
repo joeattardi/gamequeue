@@ -27,7 +27,9 @@ describe('entriesToCsv', () => {
             addedAt: Date.parse('2025-03-04T10:00:00Z'),
             lastFinishedOn: '2025-04-01',
             playthroughCount: 2,
-            notes: 'Loved it, "really"',
+            notes: [
+                { id: 1, body: 'Loved it, "really"', public: false, createdAt: 0, updatedAt: 0 }
+            ],
             game: {
                 id: 7,
                 name: 'Celeste',

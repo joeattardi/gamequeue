@@ -54,7 +54,7 @@ export function entriesToCsv(entries: EntryDto[]): string {
             new Date(e.addedAt).toISOString().slice(0, 10),
             e.lastFinishedOn,
             e.playthroughCount,
-            e.notes,
+            e.notes.map((n) => n.body).join('\n\n'),
             e.game.id
         ])
     ]);

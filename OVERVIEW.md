@@ -245,7 +245,7 @@ erDiagram
     wishlist_items }o--|| games : "points to"
 ```
 
-The key idea is the **entry**: one row meaning "this user owns this game". Your status, rating and notes live on the entry. Lists, slots and playthroughs all hang off entries.
+The key idea is the **entry**: one row meaning "this user owns this game". Your status, rating and notes live on the entry (a game can have many notes, each private or shared on your profile). Lists, slots and playthroughs all hang off entries.
 
 The **wishlist is the exception**: wishlist items point straight at the shared `games` table, not at an entry, because you don't own those games yet. That way nothing that works on your collection (backlog, stats, pick, slots) has to worry about unowned games.
 
@@ -512,7 +512,7 @@ The split between loading (server) and arithmetic (shared, pure) is a pattern yo
 
 ## 13. Public profile and share cards
 
-Every user has a public profile at `/u/:username`, viewable without logging in. It shows what you're playing, counts per status, your lists and smart lists, and links to sub-pages (your backlog, finished games by year, wishlist, stats, recap). It never shows notes or your email.
+Every user has a public profile at `/u/:username`, viewable without logging in. It shows what you're playing, counts per status, your lists and smart lists, and links to sub-pages (your backlog, finished games by year, wishlist, stats, recap). It never shows your email, and only shows notes you marked public (on a game's page).
 
 Public endpoints live under `/api/profiles` and don't require a session. They return reduced "public" versions of the data (`PublicEntryDto` instead of `EntryDto`).
 

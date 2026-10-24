@@ -1,5 +1,11 @@
 import { z } from 'zod';
-import { ENTRY_STATUSES, ratingSchema, tagsSchema } from './collection.js';
+import {
+    ENTRY_STATUSES,
+    MAX_NOTE_LENGTH,
+    MAX_NOTES_PER_GAME,
+    ratingSchema,
+    tagsSchema
+} from './collection.js';
 import { isoDateSchema, playtimeSchema } from './playthroughs.js';
 import { releasePrecisionSchema } from './release.js';
 import { MAX_SLOTS } from './slots.js';
@@ -86,6 +92,12 @@ export const exportPlaythroughSchema = z
         }
     });
 
+export const exportNoteSchema = z.object({
+    body: z.string().min(1).max(MAX_NOTE_LENGTH),
+    public: z.boolean(),
+    createdAt: z.number().int().min(0)
+});
+
 export const exportEntrySchema = z
     .object({
         igdbId: id,
@@ -94,7 +106,10 @@ export const exportEntrySchema = z
         rating: rating.nullable(),
         /** Optional so files from before favorites still read as v1 */
         favorite: z.boolean().optional(),
-        notes: z.string().max(10_000),
+        /** Files from before multiple notes: one text, read as a private note */
+        notes: z.string().max(10_000).optional(),
+        /** Optional so older files still read as v1 */
+        noteItems: z.array(exportNoteSchema).max(MAX_NOTES_PER_GAME).optional(),
         addedAt: z.number().int().min(0),
         /** Platforms the user owns the game on */
         platforms: z.array(platformRef).min(1, 'Own it on at least one platform').max(30),

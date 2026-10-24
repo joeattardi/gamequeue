@@ -6,7 +6,8 @@ describe('public game page', () => {
     it('shows cached game data plus what the user has, with no login and no notes', async () => {
         const { app, add, call } = await setupApi();
         const hades = await add(1);
-        await call(`/entries/${hades.id}`, 'PATCH', { rating: 4, notes: 'secret' });
+        await call(`/entries/${hades.id}`, 'PATCH', { rating: 4 });
+        await call(`/entries/${hades.id}/notes`, 'POST', { body: 'secret' });
         await call('/wishlist/items', 'POST', { igdbId: 2 });
         const get = async (id: number) => app.request(`/api/profiles/user_me/games/${id}`);
 
@@ -15,6 +16,8 @@ describe('public game page', () => {
         expect(owned.entry).toMatchObject({ status: 'unplayed', rating: 4 });
         expect(owned.entry.notes).toBeUndefined();
         expect(owned.wishlisted).toBe(false);
+        expect(owned.notes).toEqual([]);
+        expect(JSON.stringify(owned)).not.toContain('secret');
 
         expect(await (await get(2)).json()).toMatchObject({ entry: null, wishlisted: true });
     });

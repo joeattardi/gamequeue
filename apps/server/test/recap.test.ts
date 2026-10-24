@@ -15,7 +15,8 @@ async function setup() {
     });
     await log(celeste.id, { outcome: 'finished', endedOn: '2023-03-03' });
     await log(celeste.id, { outcome: 'finished', endedOn: '2024-06-06', playtimeMinutes: 480 });
-    await s.call(`/entries/${hades.id}`, 'PATCH', { rating: 5, notes: 'secret note' });
+    await s.call(`/entries/${hades.id}`, 'PATCH', { rating: 5 });
+    await s.call(`/entries/${hades.id}/notes`, 'POST', { body: 'secret note' });
     return { ...s, hades, celeste };
 }
 

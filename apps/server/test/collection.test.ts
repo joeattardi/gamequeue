@@ -63,7 +63,7 @@ describe('adding games', () => {
         expect(e).toMatchObject({
             status: 'unplayed',
             rating: null,
-            notes: '',
+            notes: [],
             ttbMinutes: 1320,
             game: {
                 name: 'Hades',
@@ -339,16 +339,16 @@ describe('listing, filters and sorting', () => {
 });
 
 describe('editing and deleting', () => {
-    it('updates rating, notes, platforms and tags', async () => {
+    it('updates rating, platforms and tags', async () => {
         const { add, post } = await setup();
         const e = await add(1);
         const res = await post(
             `/entries/${e.id}`,
-            { rating: 5, notes: 'Great', platformIds: [PS5.id], tags: ['roguelike', 'Fast'] },
+            { rating: 5, platformIds: [PS5.id], tags: ['roguelike', 'Fast'] },
             'PATCH'
         );
         const out = (await res.json()).entry;
-        expect(out).toMatchObject({ rating: 5, notes: 'Great', tags: ['Fast', 'roguelike'] });
+        expect(out).toMatchObject({ rating: 5, tags: ['Fast', 'roguelike'] });
         expect(out.platforms.map((p: { id: number }) => p.id)).toEqual([PS5.id]);
     });
 

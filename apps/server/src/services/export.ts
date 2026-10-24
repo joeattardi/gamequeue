@@ -11,6 +11,7 @@ import {
 import type { Db } from '../db/client.js';
 import {
     entries,
+    entryNotes,
     entryPlatforms,
     entryTags,
     gameGenres,
@@ -111,6 +112,15 @@ export function buildExport(db: Db, userId: number, now = new Date()): ExportFil
             .orderBy(asc(platforms.id))
             .all()
     );
+    const noteRows = group(
+        db
+            .select({ key: entryNotes.entryId, value: entryNotes })
+            .from(entryNotes)
+            .innerJoin(entries, eq(entries.id, entryNotes.entryId))
+            .where(mine)
+            .orderBy(asc(entryNotes.createdAt), asc(entryNotes.id))
+            .all()
+    );
     const entryTagNames = group(
         db
             .select({ key: entryTags.entryId, value: tags.name })
@@ -171,7 +181,11 @@ export function buildExport(db: Db, userId: number, now = new Date()): ExportFil
         status: e.status,
         rating: e.rating,
         favorite: e.favorite,
-        notes: e.notes,
+        noteItems: (noteRows.get(e.id) ?? []).map((n) => ({
+            body: n.body,
+            public: n.public,
+            createdAt: n.createdAt
+        })),
         addedAt: e.addedAt,
         platforms: (owned.get(e.id) ?? []).map(ref),
         tags: entryTagNames.get(e.id) ?? [],

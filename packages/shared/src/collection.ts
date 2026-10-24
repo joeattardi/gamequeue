@@ -101,13 +101,41 @@ export interface GameDetailDto {
     wishlisted: boolean;
 }
 
+/** One of the owner's notes on a game; only `public` ones are shown on the profile */
+export interface NoteDto {
+    id: number;
+    body: string;
+    public: boolean;
+    createdAt: number;
+    updatedAt: number;
+}
+
+export const MAX_NOTE_LENGTH = 10_000;
+export const MAX_NOTES_PER_GAME = 200;
+
+export const addNoteSchema = z.object({
+    body: z.string().trim().min(1, 'Write something first').max(MAX_NOTE_LENGTH),
+    public: z.boolean().default(false)
+});
+export type AddNoteInput = z.infer<typeof addNoteSchema>;
+
+export const patchNoteSchema = z
+    .object({
+        body: z.string().trim().min(1, 'Write something first').max(MAX_NOTE_LENGTH),
+        public: z.boolean()
+    })
+    .partial()
+    .refine((v) => Object.keys(v).length > 0, 'Nothing to update');
+export type PatchNoteInput = z.infer<typeof patchNoteSchema>;
+
 export interface EntryDto {
     id: number;
     status: EntryStatus;
     rating: number | null;
     /** Marked as a favorite; independent of rating and lists */
     favorite: boolean;
-    notes: string;
+    /** Newest first */
+    notes: NoteDto[];
     /** IGDB "normally" */
     ttbMinutes: number | null;
     addedAt: number;
@@ -179,7 +207,6 @@ export const patchEntrySchema = z
     .object({
         rating: ratingSchema.nullable(),
         favorite: z.boolean(),
-        notes: z.string().max(10_000),
         platformIds: z
             .array(z.number().int().positive())
             .min(1, 'Pick at least one platform')

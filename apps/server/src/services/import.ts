@@ -11,6 +11,7 @@ import {
 import type { Db } from '../db/client.js';
 import {
     entries,
+    entryNotes,
     entryPlatforms,
     entryTags,
     games,
@@ -324,7 +325,6 @@ function mergeGame(
                 status: g.status,
                 rating: g.rating,
                 favorite: g.favorite ?? false,
-                notes: g.notes,
                 addedAt: g.addedAt || now,
                 updatedAt: now
             })
@@ -349,11 +349,6 @@ function mergeGame(
         }
         // Never un-favorites: a file can only add the mark
         if (g.favorite && !existing.favorite) set.favorite = true;
-        if (existing.notes === '') {
-            if (g.notes !== '') set.notes = g.notes;
-        } else if (g.notes !== '' && g.notes !== existing.notes) {
-            note(`${name}: kept your notes (they differ from the file's)`);
-        }
         if (Object.keys(set).length > 0) {
             db.update(entries)
                 // A favorite mark alone isn't a change to the game (see patchEntry)
@@ -395,6 +390,40 @@ function mergeGame(
         if (newTags.length > 0) {
             setTags(db, userId, entryId, [...haveTags, ...newTags]);
             changed = true;
+        }
+    }
+
+    // Notes: add the ones you don't already have (same text = same note, whoever can read it)
+    const fileNotes = [
+        // Older files carried one text, which was always private
+        ...(g.notes?.trim() ? [{ body: g.notes.trim(), public: false, createdAt: g.addedAt }] : []),
+        ...(g.noteItems ?? [])
+    ];
+    if (fileNotes.length > 0) {
+        const haveBodies = new Set(
+            existing
+                ? db
+                      .select({ body: entryNotes.body })
+                      .from(entryNotes)
+                      .where(eq(entryNotes.entryId, entryId))
+                      .all()
+                      .map((r) => r.body)
+                : []
+        );
+        const fresh = fileNotes.filter((n) => !haveBodies.has(n.body));
+        const seen = new Set<string>();
+        const rows = fresh
+            .filter((n) => !seen.has(n.body) && seen.add(n.body))
+            .map((n) => ({
+                entryId,
+                body: n.body,
+                public: n.public,
+                createdAt: n.createdAt || now,
+                updatedAt: n.createdAt || now
+            }));
+        if (rows.length > 0) {
+            db.insert(entryNotes).values(rows).run();
+            if (existing) changed = true;
         }
     }
 

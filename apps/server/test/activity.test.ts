@@ -77,7 +77,7 @@ describe('activity feed', () => {
         const { add, call, feed } = await setup();
         const hades = await add(1);
         await call(`/entries/${hades.id}`, 'PATCH', { rating: 3 });
-        await call(`/entries/${hades.id}`, 'PATCH', { rating: 3, notes: 'x' });
+        await call(`/entries/${hades.id}`, 'PATCH', { rating: 3, tags: ['x'] });
         await call('/queue/items', 'POST', { entryId: hades.id });
         await call('/queue/items', 'POST', { entryId: hades.id });
         expect((await feed()).total).toBe(3);
