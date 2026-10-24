@@ -3,6 +3,7 @@ import {
     accountProfileSchema,
     changePasswordSchema,
     deleteAccountSchema,
+    searchIndexingSchema,
     socialLinksSchema
 } from '@gamequeue/shared';
 import type { AppDeps } from '../app.js';
@@ -16,6 +17,7 @@ import {
     changePassword,
     deleteAccount,
     updateAccountProfile,
+    updateSearchIndexing,
     updateSocialLinks
 } from '../services/users.js';
 
@@ -39,6 +41,13 @@ export function accountRoutes({
         if (raw === undefined) throw new HttpError(400, 'Invalid request');
         const input = validate(socialLinksSchema, raw);
         return c.json({ user: updateSocialLinks(db, c.get('user').id, input) });
+    });
+
+    r.put('/search-indexing', async (c) => {
+        const raw: unknown = await c.req.json().catch(() => undefined);
+        if (raw === undefined) throw new HttpError(400, 'Invalid request');
+        const input = validate(searchIndexingSchema, raw);
+        return c.json({ user: updateSearchIndexing(db, c.get('user').id, input) });
     });
 
     r.put('/password', async (c) => {

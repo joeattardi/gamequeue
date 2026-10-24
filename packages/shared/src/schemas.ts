@@ -49,6 +49,10 @@ export const accountProfileSchema = z.object({
 });
 export type AccountProfileInput = z.infer<typeof accountProfileSchema>;
 
+/** Whether search engines may index the public profile pages (default off). */
+export const searchIndexingSchema = z.object({ searchIndexable: z.boolean() });
+export type SearchIndexingInput = z.infer<typeof searchIndexingSchema>;
+
 /** "Ada Lovelace", "Ada" or "Lovelace"; null when neither is set. */
 export const fullName = (u: { firstName: string | null; lastName: string | null }) =>
     [u.firstName, u.lastName].filter(Boolean).join(' ') || null;
@@ -93,6 +97,8 @@ export interface UserDto {
     showRealName: boolean;
     /** Gaming account names; always shown on the public profile once set */
     socialLinks: SocialLinks;
+    /** Whether search engines may index the public profile pages; off unless the user opts in */
+    searchIndexable: boolean;
 }
 export interface ApiError {
     error: string;

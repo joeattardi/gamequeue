@@ -11,6 +11,7 @@ import {
     useChangePassword,
     useDeleteAccount,
     useUpdateAccount,
+    useUpdateSearchIndexing,
     useUpdateSocialLinks
 } from '../api/account';
 import { useRemoveAvatar, useUploadAvatar } from '../api/avatar';
@@ -87,6 +88,57 @@ function NameForm({ me }: { me: UserDto }) {
             {showRealName && !hasName && (
                 <p className="muted">Nothing will be shown until you enter a name.</p>
             )}
+            <div>
+                <button className="btn btn--primary" disabled={update.isPending}>
+                    {update.isPending ? 'Saving…' : 'Save'}
+                </button>
+            </div>
+            <p role="status" className="muted">
+                {saved ? 'Saved.' : ''}
+            </p>
+            {error && <p role="alert">{error}</p>}
+        </form>
+    );
+}
+
+function SearchIndexingForm({ me }: { me: UserDto }) {
+    const update = useUpdateSearchIndexing();
+    const [searchIndexable, setSearchIndexable] = useState(me.searchIndexable);
+    const [error, setError] = useState<string>();
+    const [saved, setSaved] = useState(false);
+
+    function submit(e: FormEvent) {
+        e.preventDefault();
+        setError(undefined);
+        setSaved(false);
+        update.mutate(
+            { searchIndexable },
+            {
+                onSuccess: () => setSaved(true),
+                onError: (err) =>
+                    setError(err instanceof ApiRequestError ? err.message : 'Could not save.')
+            }
+        );
+    }
+
+    return (
+        <form onSubmit={submit} className="name-form">
+            <p>
+                Your profile pages are public to anyone with the link, but by default we ask search
+                engines not to list them. Link previews in chats and social posts work either way.
+            </p>
+            <label className="check">
+                <input
+                    type="checkbox"
+                    checked={searchIndexable}
+                    onChange={(e) => setSearchIndexable(e.target.checked)}
+                />
+                Allow search engines to index my public profile
+            </label>
+            <p className="muted">
+                This covers your profile and its sub-pages: wishlist, stats, lists, grids, tier
+                lists and year in review. Search engines can take days or weeks to pick up a change.
+            </p>
             <div>
                 <button className="btn btn--primary" disabled={update.isPending}>
                     {update.isPending ? 'Saving…' : 'Save'}
@@ -427,6 +479,11 @@ export function AccountPage() {
                 <section aria-labelledby="social-h" className="panel">
                     <h2 id="social-h">Gaming accounts</h2>
                     <SocialForm me={me} />
+                </section>
+
+                <section aria-labelledby="search-h" className="panel">
+                    <h2 id="search-h">Search engines</h2>
+                    <SearchIndexingForm me={me} />
                 </section>
 
                 <section aria-labelledby="password-h" className="panel">

@@ -29,6 +29,8 @@ export const users = sqliteTable('users', {
     xboxGamertag: text('xbox_gamertag'),
     psnId: text('psn_id'),
     discordName: text('discord_name'),
+    // Opt-in: when off (the default) the public profile pages are served with noindex
+    searchIndexable: integer('search_indexable', { mode: 'boolean' }).notNull().default(false),
     createdAt: integer('created_at').notNull().default(now)
 });
 

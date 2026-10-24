@@ -20,9 +20,9 @@ export interface PageMeta {
     description: string;
     /** Absolute URL of the page */
     url: string;
-    /** Absolute URL of the share card */
-    image: string;
-    imageAlt: string;
+    /** Absolute URL of the share card; pages without one get a text-only preview */
+    image?: string;
+    imageAlt?: string;
 }
 
 const PROFILE_PATH = /^\/u\/([^/]+)\/?$/;
@@ -138,21 +138,26 @@ export function injectMeta(html: string, m: PageMeta): string {
     const tag = (attr: 'property' | 'name', key: string, value: string | number) =>
         `<meta ${attr}="${key}" content="${escape(String(value))}" />`;
     const tags = [
+        `<link rel="canonical" href="${escape(m.url)}" />`,
         tag('name', 'description', m.description),
         tag('property', 'og:type', 'website'),
         tag('property', 'og:site_name', 'GameQueue'),
         tag('property', 'og:title', m.title),
         tag('property', 'og:description', m.description),
         tag('property', 'og:url', m.url),
-        tag('property', 'og:image', m.image),
-        tag('property', 'og:image:type', 'image/png'),
-        tag('property', 'og:image:width', CARD_WIDTH),
-        tag('property', 'og:image:height', CARD_HEIGHT),
-        tag('property', 'og:image:alt', m.imageAlt),
-        tag('name', 'twitter:card', 'summary_large_image'),
+        ...(m.image
+            ? [
+                  tag('property', 'og:image', m.image),
+                  tag('property', 'og:image:type', 'image/png'),
+                  tag('property', 'og:image:width', CARD_WIDTH),
+                  tag('property', 'og:image:height', CARD_HEIGHT),
+                  tag('property', 'og:image:alt', m.imageAlt ?? ''),
+                  tag('name', 'twitter:card', 'summary_large_image'),
+                  tag('name', 'twitter:image', m.image)
+              ]
+            : [tag('name', 'twitter:card', 'summary')]),
         tag('name', 'twitter:title', m.title),
-        tag('name', 'twitter:description', m.description),
-        tag('name', 'twitter:image', m.image)
+        tag('name', 'twitter:description', m.description)
     ].join('\n        ');
     return html
         .replace(/<title>[^<]*<\/title>/, () => `<title>${escape(m.title)}</title>`)

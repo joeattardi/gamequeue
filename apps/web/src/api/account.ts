@@ -3,6 +3,7 @@ import type {
     AccountProfileInput,
     ChangePasswordInput,
     DeleteAccountInput,
+    SearchIndexingInput,
     SocialLinksInput,
     UserDto
 } from '@gamequeue/shared';
@@ -29,6 +30,15 @@ export function useUpdateSocialLinks() {
             qc.setQueryData(['me'], user);
             qc.invalidateQueries({ queryKey: ['profile'] });
         }
+    });
+}
+
+export function useUpdateSearchIndexing() {
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: (input: SearchIndexingInput) =>
+            api<{ user: UserDto }>('/account/search-indexing', { method: 'PUT', body: input }),
+        onSuccess: ({ user }) => qc.setQueryData(['me'], user)
     });
 }
 
