@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { eq } from 'drizzle-orm';
 import { users } from '../src/db/schema.js';
+import { loadConfig } from '../src/config.js';
 import { makeApp, register } from './helpers.js';
 
 const badgeOf = async (app: ReturnType<typeof makeApp>['app'], username: string) => {
@@ -10,8 +11,8 @@ const badgeOf = async (app: ReturnType<typeof makeApp>['app'], username: string)
 
 describe('profile badges', () => {
     it('gives the founder a founder badge and other admins a staff badge', async () => {
-        const { app, db } = makeApp({ founderEmail: 'founder@example.com' });
-        await register(app, 'Founder@Example.com', undefined, 'the_founder');
+        const { app, db } = makeApp({ founderUserId: 1 });
+        await register(app, 'founder@example.com', undefined, 'the_founder');
         await register(app, 'admin@example.com', undefined, 'an_admin');
         await register(app, 'plain@example.com', undefined, 'plain_user');
         db.update(users).set({ role: 'admin' }).where(eq(users.username, 'an_admin')).run();
@@ -22,7 +23,7 @@ describe('profile badges', () => {
     });
 
     it('prefers founder over staff for a founder who is also an admin', async () => {
-        const { app, db } = makeApp({ founderEmail: 'founder@example.com' });
+        const { app, db } = makeApp({ founderUserId: 1 });
         await register(app, 'founder@example.com', undefined, 'the_founder');
         db.update(users).set({ role: 'admin' }).where(eq(users.username, 'the_founder')).run();
         expect((await badgeOf(app, 'the_founder')).badge).toBe('founder');
@@ -34,5 +35,12 @@ describe('profile badges', () => {
         expect(await badgeOf(app, 'the_founder')).toEqual({ badge: null, leaked: false });
         db.update(users).set({ role: 'admin' }).where(eq(users.username, 'the_founder')).run();
         expect((await badgeOf(app, 'the_founder')).badge).toBe('staff');
+    });
+
+    it('reads FOUNDER_USER_ID as a positive whole number and ignores anything else', () => {
+        expect(loadConfig({ FOUNDER_USER_ID: '1' }).founderUserId).toBe(1);
+        expect(loadConfig({ FOUNDER_USER_ID: ' 12 ' }).founderUserId).toBe(12);
+        for (const bad of [undefined, '', 'abc', '0', '-3', '1.5', 'me@example.com'])
+            expect(loadConfig({ FOUNDER_USER_ID: bad }).founderUserId).toBeUndefined();
     });
 });

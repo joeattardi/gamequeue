@@ -47,21 +47,21 @@ On the Pi:
 
 Defined in `apps/server/src/config.ts`. In Docker, `compose.yaml` sets the fixed values and reads the rest from `.env`.
 
-| Variable                               | Value in production                                                                                                                                   |
-| -------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `NODE_ENV`                             | `production` (set in the image; makes the session cookie `Secure` and serves the web app on one port)                                                 |
-| `PORT`                                 | `3000` (set in the image)                                                                                                                             |
-| `DATABASE_PATH`                        | `/data/gamequeue.db` (set in the image; `/data` is the mounted `./data` directory)                                                                    |
-| `TRUST_PROXY`                          | `true` (set in `compose.yaml`; the login rate limit then sees the client IP, see the caveat below)                                                    |
-| `ALLOWED_ORIGINS`                      | `https://gamequeue.app` in `.env` (must match the real URL; the CSRF check rejects any other `Origin`)                                                |
-| `PUBLIC_URL`                           | Optional; the site's address for link previews (`og:image`). Defaults to the first `ALLOWED_ORIGINS` entry                                            |
-| `SIGNUPS_ENABLED`                      | `true` for the first signup, then `false`                                                                                                             |
-| `IGDB_CLIENT_ID`, `IGDB_CLIENT_SECRET` | Twitch credentials (see step 10)                                                                                                                      |
-| `ITAD_API_KEY`, `ITAD_COUNTRY`         | Optional IsThereAnyDeal key for prices on the wishlist and game pages (see Game prices); `ITAD_COUNTRY` (default `US`) picks shops and currency       |
-| `FOUNDER_EMAIL`                        | Optional; the account registered with this email gets a "founder" badge on its public profile (admins get "staff"). Never shown or sent to the client |
-| `RESEND_API_KEY`, `NOTIFY_EMAIL`       | Optional signup alerts by email (see Signup email alerts); both must be set, otherwise nothing is sent                                                |
-| `NOTIFY_FROM`                          | Optional sender for those emails; defaults to `GameQueue <onboarding@resend.dev>`                                                                     |
-| `TUNNEL_TOKEN`                         | Cloudflare Tunnel token (see step 4); read by `cloudflared`, not by the app                                                                           |
+| Variable                               | Value in production                                                                                                                                                                      |
+| -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `NODE_ENV`                             | `production` (set in the image; makes the session cookie `Secure` and serves the web app on one port)                                                                                    |
+| `PORT`                                 | `3000` (set in the image)                                                                                                                                                                |
+| `DATABASE_PATH`                        | `/data/gamequeue.db` (set in the image; `/data` is the mounted `./data` directory)                                                                                                       |
+| `TRUST_PROXY`                          | `true` (set in `compose.yaml`; the login rate limit then sees the client IP, see the caveat below)                                                                                       |
+| `ALLOWED_ORIGINS`                      | `https://gamequeue.app` in `.env` (must match the real URL; the CSRF check rejects any other `Origin`)                                                                                   |
+| `PUBLIC_URL`                           | Optional; the site's address for link previews (`og:image`). Defaults to the first `ALLOWED_ORIGINS` entry                                                                               |
+| `SIGNUPS_ENABLED`                      | `true` for the first signup, then `false`                                                                                                                                                |
+| `IGDB_CLIENT_ID`, `IGDB_CLIENT_SECRET` | Twitch credentials (see step 10)                                                                                                                                                         |
+| `ITAD_API_KEY`, `ITAD_COUNTRY`         | Optional IsThereAnyDeal key for prices on the wishlist and game pages (see Game prices); `ITAD_COUNTRY` (default `US`) picks shops and currency                                          |
+| `FOUNDER_USER_ID`                      | Optional; the user id of your own account (it is in the address of its page under Admin > Users, `/admin/users/<id>`): that profile gets a "founder" badge, and other admins get "staff" |
+| `RESEND_API_KEY`, `NOTIFY_EMAIL`       | Optional signup alerts by email (see Signup email alerts); both must be set, otherwise nothing is sent                                                                                   |
+| `NOTIFY_FROM`                          | Optional sender for those emails; defaults to `GameQueue <onboarding@resend.dev>`                                                                                                        |
+| `TUNNEL_TOKEN`                         | Cloudflare Tunnel token (see step 4); read by `cloudflared`, not by the app                                                                                                              |
 
 Without the IGDB credentials the app starts but search and add-game are disabled.
 

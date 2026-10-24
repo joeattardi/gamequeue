@@ -56,7 +56,7 @@ function requireUser(db: Db, username: string) {
 }
 
 /** Read-only: must not create anything (so no `getQueue`/`ensureQueue`). The queue has its own page. */
-export function getProfile(db: Db, username: string, founderEmail?: string): ProfileDto {
+export function getProfile(db: Db, username: string, founderUserId?: number): ProfileDto {
     const user = requireUser(db, username);
 
     const byStatus = Object.fromEntries(ENTRY_STATUSES.map((s) => [s, 0])) as Record<
@@ -92,7 +92,7 @@ export function getProfile(db: Db, username: string, founderEmail?: string): Pro
         username: user.username,
         avatarUpdatedAt: avatarVersion(db, user.id),
         realName: user.showRealName ? fullName(user) : null,
-        badge: profileBadge(user, founderEmail),
+        badge: profileBadge(user, founderUserId),
         bio: user.bio,
         socialLinks: socialLinksOf(user),
         joinedAt: user.createdAt,

@@ -19,10 +19,10 @@ type UserRow = typeof users.$inferSelect;
 
 /** Founder wins over staff, so the founder (who is also an admin) shows one badge. */
 export function profileBadge(
-    user: { email: string; role: string },
-    founderEmail?: string
+    user: { id: number; role: string },
+    founderUserId?: number
 ): ProfileBadge | null {
-    if (founderEmail && user.email.toLowerCase() === founderEmail.toLowerCase()) return 'founder';
+    if (founderUserId !== undefined && user.id === founderUserId) return 'founder';
     return user.role === 'admin' ? 'staff' : null;
 }
 

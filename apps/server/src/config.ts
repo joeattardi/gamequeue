@@ -18,13 +18,19 @@ export interface Config {
     cloudflareZoneId?: string;
     /** Link to the full analytics page in the Cloudflare dashboard, shown on the admin Traffic page */
     cloudflareAnalyticsUrl?: string;
-    /** Email of the founder's account; that profile gets the "founder" badge (never exposed) */
-    founderEmail?: string;
+    /** User id of the founder's account; that profile gets the "founder" badge */
+    founderUserId?: number;
     resendApiKey?: string;
     notifyEmail?: string;
     notifyFrom: string;
     /** Git commit of the build, from the GIT_COMMIT build arg; shown on the admin Server page */
     version: string;
+}
+
+/** A positive whole number from the environment, or undefined when unset or malformed. */
+function positiveInt(value: string | undefined): number | undefined {
+    const n = Number(value?.trim());
+    return Number.isInteger(n) && n > 0 ? n : undefined;
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
@@ -53,7 +59,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
         cloudflareApiToken: env.CLOUDFLARE_API_TOKEN || undefined,
         cloudflareZoneId: env.CLOUDFLARE_ZONE_ID || undefined,
         cloudflareAnalyticsUrl: env.CLOUDFLARE_ANALYTICS_URL || undefined,
-        founderEmail: env.FOUNDER_EMAIL?.trim().toLowerCase() || undefined,
+        founderUserId: positiveInt(env.FOUNDER_USER_ID),
         // Owner alerts (new signups) by email through Resend; off unless both key and address are set
         resendApiKey: env.RESEND_API_KEY || undefined,
         notifyEmail: env.NOTIFY_EMAIL || undefined,

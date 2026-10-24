@@ -35,7 +35,7 @@ export function profileRoutes({ db, config }: AppDeps) {
     };
     r.get('/:username', (c) =>
         c.json({
-            profile: getProfile(db, parseUsername(c.req.param('username')), config.founderEmail)
+            profile: getProfile(db, parseUsername(c.req.param('username')), config.founderUserId)
         })
     );
     // Registered before "/:username/:view" so "wishlist" isn't read as a view
