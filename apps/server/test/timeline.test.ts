@@ -62,3 +62,21 @@ describe('activity calendar data', () => {
         ).toBe(404);
     });
 });
+
+describe('days played for paused and unplayed games', () => {
+    it('does not count a game added as paused, or never started, as played every day since', async () => {
+        const { add, call } = await setupApi();
+        await add(1); // unplayed
+        const celeste = await call('/entries', 'POST', {
+            igdbId: 2,
+            platformIds: [PC.id],
+            status: 'paused',
+            date: '2020-01-10'
+        });
+        expect(celeste.entry ?? celeste).toBeTruthy();
+        const timeline = (await call('/stats/timeline?from=2020-01-01&to=2026-12-31')).timeline;
+        expect(timeline.playing).toEqual([
+            { game: expect.objectContaining({ id: 2 }), start: '2020-01-10', end: '2020-01-10' }
+        ]);
+    });
+});

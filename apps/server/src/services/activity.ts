@@ -1,4 +1,4 @@
-import { and, asc, count, desc, eq, gte, inArray, isNotNull, lt } from 'drizzle-orm';
+import { and, asc, count, desc, eq, gte, inArray, isNotNull, lt, max } from 'drizzle-orm';
 import type {
     ActivityEventDto,
     ActivityType,
@@ -143,6 +143,8 @@ const isoDay = (ms: number) => new Date(ms).toISOString().slice(0, 10);
  * can't know, so the events come back a day wider on each side and the client cuts them.
  * A playthrough counts as played from its start to its end; an open one runs to today, and one
  * with an unknown start is skipped (one with a known start but unknown end is that one day).
+ * An open playthrough of a paused game stops at the day it was paused (its last `paused` event,
+ * or its start when it was added as paused), so a game left paused for months isn't "played".
  */
 export function getTimeline(db: Db, userId: number, q: TimelineQuery): TimelineDto {
     const fromMs = Date.parse(`${q.from}T00:00:00Z`) - DAY_MS;
@@ -163,16 +165,29 @@ export function getTimeline(db: Db, userId: number, q: TimelineQuery): TimelineD
         .all();
     const today = isoDay(Date.now());
     const played = db
-        .select({ p: playthroughs, game: games })
+        .select({ p: playthroughs, game: games, status: entries.status })
         .from(playthroughs)
         .innerJoin(entries, eq(entries.id, playthroughs.entryId))
         .innerJoin(games, eq(games.id, entries.gameId))
         .where(and(eq(playthroughs.userId, userId), isNotNull(playthroughs.startedOn)))
         .all();
+    const pausedAt = new Map(
+        db
+            .select({ gameId: activityEvents.gameId, at: max(activityEvents.at) })
+            .from(activityEvents)
+            .where(and(eq(activityEvents.userId, userId), eq(activityEvents.type, 'paused')))
+            .groupBy(activityEvents.gameId)
+            .all()
+            .map((r) => [r.gameId, r.at])
+    );
     const playing: TimelinePlayingDto[] = [];
-    for (const { p, game } of played) {
+    for (const { p, game, status } of played) {
         const start = p.startedOn!;
-        const end = p.endedOn ?? (p.outcome === null ? today : start);
+        const open = p.outcome === null;
+        const pausedOn = status === 'paused' && open ? pausedAt.get(game.id) : undefined;
+        const end =
+            p.endedOn ??
+            (!open ? start : status === 'paused' ? (pausedOn ? isoDay(pausedOn) : start) : today);
         // Dates edited into the wrong order still cover their start day
         const last = end < start ? start : end;
         if (start > q.to || last < q.from) continue;
