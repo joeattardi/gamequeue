@@ -18,6 +18,7 @@ import { GameDetailPage } from './routes/GameDetailPage';
 import { SeriesPage } from './routes/SeriesPage';
 import { SearchPage } from './routes/SearchPage';
 import { Home } from './routes/Home';
+import { LandingPage } from './routes/LandingPage';
 import { ListPage, QueuePage } from './routes/ListPage';
 import { ListsPage } from './routes/ListsPage';
 import { PickChoosePage } from './routes/PickChoosePage';
@@ -46,6 +47,7 @@ export function App() {
     if (!me.data) {
         return (
             <Routes>
+                <Route index element={<LandingPage />} />
                 <Route path="/login" element={<AuthPage mode="login" />} />
                 <Route path="/register" element={<AuthPage mode="register" />} />
                 <Route path="/u/:username" element={<ProfilePage />} />

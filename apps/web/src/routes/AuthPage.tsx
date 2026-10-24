@@ -1,8 +1,10 @@
 import { loginSchema, registerSchema } from '@gamequeue/shared';
 import { useState, type FormEvent } from 'react';
+import { Lock, Mail, User } from 'lucide-react';
 import { Link, Navigate } from 'react-router';
 import { useAuthConfig, useLogin, useRegister } from '../api/auth';
 import { ApiRequestError } from '../api/client';
+import { AuthShowcase } from '../components/AuthShowcase';
 import { Logo } from '../components/Logo';
 import { usePageTitle } from '../lib';
 
@@ -42,71 +44,101 @@ export function AuthPage({ mode }: { mode: 'login' | 'register' }) {
 
     return (
         <main className="auth">
-            <form className="auth__card" onSubmit={onSubmit} noValidate>
-                <Logo />
-                <h1>{isLogin ? 'Welcome back' : 'Create your account'}</h1>
-                <label className="field">
-                    <span>Username</span>
-                    <input
-                        name="username"
-                        autoComplete="username"
-                        autoCapitalize="none"
-                        spellCheck={false}
-                        required
-                        autoFocus
-                    />
-                    {!isLogin && (
-                        <small className="muted">
-                            3-30 characters: letters, numbers, _ and -. Shown on your public
-                            profile.
-                        </small>
-                    )}
-                </label>
-                {!isLogin && (
+            <AuthShowcase />
+            <div className="auth__panel">
+                <form className="auth__card" onSubmit={onSubmit} noValidate>
+                    <Link to="/" aria-label="GameQueue home">
+                        <Logo />
+                    </Link>
+                    <h1>{isLogin ? 'Welcome back' : 'Create your account'}</h1>
+                    <p className="muted auth__sub">
+                        {isLogin
+                            ? 'Sign in to pick up where you left off.'
+                            : 'Free, and ready in a minute. Add your first game right away.'}
+                    </p>
                     <label className="field">
-                        <span>Email</span>
-                        <input name="email" type="email" autoComplete="email" required />
-                    </label>
-                )}
-                <label className="field">
-                    <span>Password</span>
-                    <input
-                        name="password"
-                        type="password"
-                        autoComplete={isLogin ? 'current-password' : 'new-password'}
-                        required
-                        minLength={isLogin ? undefined : 10}
-                    />
-                    {!isLogin && <small className="muted">At least 10 characters.</small>}
-                </label>
-                <p className="form-error" role="alert" aria-live="assertive">
-                    {error}
-                </p>
-                <button className="btn btn--primary" type="submit" disabled={mutation.isPending}>
-                    {mutation.isPending ? 'One moment…' : isLogin ? 'Sign in' : 'Create account'}
-                </button>
-                <p className="auth__switch">
-                    {isLogin ? (
-                        config.isPending ? (
-                            <span
-                                className="skeleton skeleton--subtitle"
-                                role="status"
-                                aria-label="Loading"
+                        <span>Username</span>
+                        <span className="field__icon-input">
+                            <User aria-hidden="true" />
+                            <input
+                                name="username"
+                                autoComplete="username"
+                                autoCapitalize="none"
+                                spellCheck={false}
+                                required
+                                autoFocus
                             />
-                        ) : (
-                            config.data?.signupsEnabled !== false && (
-                                <>
-                                    New here? <Link to="/register">Create an account</Link>
-                                </>
-                            )
-                        )
-                    ) : (
-                        <>
-                            Already have an account? <Link to="/login">Sign in</Link>
-                        </>
+                        </span>
+                        {!isLogin && (
+                            <small className="muted">
+                                3-30 characters: letters, numbers, _ and -. Shown on your public
+                                profile.
+                            </small>
+                        )}
+                    </label>
+                    {!isLogin && (
+                        <label className="field">
+                            <span>Email</span>
+                            <span className="field__icon-input">
+                                <Mail aria-hidden="true" />
+                                <input name="email" type="email" autoComplete="email" required />
+                            </span>
+                        </label>
                     )}
-                </p>
-            </form>
+                    <label className="field">
+                        <span>Password</span>
+                        <span className="field__icon-input">
+                            <Lock aria-hidden="true" />
+                            <input
+                                name="password"
+                                type="password"
+                                autoComplete={isLogin ? 'current-password' : 'new-password'}
+                                required
+                                minLength={isLogin ? undefined : 10}
+                            />
+                        </span>
+                        {!isLogin && <small className="muted">At least 10 characters.</small>}
+                    </label>
+                    <p className="form-error" role="alert" aria-live="assertive">
+                        {error}
+                    </p>
+                    <button
+                        className="btn btn--primary"
+                        type="submit"
+                        disabled={mutation.isPending}
+                    >
+                        {mutation.isPending
+                            ? 'One moment…'
+                            : isLogin
+                              ? 'Sign in'
+                              : 'Create account'}
+                    </button>
+                    <p className="auth__switch">
+                        {isLogin ? (
+                            config.isPending ? (
+                                <span
+                                    className="skeleton skeleton--subtitle"
+                                    role="status"
+                                    aria-label="Loading"
+                                />
+                            ) : (
+                                config.data?.signupsEnabled !== false && (
+                                    <>
+                                        New here? <Link to="/register">Create an account</Link>
+                                    </>
+                                )
+                            )
+                        ) : (
+                            <>
+                                Already have an account? <Link to="/login">Sign in</Link>
+                            </>
+                        )}
+                    </p>
+                </form>
+                <Link className="auth__back" to="/">
+                    ← Back to the home page
+                </Link>
+            </div>
         </main>
     );
 }
