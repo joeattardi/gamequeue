@@ -276,7 +276,7 @@ In the Cloudflare dashboard for `gamequeue.app` (all available on the free plan)
 
 ## Signup email alerts
 
-The app can email you when someone creates an account. It uses [Resend](https://resend.com)'s HTTPS API, so there is no SMTP server to run. The email says only that `<username>` signed up (no email address or other details), and it is sent in the background: if Resend is unreachable or rejects the request, the app logs a warning and the signup still succeeds. Accounts created by an admin on the Users page don't trigger it. It is off unless both variables below are set.
+The app can email you when someone creates an account (the same Resend settings also send the "GameQueue deployed" email from `scripts/update.sh`, see Updating). It uses [Resend](https://resend.com)'s HTTPS API, so there is no SMTP server to run. The email says only that `<username>` signed up (no email address or other details), and it is sent in the background: if Resend is unreachable or rejects the request, the app logs a warning and the signup still succeeds. Accounts created by an admin on the Users page don't trigger it. It is off unless both variables below are set.
 
 ### Setup
 
@@ -332,6 +332,7 @@ Updates are automatic: **push to `main` and wait a few minutes.**
 1. GitHub Actions runs the format check, typecheck and tests, and only if they pass builds the arm64 image and publishes it as `ghcr.io/joeattardi/gamequeue:latest` (also tagged with the commit SHA). A failing check means nothing is deployed. Pull requests run the checks but never publish.
 2. `scripts/update.sh` runs on the Pi from cron every 2 minutes. It does a `git pull` (so changes to `compose.yaml` and the scripts apply too) and pulls the image. If nothing changed it exits at once.
 3. If something changed, it takes a database backup (`scripts/backup.sh`), tags the running image as `gamequeue:previous`, runs `docker compose up -d`, and waits up to a minute for the container's health check. If the new version is not healthy it switches back to the previous image and exits non-zero.
+4. Once the new version is healthy, it emails you "GameQueue deployed" with the commit now running and the commit subjects it brought in (up to 20). It uses the same `RESEND_API_KEY` / `NOTIFY_EMAIL` / `NOTIFY_FROM` as the signup alerts (see Signup email alerts), read from `.env` by the script, and sends nothing if they aren't set. A failed send is logged as `deploy email failed` in `update.log` and never affects the update. A rolled-back update sends no email (the healthchecks and uptime monitor cover failures).
 
 ### One-time setup on the Pi
 
