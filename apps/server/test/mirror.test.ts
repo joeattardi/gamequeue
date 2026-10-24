@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { Readable } from 'node:stream';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { releaseFromFormats } from '../src/igdb/mappers.js';
-import { buildMirror } from '../src/mirror/build.js';
+import { buildMirror, configureForBulkLoad } from '../src/mirror/build.js';
 import { parseIds } from '../src/mirror/csv.js';
 import type { DumpSource } from '../src/mirror/dumps.js';
 import { readMirrorInfo, runMirror } from '../src/mirror/run.js';
@@ -198,6 +198,22 @@ describe('buildMirror', () => {
             'download failed'
         );
         expect(readdirSync(dir)).toEqual([]);
+    });
+});
+
+describe('configureForBulkLoad', () => {
+    it('really turns the journal and fsync off, for the scratch database too', () => {
+        const db = new Database(join(dir, 'bulk.db'));
+        db.prepare('ATTACH DATABASE ? AS stg').run(join(dir, 'bulk-stg.db'));
+        // The defaults, and what better-sqlite3 does with a plain `journal_mode = OFF`
+        db.pragma('journal_mode = OFF');
+        expect(db.pragma('journal_mode', { simple: true })).toBe('delete');
+
+        expect(configureForBulkLoad(db)).toEqual({
+            main: { journal: 'off', synchronous: 0 },
+            stg: { journal: 'off', synchronous: 0 }
+        });
+        db.close();
     });
 });
 

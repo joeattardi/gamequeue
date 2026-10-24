@@ -43,7 +43,7 @@ The side benefit: ratings, time to beat, release dates and series stay current f
 
 ## Not verified
 
-- A real Raspberry Pi: the import speed, memory use and the cron line.
+- A complete run on a real Raspberry Pi (microSD, 8 GB). The first run got through 8 of 11 dumps in about 90 s and then failed in `release_dates`. Its real error was hidden by a failing `ROLLBACK`, which is fixed, and the Pi's slowness (a 1 MB dump took 16 s) came from fsync stalls on the SD card that the build settings didn't actually switch off (see `configureForBulkLoad`), also fixed. Disk and memory were plentiful, so those were not the cause; **the original error is still unconfirmed** until the next run. Import speed, memory use and the cron line are unmeasured.
 - The Docker image itself (Docker wasn't running while this was built; the built CLI was run from a production-only dependency install instead) and bind-mount permissions for the `node` user.
 - A failed download is not retried until the next day's run. Running `mirror.sh` hourly would self-heal at about a second per run.
 

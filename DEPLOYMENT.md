@@ -507,14 +507,15 @@ IGDB regenerates its dumps around 06:00 UTC (the one inspected on 2026-10-24 was
 
 ### If something goes wrong
 
-| Symptom                                                       | Likely cause                                                                                                                                  |
-| ------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| Admin says "No mirror has been built yet"                     | The job hasn't run or has failed every time. Run `~/gamequeue/scripts/mirror.sh` by hand and read the output (also `~/gamequeue/mirror.log`). |
-| `Only N MB free ... needs at least 1024 MB`                   | The data disk is nearly full (also watch the resource check). Free space; the old mirror keeps working meanwhile.                             |
-| `Dump ... is not available (401/403)` or `Listing ... failed` | The Twitch app lacks IGDB data-partner access, or `IGDB_CLIENT_ID`/`IGDB_CLIENT_SECRET` are wrong. Search keeps working through live IGDB.    |
-| `Cannot find module .../mirror/cli.js`                        | The running image predates the mirror. Let `update.sh` deploy a newer one (or `docker compose pull`), then run the script again.              |
-| `Mirror shrank` / `has only N games`                          | A truncated or odd dump: the new file was rejected and the old one kept. If it repeats for days, look at IGDB's dump listing.                 |
-| Admin shows the mirror but search results look old            | The file is only as new as the last successful run; check "Last success". The server notices a new file within seconds.                       |
+| Symptom                                                           | Likely cause                                                                                                                                                                                                         |
+| ----------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Admin says "No mirror has been built yet"                         | The job hasn't run or has failed every time. Run `~/gamequeue/scripts/mirror.sh` by hand and read the output (also `~/gamequeue/mirror.log`).                                                                        |
+| `Only N MB free ... needs at least 1024 MB`                       | The data disk is nearly full (also watch the resource check). Free space; the old mirror keeps working meanwhile.                                                                                                    |
+| The run is very slow, or fails partway with a disk or I/O message | The importer writes a few hundred MB, which a microSD card does slowly (an SSD is much better; see the hardware step). Run it once by hand and watch the lines: each dump prints when it finishes. Also check `dmesg | grep -i mmc` for card errors. |
+| `Dump ... is not available (401/403)` or `Listing ... failed`     | The Twitch app lacks IGDB data-partner access, or `IGDB_CLIENT_ID`/`IGDB_CLIENT_SECRET` are wrong. Search keeps working through live IGDB.                                                                           |
+| `Cannot find module .../mirror/cli.js`                            | The running image predates the mirror. Let `update.sh` deploy a newer one (or `docker compose pull`), then run the script again.                                                                                     |
+| `Mirror shrank` / `has only N games`                              | A truncated or odd dump: the new file was rejected and the old one kept. If it repeats for days, look at IGDB's dump listing.                                                                                        |
+| Admin shows the mirror but search results look old                | The file is only as new as the last successful run; check "Last success". The server notices a new file within seconds.                                                                                              |
 
 To go back to live IGDB only, delete `~/gamequeue/data/igdb.db` and remove the cron line; the app notices the missing file within seconds.
 

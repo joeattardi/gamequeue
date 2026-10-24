@@ -1,5 +1,5 @@
 import Database from 'better-sqlite3';
-import { existsSync, mkdirSync, renameSync, rmSync } from 'node:fs';
+import { closeSync, existsSync, fsyncSync, mkdirSync, openSync, renameSync, rmSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { buildMirror, type BuildStats } from './build.js';
 import type { DumpSource } from './dumps.js';
@@ -103,6 +103,20 @@ export interface RunOptions {
 export type RunResult =
     { status: 'current'; dump: string } | { status: 'built'; dump: string; stats: BuildStats };
 
+/** fsync a file (or, best effort, a directory so a rename is durable too). */
+function syncToDisk(path: string, bestEffort = false) {
+    try {
+        const fd = openSync(path, bestEffort ? 'r' : 'r+');
+        try {
+            fsyncSync(fd);
+        } finally {
+            closeSync(fd);
+        }
+    } catch (e) {
+        if (!bestEffort) throw e;
+    }
+}
+
 /**
  * Brings the mirror at `path` up to date: skips when the games dump is the one it was built from,
  * otherwise builds a new file beside it, verifies it and renames it into place. The old mirror
@@ -137,7 +151,11 @@ export async function runMirror(opts: RunOptions): Promise<RunResult> {
             minGames: opts.minGames ?? MIN_GAMES,
             previousGames: usable?.games
         });
+        // The build skipped fsync for speed: put the finished file on disk before it replaces the old
+        // one, so a power cut right after the rename can't leave a damaged mirror in place
+        syncToDisk(next);
         renameSync(next, opts.path);
+        syncToDisk(dirname(opts.path), true);
         log(`Mirror replaced: ${stats.games} games (${stats.searchable} searchable)`);
         return { status: 'built', dump, stats };
     } finally {

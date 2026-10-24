@@ -37,6 +37,28 @@ const rmDb = (path: string) => {
 };
 
 /**
+ * A rebuild starts from nothing and is thrown away if it dies, so neither database needs a rollback
+ * journal or fsync (the file is synced once before it replaces the old mirror, see `runMirror`).
+ * Two traps: better-sqlite3 silently refuses `journal_mode = OFF` unless the connection is in
+ * unsafe mode (it keeps the default journal), and a pragma without a schema name only reaches the
+ * databases attached at that moment, so the scratch database must be set explicitly. With a journal
+ * and fsync on every commit an SD card stalls for seconds behind the dirty pages of the step before.
+ * Returns the modes it ended up with, so a test can see they stuck.
+ */
+export function configureForBulkLoad(db: Database.Database) {
+    db.unsafeMode(true);
+    for (const schema of ['main', 'stg']) {
+        db.pragma(`${schema}.journal_mode = OFF`);
+        db.pragma(`${schema}.synchronous = OFF`);
+    }
+    const mode = (schema: string) => ({
+        journal: db.pragma(`${schema}.journal_mode`, { simple: true }) as string,
+        synchronous: db.pragma(`${schema}.synchronous`, { simple: true }) as number
+    });
+    return { main: mode('main'), stg: mode('stg') };
+}
+
+/**
  * Builds the mirror from the dumps, streaming each CSV straight into SQLite. The small lookup dumps
  * go in first, the ones that only feed columns of `games` (covers, screenshots, time to beat,
  * release dates) are staged in a scratch file, and `games` last. Nothing is validated here; see
@@ -52,11 +74,9 @@ export async function buildMirror(opts: BuildOptions): Promise<BuildStats> {
 
     const db = new Database(opts.outPath);
     try {
-        // A rebuild from scratch: if it dies we throw the file away, so no journal or fsync is needed
-        db.pragma('journal_mode = OFF');
-        db.pragma('synchronous = OFF');
         db.exec(MIRROR_DDL);
         db.prepare('ATTACH DATABASE ? AS stg').run(stagingPath);
+        configureForBulkLoad(db);
         db.exec(STAGING_DDL);
 
         /** Streams one dump into `handle` inside a single transaction. */
