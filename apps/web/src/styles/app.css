@@ -2498,7 +2498,7 @@ fieldset.stars:disabled .stars__star {
     inset: 0;
     border-radius: inherit;
 }
-/* The whole tile lights up in its own colour (the link covers it via ::after) */
+/* The whole tile lights up in the accent colour (the link covers it via ::after) */
 .counter:has(> a.counter__link) {
     transition:
         background-color 0.15s,
@@ -2506,8 +2506,8 @@ fieldset.stars:disabled .stars__star {
 }
 .counter:has(> a.counter__link:hover),
 .counter:has(> a.counter__link:focus-visible) {
-    border-color: var(--tone);
-    background: color-mix(in srgb, var(--tone) 12%, var(--surface));
+    border-color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 12%, var(--surface));
 }
 .counter__link:hover .counter__label,
 .counter__link:focus-visible .counter__label {
