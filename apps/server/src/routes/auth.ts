@@ -112,6 +112,10 @@ export function authRoutes({ db, config, limiters, notify }: Deps) {
         const { username, password } = body.data;
 
         const ip = clientIp(c, config.trustProxy);
+        // Temporary: verify the client IP behind Cloudflare, then remove.
+        console.log(
+            `login ip=${ip} xff=${c.req.header('x-forwarded-for')} cf=${c.req.header('cf-connecting-ip')}`
+        );
         const keys: [FailureLimiter, string][] = [
             [limiters.loginByAccount, `${username}|${ip}`],
             [limiters.loginByIp, ip]
