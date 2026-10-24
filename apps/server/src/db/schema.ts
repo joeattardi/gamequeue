@@ -470,6 +470,63 @@ export const gridCells = sqliteTable(
     ]
 );
 
+// ---------------------------------------------------------------------------
+// Tier lists: games ranked into named, coloured tiers (S, A, B...), like tiermaker. Public by design.
+// A game is in a tier list at most once: in one tier, or `tier_id` null = the unranked pool.
+// ---------------------------------------------------------------------------
+
+export const tierLists = sqliteTable(
+    'tier_lists',
+    {
+        id: integer('id').primaryKey({ autoIncrement: true }),
+        userId: integer('user_id')
+            .notNull()
+            .references(() => users.id, { onDelete: 'cascade' }),
+        title: text('title').notNull(),
+        description: text('description').notNull().default(''),
+        createdAt: integer('created_at').notNull().default(now),
+        updatedAt: integer('updated_at').notNull().default(now)
+    },
+    (t) => [index('tier_lists_user_idx').on(t.userId)]
+);
+
+export const tiers = sqliteTable(
+    'tiers',
+    {
+        id: integer('id').primaryKey({ autoIncrement: true }),
+        tierListId: integer('tier_list_id')
+            .notNull()
+            .references(() => tierLists.id, { onDelete: 'cascade' }),
+        // 0-based, top to bottom; rewritten wholesale on reorder
+        position: integer('position').notNull(),
+        name: text('name').notNull(),
+        // A key of TIER_COLORS
+        color: text('color').notNull().default('gray')
+    },
+    (t) => [index('tiers_list_idx').on(t.tierListId)]
+);
+
+export const tierItems = sqliteTable(
+    'tier_items',
+    {
+        tierListId: integer('tier_list_id')
+            .notNull()
+            .references(() => tierLists.id, { onDelete: 'cascade' }),
+        gameId: integer('game_id')
+            .notNull()
+            .references(() => games.id),
+        // Null = unranked. Deleting a tier returns its games to the pool
+        tierId: integer('tier_id').references(() => tiers.id, { onDelete: 'set null' }),
+        // 0-based within its tier (or the pool); rewritten when items move
+        position: integer('position').notNull()
+    },
+    (t) => [
+        primaryKey({ columns: [t.tierListId, t.gameId] }),
+        index('tier_items_game_idx').on(t.gameId),
+        index('tier_items_tier_idx').on(t.tierId)
+    ]
+);
+
 // Games the user told Discover not to suggest again. Keyed by IGDB id with no games FK: a suggestion
 // is usually a game we have never cached.
 export const dismissedGames = sqliteTable(

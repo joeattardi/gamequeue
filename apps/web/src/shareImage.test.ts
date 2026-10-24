@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { gridFilename, wrapLines } from './gridImage';
+import { imageFilename, wrapLines } from './shareImage';
 
 // Every character is 10 wide
 const measure = (t: string) => t.length * 10;
@@ -35,12 +35,12 @@ describe('wrapLines', () => {
     });
 });
 
-describe('gridFilename', () => {
+describe('imageFilename', () => {
     it('makes a safe jpg name', () => {
-        expect(gridFilename('Best of 2026!')).toBe('best-of-2026.jpg');
-        expect(gridFilename('  Café / Jeux  ')).toBe('cafe-jeux.jpg');
+        expect(imageFilename('Best of 2026!', 'grid')).toBe('best-of-2026.jpg');
+        expect(imageFilename('  Café / Jeux  ', 'grid')).toBe('cafe-jeux.jpg');
     });
     it('falls back when nothing is left', () => {
-        expect(gridFilename('日本語')).toBe('grid.jpg');
+        expect(imageFilename('日本語', 'grid')).toBe('grid.jpg');
     });
 });

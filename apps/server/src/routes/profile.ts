@@ -19,6 +19,7 @@ import {
     getProfileWishlist
 } from '../services/profile.js';
 import { getPublicGrid } from '../services/grids.js';
+import { getPublicTierList } from '../services/tier-lists.js';
 import { getAvatarByUsername } from '../services/avatars.js';
 import { parseRecapYear } from '../services/recap.js';
 
@@ -66,6 +67,15 @@ export function profileRoutes({ db }: AppDeps) {
     r.get('/:username/grids/:id', (c) =>
         c.json({
             grid: getPublicGrid(
+                db,
+                parseUsername(c.req.param('username')),
+                parseId(c.req.param('id'))
+            )
+        })
+    );
+    r.get('/:username/tier-lists/:id', (c) =>
+        c.json({
+            tierList: getPublicTierList(
                 db,
                 parseUsername(c.req.param('username')),
                 parseId(c.req.param('id'))

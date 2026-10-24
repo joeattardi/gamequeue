@@ -15,7 +15,7 @@ export function purgeUnusedGames(db: Db): PurgeUnusedGamesResult {
         const deletedGames = tx
             .delete(games)
             .where(
-                sql`${games.id} not in (select game_id from entries union select game_id from wishlist_items union select game_id from grid_cells where game_id is not null)`
+                sql`${games.id} not in (select game_id from entries union select game_id from wishlist_items union select game_id from grid_cells where game_id is not null union select game_id from tier_items)`
             )
             .run().changes;
         // Series cascade to series_members; only series nothing links to any more are unreachable

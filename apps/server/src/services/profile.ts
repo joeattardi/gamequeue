@@ -22,6 +22,7 @@ import { avatarVersion } from './avatars.js';
 import { socialLinksOf } from './users.js';
 import { listEntries, pageEntries } from './entries.js';
 import { listGrids } from './grids.js';
+import { listTierLists } from './tier-lists.js';
 import { getList, listLists } from './lists.js';
 import { getRecap } from './recap.js';
 import { getStats } from './stats.js';
@@ -93,7 +94,8 @@ export function getProfile(db: Db, username: string): ProfileDto {
             total: l.count,
             covers: l.covers
         })),
-        grids: listGrids(db, user.id)
+        grids: listGrids(db, user.id),
+        tierLists: listTierLists(db, user.id)
     };
 }
 

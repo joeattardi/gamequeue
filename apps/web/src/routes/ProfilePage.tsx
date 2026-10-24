@@ -224,6 +224,28 @@ function ProfileGrids({ profile }: { profile: ProfileDto }) {
     );
 }
 
+/** Tier lists as tiles; each links to its public page. */
+function ProfileTierLists({ profile }: { profile: ProfileDto }) {
+    if (profile.tierLists.length === 0) return null;
+    return (
+        <section aria-labelledby="p-tiers">
+            <h2 id="p-tiers">Tier lists</h2>
+            <ul className="list-cards">
+                {profile.tierLists.map((l) => (
+                    <ListCard
+                        key={l.id}
+                        to={`/u/${profile.username}/tiers/${l.id}`}
+                        name={l.title}
+                        count={l.ranked}
+                        covers={l.covers}
+                        detail={`${l.ranked} ranked`}
+                    />
+                ))}
+            </ul>
+        </section>
+    );
+}
+
 export function ProfilePage() {
     const { username = '' } = useParams();
     const profile = useProfile(username);
@@ -287,6 +309,7 @@ export function ProfilePage() {
 
                         <ProfileLists profile={profile.data} />
                         <ProfileGrids profile={profile.data} />
+                        <ProfileTierLists profile={profile.data} />
                     </>
                 )}
             </main>

@@ -11,6 +11,7 @@ export * from './export.js';
 export * from './profile.js';
 export * from './wishlist.js';
 export * from './grids.js';
+export * from './tiers.js';
 export * from './shops.js';
 export * from './smart-lists.js';
 export * from './csv.js';

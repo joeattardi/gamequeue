@@ -196,6 +196,8 @@ function Stats({ d }: { d: DatabaseStatsDto }) {
                     { label: 'Lists', value: n(content.lists) },
                     { label: 'Smart lists', value: n(content.smartLists) },
                     { label: 'Wishlist items', value: n(content.wishlistItems) },
+                    { label: 'Grids', value: n(content.grids) },
+                    { label: 'Tier lists', value: n(content.tierLists) },
                     { label: 'Tags', value: n(content.tags) },
                     {
                         label: 'Uploaded avatars',

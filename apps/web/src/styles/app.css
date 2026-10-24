@@ -5290,3 +5290,182 @@ button.grid-cell__button:hover {
 .row--center {
     align-items: center;
 }
+
+/* Tier lists */
+.tier-board {
+    display: grid;
+    gap: 20px;
+    margin: 16px 0;
+}
+.tier-rows {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 6px;
+}
+.tier-row {
+    display: grid;
+    grid-template-columns: clamp(64px, 12vw, 112px) minmax(0, 1fr);
+    min-height: 108px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+}
+.tier-row__label {
+    position: relative;
+    display: grid;
+    place-items: center;
+    padding: 8px;
+    text-align: center;
+    background: var(--tier-bg, var(--surface-2));
+    color: var(--tier-ink, var(--ink));
+    font-family: var(--font-display, inherit);
+    font-size: clamp(1.1rem, 3vw, 1.7rem);
+    overflow-wrap: anywhere;
+}
+.tier-row__label--editable {
+    /* room for the edit button under the name */
+    padding-bottom: 40px;
+}
+.tier-row__label--long {
+    font-size: clamp(0.8rem, 2vw, 1rem);
+}
+.tier-row__label--medium {
+    font-size: clamp(0.95rem, 2.4vw, 1.25rem);
+}
+.tier-row__label--skeleton {
+    border-radius: 0;
+}
+.tier-row__edit {
+    position: absolute;
+    right: 4px;
+    bottom: 4px;
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    color: inherit;
+    background: rgb(255 255 255 / 0.35);
+    border: 0;
+    border-radius: 6px;
+    cursor: pointer;
+}
+.tier-row__edit:hover {
+    background: rgb(255 255 255 / 0.6);
+}
+.tier-items {
+    list-style: none;
+    margin: 0;
+    padding: 8px;
+    display: flex;
+    flex-wrap: wrap;
+    align-content: flex-start;
+    gap: 8px;
+    min-height: 100%;
+}
+.tier-items.is-over {
+    background: var(--accent-soft);
+}
+.tier-tile {
+    position: relative;
+    width: clamp(56px, 11vw, 88px);
+}
+.tier-tile__button {
+    display: block;
+    width: 100%;
+    padding: 0;
+    background: none;
+    border: 0;
+    border-radius: 4px;
+}
+.tier-tile .cover {
+    display: block;
+}
+button.tier-tile__button {
+    cursor: pointer;
+}
+.tier-tile .cover {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 3 / 4;
+    object-fit: cover;
+    border-radius: 4px;
+    box-shadow: none;
+}
+.tier-tile[draggable='true'] {
+    cursor: grab;
+}
+.tier-tile.is-dragging {
+    opacity: 0.4;
+}
+/* Where a dropped game would land: a bar before this tile */
+.tier-tile.is-before::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: -6px;
+    width: 4px;
+    border-radius: 2px;
+    background: var(--accent);
+}
+.tier-tile__skeleton {
+    display: block;
+    aspect-ratio: 3 / 4;
+    border-radius: 4px;
+}
+.tier-pool {
+    display: grid;
+    gap: 8px;
+    padding: 12px;
+    border: 1px dashed var(--line-strong);
+    border-radius: var(--radius);
+}
+.tier-pool h2 {
+    margin: 0;
+    font-size: 1.1rem;
+}
+.tier-pool .tier-items {
+    min-height: 120px;
+    padding: 0;
+}
+.tier-chip {
+    background: var(--tier-bg);
+    color: var(--tier-ink, #111c2e);
+    border-color: transparent;
+    font-weight: 700;
+    min-width: 44px;
+}
+.tier-chip:disabled {
+    opacity: 0.35;
+}
+.tier-moves,
+.tier-colors {
+    border: 0;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 6px;
+}
+.tier-moves legend,
+.tier-colors legend {
+    padding: 0;
+    font-weight: 600;
+}
+.tier-swatch {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    background: var(--tier-bg);
+    border: 2px solid transparent;
+    border-radius: 50%;
+    cursor: pointer;
+}
+.tier-swatch.is-selected {
+    border-color: var(--ink);
+    outline: 2px solid var(--surface);
+    outline-offset: -4px;
+}

@@ -22,6 +22,7 @@ import {
     Menu,
     PanelLeftClose,
     PanelLeftOpen,
+    Rows3,
     Search,
     SkipForward,
     Sparkles,
@@ -275,6 +276,12 @@ export function Shell({ user }: { user: UserDto }) {
                                 to="/grids"
                                 icon={<LayoutGrid />}
                                 label="Grids"
+                                collapsed={collapsed}
+                            />
+                            <NavItem
+                                to="/tiers"
+                                icon={<Rows3 />}
+                                label="Tier lists"
                                 collapsed={collapsed}
                             />
                         </div>

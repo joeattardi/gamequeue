@@ -35,6 +35,8 @@ export interface DatabaseStatsDto {
         lists: number;
         smartLists: number;
         wishlistItems: number;
+        grids: number;
+        tierLists: number;
         tags: number;
         avatars: number;
         avatarBytes: number;
