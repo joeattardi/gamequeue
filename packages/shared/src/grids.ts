@@ -3,7 +3,8 @@ import type { GameDto } from './collection.js';
 
 export const GRID_MIN_SIZE = 1;
 export const GRID_MAX_SIZE = 5;
-export const DEFAULT_GRID_SIZE = 3;
+export const DEFAULT_GRID_COLS = 5;
+export const DEFAULT_GRID_ROWS = 4;
 export const MAX_GRID_TITLE = 80;
 export const MAX_GRID_DESCRIPTION = 300;
 export const MAX_CELL_LABEL = 60;
@@ -82,8 +83,8 @@ const description = z.string().trim().max(MAX_GRID_DESCRIPTION);
 export const createGridSchema = z.object({
     title,
     description: description.optional(),
-    cols: size.default(DEFAULT_GRID_SIZE),
-    rows: size.default(DEFAULT_GRID_SIZE),
+    cols: size.default(DEFAULT_GRID_COLS),
+    rows: size.default(DEFAULT_GRID_ROWS),
     /** Start with the suggested labels in the cells */
     prompts: z.boolean().default(false)
 });

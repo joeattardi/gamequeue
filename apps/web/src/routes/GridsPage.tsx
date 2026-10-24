@@ -1,4 +1,9 @@
-import { DEFAULT_GRID_SIZE, GRID_MAX_SIZE, MAX_GRID_TITLE } from '@gamequeue/shared';
+import {
+    DEFAULT_GRID_COLS,
+    DEFAULT_GRID_ROWS,
+    GRID_MAX_SIZE,
+    MAX_GRID_TITLE
+} from '@gamequeue/shared';
 import { LayoutGrid, Plus, X } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router';
@@ -87,8 +92,8 @@ function NewGridForm({ onDone }: { onDone: () => void }) {
     const create = useCreateGrid();
     const navigate = useNavigate();
     const [title, setTitle] = useState('');
-    const [cols, setCols] = useState(DEFAULT_GRID_SIZE);
-    const [rows, setRows] = useState(DEFAULT_GRID_SIZE);
+    const [cols, setCols] = useState(DEFAULT_GRID_COLS);
+    const [rows, setRows] = useState(DEFAULT_GRID_ROWS);
     const [prompts, setPrompts] = useState(true);
     const [error, setError] = useState<string>();
 

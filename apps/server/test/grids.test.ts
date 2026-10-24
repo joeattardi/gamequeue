@@ -8,18 +8,18 @@ import { games } from '../src/db/schema.js';
 async function setup() {
     const s = await setupApi();
     const make = async (extra: Record<string, unknown> = {}) =>
-        (await s.call('/grids', 'POST', { title: 'My grid', ...extra })).grid;
+        (await s.call('/grids', 'POST', { title: 'My grid', cols: 3, rows: 3, ...extra })).grid;
     const cell = (id: number, position: number, body: Record<string, unknown>) =>
         s.call(`/grids/${id}/cells/${position}`, 'PUT', body);
     return { ...s, make, cell };
 }
 
 describe('grids', () => {
-    it('creates a 3x3 grid of empty cells by default', async () => {
-        const { make, call } = await setup();
-        const g = await make();
-        expect(g).toMatchObject({ title: 'My grid', cols: 3, rows: 3 });
-        expect(g.cells).toHaveLength(9);
+    it('creates a 5 column by 4 row grid of empty cells by default', async () => {
+        const { call } = await setup();
+        const g = (await call('/grids', 'POST', { title: 'My grid' })).grid;
+        expect(g).toMatchObject({ title: 'My grid', cols: 5, rows: 4 });
+        expect(g.cells).toHaveLength(20);
         expect(g.cells.every((c: any) => c.label === '' && c.game === null)).toBe(true);
         expect((await call('/grids')).grids).toMatchObject([
             { id: g.id, title: 'My grid', filled: 0, covers: [] }
