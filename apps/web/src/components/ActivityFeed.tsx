@@ -95,7 +95,9 @@ function ActivityRow({ username, event }: { username: string; event: ActivityEve
     // Slot events name the slot in the sentence, not as a link
     const name =
         path && event.subject?.id != null ? (
-            <Link to={`/u/${username}/${path}/${event.subject.id}`}>{label}</Link>
+            <Link to={`/u/${username}/${path}/${event.subject.id}`}>
+                <strong>{label}</strong>
+            </Link>
         ) : event.game ? (
             <Link to={`/u/${username}/games/${event.game.id}`}>
                 <strong>{label}</strong>
