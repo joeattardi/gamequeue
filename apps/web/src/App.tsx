@@ -62,7 +62,6 @@ export function App() {
                     element={<ProfileListPage kind="smart-lists" />}
                 />
                 <Route path="/u/:username/grids/:id" element={<ProfileGridPage />} />
-                <Route path="/u/:username/grids/:id" element={<ProfileGridPage />} />
                 <Route path="/u/:username/stats" element={<ProfileStatsPage />} />
                 <Route path="/u/:username/recap" element={<ProfileRecapPage />} />
                 <Route path="/u/:username/recap/:year" element={<ProfileRecapPage />} />
@@ -81,6 +80,7 @@ export function App() {
                 path="/u/:username/smart-lists/:id"
                 element={<ProfileListPage kind="smart-lists" />}
             />
+            <Route path="/u/:username/grids/:id" element={<ProfileGridPage />} />
             <Route path="/u/:username/stats" element={<ProfileStatsPage />} />
             <Route path="/u/:username/recap" element={<ProfileRecapPage />} />
             <Route path="/u/:username/recap/:year" element={<ProfileRecapPage />} />
