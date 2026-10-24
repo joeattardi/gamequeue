@@ -4530,25 +4530,27 @@ fieldset.stars:disabled .stars__star {
     background: var(--surface-2);
 }
 .mock__cover {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 3 / 4;
+    object-fit: cover;
+    border-radius: 6px;
+    background: var(--line);
+}
+.mock__cover--empty {
     display: grid;
     place-items: center;
-    aspect-ratio: 3 / 4;
-    border-radius: 6px;
-    color: rgb(255 255 255 / 0.85);
-    background: linear-gradient(160deg, hsl(var(--h) 65% 45%), hsl(calc(var(--h) + 40) 60% 28%));
+    color: var(--ink-muted);
+    background: linear-gradient(160deg, var(--surface-2), var(--line));
 }
-.mock__cover .lucide {
+.mock__cover--empty .lucide {
     width: 34%;
     height: auto;
 }
-.mock__bar {
-    height: 8px;
-    border-radius: 4px;
-    background: var(--line-strong);
-    opacity: 0.5;
-}
-.mock__bar--short {
-    width: 60%;
+.mock__title {
+    font: 700 0.85rem/1.25 var(--font-display);
+    overflow-wrap: anywhere;
 }
 .mock__label {
     font-size: 0.78rem;

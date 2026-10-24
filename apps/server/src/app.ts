@@ -17,6 +17,7 @@ import { createCardRenderer, type CardRenderer } from './og/render.js';
 import { listRoutes, pickRoutes, queueRoutes, smartListRoutes } from './routes/lists.js';
 import { recapRoutes } from './routes/recap.js';
 import { statsRoutes } from './routes/stats.js';
+import { showcaseRoutes } from './routes/showcase.js';
 import { seriesRoutes } from './routes/series.js';
 import { slotRoutes } from './routes/slots.js';
 import { wishlistRoutes } from './routes/wishlist.js';
@@ -105,6 +106,7 @@ export function createApp(deps: AppDeps) {
     app.route('/api/data', dataRoutes(deps));
     // Public: no login required
     app.route('/api/profiles', profileRoutes(deps));
+    app.route('/api/showcase', showcaseRoutes(deps));
     app.route('/api/og', ogRoutes({ ...deps, cards: deps.cards ?? createCardRenderer() }));
 
     app.notFound((c) => c.json({ error: 'Not found' }, 404));

@@ -11,8 +11,10 @@ import {
     Search,
     Layers
 } from 'lucide-react';
+import { coverSrcSet, coverUrl } from '@gamequeue/shared';
 import { Link } from 'react-router';
 import { useAuthConfig } from '../api/auth';
+import { useShowcase } from '../api/showcase';
 import { Footer } from '../components/Footer';
 import { Logo } from '../components/Logo';
 import { usePageTitle } from '../lib';
@@ -83,18 +85,14 @@ const STEPS = [
     }
 ];
 
-/** The tiles in the hero mock-up: abstract covers, so it never pretends to show real games. */
-const MOCK_SLOTS = [
-    { name: 'Slot 1', hue: 222, state: 'Playing' },
-    { name: 'Slot 2', hue: 172, state: 'Playing' },
-    { name: 'Slot 3', hue: 285, state: 'Paused' }
-];
+const MOCK_STATES = ['Playing', 'Playing', 'Paused'];
 const MOCK_QUEUE = [18, 48, 330, 200, 25];
 
 /** Home for logged-out visitors at `/`. */
 export function LandingPage() {
     usePageTitle();
     const config = useAuthConfig();
+    const showcase = useShowcase();
     const signups = config.data?.signupsEnabled !== false;
 
     return (
@@ -141,21 +139,41 @@ export function LandingPage() {
 
                     <div className="landing__mock" aria-hidden="true">
                         <div className="mock__slots">
-                            {MOCK_SLOTS.map((s) => (
-                                <div className="mock__slot" key={s.name}>
-                                    <div
-                                        className="mock__cover"
-                                        style={{ '--h': s.hue } as React.CSSProperties}
-                                    >
-                                        <Gamepad2 />
+                            {MOCK_STATES.map((state, i) => {
+                                const g = showcase.data?.[i];
+                                return (
+                                    <div className="mock__slot" key={i}>
+                                        {showcase.isPending ? (
+                                            <>
+                                                <span className="skeleton mock__cover" />
+                                                <span className="skeleton skeleton--line" />
+                                            </>
+                                        ) : g ? (
+                                            <>
+                                                <img
+                                                    className="mock__cover"
+                                                    src={coverUrl(g.coverImageId, 'cover_big')}
+                                                    srcSet={coverSrcSet(
+                                                        g.coverImageId,
+                                                        'cover_big'
+                                                    )}
+                                                    alt=""
+                                                    width={264}
+                                                    height={352}
+                                                />
+                                                <span className="mock__title">{g.name}</span>
+                                            </>
+                                        ) : (
+                                            <div className="mock__cover mock__cover--empty">
+                                                <Gamepad2 />
+                                            </div>
+                                        )}
+                                        <span className="mock__label">
+                                            Slot {i + 1} · {state}
+                                        </span>
                                     </div>
-                                    <span className="mock__bar" />
-                                    <span className="mock__bar mock__bar--short" />
-                                    <span className="mock__label">
-                                        {s.name} · {s.state}
-                                    </span>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                         <div className="mock__queue">
                             <span className="mock__label">Up next</span>

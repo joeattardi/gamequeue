@@ -23,3 +23,4 @@ export * from './backup.js';
 export * from './admin-users.js';
 export * from './database-stats.js';
 export * from './admin-system.js';
+export * from './showcase.js';
