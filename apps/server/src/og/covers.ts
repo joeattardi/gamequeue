@@ -1,4 +1,4 @@
-import { coverUrl } from '@gamequeue/shared';
+import { coverUrl, type CoverSize } from '@gamequeue/shared';
 import { LruCache } from './lru.js';
 
 const TIMEOUT_MS = 4000;
@@ -8,19 +8,20 @@ const TIMEOUT_MS = 4000;
  * fetched is `null` and the card draws a placeholder, so IGDB's CDN being slow never fails an image.
  * Failures aren't cached, so the next card tries again.
  */
-export function createCoverLoader(fetchImpl: typeof fetch = fetch, maxCovers = 60) {
+export function createCoverLoader(fetchImpl: typeof fetch = fetch, maxCovers = 120) {
     const cache = new LruCache<string, string>(maxCovers);
 
-    async function load(imageId: string): Promise<string | null> {
-        const hit = cache.get(imageId);
+    async function load(imageId: string, size: CoverSize): Promise<string | null> {
+        const key = `${size}:${imageId}`;
+        const hit = cache.get(key);
         if (hit) return hit;
         try {
-            const res = await fetchImpl(coverUrl(imageId, 'cover_big_2x'), {
+            const res = await fetchImpl(coverUrl(imageId, size), {
                 signal: AbortSignal.timeout(TIMEOUT_MS)
             });
             if (!res.ok) return null;
             const uri = `data:image/jpeg;base64,${Buffer.from(await res.arrayBuffer()).toString('base64')}`;
-            cache.set(imageId, uri);
+            cache.set(key, uri);
             return uri;
         } catch {
             return null;
@@ -28,10 +29,13 @@ export function createCoverLoader(fetchImpl: typeof fetch = fetch, maxCovers = 6
     }
 
     return {
-        /** Each id once, in parallel */
-        async loadAll(imageIds: string[]): Promise<Map<string, string | null>> {
+        /** Each id once, in parallel. Big covers for the few-cover cards, small ones for the dense ones. */
+        async loadAll(
+            imageIds: string[],
+            size: CoverSize = 'cover_big_2x'
+        ): Promise<Map<string, string | null>> {
             const ids = [...new Set(imageIds)];
-            const uris = await Promise.all(ids.map(load));
+            const uris = await Promise.all(ids.map((id) => load(id, size)));
             return new Map(ids.map((id, i) => [id, uris[i]!]));
         }
     };

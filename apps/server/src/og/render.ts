@@ -10,6 +10,7 @@ import {
     type ProfileCardData,
     type RecapCardData
 } from './cards.js';
+import { gridCard, tierCard, type GridCardData, type TierCardData } from './social-cards.js';
 import { createCoverLoader, type CoverLoader } from './covers.js';
 import { loadFonts } from './fonts.js';
 import { LruCache } from './lru.js';
@@ -35,7 +36,9 @@ export async function avatarDataUri(avatar: UploadedAvatar | null): Promise<stri
 
 export type CardRequest =
     | { data: ProfileCardData; avatar: UploadedAvatar | null }
-    | { data: RecapCardData; avatar: UploadedAvatar | null };
+    | { data: RecapCardData; avatar: UploadedAvatar | null }
+    | { data: GridCardData; avatar: UploadedAvatar | null }
+    | { data: TierCardData; avatar: UploadedAvatar | null };
 
 /** A card is 250-700 KB (cover art and gradients don't compress), so 32 of them stay around 20 MB. */
 const MAX_CARDS = 32;
@@ -49,11 +52,19 @@ export function createCardRenderer(deps: { fetch?: typeof fetch; covers?: CoverL
     async function draw(req: CardRequest): Promise<Buffer> {
         const { data } = req;
         const [coverUris, avatar] = await Promise.all([
-            covers.loadAll(data.covers),
+            // Grids and tier lists show many small covers; the others a few big ones
+            covers.loadAll(data.covers, 'kind' in data ? 'cover_small_2x' : 'cover_big_2x'),
             avatarDataUri(req.avatar)
         ]);
         const assets: CardAssets = { covers: coverUris, avatar };
-        const element = 'year' in data ? recapCard(data, assets) : profileCard(data, assets);
+        const element =
+            'kind' in data
+                ? data.kind === 'grid'
+                    ? gridCard(data, assets)
+                    : tierCard(data, assets)
+                : 'year' in data
+                  ? recapCard(data, assets)
+                  : profileCard(data, assets);
         const svg = await satori(element as unknown as Parameters<typeof satori>[0], {
             width: CARD_WIDTH,
             height: CARD_HEIGHT,

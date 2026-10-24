@@ -247,3 +247,195 @@ describe('link preview tags', () => {
         expect(await res.text()).toBe(HTML);
     });
 });
+
+describe('grid and tier list share cards', () => {
+    async function social(fetchImpl = coverFetch()) {
+        const s = await setup(fetchImpl);
+        const grid = (await s.call('/grids', 'POST', { title: 'Best of', cols: 3, rows: 2 })).grid;
+        await s.call(`/grids/${grid.id}/cells/0`, 'PUT', { label: 'A', igdbId: 1 });
+        await s.call(`/grids/${grid.id}/cells/1`, 'PUT', { igdbId: 2 });
+        const tl = (await s.call('/tier-lists', 'POST', { title: 'Ranked' })).tierList;
+        await s.call(`/tier-lists/${tl.id}/items`, 'POST', { igdbId: 1, tierId: tl.tiers[0].id });
+        await s.call(`/tier-lists/${tl.id}/items`, 'POST', { igdbId: 2, tierId: tl.tiers[2].id });
+        await s.call(`/tier-lists/${tl.id}/items`, 'POST', { igdbId: 3 }); // unranked: not on the card
+        return { ...s, grid, tl };
+    }
+    const isPng = async (res: Response) =>
+        expect([...(await bytes(res)).subarray(0, 4)]).toEqual(PNG_MAGIC);
+
+    it('serves the grid and tier list cards as PNGs without logging in', async () => {
+        const { app, grid, tl, fetchImpl } = await social();
+        const g = await app.request(`/api/og/grid/user_me/${grid.id}.png`);
+        expect(g.status).toBe(200);
+        expect(g.headers.get('content-type')).toBe('image/png');
+        await isPng(g);
+        const t = await app.request(`/api/og/tiers/user_me/${tl.id}.png`);
+        expect(t.status).toBe(200);
+        await isPng(t);
+        // dense cards use the small cover size, not the big one the profile card uses
+        const urls = fetchImpl.mock.calls.map((c) => String((c as unknown[])[0]));
+        expect(urls.length).toBeGreaterThan(0);
+        expect(urls.every((u) => u.includes('t_cover_small_2x'))).toBe(true);
+    });
+
+    it('still draws when covers cannot be fetched, and for an empty grid or tier list', async () => {
+        const { app, grid, tl, call } = await social(coverFetch(404));
+        await isPng(await app.request(`/api/og/grid/user_me/${grid.id}.png`));
+        await isPng(await app.request(`/api/og/tiers/user_me/${tl.id}.png`));
+        const empty = (await call('/grids', 'POST', { title: 'Empty' })).grid;
+        const none = (await call('/tier-lists', 'POST', { title: 'None' })).tierList;
+        await isPng(await app.request(`/api/og/grid/user_me/${empty.id}.png`));
+        await isPng(await app.request(`/api/og/tiers/user_me/${none.id}.png`));
+    });
+
+    it('404s for other people’s ids, unknown ids and URLs we never hand out', async () => {
+        const { app, grid } = await social();
+        for (const path of [
+            `/api/og/grid/nobody/${grid.id}.png`,
+            '/api/og/grid/user_me/999.png',
+            `/api/og/grid/user_me/${grid.id}`, // no .png
+            '/api/og/grid/user_me/abc.png',
+            '/api/og/tiers/user_me/999.png',
+            '/api/og/tiers/Bad%20Name/1.png'
+        ])
+            expect((await app.request(path)).status, path).toBe(404);
+    });
+
+    it('draws only what the fonts can: an exotic title falls back, a normal one is kept', async () => {
+        const { db } = await social();
+        const { getGridCardData, getTierCardData } = await import('../src/services/og.js');
+        const { grids, tierLists } = await import('../src/db/schema.js');
+        expect(getGridCardData(db, 'user_me', 1, 'x.example').title).toBe('Best of');
+        db.update(grids).set({ title: '日本語のタイトル' }).run();
+        db.update(tierLists).set({ title: 'Café ranking' }).run();
+        const g = getGridCardData(db, 'user_me', 1, 'x.example');
+        expect(g.title).toBeNull();
+        expect(g).toMatchObject({ cols: 3, rows: 2, filled: 2, covers: ['co1', 'co2'] });
+        expect(g.cells.map((c) => c?.cover ?? null)).toEqual([
+            'co1',
+            'co2',
+            null,
+            null,
+            null,
+            null
+        ]);
+        const t = getTierCardData(db, 'user_me', 1, 'x.example');
+        expect(t.title).toBe('Café ranking');
+        // the unranked game and the empty tiers are not on the card; best tier first
+        expect(t.ranked).toBe(2);
+        expect(t.tiers.map((x) => [x.name, x.total])).toEqual([
+            ['S', 1],
+            ['B', 1]
+        ]);
+        expect(t.covers).toEqual(['co1', 'co2']);
+    });
+
+    it('limits the tiers drawn and the covers per tier', async () => {
+        const { tierCardData } = await import('../src/services/og.js');
+        const game = (id: number) => ({ igdbId: id, game: { coverImageId: `co${id}` } }) as never;
+        const tier = (id: number, n: number) => ({
+            id,
+            name: `T${id}`,
+            color: 'red' as const,
+            items: Array.from({ length: n }, (_, i) => game(id * 100 + i))
+        });
+        const data = tierCardData(
+            {
+                id: 1,
+                username: 'joe',
+                title: 'x',
+                description: '',
+                unranked: [],
+                createdAt: 0,
+                updatedAt: 0,
+                tiers: [1, 2, 3, 4, 5, 6, 7].map((i) => tier(i, 9))
+            },
+            null,
+            'x.example'
+        );
+        expect(data.tiers).toHaveLength(5);
+        expect(data.tiers[0]!.covers).toHaveLength(6);
+        expect(data.tiers[0]!.total).toBe(9);
+        expect(data.ranked).toBe(63);
+        expect(data.covers.length).toBeLessThanOrEqual(30);
+    });
+
+    it('isDrawable accepts latin text and rejects what the bundled fonts lack', async () => {
+        const { isDrawable, drawable } = await import('../src/og/text.js');
+        for (const ok of ['Best of 2026', 'Café', "Joe's “picks” – 2026…", 'S', ''])
+            expect(isDrawable(ok), ok).toBe(true);
+        for (const bad of ['日本語', 'Игры', 'Best 🎮', 'عربي'])
+            expect(isDrawable(bad), bad).toBe(false);
+        expect(drawable('   ')).toBeNull();
+        expect(drawable('日本')).toBeNull();
+        expect(drawable('Hades')).toBe('Hades');
+    });
+
+    describe('link preview tags', () => {
+        const HTML = '<html><head><title>GameQueue</title></head><body></body></html>';
+        const content = (html: string, key: string) =>
+            new RegExp(`(?:property|name)="${key}" content="([^"]*)"`).exec(html)?.[1];
+
+        async function pages() {
+            const s = await social();
+            const web = new Hono().get(
+                '*',
+                spaFallback({ db: s.db, config: s.config }, async () => HTML)
+            );
+            return { ...s, get: async (p: string) => (await web.request(p)).text() };
+        }
+
+        it('adds tags with a card URL to a public grid and tier list', async () => {
+            const { get, grid, tl } = await pages();
+            const g = await get(`/u/user_me/grids/${grid.id}`);
+            expect(content(g, 'og:title')).toBe('Best of by user_me | GameQueue');
+            expect(content(g, 'og:description')).toBe(
+                'A 3 by 2 grid of games by user_me, 2 of 6 filled.'
+            );
+            expect(content(g, 'og:url')).toBe(`https://games.example/u/user_me/grids/${grid.id}`);
+            expect(content(g, 'og:image')).toMatch(
+                new RegExp(
+                    `^https://games\\.example/api/og/grid/user_me/${grid.id}\\.png\\?v=[0-9a-f]{12}$`
+                )
+            );
+            expect(content(g, 'twitter:card')).toBe('summary_large_image');
+            const t = await get(`/u/user_me/tiers/${tl.id}`);
+            expect(content(t, 'og:title')).toBe('Ranked by user_me | GameQueue');
+            expect(content(t, 'og:description')).toBe(
+                'A tier list by user_me: 2 games ranked across 2 tiers.'
+            );
+            expect(content(t, 'og:image')).toMatch(
+                new RegExp(
+                    `^https://games\\.example/api/og/tiers/user_me/${tl.id}\\.png\\?v=[0-9a-f]{12}$`
+                )
+            );
+        });
+
+        it('prefers the owner’s own description, and changes the image URL when the content changes', async () => {
+            const { get, grid, call } = await pages();
+            await call(`/grids/${grid.id}`, 'PATCH', { description: 'My top picks <3' });
+            const before = await get(`/u/user_me/grids/${grid.id}`);
+            expect(content(before, 'og:description')).toBe('My top picks &lt;3');
+            await call(`/grids/${grid.id}/cells/5`, 'PUT', { igdbId: 3 });
+            const after = await get(`/u/user_me/grids/${grid.id}`);
+            expect(content(after, 'og:image')).not.toBe(content(before, 'og:image'));
+            // the same content gives the same URL
+            expect(content(await get(`/u/user_me/grids/${grid.id}`), 'og:image')).toBe(
+                content(after, 'og:image')
+            );
+        });
+
+        it('leaves unknown ids and other people’s pages as the plain app shell', async () => {
+            const { get, grid } = await pages();
+            for (const path of [
+                '/u/user_me/grids/999',
+                '/u/nobody/grids/1',
+                `/u/other/grids/${grid.id}`,
+                '/u/user_me/tiers/999',
+                '/u/user_me/grids/abc',
+                '/u/user_me/grids/0'
+            ])
+                expect(await get(path), path).toBe(HTML);
+        });
+    });
+});

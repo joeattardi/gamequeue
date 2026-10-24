@@ -43,26 +43,30 @@ export interface CardAssets {
     avatar: string | null;
 }
 
-type Style = Record<string, string | number>;
-interface El {
+export type Style = Record<string, string | number>;
+export interface El {
     type: string;
     props: Record<string, unknown> & { style?: Style; children?: unknown };
 }
-type Child = El | string | false | null | undefined;
+export type Child = El | string | false | null | undefined;
 
 /** `div`s are flex containers (satori wants an explicit display on anything with several children). */
-function h(type: string, props: Record<string, unknown> & { style?: Style }, ...kids: Child[]): El {
+export function h(
+    type: string,
+    props: Record<string, unknown> & { style?: Style },
+    ...kids: Child[]
+): El {
     const children = kids.filter((k): k is El | string => k !== false && k != null);
     const style = type === 'div' ? { display: 'flex', ...props.style } : props.style;
     return { type, props: { ...props, style, children } };
 }
 
-const DISPLAY = 'Bricolage Grotesque';
-const BODY = 'Figtree';
-const INK = '#f5f8ff';
-const MUTED = 'rgba(205, 218, 245, 0.72)';
-const GLASS = 'rgba(255, 255, 255, 0.07)';
-const GLASS_LINE = 'rgba(255, 255, 255, 0.14)';
+export const DISPLAY = 'Bricolage Grotesque';
+export const BODY = 'Figtree';
+export const INK = '#f5f8ff';
+export const MUTED = 'rgba(205, 218, 245, 0.72)';
+export const GLASS = 'rgba(255, 255, 255, 0.07)';
+export const GLASS_LINE = 'rgba(255, 255, 255, 0.14)';
 
 const GAMEPAD_PATHS = [
     'M17.32 5H6.68a4 4 0 0 0-3.978 3.59c-.006.052-.01.101-.017.152C2.604 9.416 2 14.456 2 16a3 3 0 0 0 3 3c1 0 1.5-.5 2-1l1.414-1.414A2 2 0 0 1 9.828 16h4.344a2 2 0 0 1 1.414.586L17 18c.5.5 1 1 2 1a3 3 0 0 0 3-3c0-1.545-.604-6.584-.685-7.258-.007-.05-.011-.1-.017-.151A4 4 0 0 0 17.32 5z'
@@ -85,7 +89,7 @@ function icon(size: number, stroke: string, paths: string[], width = 2): El {
     );
 }
 
-const gamepad = (size: number, stroke: string, width = 2) =>
+export const gamepad = (size: number, stroke: string, width = 2) =>
     h(
         'svg',
         {
@@ -102,7 +106,7 @@ const gamepad = (size: number, stroke: string, width = 2) =>
         h('path', { d: 'M6 11h4M8 9v4M15 12h.01M18 10h.01' })
     );
 
-function brand(): El {
+export function brand(): El {
     return h(
         'div',
         { style: { alignItems: 'center', gap: 14 } },
@@ -150,7 +154,7 @@ const hsl = (h: number, s: number, l: number) => {
 };
 
 /** The user's avatar: an uploaded image, or the identicon in the app's dark palette. */
-function avatar(username: string, uploaded: string | null, size: number): El {
+export function avatar(username: string, uploaded: string | null, size: number): El {
     const frame = {
         width: size,
         height: size,
@@ -198,7 +202,7 @@ function avatar(username: string, uploaded: string | null, size: number): El {
 }
 
 /** One cover, or a tinted placeholder when its image couldn't be fetched. 3:4 like IGDB's. */
-function cover(uri: string | null | undefined, width: number, style: Style): El {
+export function cover(uri: string | null | undefined, width: number, style: Style): El {
     const height = Math.round((width * 4) / 3);
     const frame = {
         width,
@@ -300,7 +304,7 @@ function stat(value: string, label: string, size = 54): El {
     );
 }
 
-const pill = (text: string, dot?: string) =>
+export const pill = (text: string, dot?: string) =>
     h(
         'div',
         {
@@ -333,12 +337,12 @@ const pill = (text: string, dot?: string) =>
     );
 
 /** Soft colour glows over a deep base: the look of both cards. */
-const backdrop = (base: string, layers: string[]): Style => ({
+export const backdrop = (base: string, layers: string[]): Style => ({
     backgroundColor: base,
     backgroundImage: layers.join(', ')
 });
 
-const frame = (style: Style, ...kids: Child[]) =>
+export const frame = (style: Style, ...kids: Child[]) =>
     h(
         'div',
         {
@@ -361,7 +365,7 @@ const fmt = (n: number) => n.toLocaleString('en-US');
 const nameSize = (username: string) =>
     username.length <= 9 ? 104 : username.length <= 14 ? 82 : username.length <= 20 ? 62 : 46;
 
-const footer = (text: string) =>
+export const footer = (text: string) =>
     h(
         'div',
         {

@@ -518,7 +518,7 @@ Public endpoints live under `/api/profiles` and don't require a session. They re
 
 ### Share cards (link previews)
 
-When you paste a profile link into Discord or Slack, their crawler doesn't run JavaScript, so it can't see the React page. The server handles that:
+When you paste a profile, year-in-review, grid or tier list link into Discord or Slack, their crawler doesn't run JavaScript, so it can't see the React page. The server handles that:
 
 ```mermaid
 sequenceDiagram

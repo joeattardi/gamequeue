@@ -2,7 +2,15 @@ import { isRecapYear, usernameSchema } from '@gamequeue/shared';
 import type { Config } from '../config.js';
 import type { Db } from '../db/client.js';
 import { HttpError } from '../errors.js';
-import { cardKey, getProfileCardData, getRecapCardData } from '../services/og.js';
+import {
+    cardKey,
+    getGridCardData,
+    getProfileCardData,
+    getRecapCardData,
+    getTierCardData
+} from '../services/og.js';
+import { getPublicGrid } from '../services/grids.js';
+import { getPublicTierList } from '../services/tier-lists.js';
 import { getProfileRecap } from '../services/profile.js';
 import { CARD_HEIGHT, CARD_WIDTH } from './cards.js';
 
@@ -19,6 +27,8 @@ export interface PageMeta {
 
 const PROFILE_PATH = /^\/u\/([^/]+)\/?$/;
 const RECAP_PATH = /^\/u\/([^/]+)\/recap(?:\/(\d{4}))?\/?$/;
+const GRID_PATH = /^\/u\/([^/]+)\/grids\/(\d+)\/?$/;
+const TIER_PATH = /^\/u\/([^/]+)\/tiers\/(\d+)\/?$/;
 
 const count = (n: number, one: string, many = `${one}s`) =>
     `${n.toLocaleString('en-US')} ${n === 1 ? one : many}`;
@@ -31,7 +41,9 @@ const count = (n: number, one: string, many = `${one}s`) =>
 export function pageMeta(db: Db, config: Config, path: string): PageMeta | null {
     const profile = PROFILE_PATH.exec(path);
     const recap = RECAP_PATH.exec(path);
-    const match = recap ?? profile;
+    const grid = GRID_PATH.exec(path);
+    const tier = TIER_PATH.exec(path);
+    const match = grid ?? tier ?? recap ?? profile;
     if (!match) return null;
     let raw: string;
     try {
@@ -43,6 +55,13 @@ export function pageMeta(db: Db, config: Config, path: string): PageMeta | null 
     if (!parsed.success) return null;
     const host = new URL(config.publicUrl).host;
     try {
+        if (grid || tier) {
+            const id = Number((grid ?? tier)![2]);
+            if (!Number.isSafeInteger(id) || id < 1) return null;
+            return grid
+                ? gridMeta(db, config, parsed.data, id, host)
+                : tierMeta(db, config, parsed.data, id, host);
+        }
         if (recap) {
             const requested = recap[2];
             if (requested !== undefined && !isRecapYear(requested)) return null;
@@ -74,6 +93,41 @@ export function pageMeta(db: Db, config: Config, path: string): PageMeta | null 
         if (err instanceof HttpError && err.status === 404) return null;
         throw err;
     }
+}
+
+/** What goes in a link preview's description: the owner's own words if they wrote any, else a summary. */
+const described = (own: string, summary: string) =>
+    own.trim() ? (own.length > 200 ? `${own.slice(0, 197)}…` : own) : summary;
+
+function gridMeta(db: Db, config: Config, username: string, id: number, host: string): PageMeta {
+    const grid = getPublicGrid(db, username, id);
+    const data = getGridCardData(db, username, id, host);
+    return {
+        title: `${grid.title} by ${username} | GameQueue`,
+        description: described(
+            grid.description,
+            `A ${grid.cols} by ${grid.rows} grid of games by ${username}, ${data.filled} of ${grid.cols * grid.rows} filled.`
+        ),
+        url: `${config.publicUrl}/u/${username}/grids/${id}`,
+        image: `${config.publicUrl}/api/og/grid/${username}/${id}.png?v=${cardKey(data)}`,
+        imageAlt: `${grid.title}, a grid of games by ${username} on GameQueue`
+    };
+}
+
+function tierMeta(db: Db, config: Config, username: string, id: number, host: string): PageMeta {
+    const list = getPublicTierList(db, username, id);
+    const data = getTierCardData(db, username, id, host);
+    const tiers = list.tiers.filter((t) => t.items.length > 0).length;
+    return {
+        title: `${list.title} by ${username} | GameQueue`,
+        description: described(
+            list.description,
+            `A tier list by ${username}: ${count(data.ranked, 'game')} ranked across ${count(tiers, 'tier')}.`
+        ),
+        url: `${config.publicUrl}/u/${username}/tiers/${id}`,
+        image: `${config.publicUrl}/api/og/tiers/${username}/${id}.png?v=${cardKey(data)}`,
+        imageAlt: `${list.title}, a tier list by ${username} on GameQueue`
+    };
 }
 
 const escape = (s: string) =>

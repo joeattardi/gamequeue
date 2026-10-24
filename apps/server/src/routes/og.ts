@@ -4,7 +4,14 @@ import type { AppDeps } from '../app.js';
 import { HttpError } from '../errors.js';
 import type { CardRenderer } from '../og/render.js';
 import { getAvatarByUsername } from '../services/avatars.js';
-import { cardKey, getProfileCardData, getRecapCardData } from '../services/og.js';
+import {
+    cardKey,
+    getGridCardData,
+    getProfileCardData,
+    getRecapCardData,
+    getTierCardData
+} from '../services/og.js';
+import { parseId } from '../http.js';
 
 /** Public: deliberately has no requireAuth. These are the images behind the `og:image` of profile links. */
 export function ogRoutes({ db, config, cards }: AppDeps & { cards: CardRenderer }) {
@@ -48,6 +55,35 @@ export function ogRoutes({ db, config, cards }: AppDeps & { cards: CardRenderer 
             db,
             parseUsername(c.req.param('username')),
             Number(year),
+            host
+        );
+        return png(
+            await cards.render(cardKey(data), {
+                data,
+                avatar: avatarOf(data.username, data.avatarVersion)
+            })
+        );
+    });
+    // `/grid/:username/12.png` and `/tiers/:username/12.png`
+    r.get('/grid/:username/:file', async (c) => {
+        const data = getGridCardData(
+            db,
+            parseUsername(c.req.param('username')),
+            parseId(stem(c.req.param('file'))),
+            host
+        );
+        return png(
+            await cards.render(cardKey(data), {
+                data,
+                avatar: avatarOf(data.username, data.avatarVersion)
+            })
+        );
+    });
+    r.get('/tiers/:username/:file', async (c) => {
+        const data = getTierCardData(
+            db,
+            parseUsername(c.req.param('username')),
+            parseId(stem(c.req.param('file'))),
             host
         );
         return png(

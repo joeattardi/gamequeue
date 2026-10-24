@@ -1,12 +1,27 @@
 import { createHash } from 'node:crypto';
 import { eq } from 'drizzle-orm';
-import type { ProfileDto, RecapDto } from '@gamequeue/shared';
+import {
+    TIER_COLORS,
+    type ProfileDto,
+    type PublicGridDto,
+    type PublicTierListDto,
+    type RecapDto
+} from '@gamequeue/shared';
 import type { Db } from '../db/client.js';
 import { users } from '../db/schema.js';
 import { HttpError } from '../errors.js';
 import type { ProfileCardData, RecapCardData } from '../og/cards.js';
+import {
+    TIER_CARD_COVERS,
+    TIER_CARD_ROWS,
+    type GridCardData,
+    type TierCardData
+} from '../og/social-cards.js';
+import { drawable } from '../og/text.js';
 import { avatarVersion } from './avatars.js';
+import { getPublicGrid } from './grids.js';
 import { getProfile, getProfileRecap } from './profile.js';
+import { getPublicTierList } from './tier-lists.js';
 
 /**
  * What the share cards show, reduced to exactly the fields they draw. Public data only (it comes from the
@@ -77,7 +92,7 @@ export function recapCardData(
 }
 
 /** Names the card's content; includes the kind via the fields themselves (`year` only exists on recaps). */
-export const cardKey = (data: ProfileCardData | RecapCardData) =>
+export const cardKey = (data: ProfileCardData | RecapCardData | GridCardData | TierCardData) =>
     createHash('sha1').update(JSON.stringify(data)).digest('hex').slice(0, 12);
 
 export function getProfileCardData(db: Db, username: string, host: string): ProfileCardData {
@@ -101,4 +116,64 @@ export function getRecapCardData(
         { username: user.username, avatarVersion: avatarVersion(db, user.id) },
         host
     );
+}
+
+const avatarOfUsername = (db: Db, username: string) => {
+    const user = db.select({ id: users.id }).from(users).where(eq(users.username, username)).get();
+    return user ? avatarVersion(db, user.id) : null;
+};
+
+export function gridCardData(
+    grid: PublicGridDto,
+    avatarVersion: number | null,
+    host: string
+): GridCardData {
+    const cells = grid.cells.map((c) => (c.game ? { cover: c.game.coverImageId } : null));
+    return {
+        kind: 'grid',
+        host,
+        username: grid.username,
+        avatarVersion,
+        title: drawable(grid.title),
+        cols: grid.cols,
+        rows: grid.rows,
+        cells,
+        filled: cells.filter(Boolean).length,
+        covers: [...new Set(cells.flatMap((c) => c?.cover ?? []))],
+        path: `/u/${grid.username}/grids/${grid.id}`
+    };
+}
+
+export function tierCardData(
+    list: PublicTierListDto,
+    avatarVersion: number | null,
+    host: string
+): TierCardData {
+    const filled = list.tiers.filter((t) => t.items.length > 0);
+    const tiers = filled.slice(0, TIER_CARD_ROWS).map((t) => ({
+        // Names are short and usually a letter; a long or exotic one is just left off
+        name: t.name.length <= 6 ? drawable(t.name) : null,
+        color: TIER_COLORS[t.color],
+        total: t.items.length,
+        covers: t.items.slice(0, TIER_CARD_COVERS).map((i) => i.game.coverImageId)
+    }));
+    return {
+        kind: 'tier',
+        host,
+        username: list.username,
+        avatarVersion,
+        title: drawable(list.title),
+        tiers,
+        ranked: filled.reduce((n, t) => n + t.items.length, 0),
+        covers: [...new Set(tiers.flatMap((t) => t.covers.flatMap((c) => c ?? [])))],
+        path: `/u/${list.username}/tiers/${list.id}`
+    };
+}
+
+export function getGridCardData(db: Db, username: string, id: number, host: string): GridCardData {
+    return gridCardData(getPublicGrid(db, username, id), avatarOfUsername(db, username), host);
+}
+
+export function getTierCardData(db: Db, username: string, id: number, host: string): TierCardData {
+    return tierCardData(getPublicTierList(db, username, id), avatarOfUsername(db, username), host);
 }
