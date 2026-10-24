@@ -275,10 +275,10 @@ function SignupCta() {
     const config = useAuthConfig();
     if (me.data !== null || config.data?.signupsEnabled !== true) return null;
     return (
-        <aside className="profile-hero__cta" aria-label="Create your own profile">
+        <aside className="profile-hero__cta" aria-label="Create your own GameQueue">
             <p>Track your own games.</p>
             <Link className="btn btn--primary" to="/register">
-                Create your profile
+                Create your GameQueue
             </Link>
         </aside>
     );
