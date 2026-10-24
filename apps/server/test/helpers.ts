@@ -2,17 +2,23 @@ import { createApp } from '../src/app.js';
 import { FailureLimiter } from '../src/auth/rate-limit.js';
 import { loadConfig, type Config } from '../src/config.js';
 import { openDb } from '../src/db/client.js';
+import type { CloudflareClient } from '../src/cloudflare/types.js';
 import type { ItadClient } from '../src/itad/types.js';
 import type { GameRecord, IgdbClient } from '../src/igdb/types.js';
 
-export function makeApp(overrides: Partial<Config> = {}, igdb?: IgdbClient, itad?: ItadClient) {
+export function makeApp(
+    overrides: Partial<Config> = {},
+    igdb?: IgdbClient,
+    itad?: ItadClient,
+    cloudflare?: CloudflareClient
+) {
     const db = openDb(':memory:');
     const config = { ...loadConfig({}), ...overrides };
     const limiters = {
         loginByAccount: new FailureLimiter(5, 60_000),
         loginByIp: new FailureLimiter(30, 60_000)
     };
-    const app = createApp({ db, config, limiters, igdb, itad });
+    const app = createApp({ db, config, limiters, igdb, itad, cloudflare });
     return { app, db, config };
 }
 

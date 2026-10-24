@@ -15,6 +15,8 @@ services:
             IGDB_CLIENT_SECRET: ${IGDB_CLIENT_SECRET:-}
             ITAD_API_KEY: ${ITAD_API_KEY:-}
             ITAD_COUNTRY: ${ITAD_COUNTRY:-US}
+            CLOUDFLARE_API_TOKEN: ${CLOUDFLARE_API_TOKEN:-}
+            CLOUDFLARE_ZONE_ID: ${CLOUDFLARE_ZONE_ID:-}
             RESEND_API_KEY: ${RESEND_API_KEY:-}
             NOTIFY_EMAIL: ${NOTIFY_EMAIL:-}
             NOTIFY_FROM: ${NOTIFY_FROM:-GameQueue <onboarding@resend.dev>}

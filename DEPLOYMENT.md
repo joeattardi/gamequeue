@@ -231,6 +231,23 @@ ITAD_COUNTRY=US
 
 Run `docker compose up -d` (a plain restart does not re-read `.env`). Without a key the app works as before and simply shows no prices. Prices are cached (6 hours on the wishlist, 30 minutes on game pages), well inside ITAD's limit of 1000 requests per 5 minutes. Treat the key like a password. Failures show up on `/admin/errors` as "Price refresh".
 
+### Site traffic (optional)
+
+The admin Traffic page (`/admin/traffic`, and a tile on `/admin`) shows requests, page views, visitors, data served and how much Cloudflare answered from its cache, for the last 30 days. It reads Cloudflare's analytics, which already see everything that comes through the tunnel, so nothing is logged on the Pi.
+
+1. In the Cloudflare dashboard open the `gamequeue.app` site. On the **Overview** page, copy the **Zone ID** (right-hand column).
+2. Open **My Profile > API Tokens > Create Token > Create Custom Token**. Give it **Zone > Analytics > Read** permission, limited to the `gamequeue.app` zone (the token can read nothing else), and create it. Copy the token; it is shown once.
+3. Add to `~/gamequeue/.env`:
+
+```
+CLOUDFLARE_API_TOKEN=your-token
+CLOUDFLARE_ZONE_ID=your-zone-id
+```
+
+4. Run `docker compose up -d` (a plain restart does not re-read `.env`).
+
+Without both values the page says it isn't set up and the app is otherwise unaffected. The server asks Cloudflare at most once every five minutes. Treat the token like a password. If the page shows an error, it quotes Cloudflare's message (a rejected token or a wrong zone ID are the usual causes). The numbers come from Cloudflare's edge, so crawlers and bots are included, days are UTC, and game covers (served by IGDB directly) aren't counted. This has not been checked against a live Cloudflare account yet; if the figures look wrong, compare them with the dashboard's own Analytics.
+
 ### 10. IGDB credentials
 
 1. Create a Twitch account with two-factor authentication enabled and open the Twitch developer console.

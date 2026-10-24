@@ -5469,3 +5469,18 @@ button.tier-tile__button {
     outline: 2px solid var(--surface);
     outline-offset: -4px;
 }
+
+/* Admin traffic: a plain table whose last column is a number like the rest */
+.table-scroll {
+    overflow-x: auto;
+}
+.admin-table--plain td:last-child {
+    width: auto;
+}
+.admin-table--plain th[scope='row'] {
+    font-weight: 500;
+    white-space: nowrap;
+}
+.admin-table--plain .num {
+    padding-left: 16px;
+}

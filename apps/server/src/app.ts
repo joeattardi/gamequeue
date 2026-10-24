@@ -27,6 +27,7 @@ import { wishlistRoutes } from './routes/wishlist.js';
 import { entryActionRoutes, playthroughRoutes } from './routes/playthroughs.js';
 import { HttpError } from './errors.js';
 import type { IgdbClient } from './igdb/types.js';
+import type { CloudflareClient } from './cloudflare/types.js';
 import type { ItadClient } from './itad/types.js';
 import type { AuthVars } from './auth/middleware.js';
 import { reportError } from './services/error-log.js';
@@ -40,6 +41,8 @@ export interface AppDeps {
     igdb?: IgdbClient;
     /** Undefined when ITAD_API_KEY isn't set; wishlist prices are then simply absent */
     itad?: ItadClient;
+    /** Undefined without CLOUDFLARE_API_TOKEN and CLOUDFLARE_ZONE_ID; the admin Traffic page then says it isn't set up */
+    cloudflare?: CloudflareClient;
     /** Owner alerts; defaults to Resend email when configured. Overridable for tests */
     notify?: Notify;
     /** Share-card renderer (holds the in-memory card cache); overridable for tests */

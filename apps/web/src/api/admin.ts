@@ -15,6 +15,7 @@ import type {
     PurgeSessionsResult,
     PurgeUnusedGamesResult,
     ServerInfoDto,
+    TrafficDto,
     VacuumResult
 } from '@gamequeue/shared';
 import { api } from './client';
@@ -94,6 +95,15 @@ export const useAdminIgdb = () =>
         queryKey: ['admin', 'igdb'],
         queryFn: () => api<IgdbStatusDto>('/admin/igdb'),
         refetchOnWindowFocus: true
+    });
+
+/** Site traffic from Cloudflare (the server caches it for a few minutes). */
+export const useAdminTraffic = () =>
+    useQuery({
+        queryKey: ['admin', 'traffic'],
+        queryFn: () => api<TrafficDto>('/admin/traffic'),
+        refetchOnWindowFocus: true,
+        retry: false
     });
 
 /** Live connectivity check; the counters change too, so they are refetched. */

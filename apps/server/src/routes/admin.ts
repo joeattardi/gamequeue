@@ -29,11 +29,12 @@ import { getAdminSettings, updateAdminSettings } from '../services/settings.js';
 import { readDatabaseStats } from '../services/database-stats.js';
 import { clearErrors, listErrors } from '../services/error-log.js';
 import { readBackupReport } from '../services/backup-status.js';
+import { getTraffic, trafficCache } from '../services/traffic.js';
 import type { AppDeps } from '../app.js';
 import { requireAdmin, requireAuth, type AuthVars } from '../auth/middleware.js';
 
 /** Admin-only API. Every route here is behind `requireAuth` + `requireAdmin`. */
-export function adminRoutes({ db, config, igdb }: AppDeps) {
+export function adminRoutes({ db, config, igdb, cloudflare }: AppDeps) {
     const r = new Hono<{ Variables: AuthVars }>();
     r.use('*', requireAuth(db, config), requireAdmin);
     // Cheap check that the caller may use the admin area at all
@@ -64,6 +65,10 @@ export function adminRoutes({ db, config, igdb }: AppDeps) {
         const input = validate(adminSettingsSchema, await body(c));
         return c.json(updateAdminSettings(db, config, input));
     });
+
+    // Site traffic from Cloudflare's edge (cached a few minutes)
+    const traffic = trafficCache();
+    r.get('/traffic', async (c) => c.json(await getTraffic(cloudflare, traffic)));
 
     // IGDB client counters and a live connectivity check
     r.get('/igdb', (c) => {

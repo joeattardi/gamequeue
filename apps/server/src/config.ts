@@ -13,6 +13,9 @@ export interface Config {
     itadApiKey?: string;
     /** Two-letter country whose shops and currency ITAD prices use */
     itadCountry: string;
+    /** Cloudflare API token (Analytics: Read) and the site's zone id; the admin Traffic page is off without both */
+    cloudflareApiToken?: string;
+    cloudflareZoneId?: string;
     resendApiKey?: string;
     notifyEmail?: string;
     notifyFrom: string;
@@ -43,6 +46,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
         igdbClientSecret: env.IGDB_CLIENT_SECRET || undefined,
         itadApiKey: env.ITAD_API_KEY || undefined,
         itadCountry: (env.ITAD_COUNTRY || 'US').toUpperCase(),
+        cloudflareApiToken: env.CLOUDFLARE_API_TOKEN || undefined,
+        cloudflareZoneId: env.CLOUDFLARE_ZONE_ID || undefined,
         // Owner alerts (new signups) by email through Resend; off unless both key and address are set
         resendApiKey: env.RESEND_API_KEY || undefined,
         notifyEmail: env.NOTIFY_EMAIL || undefined,

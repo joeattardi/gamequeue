@@ -1,5 +1,6 @@
 import {
     backupHealth,
+    trafficTotals,
     ERROR_KINDS,
     type BackupHealth,
     type BackupReportDto,
@@ -8,6 +9,7 @@ import {
 import {
     CircleAlert,
     CircleCheck,
+    Activity,
     Bug,
     Database,
     DatabaseBackup,
@@ -24,6 +26,7 @@ import {
     useAdminErrors,
     useAdminIgdb,
     useAdminServer,
+    useAdminTraffic,
     useAdminSettings,
     useAdminUsers,
     useUpdateAdminSettings
@@ -222,6 +225,37 @@ function IgdbTile() {
     );
 }
 
+function TrafficTile() {
+    const q = useAdminTraffic();
+    const d = q.data;
+    const week = d?.enabled ? trafficTotals(d.days, 7) : undefined;
+    return (
+        <AdminTile
+            id="traffic-heading"
+            icon={<Activity aria-hidden="true" />}
+            title="Traffic"
+            state={state(q)}
+            stats={
+                !d
+                    ? []
+                    : !week
+                      ? [{ label: 'Status', value: 'Not set up' }]
+                      : [
+                            { label: 'Requests, 7 days', value: week.requests.toLocaleString() },
+                            { label: 'Data served, 7 days', value: formatBytes(week.bytes) },
+                            {
+                                label: 'Visitors today',
+                                value: (d.days.at(-1)?.uniques ?? 0).toLocaleString(),
+                                title: 'Unique visitors so far today (UTC)'
+                            }
+                        ]
+            }
+            to="/admin/traffic"
+            linkLabel="Traffic details"
+        />
+    );
+}
+
 function ErrorsTile() {
     const q = useAdminErrors(undefined, 1);
     const d = q.data;
@@ -348,6 +382,7 @@ export function AdminPage() {
                 <UsersTile />
                 <DatabaseTile />
                 <IgdbTile />
+                <TrafficTile />
                 <ErrorsTile />
                 <ServerTile />
                 <SettingsTile />

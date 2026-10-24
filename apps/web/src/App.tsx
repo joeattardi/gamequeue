@@ -7,6 +7,7 @@ import { AdminErrorsPage } from './routes/AdminErrorsPage';
 import { AdminIgdbPage } from './routes/AdminIgdbPage';
 import { AdminServerPage } from './routes/AdminServerPage';
 import { AdminDatabasePage } from './routes/AdminDatabasePage';
+import { AdminTrafficPage } from './routes/AdminTrafficPage';
 import { AdminUsersPage } from './routes/AdminUsersPage';
 import { AdminUserPage } from './routes/AdminUserPage';
 import { AuthPage } from './routes/AuthPage';
@@ -126,6 +127,7 @@ export function App() {
                         <Route path="admin/errors" element={<AdminErrorsPage />} />
                         <Route path="admin/igdb" element={<AdminIgdbPage />} />
                         <Route path="admin/server" element={<AdminServerPage />} />
+                        <Route path="admin/traffic" element={<AdminTrafficPage />} />
                         <Route path="admin/users" element={<AdminUsersPage />} />
                         <Route path="admin/users/new" element={<AdminUserPage />} />
                         <Route path="admin/users/:id" element={<AdminUserPage />} />
