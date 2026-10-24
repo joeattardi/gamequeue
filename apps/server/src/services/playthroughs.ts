@@ -175,7 +175,12 @@ export function closePlaythrough(
     db.transaction((tx) => {
         const t = tx as unknown as Db;
         t.update(playthroughs)
-            .set({ outcome: to as 'finished' | 'abandoned', endedOn, rating: input.rating ?? null })
+            .set({
+                outcome: to as 'finished' | 'abandoned',
+                endedOn,
+                rating: input.rating ?? null,
+                playtimeMinutes: input.playtimeMinutes ?? null
+            })
             .where(eq(playthroughs.id, open.id))
             .run();
         t.update(entries)
@@ -209,7 +214,8 @@ export function logPlaythrough(
                 startedOn: input.startedOn ?? null,
                 endedOn: input.endedOn ?? null,
                 outcome: input.outcome,
-                rating: input.rating ?? null
+                rating: input.rating ?? null,
+                playtimeMinutes: input.playtimeMinutes ?? null
             })
             .run();
         if (input.outcome === 'finished') prefillEntryRating(t, entryId, input.rating);
@@ -254,7 +260,8 @@ export function patchPlaythrough(
                 endedOn: next.endedOn,
                 outcome: next.outcome,
                 platformId: next.platformId,
-                rating: next.rating
+                rating: next.rating,
+                playtimeMinutes: next.playtimeMinutes
             })
             .where(eq(playthroughs.id, id))
             .run();

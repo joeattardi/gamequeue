@@ -308,20 +308,17 @@ describe('listing, filters and sorting', () => {
         expect(names(await list('?status=playing'))).toEqual(['Celeste']);
     });
 
-    it('uses the manual time-to-beat override for sorting and display', async () => {
-        const { list, post, add } = await setup();
-        const a = await add(1); // 1320 min
+    it('sorts by IGDB time to beat', async () => {
+        const { list, add } = await setup();
+        await add(1); // 1320 min
         await add(2); // 480 min
-        expect((await post(`/entries/${a.id}`, { ttbOverrideMinutes: 60 }, 'PATCH')).status).toBe(
-            200
-        );
         const rows = (await list('?sort=ttb')) as unknown as {
             game: { name: string };
             ttbMinutes: number;
         }[];
         expect(rows.map((r) => [r.game.name, r.ttbMinutes])).toEqual([
-            ['Hades', 60],
-            ['Celeste', 480]
+            ['Celeste', 480],
+            ['Hades', 1320]
         ]);
     });
 
@@ -358,19 +355,10 @@ describe('editing and deleting', () => {
     it('validates patches', async () => {
         const { add, post } = await setup();
         const e = await add(1);
-        for (const body of [
-            { rating: 6 },
-            { rating: 0 },
-            { platformIds: [] },
-            {},
-            { ttbOverrideMinutes: -5 }
-        ]) {
+        for (const body of [{ rating: 6 }, { rating: 0 }, { platformIds: [] }, {}]) {
             expect((await post(`/entries/${e.id}`, body, 'PATCH')).status).toBe(400);
         }
-        expect(
-            (await post(`/entries/${e.id}`, { rating: null, ttbOverrideMinutes: null }, 'PATCH'))
-                .status
-        ).toBe(200);
+        expect((await post(`/entries/${e.id}`, { rating: null }, 'PATCH')).status).toBe(200);
     });
 
     it('deletes entries and cleans up now-unused tags', async () => {

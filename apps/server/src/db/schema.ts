@@ -289,7 +289,6 @@ export const entries = sqliteTable(
         rating: integer('rating'), // 1-5 stars
         favorite: integer('favorite', { mode: 'boolean' }).notNull().default(false),
         notes: text('notes').notNull().default(''),
-        ttbOverrideMinutes: integer('ttb_override_minutes'),
         addedAt: integer('added_at').notNull().default(now),
         updatedAt: integer('updated_at').notNull().default(now)
     },
@@ -353,7 +352,9 @@ export const playthroughs = sqliteTable(
         endedOn: text('ended_on'),
         // null while the playthrough is still open
         outcome: text('outcome', { enum: ['finished', 'abandoned'] }),
-        rating: integer('rating') // 1-5 stars
+        rating: integer('rating'), // 1-5 stars
+        // Total time played, entered by the user (usually when finishing); null = not recorded
+        playtimeMinutes: integer('playtime_minutes')
     },
     (t) => [
         index('playthroughs_entry_idx').on(t.entryId),

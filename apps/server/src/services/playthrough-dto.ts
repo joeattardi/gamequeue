@@ -14,6 +14,7 @@ export function toDto(
         startedOn: p.startedOn,
         endedOn: p.endedOn,
         outcome: p.outcome,
-        rating: p.rating
+        rating: p.rating,
+        playtimeMinutes: p.playtimeMinutes
     };
 }

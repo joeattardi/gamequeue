@@ -325,7 +325,6 @@ function mergeGame(
                 rating: g.rating,
                 favorite: g.favorite ?? false,
                 notes: g.notes,
-                ttbOverrideMinutes: g.ttbOverrideMinutes,
                 addedAt: g.addedAt || now,
                 updatedAt: now
             })
@@ -354,14 +353,6 @@ function mergeGame(
             if (g.notes !== '') set.notes = g.notes;
         } else if (g.notes !== '' && g.notes !== existing.notes) {
             note(`${name}: kept your notes (they differ from the file's)`);
-        }
-        if (existing.ttbOverrideMinutes === null) {
-            if (g.ttbOverrideMinutes !== null) set.ttbOverrideMinutes = g.ttbOverrideMinutes;
-        } else if (
-            g.ttbOverrideMinutes !== null &&
-            g.ttbOverrideMinutes !== existing.ttbOverrideMinutes
-        ) {
-            note(`${name}: kept your time-to-beat estimate (the file has a different one)`);
         }
         if (Object.keys(set).length > 0) {
             db.update(entries)
@@ -426,7 +417,17 @@ function mergeGame(
             endedOn: p.endedOn,
             outcome: p.outcome
         };
-        if (keys.has(keyOf(row))) {
+        const duplicate = current.find((c) => keyOf(c) === keyOf(row));
+        if (duplicate || keys.has(keyOf(row))) {
+            // Same playthrough: only fill in a play time you hadn't recorded
+            if (duplicate && duplicate.playtimeMinutes === null && p.playtimeMinutes) {
+                db.update(playthroughs)
+                    .set({ playtimeMinutes: p.playtimeMinutes })
+                    .where(eq(playthroughs.id, duplicate.id))
+                    .run();
+                duplicate.playtimeMinutes = p.playtimeMinutes;
+                changed = true;
+            }
             report.playthroughs.duplicates++;
             continue;
         }
@@ -436,7 +437,13 @@ function mergeGame(
             continue;
         }
         db.insert(playthroughs)
-            .values({ userId, entryId, ...row, rating: p.rating })
+            .values({
+                userId,
+                entryId,
+                ...row,
+                rating: p.rating,
+                playtimeMinutes: p.playtimeMinutes ?? null
+            })
             .run();
         keys.add(keyOf(row));
         if (p.outcome === null) hasOpen = true;

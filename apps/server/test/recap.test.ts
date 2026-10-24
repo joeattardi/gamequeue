@@ -7,9 +7,14 @@ async function setup() {
     const celeste = await s.add(2, [PC.id]);
     await s.add(3, [PC.id]);
     const log = (id: number, body: object) => s.call(`/entries/${id}/playthroughs`, 'POST', body);
-    await log(hades.id, { outcome: 'finished', startedOn: '2024-02-01', endedOn: '2024-05-05' });
+    await log(hades.id, {
+        outcome: 'finished',
+        startedOn: '2024-02-01',
+        endedOn: '2024-05-05',
+        playtimeMinutes: 1200
+    });
     await log(celeste.id, { outcome: 'finished', endedOn: '2023-03-03' });
-    await log(celeste.id, { outcome: 'finished', endedOn: '2024-06-06' });
+    await log(celeste.id, { outcome: 'finished', endedOn: '2024-06-06', playtimeMinutes: 480 });
     await s.call(`/entries/${hades.id}`, 'PATCH', { rating: 5, notes: 'secret note' });
     return { ...s, hades, celeste };
 }
@@ -25,7 +30,7 @@ describe('recap', () => {
             previousFinishedGames: 1,
             replays: 1,
             // Hades 20h + Celeste 8h
-            estimatedMinutes: 1680,
+            playMinutes: 1680,
             busiestMonth: 5,
             longestHaul: { days: 94 }
         });

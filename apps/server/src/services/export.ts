@@ -172,7 +172,6 @@ export function buildExport(db: Db, userId: number, now = new Date()): ExportFil
         rating: e.rating,
         favorite: e.favorite,
         notes: e.notes,
-        ttbOverrideMinutes: e.ttbOverrideMinutes,
         addedAt: e.addedAt,
         platforms: (owned.get(e.id) ?? []).map(ref),
         tags: entryTagNames.get(e.id) ?? [],
@@ -181,7 +180,8 @@ export function buildExport(db: Db, userId: number, now = new Date()): ExportFil
             startedOn: p.startedOn,
             endedOn: p.endedOn,
             outcome: p.outcome,
-            rating: p.rating
+            rating: p.rating,
+            playtimeMinutes: p.playtimeMinutes
         }))
     }));
 

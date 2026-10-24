@@ -8,7 +8,8 @@ async function setup() {
     await s.add(3, [PC.id]);
     await s.call(`/entries/${hades.id}/playthroughs`, 'POST', {
         outcome: 'finished',
-        endedOn: '2024-05-05'
+        endedOn: '2024-05-05',
+        playtimeMinutes: 1200
     });
     await s.call(`/entries/${hades.id}`, 'PATCH', { rating: 5, notes: 'secret note' });
     await s.call(`/entries/${celeste.id}/playthroughs`, 'POST', { outcome: 'abandoned' });
@@ -28,7 +29,7 @@ describe('stats', () => {
         });
         expect(stats.overview.byStatus).toMatchObject({ finished: 1, abandoned: 1, unplayed: 1 });
         expect(stats.finished.years).toEqual([{ year: '2024', count: 1 }]);
-        expect(stats.playtime).toMatchObject({ finishes: 1, estimatedMinutes: 1200 });
+        expect(stats.playtime).toMatchObject({ finishes: 1, playMinutes: 1200 });
         expect(stats.breakdowns.platforms[0]).toMatchObject({
             name: PC.name,
             total: 3,

@@ -56,11 +56,11 @@ describe('computeStats', () => {
         const s = computeStats(
             [a, b],
             [
-                { entryId: a.id, endedOn: '2025-03-01' },
-                { entryId: a.id, endedOn: '2025-03-20' },
-                { entryId: a.id, endedOn: '2026-10-02' },
-                { entryId: b.id, endedOn: '2026-10-05' },
-                { entryId: b.id, endedOn: null }
+                { entryId: a.id, endedOn: '2025-03-01', playtimeMinutes: null },
+                { entryId: a.id, endedOn: '2025-03-20', playtimeMinutes: null },
+                { entryId: a.id, endedOn: '2026-10-02', playtimeMinutes: null },
+                { entryId: b.id, endedOn: '2026-10-05', playtimeMinutes: null },
+                { entryId: b.id, endedOn: null, playtimeMinutes: null }
             ],
             NOW
         );
@@ -75,20 +75,20 @@ describe('computeStats', () => {
         expect(s.finished.months.reduce((n, m) => n + m.count, 0)).toBe(2);
     });
 
-    it('estimates play time over finished playthroughs, replays included', () => {
-        const a = entry({ status: 'finished', ttbMinutes: 100 });
-        const b = entry({ status: 'finished', ttbMinutes: null });
+    it('adds up the entered play time over finished playthroughs, replays included', () => {
+        const a = entry({ status: 'finished' });
+        const b = entry({ status: 'finished' });
         const s = computeStats(
             [a, b],
             [
-                { entryId: a.id, endedOn: '2024-01-01' },
-                { entryId: a.id, endedOn: '2025-01-01' },
-                { entryId: b.id, endedOn: null },
-                { entryId: 999, endedOn: null }
+                { entryId: a.id, endedOn: '2024-01-01', playtimeMinutes: 100 },
+                { entryId: a.id, endedOn: '2025-01-01', playtimeMinutes: 90 },
+                { entryId: b.id, endedOn: null, playtimeMinutes: null },
+                { entryId: 999, endedOn: null, playtimeMinutes: 500 }
             ],
             NOW
         );
-        expect(s.playtime).toEqual({ estimatedMinutes: 200, finishes: 3, unknownCount: 1 });
+        expect(s.playtime).toEqual({ playMinutes: 190, finishes: 3, unrecordedCount: 1 });
     });
 
     it('breaks the collection down by platform, genre and tag, biggest first', () => {

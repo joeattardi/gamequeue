@@ -16,7 +16,15 @@ import {
 import { ApiRequestError } from '../api/client';
 import { useConfirm } from './Confirm';
 import { StarRating } from './StarRating';
-import { daysBetween, formatDate, platformLabel, todayLocal } from '../lib';
+import {
+    daysBetween,
+    formatDate,
+    formatMinutes,
+    hoursToMinutes,
+    minutesToHours,
+    platformLabel,
+    todayLocal
+} from '../lib';
 import { MetaLine } from './MetaLine';
 import { PlatformTags } from './PlatformIcon';
 
@@ -43,6 +51,23 @@ function PlatformSelect({
                     </option>
                 ))}
             </select>
+        </label>
+    );
+}
+
+function PlaytimeField({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+    return (
+        <label className="field">
+            <span>Total play time (hours)</span>
+            <input
+                type="number"
+                inputMode="decimal"
+                min="0.1"
+                step="any"
+                value={value}
+                onChange={(e) => onChange(e.target.value)}
+                placeholder="optional"
+            />
         </label>
     );
 }
@@ -238,14 +263,19 @@ export function CloseForm({
 }: {
     mode: 'finish' | 'abandon';
     pending: boolean;
-    onSubmit: (body: { date: string; rating: number | null }) => void;
+    onSubmit: (body: {
+        date: string;
+        rating: number | null;
+        playtimeMinutes: number | null;
+    }) => void;
     onCancel: () => void;
 }) {
     const [date, setDate] = useState(todayLocal());
     const [rating, setRating] = useState<number | null>(null);
+    const [hours, setHours] = useState('');
     function submit(e: FormEvent) {
         e.preventDefault();
-        onSubmit({ date, rating });
+        onSubmit({ date, rating, playtimeMinutes: hoursToMinutes(hours) });
     }
     return (
         <form className="inline-form subpanel" onSubmit={submit}>
@@ -259,6 +289,7 @@ export function CloseForm({
                     required
                 />
             </label>
+            {mode === 'finish' && <PlaytimeField value={hours} onChange={setHours} />}
             <StarRating value={rating} onChange={setRating} label="Rating for this playthrough" />
             <button className="btn btn--primary" type="submit" disabled={pending}>
                 Confirm
@@ -320,6 +351,8 @@ function HistoryRow({ p, entry }: { p: PlaythroughDto; entry: EntryDto }) {
                         parts={[
                             p.platform && <PlatformTags key="p" platforms={[p.platform]} />,
                             days !== null && `${days} ${days === 1 ? 'day' : 'days'}`,
+                            p.playtimeMinutes !== null &&
+                                `${formatMinutes(p.playtimeMinutes)} played`,
                             p.rating !== null && `★ ${p.rating}/${RATING_MAX}`
                         ]}
                     />
@@ -363,6 +396,7 @@ function EditForm({
     const [endedOn, setEndedOn] = useState(p.endedOn ?? '');
     const [outcome, setOutcome] = useState(p.outcome ?? '');
     const [rating, setRating] = useState<number | null>(p.rating);
+    const [hours, setHours] = useState(minutesToHours(p.playtimeMinutes));
     const [platformId, setPlatformId] = useState(p.platform ? String(p.platform.id) : '');
     const [error, setError] = useState<string>();
     const open = p.outcome === null;
@@ -380,6 +414,7 @@ function EditForm({
                 patch: {
                     startedOn: startedOn || null,
                     rating,
+                    playtimeMinutes: hoursToMinutes(hours),
                     ...(platformId ? { platformId: Number(platformId) } : {}),
                     ...(open
                         ? {}
@@ -425,6 +460,7 @@ function EditForm({
                     </label>
                 )}
                 <PlatformSelect platforms={platforms} value={platformId} onChange={setPlatformId} />
+                <PlaytimeField value={hours} onChange={setHours} />
                 <StarRating value={rating} onChange={setRating} />
             </div>
             <p className="form-error" role="alert">
@@ -448,6 +484,7 @@ function LogForm({ entry }: { entry: EntryDto }): ReactNode {
     const [startedOn, setStartedOn] = useState('');
     const [endedOn, setEndedOn] = useState('');
     const [rating, setRating] = useState<number | null>(null);
+    const [hours, setHours] = useState('');
     const [platformId, setPlatformId] = useState(
         entry.platforms.length === 1 ? String(entry.platforms[0]!.id) : ''
     );
@@ -462,6 +499,7 @@ function LogForm({ entry }: { entry: EntryDto }): ReactNode {
                 startedOn: startedOn || null,
                 endedOn: endedOn || null,
                 rating,
+                playtimeMinutes: hoursToMinutes(hours),
                 ...(platformId ? { platformId: Number(platformId) } : {})
             },
             {
@@ -469,6 +507,7 @@ function LogForm({ entry }: { entry: EntryDto }): ReactNode {
                     setStartedOn('');
                     setEndedOn('');
                     setRating(null);
+                    setHours('');
                 },
                 onError: (e) => setError(errorText(e))
             }
@@ -511,6 +550,7 @@ function LogForm({ entry }: { entry: EntryDto }): ReactNode {
                         onChange={(e) => setEndedOn(e.target.value)}
                     />
                 </label>
+                <PlaytimeField value={hours} onChange={setHours} />
                 <StarRating value={rating} onChange={setRating} />
             </div>
             <p className="form-error" role="alert">

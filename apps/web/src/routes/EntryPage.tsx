@@ -108,10 +108,6 @@ function EntryDetail({ entry }: { entry: EntryDto }) {
                         ) : (
                             <p className="muted">IGDB has no time-to-beat data for this game.</p>
                         )}
-                        <TtbOverride
-                            entry={entry}
-                            onSave={(m) => save({ ttbOverrideMinutes: m })}
-                        />
                     </section>
 
                     <SimilarGames igdbId={game.id} />
@@ -150,43 +146,6 @@ function EntryDetail({ entry }: { entry: EntryDto }) {
                 </div>
             </div>
         </article>
-    );
-}
-
-function TtbOverride({
-    entry,
-    onSave
-}: {
-    entry: EntryDto;
-    onSave: (minutes: number | null) => void;
-}) {
-    const [hours, setHours] = useState(
-        entry.ttbOverrideMinutes ? String(entry.ttbOverrideMinutes / 60) : ''
-    );
-    function submit(e: FormEvent) {
-        e.preventDefault();
-        const h = Number(hours);
-        onSave(hours.trim() === '' ? null : Math.max(1, Math.round(h * 60)));
-    }
-    return (
-        <form className="inline-form" onSubmit={submit}>
-            <label className="field">
-                <span>My estimate (hours)</span>
-                <input
-                    inputMode="decimal"
-                    value={hours}
-                    onChange={(e) => setHours(e.target.value)}
-                    placeholder={
-                        entry.game.ttb?.normally
-                            ? String(Math.round(entry.game.ttb.normally / 6) / 10)
-                            : 'e.g. 12'
-                    }
-                />
-            </label>
-            <button className="btn" type="submit">
-                Save
-            </button>
-        </form>
     );
 }
 

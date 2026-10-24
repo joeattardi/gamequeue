@@ -53,7 +53,7 @@ const FEATURES = [
     {
         icon: BarChart3,
         title: 'Stats',
-        text: 'Finished per year, favourite platforms and genres, your top rated games and estimated play time.'
+        text: 'Finished per year, favourite platforms and genres, your top rated games and total play time.'
     },
     {
         icon: CalendarDays,

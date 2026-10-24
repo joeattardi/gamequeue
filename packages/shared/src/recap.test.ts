@@ -18,8 +18,20 @@ const entry = (over: Record<string, unknown> = {}, game: Record<string, unknown>
         game: { name: 'G', genres: [], platforms: [], ...game }
     }) as unknown as EntryDto;
 
-const fin = (entryId: number, endedOn: string | null, startedOn: string | null = null) =>
-    ({ entryId, platformId: null, startedOn, endedOn, outcome: 'finished' }) as RecapPlaythrough;
+const fin = (
+    entryId: number,
+    endedOn: string | null,
+    startedOn: string | null = null,
+    playtimeMinutes: number | null = null
+) =>
+    ({
+        entryId,
+        platformId: null,
+        startedOn,
+        endedOn,
+        outcome: 'finished',
+        playtimeMinutes
+    }) as RecapPlaythrough;
 
 const NOW = new Date('2026-10-19T12:00:00Z');
 
@@ -40,15 +52,16 @@ describe('computeRecap', () => {
             [a, b, c],
             [
                 fin(a.id, '2025-01-10'),
-                fin(a.id, '2025-03-01'),
-                fin(b.id, '2025-03-20'),
+                fin(a.id, '2025-03-01', null, 120),
+                fin(b.id, '2025-03-20', null, 600),
                 fin(c.id, null)
             ],
             2025,
             NOW
         );
         expect(r.finishedGames).toBe(2);
-        expect(r.estimatedMinutes).toBe(720);
+        expect(r.playMinutes).toBe(720);
+        expect(r.unrecordedCount).toBe(1);
         expect(r.months.slice(0, 3)).toEqual([1, 0, 2]);
         expect(r.busiestMonth).toBe(3);
         expect(r.longest?.entry.game.name).toBe('B');

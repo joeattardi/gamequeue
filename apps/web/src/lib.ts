@@ -26,6 +26,13 @@ export function formatMinutes(min: number | null | undefined): string {
     return m === 0 || h >= 20 ? `${Math.round(min / 60)}h` : `${h}h ${m}m`;
 }
 
+/** Hours as typed in a play time field ("12.5") to minutes; blank means not recorded. */
+export const hoursToMinutes = (hours: string): number | null =>
+    hours.trim() === '' ? null : Math.max(1, Math.round(Number(hours) * 60));
+
+export const minutesToHours = (minutes: number | null): string =>
+    minutes === null ? '' : String(Math.round(minutes / 6) / 10);
+
 /** "812 B", "4.2 KB", "36.5 MB", "515 GB": the next unit up at 1024, one decimal under 10, none above. */
 export function formatBytes(n: number): string {
     const units = ['B', 'KB', 'MB', 'GB', 'TB'];

@@ -503,7 +503,7 @@ flowchart LR
     DTO --> PUB["Public page<br/>/u/name/stats, /u/name/recap"]
 ```
 
-- **Stats**: totals, games finished per year and over the last 12 months, top platforms/genres/tags, rating spread, top rated, and an estimated play time (time to beat added up over finished playthroughs; nothing is actually timed).
+- **Stats**: totals, games finished per year and over the last 12 months, top platforms/genres/tags, rating spread, top rated, and total play time (the hours you enter when finishing a game, added up; nothing is actually timed).
 - **Year in review** ("Wrapped" for games): what you finished, started, added and abandoned in a year, your busiest month, longest and shortest games, and a playful archetype like "marathoner" or "collector".
 
 The split between loading (server) and arithmetic (shared, pure) is a pattern you'll see repeatedly. It makes the math easy to test without a database. The payload never contains notes, so the same response can be shown publicly.

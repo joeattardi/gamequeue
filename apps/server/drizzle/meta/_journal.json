@@ -176,6 +176,13 @@
       "when": 1792843119513,
       "tag": "0024_little_preak",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "6",
+      "when": 1792856593413,
+      "tag": "0025_dry_killer_shrike",
+      "breakpoints": true
     }
   ]
 }

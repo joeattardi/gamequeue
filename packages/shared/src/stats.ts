@@ -40,17 +40,19 @@ export interface StatsDto {
         top: PublicEntryDto[];
     };
     playtime: {
-        /** Time to beat summed over finished playthroughs (a replay counts again). An estimate, not tracked time. */
-        estimatedMinutes: number;
+        /** Play time the user entered, summed over finished playthroughs (a replay counts again) */
+        playMinutes: number;
+        /** Finished playthroughs */
         finishes: number;
-        /** Finished playthroughs of games with no known time to beat */
-        unknownCount: number;
+        /** Finished playthroughs with no play time entered (not in `playMinutes`) */
+        unrecordedCount: number;
     };
 }
 
 export interface Finish {
     entryId: number;
     endedOn: string | null;
+    playtimeMinutes: number | null;
 }
 
 export const STATS_TOP_N = 10;
@@ -123,16 +125,15 @@ export function computeStats(entries: EntryDto[], finishes: Finish[], now = new 
         return { month, count: perMonth.get(month)?.size ?? 0 };
     });
 
-    const ttbOf = new Map(entries.map((e) => [e.id, e.ttbMinutes]));
-    let estimatedMinutes = 0;
-    let unknownCount = 0;
+    const known = new Set(entries.map((e) => e.id));
+    let playMinutes = 0;
+    let unrecordedCount = 0;
     let counted = 0;
     for (const f of finishes) {
-        if (!ttbOf.has(f.entryId)) continue;
+        if (!known.has(f.entryId)) continue;
         counted++;
-        const ttb = ttbOf.get(f.entryId)!;
-        if (ttb === null) unknownCount++;
-        else estimatedMinutes += ttb;
+        if (f.playtimeMinutes === null) unrecordedCount++;
+        else playMinutes += f.playtimeMinutes;
     }
 
     return {
@@ -174,6 +175,6 @@ export function computeStats(entries: EntryDto[], finishes: Finish[], now = new 
                 .slice(0, TOP_RATED)
                 .map(toPublicEntry)
         },
-        playtime: { estimatedMinutes, finishes: counted, unknownCount }
+        playtime: { playMinutes, finishes: counted, unrecordedCount }
     };
 }

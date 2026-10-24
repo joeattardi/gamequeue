@@ -20,7 +20,8 @@ export function getRecap(db: Db, userId: number, year?: number, now = new Date()
             platformId: playthroughs.platformId,
             startedOn: playthroughs.startedOn,
             endedOn: playthroughs.endedOn,
-            outcome: playthroughs.outcome
+            outcome: playthroughs.outcome,
+            playtimeMinutes: playthroughs.playtimeMinutes
         })
         .from(playthroughs)
         .where(eq(playthroughs.userId, userId))

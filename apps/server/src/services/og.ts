@@ -74,7 +74,7 @@ export function recapCardData(
                     label: plural(recap.addedCount, 'game added', 'games added')
                 };
     const showDelta = finished > 0 || recap.previousFinishedGames > 0;
-    const minutes = recap.estimatedMinutes;
+    const minutes = recap.playMinutes;
     return {
         host,
         username: user.username,

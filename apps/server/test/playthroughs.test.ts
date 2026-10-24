@@ -148,6 +148,38 @@ describe('start, pause, resume, finish', () => {
     });
 });
 
+describe('play time', () => {
+    it('is optional on finish, can be logged, edited and cleared, and is validated', async () => {
+        const { add, act, call, history } = await setup();
+        const a = await add(1);
+        await act(a.id, 'start', { date: '2025-03-01' });
+        await act(a.id, 'finish', { date: '2025-03-20', playtimeMinutes: 750 });
+        expect(await history(a.id)).toMatchObject([{ outcome: 'finished', playtimeMinutes: 750 }]);
+
+        const b = await add(2);
+        await act(b.id, 'start');
+        await act(b.id, 'finish');
+        expect(await history(b.id)).toMatchObject([{ playtimeMinutes: null }]);
+
+        const logged = await act(b.id, 'playthroughs', {
+            outcome: 'finished',
+            playtimeMinutes: 90
+        });
+        expect(logged.status).toBe(201);
+        const [first] = await history(a.id);
+        const patched = await call(`/playthroughs/${first.id}`, 'PATCH', { playtimeMinutes: 800 });
+        expect(patched.status).toBe(200);
+        expect(await history(a.id)).toMatchObject([{ playtimeMinutes: 800 }]);
+        await call(`/playthroughs/${first.id}`, 'PATCH', { playtimeMinutes: null });
+        expect(await history(a.id)).toMatchObject([{ playtimeMinutes: null }]);
+
+        const c = await add(3);
+        await act(c.id, 'start');
+        for (const playtimeMinutes of [0, -5, 1.5, 9_999_999])
+            expect((await act(c.id, 'finish', { playtimeMinutes })).status).toBe(400);
+    });
+});
+
 describe('rating pre-fill', () => {
     it("fills an empty entry rating but never overwrites one you've set", async () => {
         const { add, act, call } = await setup();

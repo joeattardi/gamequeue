@@ -12,10 +12,14 @@ export interface PlaythroughDto {
     /** null while the playthrough is open */
     outcome: 'finished' | 'abandoned' | null;
     rating: number | null;
+    /** Total time played, in minutes; null when not recorded */
+    playtimeMinutes: number | null;
 }
 
 export const isoDateSchema = z.string().refine(isValidIsoDate, 'Use a valid date (YYYY-MM-DD)');
 const platformIdSchema = z.number().int().positive();
+export const MAX_PLAYTIME_MINUTES = 600_000;
+export const playtimeSchema = z.number().int().min(1).max(MAX_PLAYTIME_MINUTES);
 
 export const startSchema = z.object({
     platformId: platformIdSchema.optional(),
@@ -26,7 +30,8 @@ export const startSchema = z.object({
 
 export const closeSchema = z.object({
     date: isoDateSchema.optional(),
-    rating: ratingSchema.nullable().optional()
+    rating: ratingSchema.nullable().optional(),
+    playtimeMinutes: playtimeSchema.nullable().optional()
 });
 
 export const logPlaythroughSchema = z.object({
@@ -34,7 +39,8 @@ export const logPlaythroughSchema = z.object({
     platformId: platformIdSchema.optional(),
     startedOn: isoDateSchema.nullable().optional(),
     endedOn: isoDateSchema.nullable().optional(),
-    rating: ratingSchema.nullable().optional()
+    rating: ratingSchema.nullable().optional(),
+    playtimeMinutes: playtimeSchema.nullable().optional()
 });
 
 export const patchPlaythroughSchema = z
@@ -43,7 +49,8 @@ export const patchPlaythroughSchema = z
         platformId: platformIdSchema,
         startedOn: isoDateSchema.nullable(),
         endedOn: isoDateSchema.nullable(),
-        rating: ratingSchema.nullable()
+        rating: ratingSchema.nullable(),
+        playtimeMinutes: playtimeSchema.nullable()
     })
     .partial()
     .refine((v) => Object.keys(v).length > 0, 'Nothing to update');

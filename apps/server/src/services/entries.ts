@@ -174,8 +174,6 @@ export function patchEntry(db: Db, userId: number, entryId: number, patch: Patch
         if (patch.favorite !== undefined) set.favorite = patch.favorite;
         if (patch.rating !== undefined) set.rating = patch.rating;
         if (patch.notes !== undefined) set.notes = patch.notes;
-        if (patch.ttbOverrideMinutes !== undefined)
-            set.ttbOverrideMinutes = patch.ttbOverrideMinutes;
         if (Object.keys(set).length > 0)
             t.update(entries).set(set).where(eq(entries.id, entryId)).run();
         if (platformIds) {
@@ -208,10 +206,6 @@ export function deleteEntry(db: Db, userId: number, entryId: number): boolean {
 // Reading
 // ---------------------------------------------------------------------------
 
-const effectiveTtbSeconds = sql<
-    number | null
->`coalesce(${entries.ttbOverrideMinutes} * 60, ${games.ttbNormallySeconds})`;
-
 function buildOrder(q: EntryQuery): SQL[] {
     const defaultDir = {
         title: 'asc',
@@ -227,7 +221,7 @@ function buildOrder(q: EntryQuery): SQL[] {
         added: entries.addedAt,
         release: games.releaseDate,
         rating: entries.rating,
-        ttb: effectiveTtbSeconds
+        ttb: games.ttbNormallySeconds
     };
     const k = key[q.sort];
     // Missing values always sort last, whichever direction
@@ -489,8 +483,7 @@ export function hydrate(db: Db, userId: number, ids: number[]): EntryDto[] {
                 rating: e.rating,
                 favorite: e.favorite,
                 notes: e.notes,
-                ttbOverrideMinutes: e.ttbOverrideMinutes,
-                ttbMinutes: e.ttbOverrideMinutes ?? minutes(g.ttbNormallySeconds),
+                ttbMinutes: minutes(g.ttbNormallySeconds),
                 addedAt: e.addedAt,
                 updatedAt: e.updatedAt,
                 slotId: slotOf.get(e.id) ?? null,

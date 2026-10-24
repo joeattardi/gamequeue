@@ -33,8 +33,7 @@ async function richCollection(s: Api) {
     // Outer Wilds: unplayed but personalised
     await call(`/entries/${wilds.id}`, 'PATCH', {
         rating: 4,
-        notes: 'Spoiler-free please',
-        ttbOverrideMinutes: 90
+        notes: 'Spoiler-free please'
     });
 
     await call('/slots', 'POST', { name: 'Couch co-op' });

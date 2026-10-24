@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { ENTRY_STATUSES, ratingSchema, tagsSchema } from './collection.js';
-import { isoDateSchema } from './playthroughs.js';
+import { isoDateSchema, playtimeSchema } from './playthroughs.js';
 import { releasePrecisionSchema } from './release.js';
 import { MAX_SLOTS } from './slots.js';
 import { listDescription } from './lists.js';
@@ -69,7 +69,9 @@ export const exportPlaythroughSchema = z
         endedOn: isoDateSchema.nullable(),
         /** null = still in progress */
         outcome: z.enum(['finished', 'abandoned']).nullable(),
-        rating: rating.nullable()
+        rating: rating.nullable(),
+        /** Optional so files from before play time still read as v1 */
+        playtimeMinutes: playtimeSchema.nullable().optional()
     })
     .superRefine((p, ctx) => {
         if (p.startedOn && p.endedOn && p.endedOn < p.startedOn) {
@@ -93,7 +95,6 @@ export const exportEntrySchema = z
         /** Optional so files from before favorites still read as v1 */
         favorite: z.boolean().optional(),
         notes: z.string().max(10_000),
-        ttbOverrideMinutes: z.number().int().min(1).max(60_000).nullable(),
         addedAt: z.number().int().min(0),
         /** Platforms the user owns the game on */
         platforms: z.array(platformRef).min(1, 'Own it on at least one platform').max(30),

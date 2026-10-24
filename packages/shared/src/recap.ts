@@ -7,6 +7,7 @@ export interface RecapPlaythrough {
     startedOn: string | null;
     endedOn: string | null;
     outcome: 'finished' | 'abandoned' | null;
+    playtimeMinutes: number | null;
 }
 
 export type RecapArchetypeId =
@@ -34,10 +35,10 @@ export interface RecapDto {
     addedCount: number;
     /** Finished games that had also been finished in an earlier year */
     replays: number;
-    /** Time to beat summed over the year's finished playthroughs. An estimate, not tracked time. */
-    estimatedMinutes: number;
-    /** Finished playthroughs in the year whose game has no known time to beat */
-    unknownTimeCount: number;
+    /** Play time the user entered, summed over the year's finished playthroughs */
+    playMinutes: number;
+    /** Finished playthroughs in the year with no play time entered */
+    unrecordedCount: number;
     /** Games finished per month, January first (a game counts once per month) */
     months: number[];
     /** 1-12, the month with the most finishes (the earliest on a tie); null if none */
@@ -188,13 +189,12 @@ export function computeRecap(
         )
     ).length;
 
-    let estimatedMinutes = 0;
-    let unknownTimeCount = 0;
+    let playMinutes = 0;
+    let unrecordedCount = 0;
     const perMonth = Array.from({ length: 12 }, () => new Set<number>());
     for (const p of thisYear) {
-        const ttb = byId.get(p.entryId)?.ttbMinutes ?? null;
-        if (ttb === null) unknownTimeCount++;
-        else estimatedMinutes += ttb;
+        if (p.playtimeMinutes === null) unrecordedCount++;
+        else playMinutes += p.playtimeMinutes;
         perMonth[Number(p.endedOn!.slice(5, 7)) - 1]?.add(p.entryId);
     }
     const months = perMonth.map((s) => s.size);
@@ -256,8 +256,8 @@ export function computeRecap(
         startedCount,
         addedCount,
         replays,
-        estimatedMinutes,
-        unknownTimeCount,
+        playMinutes,
+        unrecordedCount,
         months,
         busiestMonth,
         topGenres: rank(genreNames),

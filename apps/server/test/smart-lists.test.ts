@@ -83,14 +83,12 @@ describe('smart lists', () => {
         expect(smartList.ruleText).toEqual([`Platform is ${SWITCH.name}`]);
     });
 
-    it('uses time to beat with overrides and treats unknown as no match', async () => {
-        const { call, make, names, wilds } = await setup();
+    it('uses time to beat and treats unknown as no match', async () => {
+        const { make, names } = await setup();
         const rules = [{ field: 'ttb', op: 'lte', value: 600 }];
         expect(names((await make({ rules })).smartList)).toEqual(['Celeste']);
-        await call(`/entries/${wilds.id}`, 'PATCH', { ttbOverrideMinutes: 90 });
-        expect(names((await make({ rules })).smartList)).toEqual(['Celeste', 'Outer Wilds']);
         const unknown = await make({ rules: [{ field: 'ttb', op: 'unknown' }] });
-        expect(names(unknown.smartList)).toEqual([]);
+        expect(names(unknown.smartList)).toEqual(['Outer Wilds']);
     });
 
     it('works out how long ago things happened', async () => {

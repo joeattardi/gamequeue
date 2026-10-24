@@ -6,7 +6,11 @@ import { listEntries } from './entries.js';
 
 export function getStats(db: Db, userId: number, now = new Date()): StatsDto {
     const finishes = db
-        .select({ entryId: playthroughs.entryId, endedOn: playthroughs.endedOn })
+        .select({
+            entryId: playthroughs.entryId,
+            endedOn: playthroughs.endedOn,
+            playtimeMinutes: playthroughs.playtimeMinutes
+        })
         .from(playthroughs)
         .where(and(eq(playthroughs.userId, userId), eq(playthroughs.outcome, 'finished')))
         .all();

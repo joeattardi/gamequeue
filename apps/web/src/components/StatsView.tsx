@@ -40,13 +40,13 @@ export function StatsView({ stats }: { stats: StatsDto }) {
                     note={o.ratedCount ? plural(o.ratedCount, 'rated game') : 'nothing rated yet'}
                 />
                 <Tile
-                    label="Estimated play time"
-                    value={playtime.finishes ? formatMinutes(playtime.estimatedMinutes) : '—'}
+                    label="Play time"
+                    value={playtime.playMinutes ? formatMinutes(playtime.playMinutes) : '—'}
                     note={
                         playtime.finishes
                             ? `from ${plural(playtime.finishes, 'finished playthrough')}${
-                                  playtime.unknownCount
-                                      ? `, ${playtime.unknownCount} with no time`
+                                  playtime.unrecordedCount
+                                      ? `, ${playtime.unrecordedCount} with no time entered`
                                       : ''
                               }`
                             : undefined
@@ -54,8 +54,8 @@ export function StatsView({ stats }: { stats: StatsDto }) {
                 />
             </ul>
             <p className="muted sv-caveat">
-                Play time is an estimate: each finished playthrough counts the game's time to beat.
-                Nothing is timed while you play.
+                Play time adds up the hours entered when finishing a game. Finishes without a time
+                entered aren't counted.
             </p>
 
             <section className="panel" aria-labelledby="sv-finished">

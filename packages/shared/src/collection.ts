@@ -108,8 +108,7 @@ export interface EntryDto {
     /** Marked as a favorite; independent of rating and lists */
     favorite: boolean;
     notes: string;
-    ttbOverrideMinutes: number | null;
-    /** Override if set, otherwise IGDB "normally" */
+    /** IGDB "normally" */
     ttbMinutes: number | null;
     addedAt: number;
     /** Last time its status, rating, notes, tags or platforms changed (not favoriting), ms since epoch */
@@ -181,7 +180,6 @@ export const patchEntrySchema = z
         rating: ratingSchema.nullable(),
         favorite: z.boolean(),
         notes: z.string().max(10_000),
-        ttbOverrideMinutes: z.number().int().min(1).max(60_000).nullable(),
         platformIds: z
             .array(z.number().int().positive())
             .min(1, 'Pick at least one platform')

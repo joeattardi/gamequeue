@@ -121,7 +121,7 @@ export function RecapView({ recap, basePath }: { recap: RecapDto; basePath: stri
             : diff === 0
               ? `The same as ${r.year - 1}.`
               : `${plural(Math.abs(diff), 'game')} ${diff > 0 ? 'more' : 'fewer'} than ${r.year - 1}.`;
-    const days = r.estimatedMinutes / 60 / 24;
+    const days = r.playMinutes / 60 / 24;
     const peak = Math.max(1, ...r.months);
     let n = 0;
 
@@ -164,17 +164,17 @@ export function RecapView({ recap, basePath }: { recap: RecapDto; basePath: stri
                 </div>
             </Card>
 
-            {r.finishedGames > 0 && r.estimatedMinutes > 0 && (
+            {r.finishedGames > 0 && r.playMinutes > 0 && (
                 <Card n={n++} id="rc-time" title="Time well spent">
-                    <p className="rc-big">{formatMinutes(r.estimatedMinutes)}</p>
+                    <p className="rc-big">{formatMinutes(r.playMinutes)}</p>
                     <p className="rc-lead">
                         of play time
                         {days >= 1 && ` — about ${days.toFixed(1)} days nonstop`}
                     </p>
                     <p className="rc-note">
-                        An estimate: each finish counts the game's time to beat
-                        {r.unknownTimeCount > 0 &&
-                            `, and ${plural(r.unknownTimeCount, 'finish', 'finishes')} had no time to count`}
+                        Adds up the play time you entered for this year's finishes
+                        {r.unrecordedCount > 0 &&
+                            `, and ${plural(r.unrecordedCount, 'finish', 'finishes')} had no time entered`}
                         .
                     </p>
                 </Card>
