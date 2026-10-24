@@ -161,16 +161,12 @@ export function LandingPage() {
                                                     width={264}
                                                     height={352}
                                                 />
-                                                <span className="mock__title">{g.name}</span>
                                             </>
                                         ) : (
                                             <div className="mock__cover mock__cover--empty">
                                                 <Gamepad2 />
                                             </div>
                                         )}
-                                        <span className="mock__label">
-                                            Slot {i + 1} · {state}
-                                        </span>
                                     </div>
                                 );
                             })}
