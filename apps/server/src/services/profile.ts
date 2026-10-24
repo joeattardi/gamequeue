@@ -44,8 +44,10 @@ import { findWishlist, wishlistItemsOf } from './wishlist.js';
 
 const toPublic = toPublicEntry;
 
-/** Events shown on the profile itself; the rest is on the activity page. */
-const PROFILE_ACTIVITY_PREVIEW = 8;
+/** Raw events sent with the profile; the web client groups them and shows the first few groups. */
+const PROFILE_ACTIVITY_PREVIEW = 30;
+/** Games in each highlight row (recently finished, favorites). */
+const HIGHLIGHT_ROW = 12;
 
 function requireUser(db: Db, username: string) {
     const user = db.select().from(users).where(eq(users.username, username)).get();
@@ -111,6 +113,15 @@ export function getProfile(db: Db, username: string): ProfileDto {
         })),
         grids: listGrids(db, user.id),
         tierLists: listTierLists(db, user.id),
+        recentlyFinished: getFinishedGames(db, user, { limit: 200, offset: 0 })
+            .entries.filter((e) => e.lastFinishedOn !== null)
+            .slice(0, HIGHLIGHT_ROW),
+        favoriteGames: pageEntries(
+            db,
+            user.id,
+            entryQuerySchema.parse({ favorite: 'true', sort: 'rating' }),
+            { limit: HIGHLIGHT_ROW, offset: 0 }
+        ).entries.map(toPublic),
         activity: user.showActivity
             ? pageActivity(db, user.id, { limit: PROFILE_ACTIVITY_PREVIEW, offset: 0 })
             : null

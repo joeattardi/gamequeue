@@ -53,7 +53,14 @@ export interface ProfileDto {
     smartLists: ProfileListTileDto[];
     grids: GridSummaryDto[];
     tierLists: TierListSummaryDto[];
-    /** The latest few events and how many there are in all; null when the owner hides their activity */
+    /** Latest finishes with a known date, newest first (a short highlight row) */
+    recentlyFinished: PublicEntryDto[];
+    /** Favorites, best rated first (a short highlight row) */
+    favoriteGames: PublicEntryDto[];
+    /**
+     * The latest events (raw, so the web client can group runs of them) and how many there are in
+     * all; null when the owner hides their activity
+     */
     activity: { events: ActivityEventDto[]; total: number } | null;
 }
 

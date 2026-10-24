@@ -1,6 +1,12 @@
-import { RATING_MAX, type ActivityEventDto, type ActivityType } from '@gamequeue/shared';
+import {
+    ACTIVITY_VERBS,
+    RATING_MAX,
+    type ActivityEventDto,
+    type ActivityType
+} from '@gamequeue/shared';
 import {
     Ban,
+    ChevronDown,
     CircleCheck,
     Gift,
     Grid3x3,
@@ -15,9 +21,10 @@ import {
     SlidersHorizontal,
     Star
 } from 'lucide-react';
-import type { ReactNode } from 'react';
+import { useMemo, type ReactNode } from 'react';
 import { Link } from 'react-router';
 import { timeAgo } from '../lib';
+import { groupActivity, type ActivityDay, type ActivityItem } from '../activityGroups';
 import { Cover } from './Cover';
 
 const ICONS: Record<ActivityType, ReactNode> = {
@@ -89,7 +96,15 @@ function sentence(e: ActivityEventDto, name: ReactNode): ReactNode {
     }
 }
 
-function ActivityRow({ username, event }: { username: string; event: ActivityEventDto }) {
+function ActivityRow({
+    username,
+    event,
+    showAgo
+}: {
+    username: string;
+    event: ActivityEventDto;
+    showAgo: boolean;
+}) {
     const path = SUBJECT_PATH[event.type];
     const label = event.game?.name ?? event.subject?.name ?? '';
     // Slot events name the slot in the sentence, not as a link
@@ -105,7 +120,6 @@ function ActivityRow({ username, event }: { username: string; event: ActivityEve
         ) : (
             <strong>{label}</strong>
         );
-    const when = new Date(event.at);
     return (
         <li className="activity__item">
             {event.game ? (
@@ -118,24 +132,123 @@ function ActivityRow({ username, event }: { username: string; event: ActivityEve
                 </span>
             )}
             <span className="activity__text">{sentence(event, name)}</span>
-            <time
-                className="activity__when muted"
-                dateTime={when.toISOString()}
-                title={when.toLocaleString()}
-            >
-                {Date.now() - event.at < 14 * 86400_000
-                    ? timeAgo(event.at)
-                    : when.toLocaleDateString(undefined, {
-                          year: 'numeric',
-                          month: 'short',
-                          day: 'numeric'
-                      })}
-            </time>
+            <When at={event.at} showAgo={showAgo} />
         </li>
     );
 }
 
-/** A user's events, newest first, as the public profile shows them. */
+/** "5 minutes ago" under today's heading; older days are already dated by theirs. */
+function When({ at, showAgo }: { at: number; showAgo: boolean }) {
+    const when = new Date(at);
+    return (
+        <time
+            className="activity__when muted"
+            dateTime={when.toISOString()}
+            title={when.toLocaleString()}
+        >
+            {showAgo ? timeAgo(at) : ''}
+        </time>
+    );
+}
+
+/** "Added 12 games to the collection" and so on; the singular never happens (bursts are 3+). */
+function burstSentence(type: ActivityType, n: number): string {
+    switch (type) {
+        case 'added':
+            return `Added ${n} games to the collection`;
+        case 'favorited':
+            return `Made ${n} games favorites`;
+        case 'wishlisted':
+            return `Wishlisted ${n} games`;
+        case 'queued':
+            return `Queued ${n} games`;
+        case 'rated':
+            return `Rated ${n} games`;
+        default:
+            return `${ACTIVITY_VERBS[type]} ${n} games`;
+    }
+}
+
+const COVERS_SHOWN = 4;
+
+/** A run of the same action on several games: one row that opens to list them. */
+function BurstRow({
+    username,
+    item,
+    showAgo
+}: {
+    username: string;
+    item: Extract<ActivityItem, { kind: 'burst' }>;
+    showAgo: boolean;
+}) {
+    return (
+        <li className="activity__item activity__item--burst">
+            <details>
+                <summary>
+                    <span className="activity__stack" aria-hidden="true">
+                        {item.events.slice(0, COVERS_SHOWN).map((e) => (
+                            <span key={e.id} className="activity__cover">
+                                <Cover imageId={e.game!.coverImageId} name={e.game!.name} />
+                            </span>
+                        ))}
+                    </span>
+                    <span className="activity__text">
+                        <strong>{burstSentence(item.type, item.events.length)}</strong>
+                    </span>
+                    <When at={item.at} showAgo={showAgo} />
+                    <ChevronDown className="activity__chevron" aria-hidden="true" />
+                </summary>
+                <ul className="activity__burst-list">
+                    {item.events.map((e) => (
+                        <li key={e.id}>
+                            <Link to={`/u/${username}/games/${e.game!.id}`}>{e.game!.name}</Link>
+                            {e.type === 'rated' && e.detail !== null && (
+                                <span className="muted">
+                                    {' '}
+                                    {e.detail}/{RATING_MAX}
+                                </span>
+                            )}
+                        </li>
+                    ))}
+                </ul>
+            </details>
+        </li>
+    );
+}
+
+/** The feed as days, each with its rows; long runs of one action are folded into a single row. */
+export function ActivityDays({ username, days }: { username: string; days: ActivityDay[] }) {
+    return (
+        <div className="activity-days">
+            {days.map((day) => (
+                <section key={day.key} aria-label={day.label} className="activity-day">
+                    <h3 className="activity-day__heading">{day.label}</h3>
+                    <ul className="activity">
+                        {day.items.map((item) =>
+                            item.kind === 'burst' ? (
+                                <BurstRow
+                                    key={`b${item.events[0]!.id}`}
+                                    username={username}
+                                    item={item}
+                                    showAgo={day.label === 'Today'}
+                                />
+                            ) : (
+                                <ActivityRow
+                                    key={item.event.id}
+                                    username={username}
+                                    event={item.event}
+                                    showAgo={day.label === 'Today'}
+                                />
+                            )
+                        )}
+                    </ul>
+                </section>
+            ))}
+        </div>
+    );
+}
+
+/** A user's events, newest first, grouped by day, as the public profile page shows them. */
 export function ActivityList({
     username,
     events
@@ -143,13 +256,8 @@ export function ActivityList({
     username: string;
     events: ActivityEventDto[];
 }) {
-    return (
-        <ul className="activity">
-            {events.map((e) => (
-                <ActivityRow key={e.id} username={username} event={e} />
-            ))}
-        </ul>
-    );
+    const days = useMemo(() => groupActivity(events), [events]);
+    return <ActivityDays username={username} days={days} />;
 }
 
 export function ActivitySkeletons({ count = 8 }: { count?: number }) {

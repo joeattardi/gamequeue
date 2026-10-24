@@ -5748,3 +5748,175 @@ button.tier-tile__button {
         transition: none;
     }
 }
+
+/* Activity feed: days and folded runs */
+.activity-days {
+    display: grid;
+    gap: 18px;
+}
+.activity-day__heading {
+    margin: 0 0 6px;
+    font-family: var(--font-body);
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+}
+.activity__when:empty {
+    display: none;
+}
+.activity__item--burst {
+    display: block;
+    padding: 0;
+}
+.activity__item--burst summary {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 14px;
+    cursor: pointer;
+    list-style: none;
+    border-radius: var(--radius-sm);
+}
+.activity__item--burst summary::-webkit-details-marker {
+    display: none;
+}
+.activity__item--burst summary:hover {
+    background: var(--surface-2);
+}
+.activity__stack {
+    display: flex;
+    flex: none;
+}
+.activity__stack .activity__cover {
+    width: 28px;
+    margin-left: -10px;
+    border-radius: 4px;
+    box-shadow: 0 0 0 2px var(--surface);
+}
+.activity__stack .activity__cover:first-child {
+    margin-left: 0;
+}
+.activity__stack .activity__cover .cover {
+    width: 28px;
+}
+.activity__chevron {
+    flex: none;
+    width: 18px;
+    height: 18px;
+    color: var(--ink-muted);
+    transition: transform 0.15s;
+}
+.activity__item--burst details[open] .activity__chevron {
+    transform: rotate(180deg);
+}
+.activity__burst-list {
+    list-style: none;
+    margin: 0;
+    padding: 2px 14px 12px 14px;
+    columns: 2 220px;
+    column-gap: 24px;
+}
+.activity__burst-list li {
+    break-inside: avoid;
+    padding: 2px 0;
+}
+@media (prefers-reduced-motion: reduce) {
+    .activity__chevron {
+        transition: none;
+    }
+}
+
+/* Highlight rows (recently finished, favorites) */
+.highlight__head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+}
+.highlight__all {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    font-size: 0.9rem;
+    white-space: nowrap;
+}
+.highlight__all svg {
+    width: 1em;
+    height: 1em;
+}
+.highlight {
+    list-style: none;
+    margin: 0;
+    padding: 0 0 8px;
+    display: flex;
+    gap: 14px;
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+}
+.highlight li {
+    flex: none;
+    width: 110px;
+    scroll-snap-align: start;
+    display: grid;
+    gap: 4px;
+    align-content: start;
+}
+.highlight .cover {
+    width: 110px;
+}
+.highlight__name {
+    display: -webkit-box;
+    margin-top: 6px;
+    overflow: hidden;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    font-size: 0.85rem;
+    font-weight: 600;
+    line-height: 1.25;
+}
+.game-link:hover .highlight__name {
+    text-decoration: underline;
+}
+
+/* Below the sidebar breakpoint the collection tiles are one scrolling strip, so they don't push
+   the profile's real content a screen down */
+@media (max-width: 899px) {
+    .profile-side .counters {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 8px;
+        padding-bottom: 8px;
+        overflow-x: auto;
+        scroll-snap-type: x proximity;
+    }
+    .profile-side .counters .counter {
+        flex: none;
+        width: 136px;
+        padding: 10px 14px;
+        scroll-snap-align: start;
+    }
+    .profile-side .counters .counter__value {
+        font-size: 1.9rem;
+    }
+    .profile-side .counters .counter--nav {
+        width: 176px;
+    }
+    .profile-side .counter--nav .counter__link {
+        grid-template-columns: auto minmax(0, 1fr);
+        grid-template-areas: 'icon title';
+        gap: 10px;
+    }
+    .profile-side .counter--nav .counter__icon {
+        width: 36px;
+        height: 36px;
+    }
+    .profile-side .counter--nav .counter__title {
+        font-size: 1rem;
+    }
+    .profile-side .counter--nav .counter__blurb,
+    .profile-side .counter--nav .counter__go {
+        display: none;
+    }
+}

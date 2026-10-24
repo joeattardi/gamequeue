@@ -19,12 +19,14 @@ import {
     Play,
     Trophy
 } from 'lucide-react';
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Link, useParams } from 'react-router';
 import { ApiRequestError } from '../api/client';
 import { useAuthConfig, useMe } from '../api/auth';
 import { useProfile } from '../api/profile';
-import { ActivityList } from '../components/ActivityFeed';
+import { groupActivity, limitDays } from '../activityGroups';
+import { ActivityDays } from '../components/ActivityFeed';
+import { HighlightRow } from '../components/HighlightRow';
 import { Avatar } from '../components/Avatar';
 import { Cover } from '../components/Cover';
 import { ListCard } from '../components/ListCard';
@@ -267,15 +269,22 @@ function ProfileTierLists({ profile }: { profile: ProfileDto }) {
     );
 }
 
+/** Rows (single events or folded runs) shown on the profile. */
+const ACTIVITY_ROWS = 6;
+
 /** The latest few events; the rest is on the activity page. Absent when the owner hides it. */
 function ProfileActivity({ profile }: { profile: ProfileDto }) {
     const { activity } = profile;
-    if (!activity || activity.total === 0) return null;
+    const grouped = useMemo(
+        () => (activity ? limitDays(groupActivity(activity.events), ACTIVITY_ROWS) : undefined),
+        [activity]
+    );
+    if (!activity || !grouped || activity.total === 0) return null;
     return (
         <section aria-labelledby="p-activity">
             <h2 id="p-activity">Recent activity</h2>
-            <ActivityList username={profile.username} events={activity.events} />
-            {activity.total > activity.events.length && (
+            <ActivityDays username={profile.username} days={grouped.days} />
+            {activity.total > grouped.events && (
                 <p className="activity-more">
                     <Link to={`/u/${profile.username}/activity`}>
                         See all {activity.total} events
@@ -388,6 +397,26 @@ export function ProfilePage() {
                                     />
                                 </section>
 
+                                <HighlightRow
+                                    id="p-finished"
+                                    title="Recently finished"
+                                    username={profile.data.username}
+                                    entries={profile.data.recentlyFinished}
+                                    seeAll={{
+                                        to: `/u/${profile.data.username}/finished`,
+                                        count: profile.data.summary.byStatus.finished
+                                    }}
+                                />
+                                <HighlightRow
+                                    id="p-favorites"
+                                    title="Favorites"
+                                    username={profile.data.username}
+                                    entries={profile.data.favoriteGames}
+                                    seeAll={{
+                                        to: `/u/${profile.data.username}/favorites`,
+                                        count: profile.data.summary.favorites
+                                    }}
+                                />
                                 <ProfileActivity profile={profile.data} />
 
                                 <ProfileLists profile={profile.data} />
