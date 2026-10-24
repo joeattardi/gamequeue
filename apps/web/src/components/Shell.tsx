@@ -7,7 +7,6 @@ import { useNavCounts } from '../api/counts';
 import { isRecapSeason } from '../lib';
 import { Footer } from './Footer';
 import { Logo } from './Logo';
-import { SlotStrip } from './SlotStrip';
 import { UserMenu } from './UserMenu';
 import {
     Bookmark,
@@ -195,7 +194,6 @@ export function Shell({ user }: { user: UserDto }) {
                             <X />
                         </button>
                     </div>
-                    <SlotStrip />
                     <NavLink
                         className="nav-search"
                         to="/search"

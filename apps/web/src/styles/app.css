@@ -550,50 +550,6 @@ a {
 .user-menu__panel a.active .lucide {
     color: var(--accent);
 }
-/* What's in the slots: one small cover each, under the logo */
-/* One row: with more slots than fit, the extras are cut off with a fade at the right edge */
-.slot-strip {
-    display: flex;
-    gap: 8px;
-    margin: 0;
-    padding: 0 12px;
-    list-style: none;
-    /* Clipped, so without this a short window would squash it to nothing */
-    flex: none;
-    overflow: hidden;
-    mask-image: linear-gradient(to right, #000 calc(100% - 36px), transparent);
-}
-.slot-strip > li {
-    flex: none;
-}
-.slot-strip__item {
-    display: grid;
-    place-items: center;
-    width: 40px;
-    aspect-ratio: 3 / 4;
-    overflow: hidden;
-    border-radius: 5px;
-    background: var(--accent-soft);
-    color: var(--accent);
-    font-family: var(--font-display);
-    font-weight: 700;
-    text-decoration: none;
-}
-.slot-strip__item .cover {
-    height: 100%;
-    border-radius: 0;
-}
-.slot-strip__item:hover {
-    outline: 2px solid var(--accent);
-    outline-offset: -2px;
-}
-.slot-strip__item--paused .cover {
-    opacity: 0.55;
-}
-.slot-strip__item--empty {
-    border: 1px dashed var(--line-strong);
-    background: none;
-}
 .nav__count {
     margin-left: auto;
     font-size: 0.78rem;
@@ -643,9 +599,6 @@ a {
     .nav__label {
         max-height: 24px;
     }
-    .slot-strip {
-        max-height: 56px;
-    }
     .nav__group + .nav__group {
         border-top: 1px solid transparent;
     }
@@ -660,13 +613,6 @@ a {
     .is-collapsed .nav__label {
         max-height: 0;
         margin-bottom: 0;
-    }
-    /* The strip doesn't fit a rail: it folds away (no wrapping, so nothing reflows on the way) */
-    .is-collapsed .slot-strip {
-        max-height: 0;
-        margin-bottom: -16px;
-        opacity: 0;
-        visibility: hidden;
     }
     .sidebar.is-collapsed .sidebar__head .logo {
         padding: 0 0 0 4px;
@@ -720,18 +666,6 @@ a {
             opacity 0.15s ease,
             max-height 0.2s ease,
             margin 0.2s ease;
-    }
-    /* Expanding: wait out the width animation (the covers would re-wrap as it grows), then
-       unfold and fade in. Collapsing uses the delays below and folds away at once. */
-    .slot-strip {
-        transition:
-            max-height 0.2s ease 0.2s,
-            margin 0.2s ease 0.2s,
-            opacity 0.2s ease 0.2s,
-            visibility 0s linear 0.2s;
-    }
-    .is-collapsed .slot-strip {
-        transition-delay: 0s, 0s, 0s, 0.2s;
     }
     .logo,
     .user-menu__button,
