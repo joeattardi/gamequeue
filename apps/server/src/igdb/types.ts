@@ -73,6 +73,8 @@ export interface IgdbClient {
     /** Screenshot image ids for one game, or null when IGDB no longer knows it */
     fetchScreenshots(igdbId: number): Promise<string[] | null>;
     fetchSeries(seriesId: number): Promise<SeriesRecord | null>;
+    /** IGDB's `similar_games` for one game (add-ons and editions left out); empty when it lists none */
+    fetchSimilarGames(igdbId: number): Promise<IgdbSearchHit[]>;
     /** Counters for the admin page; the real client keeps them, test fakes needn't */
     status?(): Omit<IgdbStatusDto, 'configured' | 'lastReleaseCheckAt' | 'history'>;
     /** One cheap request to prove credentials and connectivity work */

@@ -872,6 +872,16 @@ select:disabled {
 .card {
     position: relative;
 }
+/* Similar games: a smaller grid than the collection's, with the title always visible under the art */
+.grid.similar {
+    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+    gap: 14px;
+}
+.similar__title {
+    display: block;
+    margin-top: 6px;
+    font-size: 0.9rem;
+}
 .card__link {
     display: block;
     color: inherit;

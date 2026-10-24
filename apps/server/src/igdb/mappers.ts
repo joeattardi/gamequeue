@@ -15,6 +15,8 @@ export interface RawGame {
     collections?: { id: number; name: string }[];
     release_dates?: { date?: number; date_format?: number | { id?: number } }[];
     cover?: { image_id?: string };
+    version_parent?: number | { id?: number };
+    similar_games?: RawGame[];
     screenshots?: { image_id?: string }[];
     platforms?: RawNamed[];
     genres?: RawNamed[];
@@ -115,6 +117,12 @@ export function mapSearchHit(raw: RawGame): IgdbSearchHit {
         platforms: platforms(raw.platforms)
     };
 }
+
+/** The games IGDB calls similar, minus add-ons and editions (which are versions of another game) */
+export const mapSimilarGames = (raw: Pick<RawGame, 'similar_games'>): IgdbSearchHit[] =>
+    (raw.similar_games ?? [])
+        .filter((g) => typeof g === 'object' && isCollectable(g) && g.version_parent === undefined)
+        .map(mapSearchHit);
 
 export function mapGame(raw: RawGame, ttb?: RawTtb): GameRecord {
     const hasTtb = ttb && (ttb.hastily || ttb.normally || ttb.completely);

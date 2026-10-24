@@ -13,6 +13,7 @@ import type {
     FacetsDto,
     GameDetailDto,
     GameOffersResponse,
+    SimilarGameDto,
     PatchEntryInput,
     PlatformDto,
     SearchResultDto
@@ -103,6 +104,16 @@ export const useGameDetail = (igdbId: number) =>
     useQuery({
         queryKey: ['game', igdbId],
         queryFn: () => api<GameDetailDto>(`/igdb/games/${igdbId}`),
+        retry: false
+    });
+
+/** Games IGDB lists as similar; separate from the detail so it never delays the page. */
+export const useSimilarGames = (igdbId: number) =>
+    useQuery({
+        queryKey: ['similar-games', igdbId],
+        queryFn: async () =>
+            (await api<{ games: SimilarGameDto[] }>(`/igdb/games/${igdbId}/similar`)).games,
+        staleTime: 30 * 60_000,
         retry: false
     });
 

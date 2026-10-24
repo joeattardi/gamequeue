@@ -7,6 +7,7 @@ import { useAddToWishlist, useRemoveFromWishlist } from '../api/wishlist';
 import { AddGameDialog } from '../components/AddGameDialog';
 import { GameOffers } from '../components/GameOffers';
 import { Cover } from '../components/Cover';
+import { SimilarGames } from '../components/SimilarGames';
 import { Screenshots } from '../components/Screenshots';
 import { EntrySkeleton } from '../components/PageSkeletons';
 import { PlatformTags } from '../components/PlatformIcon';
@@ -149,6 +150,8 @@ function GameDetail({ detail }: { detail: GameDetailDto }) {
                             <p className="muted">IGDB has no time-to-beat data for this game.</p>
                         )}
                     </section>
+
+                    <SimilarGames igdbId={game.id} />
 
                     <section aria-labelledby="plat-h" className="panel">
                         <h2 id="plat-h">Platforms</h2>

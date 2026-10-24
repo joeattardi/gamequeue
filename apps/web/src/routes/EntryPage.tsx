@@ -6,6 +6,7 @@ import { ApiRequestError } from '../api/client';
 import { useConfirm } from '../components/Confirm';
 import { StarRating } from '../components/StarRating';
 import { Cover } from '../components/Cover';
+import { SimilarGames } from '../components/SimilarGames';
 import { Screenshots } from '../components/Screenshots';
 import { ListsPanel } from '../components/ListsPanel';
 import { SeriesLinks } from '../components/SeriesLinks';
@@ -112,6 +113,8 @@ function EntryDetail({ entry }: { entry: EntryDto }) {
                             onSave={(m) => save({ ttbOverrideMinutes: m })}
                         />
                     </section>
+
+                    <SimilarGames igdbId={game.id} />
 
                     <ListsPanel entry={entry} />
                     <PlatformsEditor entry={entry} onSave={(ids) => save({ platformIds: ids })} />

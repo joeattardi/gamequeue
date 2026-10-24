@@ -70,7 +70,7 @@ export function fakeGame(id: number, name: string, extra: Partial<GameRecord> = 
 }
 
 /** In-memory IGDB stand-in that counts calls, so tests can prove caching. */
-export function fakeIgdb(catalog: GameRecord[]) {
+export function fakeIgdb(catalog: GameRecord[], similar: Record<number, number[]> = {}) {
     const calls = {
         search: 0,
         fetchGame: 0,
@@ -78,6 +78,7 @@ export function fakeIgdb(catalog: GameRecord[]) {
         fetchReleaseDates: 0,
         fetchGameSeries: 0,
         fetchScreenshots: 0,
+        fetchSimilarGames: 0,
         fetchSeries: 0
     };
     const client: IgdbClient = {
@@ -117,6 +118,20 @@ export function fakeIgdb(catalog: GameRecord[]) {
         async fetchScreenshots(id) {
             calls.fetchScreenshots++;
             return catalog.find((g) => g.id === id)?.screenshots ?? null;
+        },
+        async fetchSimilarGames(id) {
+            calls.fetchSimilarGames++;
+            const ids = similar[id] ?? [];
+            return catalog
+                .filter((g) => ids.includes(g.id))
+                .map((g) => ({
+                    id: g.id,
+                    name: g.name,
+                    year: g.releaseDate ? Number(g.releaseDate.slice(0, 4)) : null,
+                    coverImageId: g.coverImageId,
+                    rating: g.igdbRating,
+                    platforms: []
+                }));
         },
         async fetchSeries(id) {
             calls.fetchSeries++;

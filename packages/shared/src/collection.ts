@@ -34,6 +34,20 @@ export interface SearchResultDto {
     wishlisted: boolean;
 }
 
+/** A game IGDB lists as similar to another, with what the user has of it */
+export interface SimilarGameDto {
+    igdbId: number;
+    name: string;
+    year: number | null;
+    coverImageId: string | null;
+    /** IGDB's aggregated rating, 0-100 */
+    igdbRating: number | null;
+    /** Set when the game is in the user's collection */
+    entryId: number | null;
+    /** On the user's wishlist */
+    wishlisted: boolean;
+}
+
 export interface GameDto {
     id: number;
     name: string;

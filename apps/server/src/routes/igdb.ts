@@ -4,7 +4,7 @@ import { searchQuerySchema, type GameDetailDto, type SearchResultDto } from '@ga
 import type { AppDeps } from '../app.js';
 import { requireAuth, type AuthVars } from '../auth/middleware.js';
 import { entries, wishlistItems, wishlists } from '../db/schema.js';
-import { validate } from '../http.js';
+import { parseId, validate } from '../http.js';
 import { TtlCache } from '../igdb/search-cache.js';
 import type { IgdbSearchHit } from '../igdb/types.js';
 import { HttpError } from '../errors.js';
@@ -17,11 +17,13 @@ import {
     requireIgdb
 } from '../services/games.js';
 import { gameOffers, offersCache } from '../services/prices.js';
+import { similarCache, similarGames } from '../services/similar.js';
 
 export function igdbRoutes({ db, config, igdb, itad }: AppDeps) {
     const r = new Hono<{ Variables: AuthVars }>();
     const cache = new TtlCache<IgdbSearchHit[]>();
     const offers = offersCache();
+    const similar = similarCache();
     r.use('*', requireAuth(db, config));
 
     r.get('/search', async (c) => {
@@ -90,6 +92,12 @@ export function igdbRoutes({ db, config, igdb, itad }: AppDeps) {
         if (!Number.isInteger(igdbId) || igdbId <= 0) throw new HttpError(400, 'Invalid game id');
         await ensureGame(db, igdb, igdbId);
         return c.json(await gameOffers(db, itad, offers, igdbId));
+    });
+
+    // IGDB's "similar games" for a game, loaded separately like prices so the page never waits on it
+    r.get('/games/:igdbId/similar', async (c) => {
+        const igdbId = parseId(c.req.param('igdbId'));
+        return c.json({ games: await similarGames(db, igdb, similar, c.get('user').id, igdbId) });
     });
 
     // One game by IGDB id, for the detail page. IGDB is only called if we have never cached it.

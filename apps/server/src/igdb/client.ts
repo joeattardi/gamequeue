@@ -7,6 +7,7 @@ import {
     mapReleaseInfo,
     mapScreenshots,
     mapSeriesRefs,
+    mapSimilarGames,
     mapSearchHit,
     type RawGame,
     type RawTtb
@@ -231,6 +232,16 @@ export function createIgdbClient(opts: IgdbClientOptions): IgdbClient {
                     ...mapRelease(g)
                 }))
             };
+        },
+
+        async fetchSimilarGames(igdbId) {
+            const [raw] = await request<RawGame[]>(
+                'games',
+                `fields similar_games.name,similar_games.first_release_date,similar_games.cover.image_id,` +
+                    `similar_games.total_rating,similar_games.game_type.type,similar_games.version_parent; ` +
+                    `where id = ${igdbId};`
+            );
+            return raw ? mapSimilarGames(raw) : [];
         },
 
         async fetchPlatforms() {

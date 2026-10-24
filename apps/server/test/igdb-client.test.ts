@@ -251,6 +251,46 @@ describe('IGDB client', () => {
         await expect(broken.client.search('zelda')).rejects.toMatchObject({ status: 500 });
     });
 
+    it('maps similar games, dropping add-ons and editions', async () => {
+        const { client, requests } = setup(() =>
+            json([
+                {
+                    id: 1,
+                    similar_games: [
+                        {
+                            id: 2,
+                            name: 'Sibling',
+                            first_release_date: 1588291200,
+                            cover: { image_id: 'abc' },
+                            total_rating: 84.6,
+                            game_type: { type: 'Main Game' }
+                        },
+                        { id: 3, name: 'Some DLC', game_type: { type: 'DLC' } },
+                        { id: 4, name: 'Sibling GOTY', version_parent: 2 },
+                        { id: 5, name: 'Bare' }
+                    ]
+                }
+            ])
+        );
+        expect(await client.fetchSimilarGames(1)).toEqual([
+            {
+                id: 2,
+                name: 'Sibling',
+                year: 2020,
+                coverImageId: 'abc',
+                rating: 85,
+                platforms: []
+            },
+            { id: 5, name: 'Bare', year: null, coverImageId: null, rating: null, platforms: [] }
+        ]);
+        expect(requests[0]!.body).toContain('where id = 1');
+    });
+
+    it('returns no similar games for an unknown game', async () => {
+        const { client } = setup(() => json([]));
+        expect(await client.fetchSimilarGames(9)).toEqual([]);
+    });
+
     it('maps platforms', async () => {
         const { client } = setup(() =>
             json([
