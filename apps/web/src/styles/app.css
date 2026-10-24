@@ -2558,9 +2558,64 @@ fieldset.stars:disabled .stars__star {
     line-height: 1;
     font-variant-numeric: tabular-nums;
 }
+/* Link tiles (stats, Save File): a feature card instead of a number */
+.counters .counter--nav {
+    grid-column: 1 / -1;
+    display: block;
+    padding: 14px 16px;
+    background: linear-gradient(120deg, var(--accent-soft), var(--surface) 75%);
+    border-color: color-mix(in srgb, var(--accent) 30%, var(--line));
+}
+.counter--nav .counter__link {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas: 'icon title go' 'icon blurb go';
+    grid-column: auto;
+    align-items: center;
+    gap: 2px 14px;
+}
+.counter--nav .counter__icon {
+    width: 44px;
+    height: 44px;
+    place-items: center;
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--accent) 16%, var(--surface));
+    color: var(--accent);
+}
 .counter--nav .counter__icon svg {
-    width: 2.4rem;
-    height: 2.4rem;
+    width: 24px;
+    height: 24px;
+}
+.counter__title {
+    grid-area: title;
+    font-family: var(--font-display);
+    font-size: 1.15rem;
+    font-weight: 700;
+    line-height: 1.2;
+}
+.counter__blurb {
+    grid-area: blurb;
+    color: var(--ink-muted);
+    font-size: 0.85rem;
+    line-height: 1.3;
+}
+.counter__go {
+    grid-area: go;
+    width: 20px;
+    height: 20px;
+    color: var(--ink-muted);
+    transition:
+        transform 0.15s,
+        color 0.15s;
+}
+.counter:has(> a.counter__link:hover) .counter__go,
+.counter:has(> a.counter__link:focus-visible) .counter__go {
+    color: var(--accent);
+    transform: translateX(4px);
+}
+@media (prefers-reduced-motion: reduce) {
+    .counter__go {
+        transition: none;
+    }
 }
 .counter__label {
     grid-area: label;
@@ -5657,9 +5712,8 @@ button.tier-tile__button {
     .profile-side .counters {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
-    /* Total games and the two link tiles (stats, Save File) get a full row each */
-    .profile-side .counter--total,
-    .profile-side .counter--nav {
+    /* Total games gets a full row (the link tiles always do, see .counter--nav) */
+    .profile-side .counter--total {
         grid-column: 1 / -1;
     }
 }

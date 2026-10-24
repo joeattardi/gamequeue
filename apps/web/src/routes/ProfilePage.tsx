@@ -88,19 +88,33 @@ function Counter({
     to,
     icon,
     value,
-    label
+    label,
+    blurb
 }: {
     className: string;
     to: string;
     icon: ReactNode;
     value?: number;
     label: string;
+    /** Only for the link tiles (no `value`): a line saying what is behind the link */
+    blurb?: string;
 }) {
+    if (value === undefined)
+        return (
+            <li className={`counter counter--nav ${className}`}>
+                <Link to={to} className="counter__link">
+                    <span className="counter__icon">{icon}</span>
+                    <span className="counter__title">{label}</span>
+                    {blurb && <span className="counter__blurb">{blurb}</span>}
+                    <ArrowRight className="counter__go" aria-hidden="true" />
+                </Link>
+            </li>
+        );
     return (
-        <li className={`counter ${value === undefined ? 'counter--nav ' : ''}${className}`}>
+        <li className={`counter ${className}`}>
             <Link to={to} className="counter__link">
                 <span className="counter__icon">{icon}</span>
-                {value !== undefined && <span className="counter__value">{value}</span>}
+                <span className="counter__value">{value}</span>
                 <span className="counter__label">{label}</span>
             </Link>
         </li>
@@ -150,12 +164,14 @@ function Stats({ username, summary }: { username: string; summary: ProfileDto['s
                     to={`/u/${username}/stats`}
                     icon={<BarChart3 aria-hidden="true" />}
                     label="View stats"
+                    blurb="Finishes per year, top genres, play time"
                 />
                 <Counter
                     className="counter--recap"
                     to={`/u/${username}/recap`}
                     icon={<CalendarDays aria-hidden="true" />}
                     label="Save File"
+                    blurb="Your year in games, ready to share"
                 />
             </ul>
             {summary.total > 0 && (
