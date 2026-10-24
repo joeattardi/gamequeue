@@ -33,6 +33,7 @@ Files in the repo that make this work:
 | `.github/workflows/deploy.yml` | On every push/PR: format check, typecheck, tests. On `main`: builds the arm64 image and pushes it to `ghcr.io/joeattardi/gamequeue` |
 | `scripts/update.sh`            | Run by cron on the Pi: pulls the repo and image, and if either changed, backs up, restarts and rolls back on failure                |
 | `scripts/backup.sh`            | Safe snapshot of the live SQLite file, 14-day retention, optional off-machine copy                                                  |
+| `scripts/resources.sh`         | Run by cron every 5 minutes: checks disk, memory, Pi temperature and power, and pings healthchecks.io                               |
 
 On the Pi:
 
@@ -339,14 +340,15 @@ chmod +x ~/gamequeue/scripts/*.sh
 crontab -e
 ```
 
-Add these two lines (replace `<user>`):
+Add these three lines (replace `<user>`):
 
 ```
 */2 * * * * /home/<user>/gamequeue/scripts/update.sh >> /home/<user>/gamequeue/update.log 2>&1
 0 3 * * * /home/<user>/gamequeue/scripts/backup.sh >> /home/<user>/gamequeue/backup.log 2>&1
+*/5 * * * * /home/<user>/gamequeue/scripts/resources.sh >> /home/<user>/gamequeue/resources.log 2>&1
 ```
 
-The first line keeps the app current, the second is the nightly backup. Cron runs with a minimal environment; if `docker` is not found, add `PATH=/usr/local/bin:/usr/bin:/bin` as the first line of the crontab. Run `~/gamequeue/scripts/update.sh` by hand once and check `docker compose ps`.
+The first line keeps the app current, the second is the nightly backup, the third watches the machine's resources (see Resource monitoring). Cron runs with a minimal environment; if `docker` is not found, add `PATH=/usr/local/bin:/usr/bin:/bin` as the first line of the crontab. Run `~/gamequeue/scripts/update.sh` by hand once and check `docker compose ps`.
 
 ### Everyday use
 
@@ -404,6 +406,24 @@ The admin panel only helps when you look at it, and it can't notice a dead Pi or
 3. Run `~/gamequeue/scripts/backup.sh` by hand and check the check turns green in the dashboard.
 
 Pings never fail the backup (short timeout, a few retries, errors ignored). `update.sh` runs the backup before each update, so those runs ping too; extra pings are harmless. Healthchecks does not email on every success, only on down and recovery.
+
+### Resource monitoring
+
+Disk, memory and temperature problems build up slowly and then take everything down at once: a full disk breaks SQLite writes and backups, and a Pi with a weak power supply throttles or corrupts the card. `scripts/resources.sh` runs every 5 minutes from cron and checks:
+
+- **Disk**: the filesystem holding `~/gamequeue` (database, backups) and `/` (Docker images and container logs), alerting at 85% used.
+- **Memory**: alerting when less than 10% is available.
+- **Temperature**: alerting at 80 °C (the Pi starts throttling there).
+- **Power and throttling** (Pi only, via `vcgencmd get_throttled`): alerting while it is under-voltage, frequency-capped or throttled _right now_. The "has happened since boot" flags are ignored, because they would stay red until a reboot.
+
+Checks the machine doesn't support are skipped, so the same script works on a droplet (disk and memory only). The thresholds can be changed with `RESOURCE_DISK_MAX`, `RESOURCE_MEM_AVAILABLE_MIN` and `RESOURCE_TEMP_MAX` in `.env` or the environment.
+
+It is silent while everything is fine. A problem prints one line to `resources.log` and, if `HEALTHCHECK_RESOURCES_URL` is set, pings healthchecks.io's `/fail` with the details. Because it also pings on every healthy run, healthchecks.io notices a Pi that is dead, powered off or no longer running cron, which nothing on the Pi could report.
+
+1. In healthchecks.io create a **second** check (not the backup one): period **5 minutes**, grace **10 minutes**, email integration.
+2. Add its ping URL to `~/gamequeue/.env` as `HEALTHCHECK_RESOURCES_URL=https://hc-ping.com/<uuid>`. Like `HEALTHCHECK_URL`, the script reads that one line and the app ignores it. Treat it as a secret.
+3. Add the cron line above, then run `~/gamequeue/scripts/resources.sh` by hand; the check should turn green.
+4. To test an alert, run `RESOURCE_DISK_MAX=1 ~/gamequeue/scripts/resources.sh`: it prints a problem and the check goes red. The next normal run turns it green again (healthchecks.io emails on down and on recovery, not on every failing ping).
 
 ### Uptime monitoring with UptimeRobot
 
