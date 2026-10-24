@@ -10,12 +10,12 @@ export function useDebounced<T>(value: T, ms = 300): T {
     return v;
 }
 
-/** Time-of-day greeting in the user's own timezone, e.g. "Good evening, Joe" (or just "Good evening"). */
+/** Time-of-day greeting in the user's own timezone, e.g. "Good evening, Joe!" (or just "Good evening!"). */
 export function greeting(firstName?: string | null, now = new Date()): string {
     const h = now.getHours();
     const hello =
         h < 5 ? 'Hello' : h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
-    return firstName ? `${hello}, ${firstName}` : hello;
+    return firstName ? `${hello}, ${firstName}!` : `${hello}!`;
 }
 
 export function formatMinutes(min: number | null | undefined): string {
