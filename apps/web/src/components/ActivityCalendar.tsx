@@ -1,6 +1,14 @@
-import { TIMELINE_GROUP_LABELS, TIMELINE_GROUPS, type TimelineDto } from '@gamequeue/shared';
+import {
+    ACTIVITY_VERBS,
+    RATING_MAX,
+    TIMELINE_GROUP_LABELS,
+    TIMELINE_GROUPS,
+    type ActivityEventDto,
+    type TimelineDto
+} from '@gamequeue/shared';
 import {
     useEffect,
+    useLayoutEffect,
     useMemo,
     useRef,
     useState,
@@ -17,7 +25,6 @@ import {
     type CalendarDay
 } from '../calendar';
 import { todayLocal } from '../lib';
-import { ActivityList } from './ActivityFeed';
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 /** Cell fill per intensity step (share of the hue over the empty cell) */
@@ -54,12 +61,70 @@ function cellLabel(day: CalendarDay) {
     return `${longDate(day.key)}: ${detail || 'nothing'}`;
 }
 
-function DayPanel({ username, day }: { username: string; day: CalendarDay | undefined }) {
-    if (!day) return <p className="muted cal__hint">Select a day to see what happened.</p>;
+const POPUP_EVENTS = 8;
+
+function eventLine(e: ActivityEventDto): string {
+    const name = e.game?.name ?? e.subject?.name ?? '';
+    switch (e.type) {
+        case 'slotted':
+            return `Moved ${name} to the ${e.subject?.name} slot`;
+        case 'rated':
+            return `Rated ${name} ${e.detail}/${RATING_MAX}`;
+        case 'added':
+            return `Added ${name} to the collection`;
+        default:
+            return `${ACTIVITY_VERBS[e.type]} ${name}`;
+    }
+}
+
+/**
+ * What happened on a day, in a small box anchored to its square (fixed, so the grid's scroller
+ * can't clip it): above the square, below when there is no room, kept inside the window. Hovering
+ * or focusing shows it without touching the layout; a pinned one also has links to the games.
+ */
+function DayPopup({
+    username,
+    day,
+    pinned
+}: {
+    username: string;
+    day: CalendarDay;
+    pinned: boolean;
+}) {
+    const box = useRef<HTMLDivElement>(null);
+    const [pos, setPos] = useState<{ left: number; top: number } | null>(null);
+
+    useLayoutEffect(() => {
+        const place = () => {
+            const cell = document.querySelector<HTMLElement>(`.cal [data-day="${day.key}"]`);
+            const el = box.current;
+            if (!cell || !el) return;
+            const r = cell.getBoundingClientRect();
+            const margin = 8;
+            const left = Math.min(
+                Math.max(margin, r.left + r.width / 2 - el.offsetWidth / 2),
+                window.innerWidth - el.offsetWidth - margin
+            );
+            const above = r.top - el.offsetHeight - 6;
+            setPos({ left, top: above >= margin ? above : r.bottom + 6 });
+        };
+        place();
+        window.addEventListener('scroll', place, true);
+        window.addEventListener('resize', place);
+        return () => {
+            window.removeEventListener('scroll', place, true);
+            window.removeEventListener('resize', place);
+        };
+    }, [day]);
+
     // The feed shows newest first; a day's events come oldest first
     const events = [...day.events].reverse();
     return (
-        <div className="cal__panel">
+        <div
+            ref={box}
+            className={`cal__pop${pinned ? ' cal__pop--pinned' : ''}`}
+            style={pos ?? { visibility: 'hidden' }}
+        >
             <h3 className="cal__date">{longDate(day.key)}</h3>
             {day.playing.length > 0 && (
                 <p className="cal__playing">
@@ -67,13 +132,30 @@ function DayPanel({ username, day }: { username: string; day: CalendarDay | unde
                     {day.playing.map((g, i) => (
                         <span key={g.id}>
                             {i > 0 && ', '}
-                            <Link to={`/u/${username}/games/${g.id}`}>{g.name}</Link>
+                            {pinned ? (
+                                <Link to={`/u/${username}/games/${g.id}`}>{g.name}</Link>
+                            ) : (
+                                g.name
+                            )}
                         </span>
                     ))}
                 </p>
             )}
             {events.length > 0 ? (
-                <ActivityList username={username} events={events} />
+                <ul className="cal__events">
+                    {events.slice(0, POPUP_EVENTS).map((e) => (
+                        <li key={e.id}>
+                            {pinned && e.game ? (
+                                <Link to={`/u/${username}/games/${e.game.id}`}>{eventLine(e)}</Link>
+                            ) : (
+                                eventLine(e)
+                            )}
+                        </li>
+                    ))}
+                    {events.length > POPUP_EVENTS && (
+                        <li className="muted">and {events.length - POPUP_EVENTS} more</li>
+                    )}
+                </ul>
             ) : (
                 day.playing.length === 0 && <p className="muted">Nothing happened this day.</p>
             )}
@@ -186,7 +268,11 @@ function Grid({
                             onPin(day.key);
                         }}
                         onMouseEnter={() => onHover(day.key)}
-                        onFocus={() => setFocusKey(day.key)}
+                        onFocus={() => {
+                            setFocusKey(day.key);
+                            onHover(day.key);
+                        }}
+                        onBlur={() => onHover(null)}
                     />
                 ))}
             </div>
@@ -209,6 +295,26 @@ function CalendarBody({
     const [pinned, setPinned] = useState<string | null>(null);
     const [hover, setHover] = useState<string | null>(null);
     const shown = days.get(hover ?? pinned ?? '');
+
+    // A pinned popup closes on Escape or a click anywhere but a square or the popup
+    useEffect(() => {
+        if (!pinned) return;
+        const close = (e: Event) => {
+            if (
+                e instanceof KeyboardEvent
+                    ? e.key === 'Escape'
+                    : !(e.target as Element).closest('.cal__cell, .cal__pop')
+            )
+                setPinned(null);
+        };
+        document.addEventListener('pointerdown', close);
+        document.addEventListener('keydown', close);
+        return () => {
+            document.removeEventListener('pointerdown', close);
+            document.removeEventListener('keydown', close);
+        };
+    }, [pinned]);
+
     return (
         <>
             <Grid
@@ -218,9 +324,7 @@ function CalendarBody({
                 onHover={setHover}
             />
             <Legend />
-            <div aria-live="polite">
-                <DayPanel username={username} day={shown} />
-            </div>
+            {shown && <DayPopup username={username} day={shown} pinned={shown.key === pinned} />}
         </>
     );
 }
@@ -235,8 +339,8 @@ export function ActivityCalendarSkeleton() {
 
 /**
  * A year of days as squares, like a contribution graph: brighter for more actions, striped when a
- * day mixed kinds of actions, a bar under the days a game was being played. Click or tap a day to
- * pin its list below, or hover (or arrow-key) to preview it. `me` reads your own, `username` a
+ * day mixed kinds of actions, a bar under the days a game was being played. Hover or focus (arrow keys) a day
+ * for a popup with what happened; click or tap pins it, with links. `me` reads your own, `username` a
  * public profile (which is empty, so the section hides, when its owner hides their activity).
  */
 export function ActivityCalendar({

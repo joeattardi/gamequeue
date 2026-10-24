@@ -6233,22 +6233,40 @@ button.tier-tile__button {
 .cal__key--playing {
     display: grid;
 }
-.cal__panel,
-.cal__hint {
-    min-height: 3rem;
+.cal__pop {
+    position: fixed;
+    z-index: 30;
+    box-sizing: border-box;
+    width: max-content;
+    max-width: min(320px, calc(100vw - 16px));
+    padding: 10px 12px;
+    border: 1px solid var(--line-strong);
+    border-radius: 8px;
+    background: var(--surface);
+    color: var(--ink);
+    font-size: 0.85rem;
+    pointer-events: none;
 }
-.cal__hint {
-    margin: 0;
+.cal__pop--pinned {
+    pointer-events: auto;
 }
 .cal__date {
     margin: 0 0 4px;
-    font-size: 1rem;
+    font-family: var(--font-body);
+    font-size: 0.85rem;
 }
 .cal__playing {
-    margin: 0 0 8px;
+    margin: 0 0 4px;
 }
-.cal__panel .activity-day__heading {
-    display: none;
+.cal__events {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    gap: 2px;
+}
+.cal__pop p {
+    margin: 0;
 }
 .cal__skeleton-grid {
     display: block;
