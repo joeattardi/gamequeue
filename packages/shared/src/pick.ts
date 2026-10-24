@@ -93,7 +93,7 @@ export interface PickOutcome {
  * have, the pool starts over (wrapped), but never repeats the most recent pick unless it's the
  * only candidate.
  */
-export function pickRandom(candidates: PickCandidate[], opts: PickOptions = {}): PickOutcome {
+export function pickRandom(candidates: { id: number }[], opts: PickOptions = {}): PickOutcome {
     const rng = opts.rng ?? Math.random;
     const excluded = opts.excludeIds ?? [];
     if (candidates.length === 0) return { id: null, candidateCount: 0, wrapped: false };

@@ -1,44 +1,68 @@
 import { SelectSkeleton } from '../components/PageSkeletons';
 import { ResultListSkeleton } from '../components/ResultSkeletons';
-import type { EntryDto } from '@gamequeue/shared';
-import { pickRandom, toCandidate } from '@gamequeue/shared';
+import type { EntryDto, SearchResultDto } from '@gamequeue/shared';
+import { pickRandom } from '@gamequeue/shared';
 import { useState } from 'react';
 import { Link } from 'react-router';
 import { useQueryClient } from '@tanstack/react-query';
 import type { ListDetailDto } from '@gamequeue/shared';
-import { useEntries } from '../api/collection';
+import { useEntry, useGameSearch } from '../api/collection';
+import { ApiRequestError } from '../api/client';
 import { fetchAll } from '../api/paging';
 import { useList, useLists } from '../api/lists';
 import { useQueue } from '../api/queue';
 import { Cover } from '../components/Cover';
-import { PickResult, Rolling, rollDelay } from '../components/PickResult';
+import {
+    PickResult,
+    PickResultSkeleton,
+    Rolling,
+    rollDelay,
+    UnownedPickResult
+} from '../components/PickResult';
 import { MetaLine } from '../components/MetaLine';
 import { PlatformTags } from '../components/PlatformIcon';
-import { useDebounced, yearOf, usePageTitle } from '../lib';
+import { useDebounced, usePageTitle } from '../lib';
 import { ChevronLeft, Dices, ListChecks, Plus, X } from 'lucide-react';
+
+/** A game in the running: from the collection (`entryId` set) or any IGDB game. Keyed by IGDB id. */
+type Contender = SearchResultDto;
+
+const fromEntry = (e: EntryDto): Contender => ({
+    igdbId: e.game.id,
+    name: e.game.name,
+    year: e.game.releaseDate ? Number(e.game.releaseDate.slice(0, 4)) : null,
+    coverImageId: e.game.coverImageId,
+    igdbRating: e.game.igdbRating,
+    platforms: e.platforms,
+    entryId: e.id,
+    wishlisted: false
+});
 
 const MIN_GAMES = 2;
 
 export function PickChoosePage() {
     usePageTitle('Choose between games');
-    const [chosen, setChosen] = useState<EntryDto[]>([]);
+    const [chosen, setChosen] = useState<Contender[]>([]);
     const [seen, setSeen] = useState<number[]>([]);
-    const [winner, setWinner] = useState<EntryDto>();
+    const [winner, setWinner] = useState<Contender>();
     const [wrapped, setWrapped] = useState(false);
     const [rolling, setRolling] = useState(false);
 
     const building = !rolling && !winner;
 
-    function add(entries: EntryDto[]) {
+    function add(games: Contender[]) {
         setChosen((cur) => {
-            const have = new Set(cur.map((e) => e.id));
-            return [...cur, ...entries.filter((e) => !have.has(e.id))];
+            const have = new Set(cur.map((g) => g.igdbId));
+            return [...cur, ...games.filter((g) => !have.has(g.igdbId))];
         });
     }
 
     function run(exclude: number[]) {
-        const outcome = pickRandom(chosen.map(toCandidate), { excludeIds: exclude });
-        const entry = chosen.find((e) => e.id === outcome.id);
+        const outcome = pickRandom(
+            chosen.map((g) => ({ id: g.igdbId })),
+            { excludeIds: exclude }
+        );
+        const entry = chosen.find((g) => g.igdbId === outcome.id);
         if (!entry) return;
         setWinner(undefined);
         setRolling(true);
@@ -47,7 +71,7 @@ export function PickChoosePage() {
             setRolling(false);
         });
         setWrapped(outcome.wrapped);
-        setSeen(outcome.wrapped ? [entry.id] : [...exclude, entry.id]);
+        setSeen(outcome.wrapped ? [entry.igdbId] : [...exclude, entry.igdbId]);
     }
 
     return (
@@ -72,7 +96,7 @@ export function PickChoosePage() {
                 <div className="stack">
                     <Contenders
                         chosen={chosen}
-                        onRemove={(id) => setChosen((c) => c.filter((e) => e.id !== id))}
+                        onRemove={(id) => setChosen((c) => c.filter((g) => g.igdbId !== id))}
                         onClear={() => setChosen([])}
                     />
                     <div>
@@ -91,36 +115,97 @@ export function PickChoosePage() {
                         )}
                     </div>
                     <FromList onAdd={add} />
-                    <Search chosen={chosen} onAdd={(e) => add([e])} />
+                    <Search chosen={chosen} onAdd={(g) => add([g])} />
                 </div>
             )}
 
             <div aria-live="polite">
                 {rolling && (
                     <Rolling
-                        covers={chosen.map((e) => ({
-                            imageId: e.game.coverImageId,
-                            name: e.game.name
+                        covers={chosen.map((g) => ({
+                            imageId: g.coverImageId,
+                            name: g.name
                         }))}
                     />
                 )}
                 {winner && (
-                    <PickResult
-                        key={winner.id}
+                    <Winner
+                        key={winner.igdbId}
+                        game={winner}
                         note={`Chosen from ${chosen.length} games${
                             wrapped ? ' · you’ve seen them all, so this starts over' : ''
                         }`}
-                        entry={winner}
                         onReroll={() => run(seen)}
                         onPickAgain={() => {
                             setWinner(undefined);
                             setSeen([]);
                         }}
-                        againLabel="Change games"
                     />
                 )}
             </div>
         </section>
+    );
+}
+
+/** Owned games get the full result with slot buttons; any other game gets add buttons. */
+function Winner({
+    game,
+    note,
+    onReroll,
+    onPickAgain
+}: {
+    game: Contender;
+    note: string;
+    onReroll: () => void;
+    onPickAgain: () => void;
+}) {
+    if (game.entryId === null)
+        return (
+            <UnownedPickResult
+                note={note}
+                game={game}
+                onReroll={onReroll}
+                onPickAgain={onPickAgain}
+                againLabel="Change games"
+            />
+        );
+    return (
+        <OwnedWinner
+            entryId={game.entryId}
+            note={note}
+            onReroll={onReroll}
+            onPickAgain={onPickAgain}
+        />
+    );
+}
+
+function OwnedWinner({
+    entryId,
+    note,
+    onReroll,
+    onPickAgain
+}: {
+    entryId: number;
+    note: string;
+    onReroll: () => void;
+    onPickAgain: () => void;
+}) {
+    const entry = useEntry(entryId);
+    if (entry.isPending) return <PickResultSkeleton />;
+    if (!entry.data)
+        return (
+            <p className="form-error" role="alert">
+                Couldn't load that game.
+            </p>
+        );
+    return (
+        <PickResult
+            note={note}
+            entry={entry.data}
+            onReroll={onReroll}
+            onPickAgain={onPickAgain}
+            againLabel="Change games"
+        />
     );
 }
 
@@ -129,7 +214,7 @@ function Contenders({
     onRemove,
     onClear
 }: {
-    chosen: EntryDto[];
+    chosen: Contender[];
     onRemove: (id: number) => void;
     onClear: () => void;
 }) {
@@ -149,14 +234,14 @@ function Contenders({
                 <p className="muted">No games yet. Add some below, or load a whole list at once.</p>
             ) : (
                 <ul className="pick-contenders">
-                    {chosen.map((e) => (
-                        <li key={e.id} className="pick-contender">
-                            <Cover imageId={e.game.coverImageId} name={e.game.name} />
+                    {chosen.map((g) => (
+                        <li key={g.igdbId} className="pick-contender">
+                            <Cover imageId={g.coverImageId} name={g.name} />
                             <button
                                 className="pick-contender__remove"
-                                onClick={() => onRemove(e.id)}
-                                aria-label={`Remove ${e.game.name}`}
-                                title={`Remove ${e.game.name}`}
+                                onClick={() => onRemove(g.igdbId)}
+                                aria-label={`Remove ${g.name}`}
+                                title={`Remove ${g.name}`}
                             >
                                 <X aria-hidden="true" />
                             </button>
@@ -168,7 +253,7 @@ function Contenders({
     );
 }
 
-function FromList({ onAdd }: { onAdd: (entries: EntryDto[]) => void }) {
+function FromList({ onAdd }: { onAdd: (games: Contender[]) => void }) {
     const lists = useLists();
     const queue = useQueue(1); // only its id is needed
     const [listId, setListId] = useState(0);
@@ -198,7 +283,7 @@ function FromList({ onAdd }: { onAdd: (entries: EntryDto[]) => void }) {
     );
 }
 
-function LoadList({ id, onAdd }: { id: number; onAdd: (entries: EntryDto[]) => void }) {
+function LoadList({ id, onAdd }: { id: number; onAdd: (games: Contender[]) => void }) {
     const list = useList(id);
     const queryClient = useQueryClient();
     const [loading, setLoading] = useState(false);
@@ -221,17 +306,16 @@ function LoadList({ id, onAdd }: { id: number; onAdd: (entries: EntryDto[]) => v
         setLoading(true);
         setFailed(false);
         try {
-            onAdd(
-                await fetchAll(
-                    queryClient,
-                    ['list', id],
-                    `/lists/${id}`,
-                    (r: { list: ListDetailDto }) => ({
-                        items: r.list.entries,
-                        total: r.list.total
-                    })
-                )
+            const entries = await fetchAll(
+                queryClient,
+                ['list', id],
+                `/lists/${id}`,
+                (r: { list: ListDetailDto }) => ({
+                    items: r.list.entries,
+                    total: r.list.total
+                })
             );
+            onAdd(entries.map(fromEntry));
         } catch {
             setFailed(true);
         } finally {
@@ -253,17 +337,17 @@ function LoadList({ id, onAdd }: { id: number; onAdd: (entries: EntryDto[]) => v
     );
 }
 
-function Search({ chosen, onAdd }: { chosen: EntryDto[]; onAdd: (e: EntryDto) => void }) {
+function Search({ chosen, onAdd }: { chosen: Contender[]; onAdd: (g: Contender) => void }) {
     const [text, setText] = useState('');
-    const q = useDebounced(text.trim(), 250);
-    // A few more than are shown, so games already chosen can be skipped
-    const results = useEntries(new URLSearchParams(q ? { view: 'all', q } : { view: 'all' }), 20);
-    const have = new Set(chosen.map((e) => e.id));
-    const matches = (results.data?.entries ?? []).filter((e) => !have.has(e.id));
+    const q = useDebounced(text.trim(), 300);
+    const results = useGameSearch(q);
+    const searching = text.trim().length >= 2 && (results.isFetching || q !== text.trim());
+    const have = new Set(chosen.map((g) => g.igdbId));
+    const matches = (results.data ?? []).filter((g) => !have.has(g.igdbId));
     return (
         <div className="panel">
             <label className="field">
-                <span>Add games from your collection</span>
+                <span>Add any game</span>
                 <input
                     type="search"
                     value={text}
@@ -272,43 +356,48 @@ function Search({ chosen, onAdd }: { chosen: EntryDto[]; onAdd: (e: EntryDto) =>
                     autoComplete="off"
                 />
             </label>
-            {results.isPending ? (
+            {text.trim().length < 2 ? (
+                <p className="muted">Type at least 2 characters. Games you don't own work too.</p>
+            ) : searching ? (
                 <ResultListSkeleton label="Searching…" />
+            ) : results.isError ? (
+                <p className="form-error" role="alert">
+                    {results.error instanceof ApiRequestError
+                        ? results.error.message
+                        : 'Search failed.'}
+                </p>
             ) : matches.length === 0 ? (
                 <p className="muted">
-                    {results.data?.total
+                    {results.data?.length
                         ? 'Everything that matches is already added.'
                         : 'No matches.'}
                 </p>
             ) : (
-                <>
-                    <ul className="results">
-                        {matches.slice(0, 8).map((e) => (
-                            <li key={e.id}>
-                                <button className="result" onClick={() => onAdd(e)}>
-                                    <Cover imageId={e.game.coverImageId} name={e.game.name} />
-                                    <span className="result__text">
-                                        <strong>{e.game.name}</strong>
-                                        <span className="muted">
-                                            <MetaLine
-                                                parts={[
-                                                    yearOf(e.game.releaseDate),
-                                                    <PlatformTags key="p" platforms={e.platforms} />
-                                                ]}
-                                            />
-                                        </span>
+                <ul className="results">
+                    {matches.slice(0, 8).map((g) => (
+                        <li key={g.igdbId}>
+                            <button className="result" onClick={() => onAdd(g)}>
+                                <Cover imageId={g.coverImageId} name={g.name} />
+                                <span className="result__text">
+                                    <strong>{g.name}</strong>
+                                    <span className="muted">
+                                        <MetaLine
+                                            parts={[
+                                                g.year,
+                                                <PlatformTags
+                                                    key="p"
+                                                    platforms={g.platforms.slice(0, 4)}
+                                                />
+                                            ]}
+                                        />
                                     </span>
-                                    <span className="badge">+ Add</span>
-                                </button>
-                            </li>
-                        ))}
-                    </ul>
-                    {(results.data?.total ?? 0) > 8 && (
-                        <p className="muted">
-                            Showing 8 of {results.data?.total}. Type to narrow it down.
-                        </p>
-                    )}
-                </>
+                                </span>
+                                {g.entryId !== null && <span className="badge">Owned</span>}
+                                <span className="badge">+ Add</span>
+                            </button>
+                        </li>
+                    ))}
+                </ul>
             )}
         </div>
     );

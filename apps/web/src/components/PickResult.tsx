@@ -1,13 +1,17 @@
-import type { EntryDto } from '@gamequeue/shared';
+import type { EntryDto, SearchResultDto } from '@gamequeue/shared';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
+import { ApiRequestError } from '../api/client';
+import { useGameDetail } from '../api/collection';
 import { needsPlatform, useSlots } from '../api/slots';
+import { useAddToWishlist } from '../api/wishlist';
+import { AddGameDialog } from './AddGameDialog';
 import { formatMinutes, yearOf } from '../lib';
 import { MetaLine } from './MetaLine';
 import { PlatformTags } from './PlatformIcon';
 import { Cover } from './Cover';
 import { useAssign } from './useAssign';
-import { ArrowRight, Dices, RefreshCw, SlidersHorizontal } from 'lucide-react';
+import { ArrowRight, Dices, Gift, Library, RefreshCw, SlidersHorizontal } from 'lucide-react';
 
 const ROLL_MS = 2200;
 const ROLL_MS_REDUCED = 600;
@@ -175,6 +179,142 @@ export function PickResult({
                     </>
                 )}
             </div>
+        </article>
+    );
+}
+
+/** Stands in for `PickResult` while an owned winner's entry loads. */
+export function PickResultSkeleton() {
+    return (
+        <article className="pick-result panel" role="status" aria-label="Loading your pick">
+            <div className="pick-result__cover">
+                <span className="skeleton" aria-hidden="true" style={{ aspectRatio: '3 / 4' }} />
+            </div>
+            <div className="stack" aria-hidden="true">
+                <span className="skeleton skeleton--line" />
+                <span className="skeleton skeleton--line" />
+                <span className="skeleton skeleton--btn skeleton--btn-wide" />
+            </div>
+        </article>
+    );
+}
+
+/**
+ * The winner when it isn't in the collection: the game itself, with ways to add it (collection
+ * or wishlist) instead of the slot buttons, which need an entry.
+ */
+export function UnownedPickResult({
+    note,
+    game,
+    onReroll,
+    onPickAgain,
+    againLabel = 'Pick again'
+}: {
+    note: string;
+    game: SearchResultDto;
+    onReroll: () => void;
+    onPickAgain: () => void;
+    againLabel?: string;
+}) {
+    const detail = useGameDetail(game.igdbId);
+    const addWish = useAddToWishlist();
+    const [adding, setAdding] = useState(false);
+    const [error, setError] = useState<string>();
+    const full = detail.data?.game;
+    // The page's own state wins once loaded, so adding it here shows up straight away
+    const entryId = detail.data?.entryId ?? null;
+    const wishlisted = detail.data?.wishlisted ?? game.wishlisted;
+    const fail = (e: unknown) =>
+        setError(e instanceof ApiRequestError ? e.message : 'Something went wrong.');
+
+    return (
+        <article className="pick-result panel">
+            <div className="pick-result__cover">
+                <Cover imageId={game.coverImageId} name={game.name} />
+            </div>
+            <div className="stack">
+                <p className="muted">{note}</p>
+                <h2 className="pick-result__title">{game.name}</h2>
+                <p className="muted">
+                    <MetaLine
+                        parts={[
+                            game.year,
+                            full?.genres.join(', '),
+                            <PlatformTags
+                                key="p"
+                                platforms={(full?.platforms ?? game.platforms).slice(0, 4)}
+                            />,
+                            full?.ttb?.normally != null
+                                ? `~${formatMinutes(full.ttb.normally)} to beat`
+                                : null,
+                            game.igdbRating !== null ? `IGDB ${game.igdbRating}` : null
+                        ]}
+                    />
+                </p>
+                {detail.isPending ? (
+                    <span
+                        className="skeleton skeleton--line"
+                        role="status"
+                        aria-label="Loading summary"
+                    />
+                ) : (
+                    full?.summary && <p className="summary summary--clamp">{full.summary}</p>
+                )}
+
+                {entryId !== null ? (
+                    <p role="status">
+                        <strong>Added to your collection.</strong>{' '}
+                        <Link to={`/games/${entryId}`}>Open game</Link>
+                    </p>
+                ) : (
+                    <>
+                        <p className="muted">You don't own this game yet.</p>
+                        <div className="row">
+                            <button className="btn btn--primary" onClick={() => setAdding(true)}>
+                                <Library />
+                                Add to collection
+                            </button>
+                            {wishlisted ? (
+                                <span className="badge">On your wishlist</span>
+                            ) : (
+                                <button
+                                    className="btn"
+                                    disabled={addWish.isPending}
+                                    onClick={() => {
+                                        setError(undefined);
+                                        addWish.mutate({ igdbId: game.igdbId }, { onError: fail });
+                                    }}
+                                >
+                                    <Gift />
+                                    Add to wishlist
+                                </button>
+                            )}
+                        </div>
+                        <p className="form-error" role="alert">
+                            {error}
+                        </p>
+                    </>
+                )}
+                <div className="row">
+                    <button className="btn" onClick={onReroll}>
+                        <RefreshCw />
+                        Re-roll
+                    </button>
+                    <button className="btn" onClick={onPickAgain}>
+                        <SlidersHorizontal />
+                        {againLabel}
+                    </button>
+                    <Link className="btn btn--ghost" to={`/games/igdb/${game.igdbId}`}>
+                        Open game
+                        <ArrowRight />
+                    </Link>
+                </div>
+            </div>
+            <AddGameDialog
+                open={adding}
+                onClose={() => setAdding(false)}
+                initial={{ game, platformId: null }}
+            />
         </article>
     );
 }
