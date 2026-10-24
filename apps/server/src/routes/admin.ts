@@ -68,7 +68,12 @@ export function adminRoutes({ db, config, igdb, cloudflare }: AppDeps) {
 
     // Site traffic from Cloudflare's edge (cached a few minutes)
     const traffic = trafficCache();
-    r.get('/traffic', async (c) => c.json(await getTraffic(cloudflare, traffic)));
+    r.get('/traffic', async (c) =>
+        c.json({
+            ...(await getTraffic(cloudflare, traffic)),
+            analyticsUrl: config.cloudflareAnalyticsUrl ?? null
+        })
+    );
 
     // IGDB client counters and a live connectivity check
     r.get('/igdb', (c) => {

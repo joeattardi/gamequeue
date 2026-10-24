@@ -117,10 +117,15 @@ function Traffic({ d }: { d: TrafficDto }) {
                 bots included. Days are UTC and today is partial. Visitors are unique IP addresses
                 per day, which is why they are averaged rather than added up
                 {d.fetchedAt ? `. Updated ${timeAgo(d.fetchedAt)}` : ''}. Game covers load from IGDB
-                directly and don’t appear here.{' '}
-                <a href="https://dash.cloudflare.com" target="_blank" rel="noreferrer">
-                    Open Cloudflare <ExternalLink aria-hidden="true" />
-                </a>
+                directly and don’t appear here.
+                {d.analyticsUrl && (
+                    <>
+                        {' '}
+                        <a href={d.analyticsUrl} target="_blank" rel="noreferrer">
+                            Full analytics in Cloudflare <ExternalLink aria-hidden="true" />
+                        </a>
+                    </>
+                )}
             </p>
         </div>
     );

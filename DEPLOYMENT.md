@@ -242,6 +242,8 @@ The admin Traffic page (`/admin/traffic`, and a tile on `/admin`) shows requests
 ```
 CLOUDFLARE_API_TOKEN=your-token
 CLOUDFLARE_ZONE_ID=your-zone-id
+# optional: adds a "Full analytics in Cloudflare" link to the page
+CLOUDFLARE_ANALYTICS_URL=https://dash.cloudflare.com/<account-id>/gamequeue.app/analytics/requests
 ```
 
 4. Run `docker compose up -d` (a plain restart does not re-read `.env`).

@@ -16,6 +16,8 @@ export interface Config {
     /** Cloudflare API token (Analytics: Read) and the site's zone id; the admin Traffic page is off without both */
     cloudflareApiToken?: string;
     cloudflareZoneId?: string;
+    /** Link to the full analytics page in the Cloudflare dashboard, shown on the admin Traffic page */
+    cloudflareAnalyticsUrl?: string;
     resendApiKey?: string;
     notifyEmail?: string;
     notifyFrom: string;
@@ -48,6 +50,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
         itadCountry: (env.ITAD_COUNTRY || 'US').toUpperCase(),
         cloudflareApiToken: env.CLOUDFLARE_API_TOKEN || undefined,
         cloudflareZoneId: env.CLOUDFLARE_ZONE_ID || undefined,
+        cloudflareAnalyticsUrl: env.CLOUDFLARE_ANALYTICS_URL || undefined,
         // Owner alerts (new signups) by email through Resend; off unless both key and address are set
         resendApiKey: env.RESEND_API_KEY || undefined,
         notifyEmail: env.NOTIFY_EMAIL || undefined,

@@ -23,6 +23,8 @@ export interface TrafficDto {
     days: TrafficDayDto[];
     /** When Cloudflare was asked (ms since epoch); null when not enabled */
     fetchedAt: number | null;
+    /** Dashboard link from CLOUDFLARE_ANALYTICS_URL; absent or null when not set */
+    analyticsUrl?: string | null;
 }
 
 export interface TrafficTotals {
