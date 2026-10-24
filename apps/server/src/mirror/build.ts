@@ -71,7 +71,13 @@ export async function buildMirror(opts: BuildOptions): Promise<BuildStats> {
                 }
                 db.exec('COMMIT');
             } catch (e) {
-                db.exec('ROLLBACK');
+                // SQLite has already rolled back after a disk-full or I/O error (and a failed COMMIT),
+                // and the file is thrown away anyway: never let this hide the real error
+                try {
+                    db.exec('ROLLBACK');
+                } catch {
+                    // nothing to roll back
+                }
                 throw e;
             }
             log(`${endpoint}: ${rows} rows in ${((now() - t) / 1000).toFixed(1)}s`);

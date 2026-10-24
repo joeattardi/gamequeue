@@ -3,7 +3,7 @@ import { existsSync, mkdtempSync, readdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { Readable } from 'node:stream';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { releaseFromFormats } from '../src/igdb/mappers.js';
 import { buildMirror } from '../src/mirror/build.js';
 import { parseIds } from '../src/mirror/csv.js';
@@ -196,6 +196,47 @@ describe('buildMirror', () => {
         };
         await expect(buildMirror({ source, outPath: join(dir, 'igdb.db') })).rejects.toThrow(
             'download failed'
+        );
+        expect(readdirSync(dir)).toEqual([]);
+    });
+});
+
+describe('buildMirror failures', () => {
+    afterEach(() => vi.restoreAllMocks());
+
+    it('reports the real error when SQLite has already rolled the transaction back', async () => {
+        // A failed COMMIT (disk full, I/O error) leaves no transaction behind, so the ROLLBACK that
+        // follows fails too; it used to replace the real error with "cannot rollback"
+        const exec = Database.prototype.exec;
+        vi.spyOn(Database.prototype, 'exec').mockImplementation(function (
+            this: Database.Database,
+            sql: string
+        ) {
+            if (sql === 'COMMIT') {
+                exec.call(this, 'ROLLBACK');
+                throw new Error('database or disk is full');
+            }
+            return exec.call(this, sql);
+        });
+        await expect(
+            buildMirror({ source: fakeSource(), outPath: join(dir, 'igdb.db') })
+        ).rejects.toThrow('database or disk is full');
+        expect(readdirSync(dir)).toEqual([]);
+    });
+
+    it('reports the error of a dump that breaks off in the middle', async () => {
+        const source = fakeSource();
+        source.open = async (endpoint) =>
+            endpoint === 'release_dates'
+                ? new Readable({
+                      read() {
+                          this.push('id,game,date,date_format\n1,1,2020-09-17 00:00:00,0\n');
+                          this.destroy(new Error('connection reset'));
+                      }
+                  })
+                : Readable.from([FIXTURES[endpoint]!]);
+        await expect(buildMirror({ source, outPath: join(dir, 'igdb.db') })).rejects.toThrow(
+            'connection reset'
         );
         expect(readdirSync(dir)).toEqual([]);
     });
