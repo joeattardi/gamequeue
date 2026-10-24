@@ -186,7 +186,12 @@ describe('GET /api/admin/traffic', () => {
         const { app, admin } = setup();
         const res = await app.request('/api/admin/traffic', { headers: { cookie: admin } });
         expect(res.status).toBe(200);
-        expect(await res.json()).toEqual({ enabled: false, days: [], fetchedAt: null });
+        expect(await res.json()).toEqual({
+            enabled: false,
+            days: [],
+            fetchedAt: null,
+            analyticsUrl: null
+        });
     });
 
     it('serves the daily traffic and a clear 502 when Cloudflare is down', async () => {
