@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import {
     isFinishedYear,
     pageQuerySchema,
+    timelineQuerySchema,
     PROFILE_VIEWS,
     usernameSchema,
     type ProfileView
@@ -18,6 +19,7 @@ import {
     getProfileGames,
     getProfileRecap,
     getProfileStats,
+    getProfileTimeline,
     getProfileWishlist
 } from '../services/profile.js';
 import { getPublicGrid } from '../services/grids.js';
@@ -54,6 +56,15 @@ export function profileRoutes({ db, config }: AppDeps) {
                 db,
                 parseUsername(c.req.param('username')),
                 validate(pageQuerySchema, c.req.query())
+            )
+        })
+    );
+    r.get('/:username/timeline', (c) =>
+        c.json({
+            timeline: getProfileTimeline(
+                db,
+                parseUsername(c.req.param('username')),
+                validate(timelineQuerySchema, c.req.query())
             )
         })
     );

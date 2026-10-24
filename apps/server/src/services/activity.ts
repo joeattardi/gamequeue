@@ -1,7 +1,14 @@
-import { and, count, desc, eq, inArray } from 'drizzle-orm';
-import type { ActivityEventDto, ActivityType, PageQuery } from '@gamequeue/shared';
+import { and, asc, count, desc, eq, gte, inArray, isNotNull, lt } from 'drizzle-orm';
+import type {
+    ActivityEventDto,
+    ActivityType,
+    PageQuery,
+    TimelineDto,
+    TimelinePlayingDto,
+    TimelineQuery
+} from '@gamequeue/shared';
 import type { Db } from '../db/client.js';
-import { activityEvents, games } from '../db/schema.js';
+import { activityEvents, entries, games, playthroughs } from '../db/schema.js';
 
 /** Doing the same thing to the same subject again this soon updates the last event instead. */
 const REPEAT_WINDOW_MS = 60 * 60 * 1000;
@@ -122,5 +129,64 @@ export function pageActivity(
             subject: e.subjectName === null ? null : { id: e.subjectId, name: e.subjectName },
             detail: e.detail
         }))
+    };
+}
+
+const DAY_MS = 86_400_000;
+/** More than a person does in a year; a cap so one runaway account can't make a huge response. */
+const TIMELINE_MAX_EVENTS = 10_000;
+
+const isoDay = (ms: number) => new Date(ms).toISOString().slice(0, 10);
+
+/**
+ * Events and played days for the calendar. Days are the viewer's local ones, which the server
+ * can't know, so the events come back a day wider on each side and the client cuts them.
+ * A playthrough counts as played from its start to its end; an open one runs to today, and one
+ * with an unknown start is skipped (one with a known start but unknown end is that one day).
+ */
+export function getTimeline(db: Db, userId: number, q: TimelineQuery): TimelineDto {
+    const fromMs = Date.parse(`${q.from}T00:00:00Z`) - DAY_MS;
+    const toMs = Date.parse(`${q.to}T00:00:00Z`) + 2 * DAY_MS;
+    const rows = db
+        .select({ e: activityEvents, game: games })
+        .from(activityEvents)
+        .leftJoin(games, eq(games.id, activityEvents.gameId))
+        .where(
+            and(
+                eq(activityEvents.userId, userId),
+                gte(activityEvents.at, fromMs),
+                lt(activityEvents.at, toMs)
+            )
+        )
+        .orderBy(asc(activityEvents.at), asc(activityEvents.id))
+        .limit(TIMELINE_MAX_EVENTS)
+        .all();
+    const today = isoDay(Date.now());
+    const played = db
+        .select({ p: playthroughs, game: games })
+        .from(playthroughs)
+        .innerJoin(entries, eq(entries.id, playthroughs.entryId))
+        .innerJoin(games, eq(games.id, entries.gameId))
+        .where(and(eq(playthroughs.userId, userId), isNotNull(playthroughs.startedOn)))
+        .all();
+    const playing: TimelinePlayingDto[] = [];
+    for (const { p, game } of played) {
+        const start = p.startedOn!;
+        const end = p.endedOn ?? (p.outcome === null ? today : start);
+        // Dates edited into the wrong order still cover their start day
+        const last = end < start ? start : end;
+        if (start > q.to || last < q.from) continue;
+        playing.push({ game: { id: game.id, name: game.name }, start, end: last });
+    }
+    return {
+        events: rows.map(({ e, game }) => ({
+            id: e.id,
+            type: e.type,
+            at: e.at,
+            game: game ? { id: game.id, name: game.name, coverImageId: game.coverImageId } : null,
+            subject: e.subjectName === null ? null : { id: e.subjectId, name: e.subjectName },
+            detail: e.detail
+        })),
+        playing
     };
 }

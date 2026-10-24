@@ -7,6 +7,8 @@ import {
     toPublicEntry,
     type EntryDto,
     type ActivityPageDto,
+    type TimelineDto,
+    type TimelineQuery,
     type EntryStatus,
     type PageQuery,
     type ProfileDto,
@@ -28,7 +30,7 @@ import {
     wishlists
 } from '../db/schema.js';
 import { HttpError } from '../errors.js';
-import { pageActivity } from './activity.js';
+import { getTimeline, pageActivity } from './activity.js';
 import { avatarIconOf, avatarVersion } from './avatars.js';
 import { profileBadge, socialLinksOf } from './users.js';
 import { hydrate, listEntries, pageEntries } from './entries.js';
@@ -327,6 +329,13 @@ export function getProfileActivity(db: Db, username: string, page: PageQuery): A
     const user = requireUser(db, username);
     if (!user.showActivity) return { username: user.username, events: [], total: 0 };
     return { username: user.username, ...pageActivity(db, user.id, page) };
+}
+
+/** The calendar's data. Hidden activity hides the calendar too, so it is empty then. */
+export function getProfileTimeline(db: Db, username: string, q: TimelineQuery): TimelineDto {
+    const user = requireUser(db, username);
+    if (!user.showActivity) return { events: [], playing: [] };
+    return getTimeline(db, user.id, q);
 }
 
 /**

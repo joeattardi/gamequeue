@@ -1,7 +1,9 @@
 import { ChartColumn, ArrowLeft } from 'lucide-react';
 import { Link, useParams } from 'react-router';
 import { ApiRequestError } from '../api/client';
+import { useMe } from '../api/auth';
 import { useProfileStats, useStats } from '../api/stats';
+import { ActivityCalendar } from '../components/ActivityCalendar';
 import { Footer } from '../components/Footer';
 import { StatsSkeleton } from '../components/PageSkeletons';
 import { PublicHeader } from '../components/PublicHeader';
@@ -11,6 +13,7 @@ import { usePageTitle } from '../lib';
 export function StatsPage() {
     usePageTitle('Stats');
     const stats = useStats();
+    const me = useMe().data;
     return (
         <section>
             <div className="page-head">
@@ -33,6 +36,7 @@ export function StatsPage() {
             ) : (
                 <StatsView stats={stats.data} />
             )}
+            {me && <ActivityCalendar username={me.username} scope="me" />}
         </section>
     );
 }
@@ -59,6 +63,9 @@ export function ProfileStatsPage() {
                     <StatsSkeleton />
                 ) : (
                     <StatsView stats={stats.data} />
+                )}
+                {!notFound && !stats.isError && (
+                    <ActivityCalendar username={username} scope={{ username }} />
                 )}
             </main>
             <Footer />

@@ -28,6 +28,7 @@ import { ApiRequestError } from '../api/client';
 import { useAuthConfig, useMe } from '../api/auth';
 import { useProfile } from '../api/profile';
 import { groupActivity, limitDays } from '../activityGroups';
+import { ActivityCalendar } from '../components/ActivityCalendar';
 import { ActivityDays } from '../components/ActivityFeed';
 import { HighlightRow } from '../components/HighlightRow';
 import { ProfileBadge } from '../components/ProfileBadge';
@@ -466,6 +467,12 @@ export function ProfilePage() {
                                         noun: 'favorites'
                                     }}
                                 />
+                                {profile.data.activity && (
+                                    <ActivityCalendar
+                                        username={profile.data.username}
+                                        scope={{ username: profile.data.username }}
+                                    />
+                                )}
                                 <ProfileActivity profile={profile.data} />
 
                                 <ProfileLists profile={profile.data} />
