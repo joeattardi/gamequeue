@@ -193,7 +193,7 @@ function Details({ grid }: { grid: GridDto }) {
             <p className="form-error" role="alert">
                 {error}
             </p>
-            <div className="row">
+            <div className="row row--center">
                 <button className="btn btn--primary" disabled={patch.isPending || !title.trim()}>
                     Save details
                 </button>

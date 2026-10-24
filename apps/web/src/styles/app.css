@@ -5287,3 +5287,6 @@ button.grid-cell__button:hover {
     color: var(--accent);
     font-weight: 700;
 }
+.row--center {
+    align-items: center;
+}
