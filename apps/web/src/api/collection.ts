@@ -101,7 +101,7 @@ export function useGameSearch(q: string) {
     });
 }
 
-/** A game by IGDB id with the user's state; fetched from IGDB on the server only if never seen. */
+/** A game by IGDB id with the user's state; looked up on the server (IGDB mirror or IGDB) only if never seen. */
 export const useGameDetail = (igdbId: number) =>
     useQuery({
         queryKey: ['game', igdbId],

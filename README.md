@@ -10,6 +10,7 @@ cp apps/server/.env.example apps/server/.env   # optional until IGDB arrives in 
 npm run dev        # server :3000 + web :5173 (open http://localhost:5173)
 npm test
 npm run typecheck
+npm run igdb:mirror    # optional: local copy of IGDB from its data dumps (partner access; see IGDB_MIRROR.md)
 npm run format         # prettier --write (format:check to verify)
 ```
 

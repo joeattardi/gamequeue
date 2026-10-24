@@ -149,8 +149,9 @@ export function saveGame(
 }
 
 /**
- * Returns the cached game, fetching from IGDB only if we've never seen it.
- * Cached metadata is never re-fetched.
+ * Returns the cached game, fetching it only if we've never seen it (from the mirror when there is
+ * one, else live IGDB). Cached metadata is not re-fetched here; with a mirror, `mirror-sync.ts`
+ * overwrites it whenever a new dump appears.
  */
 export async function ensureGame(db: Db, igdb: IgdbClient | undefined, igdbId: number) {
     const cached = db.select({ id: games.id }).from(games).where(eq(games.id, igdbId)).get();
@@ -161,9 +162,10 @@ export async function ensureGame(db: Db, igdb: IgdbClient | undefined, igdbId: n
 }
 
 /**
- * Makes sure a cached game has its screenshots, asking IGDB once for games cached before they were
- * stored (or saved from an import file). Best effort: a failure just leaves the gallery empty until
- * the next visit. Returns whether anything was stored.
+ * Makes sure a cached game has its screenshots, asking once for games cached before they were
+ * stored (or saved from an import file). The mirror sync fills these in for mirrored games; this
+ * remains for games newer than the last dump. Best effort: a failure just leaves the gallery empty
+ * until the next visit. Returns whether anything was stored.
  */
 export async function ensureScreenshots(
     db: Db,
@@ -193,9 +195,10 @@ export async function ensureScreenshots(
 let backfilling = false;
 
 /**
- * Asks IGDB which series each cached game is in, for games cached before series were stored (or
- * saved from an import file). One request per 100 games; games IGDB doesn't return count as
- * checked. Best effort: a failure leaves the rest for the next run, and only one run goes at a time.
+ * Asks which series each cached game is in, for games cached before series were stored (or saved
+ * from an import file). The mirror sync covers mirrored games; this is the fallback for the rest.
+ * One request per 100 games; games IGDB doesn't return count as checked. Best effort: a failure
+ * leaves the rest for the next run, and only one run goes at a time.
  */
 export async function backfillSeries(db: Db, igdb: IgdbClient | undefined, now = Date.now()) {
     if (!igdb || backfilling) return;
@@ -227,8 +230,9 @@ export const RELEASE_REFRESH_MS = 24 * 60 * 60 * 1000;
 
 /**
  * Re-reads the release date of cached games that haven't come out yet (announced, delayed or still
- * TBA), at most once a day each, in one IGDB request. Released games never change, so they are
- * skipped. Best effort: an IGDB failure leaves the cached dates alone and is not an error.
+ * TBA), at most once a day each, in one request. Through the mirror client this is a local read for
+ * mirrored games and a live IGDB request only for newer ones. Released games never change, so they
+ * are skipped. Best effort: an IGDB failure leaves the cached dates alone and is not an error.
  */
 export async function refreshReleaseDates(
     db: Db,

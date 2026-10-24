@@ -139,7 +139,11 @@ export function AdminIgdbPage() {
                         <Gamepad2 aria-hidden="true" />
                         IGDB
                     </h1>
-                    <p className="muted">Health of the connection to the game database.</p>
+                    <p className="muted">
+                        Health of the live connection to the game database. Searches and game pages
+                        are answered from the <Link to="/admin/mirror">local mirror</Link> when one
+                        exists, so these figures count only the requests that still reach IGDB.
+                    </p>
                 </div>
             </div>
             <div className="stack">

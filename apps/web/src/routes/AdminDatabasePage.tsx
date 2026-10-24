@@ -96,7 +96,7 @@ function Maintenance({ d }: { d: DatabaseStatsDto }) {
             <ul className="maint-list">
                 <Action
                     title="Remove unused cached games"
-                    text={`${n(unusedGames)} cached ${unusedGames === 1 ? 'game is' : 'games are'} in nobody's collection or wishlist, and ${n(d.cache.unusedSeries)} ${d.cache.unusedSeries === 1 ? 'series has' : 'series have'} no cached game. Nothing a user can see changes; a game is fetched from IGDB again if someone adds it later.`}
+                    text={`${n(unusedGames)} cached ${unusedGames === 1 ? 'game is' : 'games are'} in nobody's collection or wishlist, and ${n(d.cache.unusedSeries)} ${d.cache.unusedSeries === 1 ? 'series has' : 'series have'} no cached game. Nothing a user can see changes; a game is looked up again (in the IGDB mirror, or IGDB itself) if someone adds it later.`}
                     button="Remove"
                     disabled={unusedGames === 0 && d.cache.unusedSeries === 0}
                     pending={purgeGames.isPending}
