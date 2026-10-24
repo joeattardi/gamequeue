@@ -404,7 +404,8 @@ export function ProfilePage() {
                                     entries={profile.data.recentlyFinished}
                                     seeAll={{
                                         to: `/u/${profile.data.username}/finished`,
-                                        count: profile.data.summary.byStatus.finished
+                                        count: profile.data.summary.byStatus.finished,
+                                        noun: 'finished games'
                                     }}
                                 />
                                 <HighlightRow
@@ -414,7 +415,8 @@ export function ProfilePage() {
                                     entries={profile.data.favoriteGames}
                                     seeAll={{
                                         to: `/u/${profile.data.username}/favorites`,
-                                        count: profile.data.summary.favorites
+                                        count: profile.data.summary.favorites,
+                                        noun: 'favorites'
                                     }}
                                 />
                                 <ProfileActivity profile={profile.data} />

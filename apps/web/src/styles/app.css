@@ -5828,43 +5828,31 @@ button.tier-tile__button {
     }
 }
 
-/* Highlight rows (recently finished, favorites) */
-.highlight__head {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: 12px;
-}
-.highlight__all {
-    display: inline-flex;
-    align-items: center;
-    gap: 2px;
-    font-size: 0.9rem;
-    white-space: nowrap;
-}
-.highlight__all svg {
-    width: 1em;
-    height: 1em;
-}
+/* Highlight rows (recently finished, favorites): a grid whose column count the component sets */
 .highlight {
     list-style: none;
     margin: 0;
-    padding: 0 0 8px;
-    display: flex;
+    padding: 0;
+    display: grid;
     gap: 14px;
-    overflow-x: auto;
-    scroll-snap-type: x proximity;
 }
 .highlight li {
-    flex: none;
-    width: 110px;
-    scroll-snap-align: start;
     display: grid;
     gap: 4px;
     align-content: start;
+    min-width: 0;
 }
 .highlight .cover {
-    width: 110px;
+    width: 100%;
+}
+.highlight .cover--empty {
+    min-width: 0;
+    overflow: hidden;
+}
+.highlight .cover--empty span {
+    max-width: 100%;
+    font-size: 0.85rem;
+    overflow-wrap: anywhere;
 }
 .highlight__name {
     display: -webkit-box;
@@ -5875,6 +5863,38 @@ button.tier-tile__button {
     font-size: 0.85rem;
     font-weight: 600;
     line-height: 1.25;
+}
+/* The "N more" tile: cover-shaped, lights up like the stat tiles */
+.highlight__more {
+    display: grid;
+    place-content: center;
+    gap: 2px;
+    aspect-ratio: 264 / 352;
+    border: 1px dashed color-mix(in srgb, var(--accent) 45%, var(--line));
+    border-radius: 6px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    text-align: center;
+    text-decoration: none;
+    transition:
+        background-color 0.15s,
+        border-color 0.15s;
+}
+.highlight__more strong {
+    font-family: var(--font-display);
+    font-size: 1.8rem;
+    line-height: 1;
+}
+.highlight__more:hover,
+.highlight__more:focus-visible {
+    border-style: solid;
+    border-color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 16%, var(--surface));
+}
+@media (prefers-reduced-motion: reduce) {
+    .highlight__more {
+        transition: none;
+    }
 }
 .game-link:hover .highlight__name {
     text-decoration: underline;
