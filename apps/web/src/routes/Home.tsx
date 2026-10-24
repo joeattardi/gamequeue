@@ -10,7 +10,7 @@ import { useSlots } from '../api/slots';
 import { useStats } from '../api/stats';
 import { useWishlistCount } from '../api/wishlist';
 import { Welcome } from '../components/Welcome';
-import { Gamepad2, Sparkles, SlidersHorizontal } from 'lucide-react';
+import { Gamepad2, Joystick, SlidersHorizontal } from 'lucide-react';
 import { useFirstName } from '../api/auth';
 import { greeting, usePageTitle } from '../lib';
 
@@ -34,7 +34,7 @@ export function Home() {
     return (
         <div className="home">
             <header className="home-hero">
-                <Sparkles className="home-hero__icon" aria-hidden="true" />
+                <Joystick className="home-hero__icon" aria-hidden="true" />
                 <h1>{greeting(firstName)}</h1>
                 <p className="home-hero__sub">{summary}</p>
             </header>
