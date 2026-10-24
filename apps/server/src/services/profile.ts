@@ -21,6 +21,7 @@ import { HttpError } from '../errors.js';
 import { avatarVersion } from './avatars.js';
 import { socialLinksOf } from './users.js';
 import { listEntries, pageEntries } from './entries.js';
+import { listGrids } from './grids.js';
 import { getList, listLists } from './lists.js';
 import { getRecap } from './recap.js';
 import { getStats } from './stats.js';
@@ -91,7 +92,8 @@ export function getProfile(db: Db, username: string): ProfileDto {
             name: l.name,
             total: l.count,
             covers: l.covers
-        }))
+        })),
+        grids: listGrids(db, user.id)
     };
 }
 

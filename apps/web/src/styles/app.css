@@ -5098,3 +5098,128 @@ fieldset.stars:disabled .stars__star {
     background: rgb(255 255 255 / 0.26);
     border-color: transparent;
 }
+
+/* Grids: a board of labelled covers */
+.grid-board {
+    --grid-gap: clamp(6px, 1.6vw, 14px);
+    list-style: none;
+    padding: 0;
+    margin: 16px 0;
+    display: grid;
+    grid-template-columns: repeat(var(--grid-cols, 3), minmax(0, 1fr));
+    gap: var(--grid-gap);
+    max-width: calc(var(--grid-cols, 3) * 220px);
+}
+.grid-cell {
+    min-width: 0;
+    border-radius: var(--radius-sm);
+}
+.grid-cell__button {
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    gap: 6px;
+    width: 100%;
+    height: 100%;
+    padding: 6px;
+    font: inherit;
+    color: inherit;
+    text-align: center;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+}
+button.grid-cell__button {
+    cursor: pointer;
+}
+button.grid-cell__button:hover {
+    background: var(--surface-2);
+}
+.grid-cell__label {
+    font-family: var(--font-display, inherit);
+    font-weight: 600;
+    font-size: clamp(0.62rem, 1.7vw, 0.85rem);
+    line-height: 1.2;
+    overflow-wrap: anywhere;
+    text-wrap: balance;
+}
+.grid-cell__art {
+    display: grid;
+    min-width: 0;
+}
+.grid-cell__art .cover {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 3 / 4;
+    object-fit: cover;
+    border-radius: 4px;
+    box-shadow: none;
+}
+.grid-cell__empty {
+    display: grid;
+    place-items: center;
+    aspect-ratio: 3 / 4;
+    color: var(--ink-muted);
+    border: 1px dashed var(--line-strong);
+    border-radius: 4px;
+}
+.grid-cell__name {
+    min-height: 1.2em;
+    font-size: clamp(0.6rem, 1.5vw, 0.8rem);
+    color: var(--ink-muted);
+    overflow-wrap: anywhere;
+}
+.grid-cell.is-dragging {
+    opacity: 0.45;
+}
+.grid-cell.is-over .grid-cell__button {
+    outline: 2px solid var(--accent);
+}
+.grid-cell--editable[draggable='true'] {
+    cursor: grab;
+}
+.grid-cell__label-skeleton {
+    height: 0.9em;
+    margin: 2px auto;
+    width: 70%;
+}
+.grid-cell__art-skeleton {
+    aspect-ratio: 3 / 4;
+    border-radius: 4px;
+}
+.grid-page__side {
+    display: grid;
+    gap: 24px;
+    max-width: 620px;
+}
+.share-link {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    gap: 10px;
+}
+.share-link .field {
+    flex: 1 1 260px;
+}
+.grid-moves {
+    display: inline-flex;
+    gap: 4px;
+    margin-left: auto;
+}
+.picker {
+    display: grid;
+    gap: 10px;
+    grid-template-rows: auto auto minmax(0, 1fr);
+    min-height: 0;
+}
+.picker__results {
+    min-height: 120px;
+}
+@media (prefers-reduced-motion: reduce) {
+    .grid-cell {
+        transition: none;
+    }
+}
+/* head, label, error, actions, then the picker takes the rest (overrides the add-game layout) */
+.dialog__body--fill.dialog__body--cell:has(.results) {
+    grid-template-rows: auto auto auto auto minmax(0, 1fr);
+}

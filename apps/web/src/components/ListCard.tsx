@@ -8,7 +8,8 @@ export function ListCard({
     name,
     count,
     covers,
-    smart = false
+    smart = false,
+    detail
 }: {
     to: string;
     name: string;
@@ -16,6 +17,8 @@ export function ListCard({
     covers: string[];
     /** A smart list: marked with a wand */
     smart?: boolean;
+    /** Replaces the "N games" line */
+    detail?: string;
 }) {
     return (
         <li>
@@ -45,7 +48,7 @@ export function ListCard({
                         {name}
                     </strong>
                     <span className="list-card__count">
-                        {count} {count === 1 ? 'game' : 'games'}
+                        {detail ?? `${count} ${count === 1 ? 'game' : 'games'}`}
                     </span>
                 </span>
             </Link>

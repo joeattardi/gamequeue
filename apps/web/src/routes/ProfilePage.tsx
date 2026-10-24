@@ -202,6 +202,28 @@ function ProfileLists({ profile }: { profile: ProfileDto }) {
     );
 }
 
+/** Grids as tiles; each links to its public page. */
+function ProfileGrids({ profile }: { profile: ProfileDto }) {
+    if (profile.grids.length === 0) return null;
+    return (
+        <section aria-labelledby="p-grids">
+            <h2 id="p-grids">Grids</h2>
+            <ul className="list-cards">
+                {profile.grids.map((g) => (
+                    <ListCard
+                        key={g.id}
+                        to={`/u/${profile.username}/grids/${g.id}`}
+                        name={g.title}
+                        count={g.filled}
+                        covers={g.covers}
+                        detail={`${g.cols}×${g.rows} · ${g.filled} of ${g.cols * g.rows} filled`}
+                    />
+                ))}
+            </ul>
+        </section>
+    );
+}
+
 export function ProfilePage() {
     const { username = '' } = useParams();
     const profile = useProfile(username);
@@ -264,6 +286,7 @@ export function ProfilePage() {
                         </section>
 
                         <ProfileLists profile={profile.data} />
+                        <ProfileGrids profile={profile.data} />
                     </>
                 )}
             </main>

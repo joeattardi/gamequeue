@@ -430,6 +430,46 @@ export const wishlistItems = sqliteTable(
     ]
 );
 
+// ---------------------------------------------------------------------------
+// Grids: a shareable cols x rows board of games, each cell with a label ("Best soundtrack").
+// Public by design (the grid itself holds nothing private). Only non-empty cells are stored.
+// ---------------------------------------------------------------------------
+
+export const grids = sqliteTable(
+    'grids',
+    {
+        id: integer('id').primaryKey({ autoIncrement: true }),
+        userId: integer('user_id')
+            .notNull()
+            .references(() => users.id, { onDelete: 'cascade' }),
+        title: text('title').notNull(),
+        description: text('description').notNull().default(''),
+        cols: integer('cols').notNull(),
+        rows: integer('rows').notNull(),
+        createdAt: integer('created_at').notNull().default(now),
+        updatedAt: integer('updated_at').notNull().default(now)
+    },
+    (t) => [index('grids_user_idx').on(t.userId)]
+);
+
+export const gridCells = sqliteTable(
+    'grid_cells',
+    {
+        gridId: integer('grid_id')
+            .notNull()
+            .references(() => grids.id, { onDelete: 'cascade' }),
+        // Row-major: row * cols + col
+        position: integer('position').notNull(),
+        label: text('label').notNull().default(''),
+        // Points at the shared cache; `ensureGame` runs when a game is placed
+        gameId: integer('game_id').references(() => games.id)
+    },
+    (t) => [
+        primaryKey({ columns: [t.gridId, t.position] }),
+        index('grid_cells_game_idx').on(t.gameId)
+    ]
+);
+
 // Games the user told Discover not to suggest again. Keyed by IGDB id with no games FK: a suggestion
 // is usually a game we have never cached.
 export const dismissedGames = sqliteTable(

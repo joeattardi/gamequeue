@@ -18,6 +18,7 @@ import {
     getProfileStats,
     getProfileWishlist
 } from '../services/profile.js';
+import { getPublicGrid } from '../services/grids.js';
 import { getAvatarByUsername } from '../services/avatars.js';
 import { parseRecapYear } from '../services/recap.js';
 
@@ -61,6 +62,15 @@ export function profileRoutes({ db }: AppDeps) {
                 validate(pageQuerySchema, c.req.query())
             )
         )
+    );
+    r.get('/:username/grids/:id', (c) =>
+        c.json({
+            grid: getPublicGrid(
+                db,
+                parseUsername(c.req.param('username')),
+                parseId(c.req.param('id'))
+            )
+        })
     );
     r.get('/:username/avatar', (c) => {
         const avatar = getAvatarByUsername(db, parseUsername(c.req.param('username')));

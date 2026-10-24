@@ -1,4 +1,5 @@
 import type { EntryDto, EntryStatus } from './collection.js';
+import type { GridSummaryDto } from './grids.js';
 import type { SocialLinks } from './social.js';
 
 /** The part of an entry that is safe to show to anyone: no notes, no list/slot internals. */
@@ -48,6 +49,7 @@ export interface ProfileDto {
     lists: ProfileListTileDto[];
     /** Smart lists as they match right now, with their rules in words */
     smartLists: ProfileListTileDto[];
+    grids: GridSummaryDto[];
 }
 
 export interface ProfileListTileDto {

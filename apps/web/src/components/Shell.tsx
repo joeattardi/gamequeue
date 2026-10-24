@@ -17,6 +17,7 @@ import {
     Gift,
     Inbox,
     Joystick,
+    LayoutGrid,
     LibraryBig,
     Menu,
     PanelLeftClose,
@@ -263,6 +264,17 @@ export function Shell({ user }: { user: UserDto }) {
                                 to="/discover"
                                 icon={<Compass />}
                                 label="Discover"
+                                collapsed={collapsed}
+                            />
+                        </div>
+                        <div className="nav__group" role="group" aria-labelledby="nav-social">
+                            <h2 className="nav__label" id="nav-social">
+                                Social
+                            </h2>
+                            <NavItem
+                                to="/grids"
+                                icon={<LayoutGrid />}
+                                label="Grids"
                                 collapsed={collapsed}
                             />
                         </div>

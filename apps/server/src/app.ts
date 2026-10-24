@@ -21,6 +21,7 @@ import { statsRoutes } from './routes/stats.js';
 import { showcaseRoutes } from './routes/showcase.js';
 import { seriesRoutes } from './routes/series.js';
 import { slotRoutes } from './routes/slots.js';
+import { gridRoutes } from './routes/grids.js';
 import { wishlistRoutes } from './routes/wishlist.js';
 import { entryActionRoutes, playthroughRoutes } from './routes/playthroughs.js';
 import { HttpError } from './errors.js';
@@ -104,6 +105,7 @@ export function createApp(deps: AppDeps) {
     app.route('/api/smart-lists', smartListRoutes(deps));
     app.route('/api/queue', queueRoutes(deps));
     app.route('/api/wishlist', wishlistRoutes(deps));
+    app.route('/api/grids', gridRoutes(deps));
     app.route('/api/series', seriesRoutes(deps));
     app.route('/api/stats', statsRoutes(deps));
     app.route('/api/recap', recapRoutes(deps));
