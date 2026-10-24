@@ -663,7 +663,7 @@ a {
         opacity: 0;
         visibility: hidden;
     }
-    .is-collapsed .logo {
+    .sidebar.is-collapsed .sidebar__head .logo {
         padding: 0 0 0 4px;
     }
     .is-collapsed .user-menu__button {
