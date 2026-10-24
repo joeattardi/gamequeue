@@ -20,6 +20,7 @@ import {
     useSwapGridCells
 } from '../api/grids';
 import { useConfirm } from '../components/Confirm';
+import { DownloadGridImage } from '../components/DownloadGridImage';
 import { GameSearchPicker } from '../components/GameSearchPicker';
 import { GridBoard, GridBoardSkeleton } from '../components/GridBoard';
 import { ShareLink } from '../components/ShareLink';
@@ -80,6 +81,7 @@ export function GridPage() {
                         {me.data && (
                             <ShareLink path={`/u/${me.data.username}/grids/${grid.data.id}`} />
                         )}
+                        <DownloadGridImage grid={grid.data} username={me.data?.username} />
                         <Details grid={grid.data} />
                     </div>
                     <CellDialog

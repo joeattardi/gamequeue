@@ -2,6 +2,7 @@ import { ArrowLeft } from 'lucide-react';
 import { Link, useParams } from 'react-router';
 import { ApiRequestError } from '../api/client';
 import { usePublicGrid } from '../api/grids';
+import { DownloadGridImage } from '../components/DownloadGridImage';
 import { Footer } from '../components/Footer';
 import { GridBoard, GridBoardSkeleton } from '../components/GridBoard';
 import { PublicHeader } from '../components/PublicHeader';
@@ -33,6 +34,7 @@ export function ProfileGridPage() {
                         </p>
                         {grid.data.description && <p>{grid.data.description}</p>}
                         <GridBoard grid={grid.data} />
+                        <DownloadGridImage grid={grid.data} username={username} />
                     </>
                 )}
             </main>
