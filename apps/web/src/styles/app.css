@@ -3281,7 +3281,7 @@ fieldset.stars:disabled .stars__star {
     margin: 0;
 }
 .smart-lists h2 svg,
-.profile-hero ~ section h2 svg {
+.profile-layout section h2 svg {
     width: 1em;
     height: 1em;
     flex: none;
@@ -5595,4 +5595,26 @@ button.tier-tile__button {
 }
 .public-games li:hover .public-games__link strong {
     text-decoration: underline;
+}
+
+/* Public profile: the collection tiles are a side column on wide screens, so the rest of the
+   profile (playing now, activity, lists) isn't pushed below them. Narrow screens stack, tiles first. */
+.profile-main > section:first-child h2,
+.profile-side h2 {
+    margin-top: 0;
+}
+@media (min-width: 900px) {
+    .profile-layout {
+        display: grid;
+        grid-template-columns: 300px minmax(0, 1fr);
+        gap: 0 32px;
+        align-items: start;
+    }
+    .profile-side {
+        position: sticky;
+        top: 16px;
+    }
+    .profile-side .counters {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
 }

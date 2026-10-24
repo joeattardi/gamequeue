@@ -312,29 +312,33 @@ export function ProfilePage() {
                             </div>
                         </div>
 
-                        <section aria-labelledby="p-collection">
-                            <h2 id="p-collection">Collection</h2>
-                            <Stats
-                                username={profile.data.username}
-                                summary={profile.data.summary}
-                            />
-                        </section>
+                        <div className="profile-layout">
+                            <section aria-labelledby="p-collection" className="profile-side">
+                                <h2 id="p-collection">Collection</h2>
+                                <Stats
+                                    username={profile.data.username}
+                                    summary={profile.data.summary}
+                                />
+                            </section>
 
-                        <section aria-labelledby="p-playing">
-                            <h2 id="p-playing">Currently playing</h2>
-                            <Games
-                                username={profile.data.username}
-                                entries={profile.data.slots.flatMap((s) =>
-                                    s.entry ? [s.entry] : []
-                                )}
-                            />
-                        </section>
+                            <div className="profile-main">
+                                <section aria-labelledby="p-playing">
+                                    <h2 id="p-playing">Currently playing</h2>
+                                    <Games
+                                        username={profile.data.username}
+                                        entries={profile.data.slots.flatMap((s) =>
+                                            s.entry ? [s.entry] : []
+                                        )}
+                                    />
+                                </section>
 
-                        <ProfileActivity profile={profile.data} />
+                                <ProfileActivity profile={profile.data} />
 
-                        <ProfileLists profile={profile.data} />
-                        <ProfileGrids profile={profile.data} />
-                        <ProfileTierLists profile={profile.data} />
+                                <ProfileLists profile={profile.data} />
+                                <ProfileGrids profile={profile.data} />
+                                <ProfileTierLists profile={profile.data} />
+                            </div>
+                        </div>
                     </>
                 )}
             </main>

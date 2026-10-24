@@ -58,7 +58,7 @@ export function EntrySkeleton() {
     );
 }
 
-/** The public profile: hero, the stat tiles and their bar, then a games section. */
+/** The public profile: hero, then the stat tiles (a side column when wide) beside a games section. */
 export function ProfileSkeleton() {
     return (
         <div role="status" aria-label="Loading profile">
@@ -69,40 +69,44 @@ export function ProfileSkeleton() {
                     <span className="skeleton skeleton--line skeleton--subtitle skeleton--gap" />
                 </div>
             </div>
-            <div aria-hidden="true">
-                <h2>
-                    <span className="skeleton skeleton--line skeleton--section" />
-                </h2>
-                <ul className="counters">
-                    {Array.from({ length: 10 }, (_, i) => (
-                        <li key={i} className="counter">
-                            <div className="counter__link">
-                                <span className="counter__icon">
-                                    <span className="skeleton skeleton--counter-icon" />
-                                </span>
-                                <span className="counter__value">
-                                    <span className="skeleton skeleton--counter-value" />
-                                </span>
-                                <span className="counter__label">
-                                    <span className="skeleton skeleton--line skeleton--counter-label" />
-                                </span>
-                            </div>
-                        </li>
-                    ))}
-                </ul>
-                <div className="statbar">
-                    <span className="skeleton skeleton--statbar" />
+            <div className="profile-layout" aria-hidden="true">
+                <div className="profile-side">
+                    <h2>
+                        <span className="skeleton skeleton--line skeleton--section" />
+                    </h2>
+                    <ul className="counters">
+                        {Array.from({ length: 10 }, (_, i) => (
+                            <li key={i} className="counter">
+                                <div className="counter__link">
+                                    <span className="counter__icon">
+                                        <span className="skeleton skeleton--counter-icon" />
+                                    </span>
+                                    <span className="counter__value">
+                                        <span className="skeleton skeleton--counter-value" />
+                                    </span>
+                                    <span className="counter__label">
+                                        <span className="skeleton skeleton--line skeleton--counter-label" />
+                                    </span>
+                                </div>
+                            </li>
+                        ))}
+                    </ul>
+                    <div className="statbar">
+                        <span className="skeleton skeleton--statbar" />
+                    </div>
                 </div>
-                <h2>
-                    <span className="skeleton skeleton--line skeleton--section" />
-                </h2>
-                <ul className="public-grid">
-                    {Array.from({ length: 6 }, (_, i) => (
-                        <li key={i}>
-                            <div className="public-skeleton public-skeleton--cover" />
-                        </li>
-                    ))}
-                </ul>
+                <div className="profile-main">
+                    <h2>
+                        <span className="skeleton skeleton--line skeleton--section" />
+                    </h2>
+                    <ul className="public-grid">
+                        {Array.from({ length: 6 }, (_, i) => (
+                            <li key={i}>
+                                <div className="public-skeleton public-skeleton--cover" />
+                            </li>
+                        ))}
+                    </ul>
+                </div>
             </div>
         </div>
     );
