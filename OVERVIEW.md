@@ -17,7 +17,7 @@ For the exhaustive reference (every route, column and edge case), see `ARCHITECT
 9. [Slots: what you're playing right now](#9-slots-what-youre-playing-right-now)
 10. [Organizing games: lists, queue, smart lists, wishlist](#10-organizing-games-lists-queue-smart-lists-wishlist)
 11. [Random pick](#11-random-pick)
-12. [Stats and year in review](#12-stats-and-year-in-review)
+12. [Stats and Save File](#12-stats-and-save-file)
 13. [Public profile and share cards](#13-public-profile-and-share-cards)
 14. [Export and import](#14-export-and-import)
 15. [The account page](#15-the-account-page)
@@ -490,7 +490,7 @@ Both use `pickRandom` from `packages/shared/src/pick.ts`. It's a pure function t
 
 ---
 
-## 12. Stats and year in review
+## 12. Stats and Save File
 
 Both are computed fresh from your entries and playthroughs; nothing is stored.
 
@@ -504,7 +504,7 @@ flowchart LR
 ```
 
 - **Stats**: totals, games finished per year and over the last 12 months, top platforms/genres/tags, rating spread, top rated, and total play time (the hours you enter when finishing a game, added up; nothing is actually timed).
-- **Year in review** ("Wrapped" for games): what you finished, started, added and abandoned in a year, your busiest month, longest and shortest games, and a playful archetype like "marathoner" or "collector".
+- **Save File** (the year in review, "Wrapped" for games): what you finished, started, added and abandoned in a year, your busiest month, longest and shortest games, and a playful archetype like "marathoner" or "collector".
 
 The split between loading (server) and arithmetic (shared, pure) is a pattern you'll see repeatedly. It makes the math easy to test without a database. The payload never contains notes, so the same response can be shown publicly.
 

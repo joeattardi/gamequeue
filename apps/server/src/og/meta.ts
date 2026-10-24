@@ -76,7 +76,7 @@ export function pageMeta(db: Db, config: Config, path: string): PageMeta | null 
                     (data.archetype ? `. ${data.archetype}.` : '.'),
                 url: `${config.publicUrl}/u/${data.username}/recap/${year}`,
                 image: `${config.publicUrl}/api/og/recap/${data.username}/${year}.png?v=${cardKey(data)}`,
-                imageAlt: `${data.username}'s ${year} year in review on GameQueue`
+                imageAlt: `${data.username}'s ${year} Save File on GameQueue`
             };
         }
         const data = getProfileCardData(db, parsed.data, host);

@@ -57,8 +57,8 @@ const FEATURES = [
     },
     {
         icon: CalendarDays,
-        title: 'Year in review',
-        text: 'A shareable "Wrapped" for your gaming year, with its own link and preview card.'
+        title: 'Save File',
+        text: 'A shareable recap of your gaming year, with its own link and preview card.'
     },
     {
         icon: Globe,
@@ -81,7 +81,7 @@ const STEPS = [
     {
         icon: Gamepad2,
         title: 'Play and keep track',
-        text: 'Start a game from a slot. Finishing it lands in your history, stats and yearly recap.'
+        text: 'Start a game from a slot. Finishing it lands in your history, stats and yearly Save File.'
     }
 ];
 

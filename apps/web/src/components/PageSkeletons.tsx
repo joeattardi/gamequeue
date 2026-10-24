@@ -354,7 +354,7 @@ export function StatsSkeleton() {
 /** The year-in-review page: a year picker and three coloured cards. */
 export function RecapSkeleton() {
     return (
-        <div className="stack rc" role="status" aria-label="Loading recap">
+        <div className="stack rc" role="status" aria-label="Loading Save File">
             <span className="skeleton skeleton--line" style={{ width: 220 }} aria-hidden="true" />
             {[0, 1, 2].map((i) => (
                 <section key={i} className={`rc-card rc-card--${i + 1}`} aria-hidden="true">

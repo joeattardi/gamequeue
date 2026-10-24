@@ -153,7 +153,7 @@ function Stats({ username, summary }: { username: string; summary: ProfileDto['s
                     className="counter--recap"
                     to={`/u/${username}/recap`}
                     icon={<CalendarDays aria-hidden="true" />}
-                    label="Year in review"
+                    label="Save File"
                 />
             </ul>
             {summary.total > 0 && (

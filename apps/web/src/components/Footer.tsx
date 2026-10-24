@@ -13,7 +13,7 @@ const SITE_MAP = [
     ['/grids', 'Grids'],
     ['/tiers', 'Tier lists'],
     ['/stats', 'Stats'],
-    ['/recap', 'Recap'],
+    ['/recap', 'Save File'],
     ['/data', 'Data'],
     ['/account', 'Account']
 ] as const;

@@ -523,7 +523,7 @@ export function recapCard(d: RecapCardData, a: CardAssets): El {
                 h(
                     'div',
                     { style: { alignItems: 'center', gap: 14, marginBottom: 6 } },
-                    pill(`${d.year} in review`),
+                    pill(`${d.year} Save File`),
                     delta &&
                         h(
                             'div',

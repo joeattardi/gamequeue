@@ -10,7 +10,7 @@ import { PublicHeader } from '../components/PublicHeader';
 import { RecapView } from '../components/RecapView';
 import { usePageTitle } from '../lib';
 
-/** Copies the public URL of a year's recap and says so (the page itself is public, see `ProfileRecapPage`). */
+/** Copies the public URL of a year's Save File and says so (the page itself is public, see `ProfileRecapPage`). */
 function ShareButton({ username, year }: { username: string; year: number }) {
     const [state, setState] = useState<'idle' | 'copied' | 'failed'>('idle');
     const timer = useRef<number | undefined>(undefined);
@@ -48,14 +48,14 @@ export function RecapPage() {
     const me = useMe();
     const { year } = useParams();
     const recap = useRecap(year);
-    usePageTitle(recap.data ? `${recap.data.year} Recap` : 'Recap');
+    usePageTitle(recap.data ? `${recap.data.year} Save File` : 'Save File');
     return (
         <section>
             <div className="page-head">
                 <div>
                     <h1>
                         <Sparkles aria-hidden="true" />
-                        Year in review
+                        Save File
                     </h1>
                     <p className="muted">Your games, year by year. Also on your public profile.</p>
                 </div>
@@ -65,7 +65,7 @@ export function RecapPage() {
             </div>
             {recap.isError ? (
                 <p className="form-error" role="alert">
-                    Couldn't load your recap.
+                    Couldn't load your Save File.
                 </p>
             ) : recap.isPending ? (
                 <RecapSkeleton />
@@ -80,7 +80,7 @@ export function RecapPage() {
 export function ProfileRecapPage() {
     const { username = '', year } = useParams();
     const recap = useProfileRecap(username, year);
-    usePageTitle(`${username}'s ${recap.data?.year ?? ''} Recap`.replace('  ', ' '));
+    usePageTitle(`${username}'s ${recap.data?.year ?? ''} Save File`.replace('  ', ' '));
     const notFound = recap.error instanceof ApiRequestError && recap.error.status === 404;
     return (
         <>
@@ -89,7 +89,7 @@ export function ProfileRecapPage() {
                 <Link to={`/u/${username}`} className="back">
                     <ArrowLeft aria-hidden="true" /> {username}
                 </Link>
-                <h1>{username}: year in review</h1>
+                <h1>{username}: Save File</h1>
                 {notFound ? (
                     <p role="alert">There is nothing here.</p>
                 ) : recap.isError ? (

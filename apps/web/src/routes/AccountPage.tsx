@@ -190,7 +190,7 @@ function SearchIndexingForm({ me }: { me: UserDto }) {
             </label>
             <p className="muted">
                 This covers your profile and its sub-pages: wishlist, stats, lists, grids, tier
-                lists and year in review. Search engines can take days or weeks to pick up a change.
+                lists and Save File. Search engines can take days or weeks to pick up a change.
             </p>
             <div>
                 <button className="btn btn--primary" disabled={update.isPending}>

@@ -5634,7 +5634,7 @@ button.tier-tile__button {
     .profile-side .counters {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
-    /* Total games and the two link tiles (stats, year in review) get a full row each */
+    /* Total games and the two link tiles (stats, Save File) get a full row each */
     .profile-side .counter--total,
     .profile-side .counter--nav {
         grid-column: 1 / -1;

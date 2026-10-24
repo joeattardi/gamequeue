@@ -301,7 +301,7 @@ export function Shell({ user }: { user: UserDto }) {
                                     to="/recap"
                                     className="nav__season"
                                     icon={<Sparkles />}
-                                    label="Recap"
+                                    label="Save File"
                                     collapsed={collapsed}
                                 />
                             )}
