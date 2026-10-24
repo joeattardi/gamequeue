@@ -97,8 +97,8 @@ function Legend() {
                 </li>
             </ul>
             <p className="muted">
-                Brighter means more actions that day. A day with different kinds of actions is split
-                into stripes.
+                Brighter means more actions that day. A dot marks a day a game was being played. A
+                day with different kinds of actions is split into stripes.
             </p>
         </div>
     );

@@ -6174,8 +6174,19 @@ button.tier-tile__button {
     background: var(--cal-empty);
     cursor: pointer;
 }
+.cal__cell[data-playing]::after,
+.cal__key--playing::after {
+    content: '';
+    display: block;
+    width: 34%;
+    aspect-ratio: 1;
+    margin: auto;
+    border-radius: 50%;
+    background: var(--ink);
+    opacity: 0.6;
+}
 .cal__cell[data-playing] {
-    box-shadow: inset 0 -3px 0 var(--ink-muted);
+    display: grid;
 }
 .cal__cell[aria-pressed='true'] {
     outline: 2px solid var(--accent);
@@ -6220,7 +6231,7 @@ button.tier-tile__button {
     background: var(--cal-collected);
 }
 .cal__key--playing {
-    box-shadow: inset 0 -3px 0 var(--ink-muted);
+    display: grid;
 }
 .cal__panel,
 .cal__hint {
