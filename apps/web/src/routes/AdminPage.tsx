@@ -266,6 +266,7 @@ function MirrorTile() {
             }
             to="/admin/mirror"
             linkLabel="Mirror details"
+            wide
         >
             {health && health !== 'healthy' && (
                 <p className="admin-warn" role="status">
@@ -440,8 +441,8 @@ export function AdminPage() {
                 <UsersTile />
                 <DatabaseTile />
                 <IgdbTile />
-                <MirrorTile />
                 <TrafficTile />
+                <MirrorTile />
                 <ErrorsTile />
                 <ServerTile />
                 <SettingsTile />

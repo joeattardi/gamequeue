@@ -12,6 +12,7 @@ export function AdminTile({
     stats,
     to,
     linkLabel,
+    wide,
     children
 }: {
     id: string;
@@ -21,10 +22,15 @@ export function AdminTile({
     stats: { label: string; value: string | number; title?: string }[];
     to: string;
     linkLabel: string;
+    /** Takes the full row of the dashboard grid, for a tile whose figures need the room */
+    wide?: boolean;
     children?: ReactNode;
 }) {
     return (
-        <section className="panel admin-tile" aria-labelledby={id}>
+        <section
+            className={`panel admin-tile${wide ? ' admin-tile--wide' : ''}`}
+            aria-labelledby={id}
+        >
             <h2 id={id}>
                 {icon} {title}
             </h2>
