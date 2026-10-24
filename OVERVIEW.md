@@ -574,7 +574,7 @@ Code: `services/export.ts`, `services/import.ts`, `packages/shared/src/export.ts
 
 `/account` collects the personal settings:
 
-- **Avatar.** By default, a generated identicon based on your username (computed in the browser; nothing stored). You can pick one of about 50 preset game icons on a colour of your choice (stored as just a name and a colour number), or upload a picture instead. Choosing one replaces the other. The upload works like this: the browser crops and shrinks it to a small square image before sending it, and the server checks its type and size and stores it in the `avatars` table.
+- **Avatar.** By default, a generated identicon based on your username (computed in the browser; nothing stored). The account page shows your current picture and a "Change picture" button that opens a dialog with all the options. You can pick one of about 50 preset game icons on a colour of your choice (stored as just a name and a colour number), or upload a picture instead. Choosing one replaces the other. The upload works like this: the browser crops and shrinks it to a small square image before sending it, and the server checks its type and size and stores it in the `avatars` table.
 - **Real name.** Optional first and last name. Private unless you tick "show on profile". The first name is used for greetings on the home page.
 - **Gaming accounts.** Steam, Xbox, PlayStation and Discord names, shown as links on your public profile once filled in.
 - **Password change.** Needs your current password, and signs out your other sessions.
