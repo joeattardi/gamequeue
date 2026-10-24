@@ -97,8 +97,8 @@ export function DataPage() {
                     <h2 id="export-h">Export</h2>
                     <p>
                         One JSON file with your collection, playthroughs, slots, lists, queue,
-                        wishlist, smart lists and tags, plus the game details needed to restore it
-                        without IGDB.
+                        wishlist, smart lists, grids, tier lists and tags, plus the game details
+                        needed to restore it without IGDB.
                     </p>
                     <div>
                         <a className="btn btn--primary" href="/api/data/export" download>
@@ -238,7 +238,8 @@ export function DataPage() {
 }
 
 function ReportSummary({ report }: { report: ImportReport }) {
-    const { games, playthroughs, lists, queue, wishlist, smartLists, slots } = report;
+    const { games, playthroughs, lists, queue, wishlist, smartLists, grids, tierLists, slots } =
+        report;
     const verb = report.dryRun ? 'Will add' : 'Added';
     const nothing =
         games.added +
@@ -249,6 +250,8 @@ function ReportSummary({ report }: { report: ImportReport }) {
             queue.added +
             wishlist.added +
             smartLists.created +
+            grids.created +
+            tierLists.created +
             slots.created +
             slots.filled ===
         0;
@@ -269,6 +272,8 @@ function ReportSummary({ report }: { report: ImportReport }) {
                 <Stat label={`${verb} lists`} value={lists.created} />
                 <Stat label={`${verb} list entries`} value={lists.itemsAdded} />
                 <Stat label={`${verb} smart lists`} value={smartLists.created} />
+                <Stat label={`${verb} grids`} value={grids.created} />
+                <Stat label={`${verb} tier lists`} value={tierLists.created} />
                 <Stat label={`${verb} to queue`} value={queue.added} />
                 <Stat label={`${verb} to wishlist`} value={wishlist.added} />
                 <Stat label={`${verb} slots`} value={slots.created} />

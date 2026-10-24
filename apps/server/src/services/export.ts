@@ -4,6 +4,8 @@ import {
     EXPORT_VERSION,
     type ExportEntry,
     type ExportFile,
+    type ExportGrid,
+    type ExportTierList,
     type ExportWishlistItem
 } from '@gamequeue/shared';
 import type { Db } from '../db/client.js';
@@ -16,6 +18,8 @@ import {
     games,
     gameThemes,
     genres,
+    gridCells,
+    grids,
     listItems,
     lists,
     platforms,
@@ -23,6 +27,9 @@ import {
     slots,
     tags,
     themes,
+    tierItems,
+    tierLists,
+    tiers,
     wishlistItems
 } from '../db/schema.js';
 import { findWishlist } from './wishlist.js';
@@ -61,7 +68,11 @@ export function buildExport(db: Db, userId: number, now = new Date()): ExportFil
     // A subquery rather than an id list, so there is nothing to chunk.
     const wantedGames = sql`(select game_id from entries where user_id = ${userId}
         union select wi.game_id from wishlist_items wi
-            join wishlists w on w.id = wi.wishlist_id where w.user_id = ${userId})`;
+            join wishlists w on w.id = wi.wishlist_id where w.user_id = ${userId}
+        union select gc.game_id from grid_cells gc
+            join grids g on g.id = gc.grid_id where g.user_id = ${userId} and gc.game_id is not null
+        union select ti.game_id from tier_items ti
+            join tier_lists tl on tl.id = ti.tier_list_id where tl.user_id = ${userId})`;
 
     const gamePlats = group(
         db
@@ -202,6 +213,77 @@ export function buildExport(db: Db, userId: number, now = new Date()): ExportFil
             .all()
     );
 
+    const placed = (g: typeof games.$inferSelect) => ({ igdbId: g.id, game: snapshot(g) });
+
+    const gridRows = db
+        .select()
+        .from(grids)
+        .where(eq(grids.userId, userId))
+        .orderBy(asc(grids.id))
+        .all();
+    const cellRows = group(
+        db
+            .select({ gridId: gridCells.gridId, cell: gridCells, g: games })
+            .from(gridCells)
+            .innerJoin(grids, eq(grids.id, gridCells.gridId))
+            .leftJoin(games, eq(games.id, gridCells.gameId))
+            .where(eq(grids.userId, userId))
+            .orderBy(asc(gridCells.position))
+            .all()
+            .map((r) => ({ key: r.gridId, value: { cell: r.cell, g: r.g } }))
+    );
+    const exportedGrids: ExportGrid[] = gridRows.map((g) => ({
+        title: g.title,
+        description: g.description,
+        cols: g.cols,
+        rows: g.rows,
+        cells: (cellRows.get(g.id) ?? []).map(({ cell, g: game }) => ({
+            position: cell.position,
+            label: cell.label,
+            game: game ? placed(game) : null
+        }))
+    }));
+
+    const tierListRows = db
+        .select()
+        .from(tierLists)
+        .where(eq(tierLists.userId, userId))
+        .orderBy(asc(tierLists.id))
+        .all();
+    const tierRows = group(
+        db
+            .select({ key: tiers.tierListId, value: tiers })
+            .from(tiers)
+            .innerJoin(tierLists, eq(tierLists.id, tiers.tierListId))
+            .where(eq(tierLists.userId, userId))
+            .orderBy(asc(tiers.position))
+            .all()
+    );
+    const tierItemRows = group(
+        db
+            .select({ tierListId: tierItems.tierListId, item: tierItems, g: games })
+            .from(tierItems)
+            .innerJoin(tierLists, eq(tierLists.id, tierItems.tierListId))
+            .innerJoin(games, eq(games.id, tierItems.gameId))
+            .where(eq(tierLists.userId, userId))
+            .orderBy(asc(tierItems.position))
+            .all()
+            .map((r) => ({ key: r.tierListId, value: { item: r.item, g: r.g } }))
+    );
+    const exportedTierLists: ExportTierList[] = tierListRows.map((l) => {
+        const items = tierItemRows.get(l.id) ?? [];
+        return {
+            title: l.title,
+            description: l.description,
+            tiers: (tierRows.get(l.id) ?? []).map((t) => ({
+                name: t.name,
+                color: t.color as ExportTierList['tiers'][number]['color'],
+                games: items.filter((i) => i.item.tierId === t.id).map((i) => placed(i.g))
+            })),
+            unranked: items.filter((i) => i.item.tierId === null).map((i) => placed(i.g))
+        };
+    });
+
     return {
         format: EXPORT_FORMAT,
         version: EXPORT_VERSION,
@@ -221,6 +303,8 @@ export function buildExport(db: Db, userId: number, now = new Date()): ExportFil
             })),
         queue: igdbIds(queueRow && items.get(queueRow.id)),
         smartLists: listSmartListRows(db, userId),
+        grids: exportedGrids,
+        tierLists: exportedTierLists,
         wishlist: wished.map(({ item, g, platform }): ExportWishlistItem => ({
             igdbId: g.id,
             game: snapshot(g),
