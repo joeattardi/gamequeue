@@ -29,6 +29,7 @@ The side benefit: ratings, time to beat, release dates and series stay current f
 
 ## Measured
 
+- A full build on a Raspberry Pi (8 GB, microSD): 154.7 s, about three times the Mac's 48 s; the slow part there is the card.
 - The live dumps are 1.33 GB of CSV across 80 endpoints; the 11 used are about 700 MB. An import peaks at about 570 MB of disk (the new file, a scratch database, and the 250 MB file being replaced).
 - Parity with live IGDB on 14 games, 2 series pages, 2 similar-games lists and release dates: identical except ratings drifting by one (the dump is hours old).
 - Warm searches take 1-80 ms; the first query after a restart touches the index cold and can take about 1.5 s.
@@ -43,8 +44,8 @@ The side benefit: ratings, time to beat, release dates and series stay current f
 
 ## Not verified
 
-- A complete run on a real Raspberry Pi (microSD, 8 GB). The first run got through 8 of 11 dumps in about 90 s and then failed in `release_dates`. Its real error was hidden by a failing `ROLLBACK`, which is fixed, and the Pi's slowness (a 1 MB dump took 16 s) came from fsync stalls on the SD card that the build settings didn't actually switch off (see `configureForBulkLoad`), also fixed. Disk and memory were plentiful, so those were not the cause; **the original error is still unconfirmed** until the next run. Import speed, memory use and the cron line are unmeasured.
-- The Docker image itself (Docker wasn't running while this was built; the built CLI was run from a production-only dependency install instead) and bind-mount permissions for the `node` user.
+- **The first Pi run's original error.** The first run on a Raspberry Pi (microSD, 8 GB) got through 8 of 11 dumps in about 90 s and then failed in `release_dates`. Its real error was hidden by a failing `ROLLBACK`, and the build's journal and fsync settings had not taken effect (a 1 MB dump took 16 s). Both were fixed (`configureForBulkLoad`, best-effort rollback) and the next run succeeded in 154.7 s, but the original error was never seen, so its cause is a hypothesis (fsync stalls or an I/O error on the SD card), not a finding. If a run fails again, the status file and `mirror.log` now name the real error.
+- The cron line and a scheduled run (the first one by hand worked, in the real container, as the `node` user on the bind mount).
 - A failed download is not retried until the next day's run. Running `mirror.sh` hourly would self-heal at about a second per run.
 
 ## Open items and ideas

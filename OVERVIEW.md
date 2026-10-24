@@ -697,7 +697,7 @@ A few things happen on timers, not in response to a click. All run inside the sa
 | Mirror failure check                       | Same 10-minute tick                                 | Record a failed daily mirror run in the error log         |
 | Screenshots                                | When you open a game that never had them fetched    | Older cache rows predate screenshots                      |
 
-The daily mirror rebuild is the one job that does _not_ run in this process: cron on the host runs it in its own container (section 7), so a 50-second import never slows the web server.
+The daily mirror rebuild is the one job that does _not_ run in this process: cron on the host runs it in its own container (section 7), so an import (about a minute on a laptop, under three on a Pi) never slows the web server.
 
 Background jobs that fail are logged to the error log and simply retried next time. They never break the request that triggered them.
 

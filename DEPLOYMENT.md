@@ -484,7 +484,7 @@ It needs IGDB's data partner access; without it `scripts/mirror.sh` fails and th
 ### Setup
 
 1. Deploy a version that includes the mirror (the normal update flow). The image already knows where the file lives (`IGDB_MIRROR_PATH=/data/igdb.db`); no `.env` change is needed.
-2. Build it once by hand so you don't wait for tomorrow: `~/gamequeue/scripts/mirror.sh`. It takes about a minute on a Mac; expect a few minutes on a Pi (not measured there yet). Watch the output, then open **Admin > IGDB mirror** in the app. The server picks the file up within seconds, no restart needed.
+2. Build it once by hand so you don't wait for tomorrow: `~/gamequeue/scripts/mirror.sh`. It takes about 50 seconds on a Mac and was measured at 155 seconds on a Pi with 8 GB of RAM and a microSD card. Watch the output, then open **Admin > IGDB mirror** in the app. The server picks the file up within seconds, no restart needed.
 3. Add the fourth cron line from "Updating". `mirror.sh` runs the importer in a throw-away container from the app image (`docker compose run --rm --no-deps`) that shares `./data` with the app, so it works even while the app is restarting and its memory doesn't count against the web process. Output goes to `~/gamequeue/mirror.log`.
 4. Optional but recommended: a healthchecks.io check for it (below).
 
