@@ -5326,8 +5326,8 @@ button.grid-cell__button:hover {
     overflow-wrap: anywhere;
 }
 .tier-row__label--editable {
-    /* room for the edit button under the name */
-    padding-bottom: 40px;
+    /* Equal room above and below, so the name stays centred while the edit button sits in the bottom one */
+    padding-block: 40px;
 }
 .tier-row__label--long {
     font-size: clamp(0.8rem, 2vw, 1rem);
