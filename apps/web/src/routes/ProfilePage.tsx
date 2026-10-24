@@ -21,6 +21,7 @@ import {
 import { useEffect, useState, type ReactNode } from 'react';
 import { Link, useParams } from 'react-router';
 import { ApiRequestError } from '../api/client';
+import { useAuthConfig, useMe } from '../api/auth';
 import { useProfile } from '../api/profile';
 import { ActivityList } from '../components/ActivityFeed';
 import { Avatar } from '../components/Avatar';
@@ -268,6 +269,21 @@ function ProfileActivity({ profile }: { profile: ProfileDto }) {
     );
 }
 
+/** For visitors who aren't signed in: invites them to make their own profile, if signups are open. */
+function SignupCta() {
+    const me = useMe();
+    const config = useAuthConfig();
+    if (me.data !== null || config.data?.signupsEnabled !== true) return null;
+    return (
+        <aside className="profile-hero__cta" aria-label="Create your own profile">
+            <p>Track your own games.</p>
+            <Link className="btn btn--primary" to="/register">
+                Create your profile
+            </Link>
+        </aside>
+    );
+}
+
 export function ProfilePage() {
     const { username = '' } = useParams();
     const profile = useProfile(username);
@@ -331,6 +347,7 @@ export function ProfilePage() {
                                 </p>
                                 <SocialLinksList links={profile.data.socialLinks} />
                             </div>
+                            <SignupCta />
                         </div>
 
                         <div className="profile-layout">
