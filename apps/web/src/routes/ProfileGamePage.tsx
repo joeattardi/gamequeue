@@ -10,7 +10,8 @@ import { PublicHeader } from '../components/PublicHeader';
 import { ScoreGauge } from '../components/ScoreGauge';
 import { Screenshots } from '../components/Screenshots';
 import { StarDisplay } from '../components/StarRating';
-import { formatMinutes, usePageTitle, yearOf } from '../lib';
+import { usePageTitle, yearOf } from '../lib';
+import { TimeToBeat } from '../components/TimeToBeat';
 
 /**
  * Public: a game as seen from someone's profile (`/u/:username/games/:igdbId`): IGDB's data, and
@@ -121,27 +122,7 @@ function ProfileGame({ data }: { data: NonNullable<ReturnType<typeof useProfileG
 
                 <PublicNotes username={username} notes={data.notes} />
 
-                <section aria-labelledby="pg-ttb-h" className="panel">
-                    <h2 id="pg-ttb-h">Time to beat</h2>
-                    {game.ttb ? (
-                        <dl className="ttb">
-                            <div>
-                                <dt>Hasty</dt>
-                                <dd>{formatMinutes(game.ttb.hastily)}</dd>
-                            </div>
-                            <div>
-                                <dt>Normal</dt>
-                                <dd>{formatMinutes(game.ttb.normally)}</dd>
-                            </div>
-                            <div>
-                                <dt>Completionist</dt>
-                                <dd>{formatMinutes(game.ttb.completely)}</dd>
-                            </div>
-                        </dl>
-                    ) : (
-                        <p className="muted">IGDB has no time-to-beat data for this game.</p>
-                    )}
-                </section>
+                <TimeToBeat ttb={game.ttb} id="pg-ttb-h" />
 
                 <section aria-labelledby="pg-plat-h" className="panel">
                     <h2 id="pg-plat-h">Platforms</h2>

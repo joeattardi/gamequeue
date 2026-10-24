@@ -15,8 +15,9 @@ import { ScoreGauge } from '../components/ScoreGauge';
 import { HistoryPanel, StatusPanel } from '../components/PlaythroughPanels';
 import { EntrySkeleton, SelectSkeleton } from '../components/PageSkeletons';
 import { PlatformTag } from '../components/PlatformIcon';
-import { formatMinutes, yearOf, usePageTitle } from '../lib';
+import { yearOf, usePageTitle } from '../lib';
 import { ArrowLeft, Heart, Trash2, X } from 'lucide-react';
+import { TimeToBeat } from '../components/TimeToBeat';
 
 export function EntryPage() {
     const id = Number(useParams().id);
@@ -89,27 +90,7 @@ function EntryDetail({ entry }: { entry: EntryDto }) {
                     <StatusPanel entry={entry} />
                     <HistoryPanel entry={entry} />
 
-                    <section aria-labelledby="ttb-h" className="panel">
-                        <h2 id="ttb-h">Time to beat</h2>
-                        {game.ttb ? (
-                            <dl className="ttb">
-                                <div>
-                                    <dt>Hasty</dt>
-                                    <dd>{formatMinutes(game.ttb.hastily)}</dd>
-                                </div>
-                                <div>
-                                    <dt>Normal</dt>
-                                    <dd>{formatMinutes(game.ttb.normally)}</dd>
-                                </div>
-                                <div>
-                                    <dt>Completionist</dt>
-                                    <dd>{formatMinutes(game.ttb.completely)}</dd>
-                                </div>
-                            </dl>
-                        ) : (
-                            <p className="muted">IGDB has no time-to-beat data for this game.</p>
-                        )}
-                    </section>
+                    <TimeToBeat ttb={game.ttb} />
 
                     <SimilarGames igdbId={game.id} />
 

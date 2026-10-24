@@ -13,8 +13,9 @@ import { EntrySkeleton } from '../components/PageSkeletons';
 import { PlatformTags } from '../components/PlatformIcon';
 import { SeriesLinks } from '../components/SeriesLinks';
 import { ScoreGauge } from '../components/ScoreGauge';
-import { formatMinutes, usePageTitle, yearOf } from '../lib';
+import { usePageTitle, yearOf } from '../lib';
 import { Gift, Library, X } from 'lucide-react';
+import { TimeToBeat } from '../components/TimeToBeat';
 
 /**
  * A game by IGDB id, for games that aren't in the collection yet. Owned games redirect to their
@@ -129,27 +130,7 @@ function GameDetail({ detail }: { detail: GameDetailDto }) {
 
                     <GameOffers igdbId={game.id} />
 
-                    <section aria-labelledby="ttb-h" className="panel">
-                        <h2 id="ttb-h">Time to beat</h2>
-                        {game.ttb ? (
-                            <dl className="ttb">
-                                <div>
-                                    <dt>Hasty</dt>
-                                    <dd>{formatMinutes(game.ttb.hastily)}</dd>
-                                </div>
-                                <div>
-                                    <dt>Normal</dt>
-                                    <dd>{formatMinutes(game.ttb.normally)}</dd>
-                                </div>
-                                <div>
-                                    <dt>Completionist</dt>
-                                    <dd>{formatMinutes(game.ttb.completely)}</dd>
-                                </div>
-                            </dl>
-                        ) : (
-                            <p className="muted">IGDB has no time-to-beat data for this game.</p>
-                        )}
-                    </section>
+                    <TimeToBeat ttb={game.ttb} />
 
                     <SimilarGames igdbId={game.id} />
 
