@@ -13,6 +13,11 @@ export function ProfileTierListPage() {
     const { username = '', id = '' } = useParams();
     const list = usePublicTierList(username, Number(id));
     usePageTitle(list.data ? `${list.data.title} by ${username}` : 'Tier list');
+    // Visitors only see tiers that have games, on the page and in the downloaded image
+    const shown = list.data && {
+        ...list.data,
+        tiers: list.data.tiers.filter((t) => t.items.length > 0)
+    };
     const notFound = list.error instanceof ApiRequestError && list.error.status === 404;
 
     return (
@@ -26,15 +31,21 @@ export function ProfileTierListPage() {
                     <p role="alert">{notFound ? 'There is nothing here.' : "Couldn't load."}</p>
                 )}
                 {list.isPending && <TierBoardSkeleton />}
-                {list.data && (
+                {list.data && shown && (
                     <>
                         <h1>{list.data.title}</h1>
                         <p className="muted">
                             by <Link to={`/u/${username}`}>{username}</Link>
                         </p>
                         {list.data.description && <p>{list.data.description}</p>}
-                        <TierBoard list={list.data} />
-                        <DownloadTierImage list={list.data} username={username} />
+                        {shown.tiers.length === 0 ? (
+                            <p className="muted">Nothing has been ranked yet.</p>
+                        ) : (
+                            <>
+                                <TierBoard list={shown} />
+                                <DownloadTierImage list={shown} username={username} />
+                            </>
+                        )}
                     </>
                 )}
             </main>
