@@ -619,9 +619,25 @@ a {
         background: var(--surface-2);
         color: var(--ink);
     }
-    /* Icons only: the labels stay in the DOM (visually hidden) so links keep their names */
+    /* Icons only. Rows keep their padding, so each icon already sits centred in the 64px rail:
+       collapsing just narrows the column and fades the labels, which stay in the DOM and are
+       clipped by the sidebar's edge. */
     .app-shell--collapsed {
         grid-template-columns: 64px minmax(0, 1fr);
+    }
+    .sidebar {
+        overflow-x: hidden;
+    }
+    .nav a,
+    .nav-search,
+    .sidebar__collapse {
+        white-space: nowrap;
+    }
+    .nav__label {
+        max-height: 24px;
+    }
+    .nav__group + .nav__group {
+        border-top: 1px solid transparent;
     }
     .is-collapsed .nav__text,
     .is-collapsed .nav__label,
@@ -629,40 +645,27 @@ a {
     .is-collapsed .user-menu__name,
     .is-collapsed .user-menu__button .lucide:last-child,
     .is-collapsed .nav-search kbd {
-        position: absolute;
-        width: 1px;
-        height: 1px;
-        overflow: hidden;
-        clip: rect(0 0 0 0);
-        white-space: nowrap;
+        opacity: 0;
     }
-    .is-collapsed .sidebar__head,
+    .is-collapsed .nav__label {
+        max-height: 0;
+        margin-bottom: 0;
+    }
     .is-collapsed .slot-strip {
-        justify-content: center;
         padding: 0;
     }
-    .is-collapsed .slot-strip {
-        flex-direction: column;
-        align-items: center;
-    }
-    .is-collapsed .sidebar__head .logo,
     .is-collapsed .logo {
-        padding: 0;
+        padding: 0 0 0 4px;
     }
-    .is-collapsed .nav-search,
-    .is-collapsed .nav a,
-    .is-collapsed .sidebar__collapse,
     .is-collapsed .user-menu__button {
-        justify-content: center;
-        padding-left: 0;
-        padding-right: 0;
+        padding-left: 6px;
     }
     .is-collapsed .nav {
         gap: 8px;
     }
     .is-collapsed .nav__group + .nav__group {
         padding-top: 8px;
-        border-top: 1px solid var(--line);
+        border-top-color: var(--line);
     }
     .is-collapsed .nav__count {
         position: absolute;
@@ -680,10 +683,6 @@ a {
     .is-collapsed .nav a.active .nav__count {
         color: var(--accent-ink);
     }
-    .is-collapsed .nav a.active::before {
-        top: 5px;
-        bottom: 5px;
-    }
     /* Fixed, because the sidebar scrolls and would clip a panel wider than itself */
     .is-collapsed .user-menu__panel {
         position: fixed;
@@ -691,6 +690,32 @@ a {
         right: auto;
         bottom: 16px;
         width: 220px;
+    }
+}
+@media (min-width: 900px) and (prefers-reduced-motion: no-preference) {
+    .app-shell {
+        transition: grid-template-columns 0.2s ease;
+    }
+    .nav__text,
+    .nav__label,
+    .logo__word,
+    .user-menu__name,
+    .user-menu__button .lucide:last-child,
+    .nav-search kbd {
+        transition:
+            opacity 0.15s ease,
+            max-height 0.2s ease,
+            margin 0.2s ease;
+    }
+    .slot-strip,
+    .logo,
+    .user-menu__button,
+    .nav,
+    .nav__group {
+        transition:
+            padding 0.2s ease,
+            gap 0.2s ease,
+            border-color 0.2s ease;
     }
 }
 @media (pointer: coarse) {
