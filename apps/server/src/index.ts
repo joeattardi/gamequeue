@@ -6,6 +6,7 @@ import { purgeExpiredSessions } from './auth/sessions.js';
 import { loadConfig } from './config.js';
 import { openDb } from './db/client.js';
 import { createIgdbClient } from './igdb/client.js';
+import { createMirrorIgdbClient } from './mirror/client.js';
 import { createCloudflareClient } from './cloudflare/client.js';
 import { createItadClient } from './itad/client.js';
 import { recordIgdbAttempt, pruneIgdbHistory } from './services/igdb-history.js';
@@ -18,7 +19,7 @@ import { mountWeb } from './web.js';
 
 const config = loadConfig();
 const db = openDb(config.databasePath);
-const igdb =
+const liveIgdb =
     config.igdbClientId && config.igdbClientSecret
         ? createIgdbClient({
               clientId: config.igdbClientId,
@@ -36,8 +37,20 @@ const igdb =
                   )
           })
         : undefined;
+// A mirror built by `npm run igdb:mirror` answers first and the live client covers what it can't; the
+// file is checked again as it is replaced, so building one later needs no restart
+const igdb =
+    liveIgdb || existsSync(config.igdbMirrorPath)
+        ? createMirrorIgdbClient({ path: config.igdbMirrorPath, fallback: liveIgdb })
+        : undefined;
 if (!igdb)
     console.warn('IGDB_CLIENT_ID / IGDB_CLIENT_SECRET not set: search and add-game are disabled.');
+else if (existsSync(config.igdbMirrorPath))
+    console.log(`IGDB mirror: ${config.igdbMirrorPath}${liveIgdb ? '' : ' (no live IGDB)'}`);
+else if (liveIgdb)
+    console.log(
+        `IGDB mirror: none at ${config.igdbMirrorPath}, using live IGDB (npm run igdb:mirror builds one)`
+    );
 // Errors are always recorded, but only a production server emails about them: they are expected
 // while developing
 if (process.env.NODE_ENV === 'production')

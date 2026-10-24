@@ -336,7 +336,30 @@ flowchart TD
     F --> G["Remove it from your wishlist<br/>if it was there"]
 ```
 
-**Without credentials**, the app still runs, but search and add-game return 503.
+**Without credentials**, the app still runs, but search and add-game return 503 (unless a local mirror exists, below).
+
+### The local mirror
+
+IGDB offers data partners a full copy of its database every day as CSV files. GameQueue keeps a trimmed copy of the parts it uses in its own SQLite file, `igdb.db`, and answers from it before asking IGDB:
+
+```mermaid
+flowchart LR
+    DUMPS["IGDB data dumps<br/>daily CSVs"] -- "npm run igdb:mirror<br/>(once a day)" --> BUILD["Build igdb.db.new<br/>mirror/build.ts"]
+    BUILD --> CHECK{"Looks complete?"}
+    CHECK -- yes --> SWAP["Rename over igdb.db"]
+    CHECK -- no --> KEEP["Keep the old file"]
+    SWAP --> FILE[("igdb.db<br/>read-only")]
+    SVC["Services"] --> MC["Mirror client<br/>mirror/client.ts"]
+    MC -- "answers first" --> FILE
+    MC -- "only if the mirror can't" --> LIVE["Live IgdbClient"]
+```
+
+- **A separate file, rebuilt every day.** It is never part of your user database or its backups, because it can always be rebuilt. The build streams each CSV straight into SQLite, checks the result (enough games, no big drop, intact search index) and only then swaps it in, so a failed download never damages the working copy. The running server notices the new file within a few seconds; no restart is needed.
+- **The same answers as the live client.** The mirror client implements the same `IgdbClient` interface, so nothing else in the app knows which one it is talking to. Search, a game's details, release dates, series, screenshots, similar games and the platform list all come from the file.
+- **Live IGDB is the safety net.** A game newer than the last dump, a search with no local match (a typo, say) or a missing mirror file all fall through to the live client, as before.
+- **Search is its own thing.** The mirror's search index covers game names plus their alternative names, so "ff7", "bg3" and "TotK" work. Results are ranked by how many people rated a game, then adjusted for how well the text matches: a name that contains what you typed beats an alias match, which beats a title that merely has the same words somewhere. "7" and "VII" are treated as the same number and apostrophes are ignored.
+
+Right now the mirror answers the `IgdbClient` calls; the rest of the app (the `games` cache table, the background refresh jobs) is unchanged and still works the same way on top of it. Code: `apps/server/src/mirror/`, plan in `IGDB_MIRROR.md`.
 
 **The exceptions to "never fetch again"** are a few background refreshes, covered in section 18: release dates for unreleased wishlisted games, series membership, and screenshots for older games.
 

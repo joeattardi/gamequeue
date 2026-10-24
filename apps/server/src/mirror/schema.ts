@@ -1,5 +1,5 @@
 /** Bumped when the layout of `igdb.db` changes; the reader refuses a file with another version. */
-export const MIRROR_SCHEMA_VERSION = 1;
+export const MIRROR_SCHEMA_VERSION = 2;
 
 /** Screenshots kept per game (the game page is a gallery, not a catalogue). */
 export const MAX_MIRROR_SCREENSHOTS = 6;
@@ -82,16 +82,27 @@ CREATE TABLE game_series (
 CREATE INDEX game_series_by_series ON game_series (series_id);
 `;
 
-/** Created after the games are loaded so the index is built in one pass. */
+/**
+ * Created after the games are loaded so the index is built in one pass. Contentless (the names are
+ * read from `games`, which the app joins on the rowid anyway). Both columns hold the text with
+ * apostrophes removed ("Baldur's" -> "Baldurs"); search normalizes the query the same way.
+ * `alt` is the game's alternative names ("FF7", "TotK", translated titles), joined by spaces.
+ */
 export const MIRROR_FTS_DDL = `
 CREATE VIRTUAL TABLE games_fts USING fts5(
     name,
-    content = 'games',
-    content_rowid = 'id',
+    alt,
+    content = '',
     tokenize = 'unicode61 remove_diacritics 2',
     prefix = '2 3 4'
 );
-INSERT INTO games_fts (rowid, name) SELECT id, name FROM games WHERE searchable = 1;
+INSERT INTO games_fts (rowid, name, alt)
+SELECT g.id,
+       replace(replace(g.name, '''', ''), '’', ''),
+       coalesce(replace(replace(a.names, '''', ''), '’', ''), '')
+FROM games g
+LEFT JOIN (SELECT game, group_concat(name, ' ') names FROM stg.alt_names GROUP BY game) a ON a.game = g.id
+WHERE g.searchable = 1;
 `;
 
 /** Scratch tables for the dumps that only feed columns of `games`; deleted with the staging file. */
@@ -106,5 +117,9 @@ CREATE TABLE stg.ttb (
     count INTEGER
 );
 CREATE TABLE stg.release_dates (game INTEGER NOT NULL, date TEXT NOT NULL, format INTEGER);
+CREATE TABLE stg.alt_names (game INTEGER NOT NULL, name TEXT NOT NULL);
 `;
-export const STAGING_INDEX_DDL = `CREATE INDEX stg.release_dates_game ON release_dates (game, date);`;
+export const STAGING_INDEX_DDL = `
+CREATE INDEX stg.release_dates_game ON release_dates (game, date);
+CREATE INDEX stg.alt_names_game ON alt_names (game);
+`;

@@ -126,6 +126,11 @@ export async function buildMirror(opts: BuildOptions): Promise<BuildStats> {
             const game = int(r.game);
             if (game !== null && r.date) stageDate.run(game, r.date, int(r.date_format));
         });
+        const stageAlt = db.prepare('INSERT INTO stg.alt_names VALUES (?, ?)');
+        await ingest('alternative_names', (r) => {
+            const game = int(r.game);
+            if (game !== null && r.name) stageAlt.run(game, r.name);
+        });
         db.exec(STAGING_INDEX_DDL);
 
         // Games

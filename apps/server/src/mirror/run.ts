@@ -12,6 +12,7 @@ export const MIRROR_ENDPOINTS = [
     'screenshots',
     'game_time_to_beats',
     'release_dates',
+    'alternative_names',
     'platforms',
     'genres',
     'themes',
@@ -72,8 +73,7 @@ export function verifyMirror(path: string, opts: { minGames: number; previousGam
             .prepare('SELECT count(*) FROM games WHERE searchable = 1')
             .pluck()
             .get() as number;
-        // `games_fts` itself is an external-content table (it answers count(*) from `games`), so
-        // count the documents the index really holds
+        // Count the documents the index holds (`games_fts` itself can't answer count(*))
         const indexed = db
             .prepare('SELECT count(*) FROM games_fts_docsize')
             .pluck()
