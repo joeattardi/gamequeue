@@ -1,4 +1,4 @@
-import type { EntryDto, EntryStatus } from './collection.js';
+import type { EntryDto, EntryStatus, GameDto } from './collection.js';
 import type { GridSummaryDto } from './grids.js';
 import type { TierListSummaryDto } from './tiers.js';
 import type { SocialLinks } from './social.js';
@@ -109,4 +109,17 @@ export interface ProfileGamesDto {
     year?: string;
     /** Finished view only: years with finished playthroughs, newest first, then `unknown` */
     years?: { year: string; count: number }[];
+}
+
+/**
+ * One game on someone's public profile (`/profiles/:username/games/:igdbId`): IGDB's cached data
+ * plus what that user has of it. No notes.
+ */
+export interface ProfileGameDto {
+    username: string;
+    game: GameDto;
+    /** Set when the game is in their collection */
+    entry: PublicEntryDto | null;
+    /** On their wishlist */
+    wishlisted: boolean;
 }

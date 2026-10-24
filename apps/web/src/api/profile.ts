@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import type {
     ActivityPageDto,
     ProfileDto,
+    ProfileGameDto,
     ProfileGamesDto,
     ProfileListPageDto,
     ProfileView,
@@ -74,5 +75,13 @@ export const useProfileActivity = (username: string) =>
                 )
             ).activity,
         read: (a) => ({ items: a.events, total: a.total }),
+        retry: false
+    });
+
+/** One game as seen from someone's profile: cached IGDB data plus what they have of it. */
+export const useProfileGame = (username: string, igdbId: number) =>
+    useQuery({
+        queryKey: ['profile', username, 'game', igdbId],
+        queryFn: () => api<ProfileGameDto>(`/profiles/${username}/games/${igdbId}`),
         retry: false
     });

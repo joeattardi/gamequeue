@@ -27,6 +27,7 @@ export function ProfileWishlistPage() {
                     <>
                         <h1>{wishlist.head?.username ?? username}: wishlist</h1>
                         <PublicGameList
+                            username={username}
                             paging={{
                                 total: wishlist.total,
                                 hasMore: wishlist.hasNextPage,

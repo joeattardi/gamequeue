@@ -12,6 +12,7 @@ import { parseId, validate } from '../http.js';
 import {
     getProfile,
     getProfileActivity,
+    getProfileGame,
     getProfileList,
     getProfileSmartList,
     getProfileGames,
@@ -53,6 +54,15 @@ export function profileRoutes({ db }: AppDeps) {
                 validate(pageQuerySchema, c.req.query())
             )
         })
+    );
+    r.get('/:username/games/:igdbId', (c) =>
+        c.json(
+            getProfileGame(
+                db,
+                parseUsername(c.req.param('username')),
+                parseId(c.req.param('igdbId'))
+            )
+        )
     );
     r.get('/:username/lists/:id', (c) =>
         c.json(

@@ -96,6 +96,10 @@ function ActivityRow({ username, event }: { username: string; event: ActivityEve
     const name =
         path && event.subject?.id != null ? (
             <Link to={`/u/${username}/${path}/${event.subject.id}`}>{label}</Link>
+        ) : event.game ? (
+            <Link to={`/u/${username}/games/${event.game.id}`}>
+                <strong>{label}</strong>
+            </Link>
         ) : (
             <strong>{label}</strong>
         );

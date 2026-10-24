@@ -1,5 +1,6 @@
 import type { EntryStatus, GameDto } from '@gamequeue/shared';
 import type { CSSProperties } from 'react';
+import { Link } from 'react-router';
 import { Cover } from './Cover';
 import { LayoutToggle, useLayout, type Layout } from './LayoutToggle';
 import { LoadMore } from './LoadMore';
@@ -26,11 +27,14 @@ function staggerStyle(index: number): CSSProperties {
 
 /** The one layout shared by every public profile sub-page (`/u/:username/:view`). */
 export function PublicGameList({
+    username,
     entries,
     numbered = false,
     empty,
     paging
 }: {
+    /** Whose profile this is; each game links to its page there */
+    username: string;
     /** Undefined while loading: the selector stays, the list shows skeletons */
     entries: PublicListItem[] | undefined;
     /** Show each game's position, for ordered lists such as the queue */
@@ -48,12 +52,18 @@ export function PublicGameList({
         content = (
             <ol className="public-grid">
                 {entries.map((e, i) => (
-                    <li key={e.id} tabIndex={0} style={staggerStyle(i)}>
-                        <Cover imageId={e.game.coverImageId} name={e.game.name} />
-                        <div className="public-grid__info">
-                            <strong>{e.game.name}</strong>
-                            <Details item={e} />
-                        </div>
+                    <li key={e.id} style={staggerStyle(i)}>
+                        <Link
+                            to={`/u/${username}/games/${e.game.id}`}
+                            className="public-grid__link"
+                            aria-label={e.game.name}
+                        >
+                            <Cover imageId={e.game.coverImageId} name={e.game.name} />
+                            <div className="public-grid__info">
+                                <strong>{e.game.name}</strong>
+                                <Details item={e} />
+                            </div>
+                        </Link>
                         {numbered && <span className="public-grid__pos">{i + 1}</span>}
                     </li>
                 ))}
@@ -67,7 +77,12 @@ export function PublicGameList({
                         {numbered && <span className="public-games__pos">{i + 1}</span>}
                         <Cover imageId={e.game.coverImageId} name={e.game.name} />
                         <div>
-                            <strong>{e.game.name}</strong>
+                            <Link
+                                to={`/u/${username}/games/${e.game.id}`}
+                                className="public-games__link"
+                            >
+                                <strong>{e.game.name}</strong>
+                            </Link>
                             <Details item={e} />
                         </div>
                     </li>

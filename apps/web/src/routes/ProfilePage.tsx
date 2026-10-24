@@ -32,18 +32,20 @@ import { Footer } from '../components/Footer';
 import { PublicHeader } from '../components/PublicHeader';
 import { usePageTitle } from '../lib';
 
-function Games({ entries }: { entries: PublicEntryDto[] }) {
+function Games({ username, entries }: { username: string; entries: PublicEntryDto[] }) {
     if (entries.length === 0) return <p className="muted">Nothing here yet.</p>;
-    return <GameGrid entries={entries} />;
+    return <GameGrid username={username} entries={entries} />;
 }
 
-function GameGrid({ entries }: { entries: PublicEntryDto[] }) {
+function GameGrid({ username, entries }: { username: string; entries: PublicEntryDto[] }) {
     return (
         <ul className="grid">
             {entries.map((e) => (
                 <li key={e.id}>
-                    <Cover imageId={e.game.coverImageId} name={e.game.name} />
-                    <strong>{e.game.name}</strong>
+                    <Link to={`/u/${username}/games/${e.game.id}`} className="game-link">
+                        <Cover imageId={e.game.coverImageId} name={e.game.name} />
+                        <strong>{e.game.name}</strong>
+                    </Link>
                     <div>
                         <span className={`badge badge--${e.status}`}>{e.status}</span>
                         {e.rating !== null && (
@@ -321,6 +323,7 @@ export function ProfilePage() {
                         <section aria-labelledby="p-playing">
                             <h2 id="p-playing">Currently playing</h2>
                             <Games
+                                username={profile.data.username}
                                 entries={profile.data.slots.flatMap((s) =>
                                     s.entry ? [s.entry] : []
                                 )}

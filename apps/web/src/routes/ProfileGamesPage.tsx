@@ -79,6 +79,7 @@ export function ProfileGamesPage() {
                             </nav>
                         )}
                         <PublicGameList
+                            username={username}
                             entries={games.isPending ? undefined : games.items}
                             paging={{
                                 total: games.total,

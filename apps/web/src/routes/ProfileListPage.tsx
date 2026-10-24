@@ -47,6 +47,7 @@ export function ProfileListPage({ kind }: { kind: 'lists' | 'smart-lists' }) {
                             </ul>
                         )}
                         <PublicGameList
+                            username={username}
                             entries={list.isPending ? undefined : list.items}
                             numbered={kind === 'lists'}
                             empty="Nothing here yet."

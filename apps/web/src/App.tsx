@@ -35,6 +35,7 @@ import { PickPage } from './routes/PickPage';
 import { SmartListEditPage } from './routes/SmartListEditPage';
 import { SmartListPage } from './routes/SmartListPage';
 import { ProfileListPage } from './routes/ProfileListPage';
+import { ProfileGamePage } from './routes/ProfileGamePage';
 import { ProfileActivityPage } from './routes/ProfileActivityPage';
 import { ProfilePage } from './routes/ProfilePage';
 import { ProfileGamesPage } from './routes/ProfileGamesPage';
@@ -71,6 +72,7 @@ export function App() {
                 <Route path="/u/:username/tiers/:id" element={<ProfileTierListPage />} />
                 <Route path="/u/:username/stats" element={<ProfileStatsPage />} />
                 <Route path="/u/:username/activity" element={<ProfileActivityPage />} />
+                <Route path="/u/:username/games/:igdbId" element={<ProfileGamePage />} />
                 <Route path="/u/:username/recap" element={<ProfileRecapPage />} />
                 <Route path="/u/:username/recap/:year" element={<ProfileRecapPage />} />
                 <Route path="/u/:username/:view" element={<ProfileGamesPage />} />
@@ -95,6 +97,7 @@ export function App() {
             <Route path="/u/:username/tiers/:id" element={<ProfileTierListPage />} />
             <Route path="/u/:username/stats" element={<ProfileStatsPage />} />
             <Route path="/u/:username/activity" element={<ProfileActivityPage />} />
+            <Route path="/u/:username/games/:igdbId" element={<ProfileGamePage />} />
             <Route path="/u/:username/recap" element={<ProfileRecapPage />} />
             <Route path="/u/:username/recap/:year" element={<ProfileRecapPage />} />
             <Route path="/u/:username/:view" element={<ProfileGamesPage />} />

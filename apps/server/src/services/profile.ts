@@ -10,6 +10,7 @@ import {
     type EntryStatus,
     type PageQuery,
     type ProfileDto,
+    type ProfileGameDto,
     type ProfileGamesDto,
     type ProfileListPageDto,
     type ProfileView,
@@ -17,12 +18,21 @@ import {
     type PublicEntryDto
 } from '@gamequeue/shared';
 import type { Db } from '../db/client.js';
-import { entries, listItems, lists, playthroughs, users, wishlistItems } from '../db/schema.js';
+import {
+    entries,
+    listItems,
+    lists,
+    playthroughs,
+    users,
+    wishlistItems,
+    wishlists
+} from '../db/schema.js';
 import { HttpError } from '../errors.js';
 import { pageActivity } from './activity.js';
 import { avatarVersion } from './avatars.js';
 import { socialLinksOf } from './users.js';
-import { listEntries, pageEntries } from './entries.js';
+import { hydrate, listEntries, pageEntries } from './entries.js';
+import { loadGames } from './games.js';
 import { listGrids } from './grids.js';
 import { listTierLists } from './tier-lists.js';
 import { getList, listLists } from './lists.js';
@@ -303,4 +313,32 @@ export function getProfileActivity(db: Db, username: string, page: PageQuery): A
     const user = requireUser(db, username);
     if (!user.showActivity) return { username: user.username, events: [], total: 0 };
     return { username: user.username, ...pageActivity(db, user.id, page) };
+}
+
+/**
+ * A game as seen from someone's profile. Answers from the shared cache only: an anonymous request
+ * must never make us call IGDB, so a game nobody has cached is a 404.
+ */
+export function getProfileGame(db: Db, username: string, igdbId: number): ProfileGameDto {
+    const user = requireUser(db, username);
+    const game = loadGames(db, [igdbId]).get(igdbId);
+    if (!game) throw new HttpError(404, 'Not found');
+    const owned = db
+        .select({ id: entries.id })
+        .from(entries)
+        .where(and(eq(entries.userId, user.id), eq(entries.gameId, igdbId)))
+        .get();
+    const wished = db
+        .select({ gameId: wishlistItems.gameId })
+        .from(wishlistItems)
+        .innerJoin(wishlists, eq(wishlists.id, wishlistItems.wishlistId))
+        .where(and(eq(wishlists.userId, user.id), eq(wishlistItems.gameId, igdbId)))
+        .get();
+    const entry = owned ? hydrate(db, user.id, [owned.id])[0] : undefined;
+    return {
+        username: user.username,
+        game,
+        entry: entry ? toPublic(entry) : null,
+        wishlisted: wished !== undefined
+    };
 }
