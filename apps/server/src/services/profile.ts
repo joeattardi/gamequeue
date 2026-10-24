@@ -92,6 +92,7 @@ export function getProfile(db: Db, username: string): ProfileDto {
         username: user.username,
         avatarUpdatedAt: avatarVersion(db, user.id),
         realName: user.showRealName ? fullName(user) : null,
+        bio: user.bio,
         socialLinks: socialLinksOf(user),
         joinedAt: user.createdAt,
         slots: listSlots(db, user.id).map((s) => ({

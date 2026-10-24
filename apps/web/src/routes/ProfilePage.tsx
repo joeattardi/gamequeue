@@ -10,12 +10,15 @@ import {
     Ban,
     BarChart3,
     CalendarDays,
+    Check,
+    Copy,
     Gift,
     Heart,
     Library,
     ListOrdered,
     ListTodo,
     Pause,
+    Pencil,
     Play,
     Trophy
 } from 'lucide-react';
@@ -295,6 +298,35 @@ function ProfileActivity({ profile }: { profile: ProfileDto }) {
     );
 }
 
+/** For the owner looking at their own public page: the two things they usually came here to do. */
+function OwnerActions({ username }: { username: string }) {
+    const [copied, setCopied] = useState(false);
+    async function copy() {
+        try {
+            await navigator.clipboard.writeText(`${window.location.origin}/u/${username}`);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+        } catch {
+            // Clipboard blocked (e.g. an insecure origin): the address bar has the same link
+        }
+    }
+    return (
+        <div className="profile-hero__owner">
+            <button type="button" className="btn" onClick={copy}>
+                {copied ? <Check aria-hidden="true" /> : <Copy aria-hidden="true" />}
+                {copied ? 'Copied' : 'Copy link'}
+            </button>
+            <Link className="btn" to="/account">
+                <Pencil aria-hidden="true" />
+                Edit profile
+            </Link>
+            <span className="sr-only" role="status">
+                {copied ? 'Link copied' : ''}
+            </span>
+        </div>
+    );
+}
+
 /** For visitors who aren't signed in: invites them to make their own profile, if signups are open. */
 function SignupCta() {
     const me = useMe();
@@ -314,6 +346,7 @@ function SignupCta() {
 export function ProfilePage() {
     const { username = '' } = useParams();
     const profile = useProfile(username);
+    const me = useMe();
     usePageTitle(`${profile.data?.username ?? username}'s Profile`);
     const notFound =
         profile.error instanceof ApiRequestError ? profile.error.status === 404 : false;
@@ -364,6 +397,9 @@ export function ProfilePage() {
                                         {profile.data.username}
                                     </p>
                                 )}
+                                {profile.data.bio && (
+                                    <p className="profile-hero__bio">{profile.data.bio}</p>
+                                )}
                                 <p className="muted profile-hero__joined">
                                     <CalendarDays aria-hidden="true" />
                                     Joined{' '}
@@ -374,7 +410,11 @@ export function ProfilePage() {
                                 </p>
                                 <SocialLinksList links={profile.data.socialLinks} />
                             </div>
-                            <SignupCta />
+                            {me.data?.username === profile.data.username ? (
+                                <OwnerActions username={profile.data.username} />
+                            ) : (
+                                <SignupCta />
+                            )}
                         </div>
 
                         <div className="profile-layout">

@@ -49,6 +49,20 @@ export const accountProfileSchema = z.object({
 });
 export type AccountProfileInput = z.infer<typeof accountProfileSchema>;
 
+/** Longest tagline; one line, shown under the name on the public profile. */
+export const BIO_MAX = 160;
+export const bioSchema = z.object({
+    bio: z
+        .string()
+        .trim()
+        // One line: inner whitespace (including newlines) collapses; control characters are refused
+        .transform((s) => s.replace(/\s+/g, ' '))
+        .pipe(z.string().max(BIO_MAX, `Keep it to ${BIO_MAX} characters or fewer`))
+        .refine((s) => !/[\p{Cc}\p{Cf}]/u.test(s), 'The bio can not contain control characters')
+        .transform((s) => (s === '' ? null : s))
+});
+export type BioInput = z.infer<typeof bioSchema>;
+
 /** Whether search engines may index the public profile pages (default off). */
 export const searchIndexingSchema = z.object({ searchIndexable: z.boolean() });
 export type SearchIndexingInput = z.infer<typeof searchIndexingSchema>;
@@ -95,6 +109,8 @@ export interface UserDto {
     lastName: string | null;
     /** Whether the real name is shown on the public profile */
     showRealName: boolean;
+    /** One-line tagline, public on the profile; null = none */
+    bio: string | null;
     /** Gaming account names; always shown on the public profile once set */
     socialLinks: SocialLinks;
     /** Whether search engines may index the public profile pages; off unless the user opts in */

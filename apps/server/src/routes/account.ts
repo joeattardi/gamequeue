@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import {
     accountProfileSchema,
     activityVisibilitySchema,
+    bioSchema,
     changePasswordSchema,
     deleteAccountSchema,
     searchIndexingSchema,
@@ -19,6 +20,7 @@ import {
     deleteAccount,
     updateAccountProfile,
     updateActivityVisibility,
+    updateBio,
     updateSearchIndexing,
     updateSocialLinks
 } from '../services/users.js';
@@ -43,6 +45,13 @@ export function accountRoutes({
         if (raw === undefined) throw new HttpError(400, 'Invalid request');
         const input = validate(socialLinksSchema, raw);
         return c.json({ user: updateSocialLinks(db, c.get('user').id, input) });
+    });
+
+    r.put('/bio', async (c) => {
+        const raw: unknown = await c.req.json().catch(() => undefined);
+        if (raw === undefined) throw new HttpError(400, 'Invalid request');
+        const input = validate(bioSchema, raw);
+        return c.json({ user: updateBio(db, c.get('user').id, input) });
     });
 
     r.put('/activity', async (c) => {

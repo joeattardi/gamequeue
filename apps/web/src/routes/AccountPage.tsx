@@ -1,5 +1,6 @@
 import { useRef, useState, type ChangeEvent, type FormEvent } from 'react';
 import {
+    BIO_MAX,
     SOCIAL_LABELS,
     SOCIAL_SERVICES,
     type SocialLinksInput,
@@ -12,6 +13,7 @@ import {
     useDeleteAccount,
     useUpdateAccount,
     useUpdateActivityVisibility,
+    useUpdateBio,
     useUpdateSearchIndexing,
     useUpdateSocialLinks
 } from '../api/account';
@@ -89,6 +91,61 @@ function NameForm({ me }: { me: UserDto }) {
             {showRealName && !hasName && (
                 <p className="muted">Nothing will be shown until you enter a name.</p>
             )}
+            <div>
+                <button className="btn btn--primary" disabled={update.isPending}>
+                    {update.isPending ? 'Saving…' : 'Save'}
+                </button>
+            </div>
+            <p role="status" className="muted">
+                {saved ? 'Saved.' : ''}
+            </p>
+            {error && <p role="alert">{error}</p>}
+        </form>
+    );
+}
+
+function BioForm({ me }: { me: UserDto }) {
+    const update = useUpdateBio();
+    const [bio, setBio] = useState(me.bio ?? '');
+    const [error, setError] = useState<string>();
+    const [saved, setSaved] = useState(false);
+
+    function submit(e: FormEvent) {
+        e.preventDefault();
+        setError(undefined);
+        setSaved(false);
+        update.mutate(
+            { bio },
+            {
+                onSuccess: ({ user }) => {
+                    // Show the stored (trimmed, single-line) text
+                    setBio(user.bio ?? '');
+                    setSaved(true);
+                },
+                onError: (err) =>
+                    setError(err instanceof ApiRequestError ? err.message : 'Could not save.')
+            }
+        );
+    }
+
+    return (
+        <form onSubmit={submit} className="name-form">
+            <p>
+                A short line shown under your name on your public profile. Anyone with the link can
+                read it.
+            </p>
+            <label className="field">
+                Bio
+                <input
+                    value={bio}
+                    onChange={(e) => setBio(e.target.value)}
+                    maxLength={BIO_MAX}
+                    placeholder="Souls-like addict, backlog the size of a small country"
+                />
+            </label>
+            <p className="muted" aria-live="off">
+                {bio.length}/{BIO_MAX}
+            </p>
             <div>
                 <button className="btn btn--primary" disabled={update.isPending}>
                     {update.isPending ? 'Saving…' : 'Save'}
@@ -527,6 +584,11 @@ export function AccountPage() {
                 <section aria-labelledby="name-h" className="panel">
                     <h2 id="name-h">Your name</h2>
                     <NameForm me={me} />
+                </section>
+
+                <section aria-labelledby="bio-h" className="panel">
+                    <h2 id="bio-h">Bio</h2>
+                    <BioForm me={me} />
                 </section>
 
                 <section aria-labelledby="social-h" className="panel">

@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type {
     AccountProfileInput,
     ActivityVisibilityInput,
+    BioInput,
     ChangePasswordInput,
     DeleteAccountInput,
     SearchIndexingInput,
@@ -27,6 +28,18 @@ export function useUpdateSocialLinks() {
     return useMutation({
         mutationFn: (input: SocialLinksInput) =>
             api<{ user: UserDto }>('/account/social', { method: 'PUT', body: input }),
+        onSuccess: ({ user }) => {
+            qc.setQueryData(['me'], user);
+            qc.invalidateQueries({ queryKey: ['profile'] });
+        }
+    });
+}
+
+export function useUpdateBio() {
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: (input: BioInput) =>
+            api<{ user: UserDto }>('/account/bio', { method: 'PUT', body: input }),
         onSuccess: ({ user }) => {
             qc.setQueryData(['me'], user);
             qc.invalidateQueries({ queryKey: ['profile'] });

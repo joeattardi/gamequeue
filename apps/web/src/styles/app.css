@@ -2445,6 +2445,18 @@ fieldset.stars:disabled .stars__star {
     justify-items: end;
     text-align: right;
 }
+.profile-hero__bio {
+    margin: 4px 0 0;
+    max-width: 52ch;
+    overflow-wrap: anywhere;
+}
+.profile-hero__owner {
+    margin-left: auto;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 8px;
+}
 .profile-hero__cta p {
     margin: 0;
     color: var(--ink-muted);
@@ -2459,6 +2471,11 @@ fieldset.stars:disabled .stars__star {
         margin-left: 0;
         justify-items: start;
         text-align: left;
+    }
+    .profile-hero__owner {
+        width: 100%;
+        margin-left: 0;
+        justify-content: flex-start;
     }
 }
 .profile-hero h1 {

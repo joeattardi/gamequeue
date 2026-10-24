@@ -24,6 +24,8 @@ export const users = sqliteTable('users', {
     firstName: text('first_name'),
     lastName: text('last_name'),
     showRealName: integer('show_real_name', { mode: 'boolean' }).notNull().default(false),
+    // One-line tagline shown under the name on the public profile; null = none
+    bio: text('bio'),
     // Gaming account names, public on the profile once set
     steamId: text('steam_id'),
     xboxGamertag: text('xbox_gamertag'),

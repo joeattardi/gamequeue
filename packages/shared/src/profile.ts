@@ -36,6 +36,8 @@ export interface ProfileDto {
     avatarUpdatedAt: number | null;
     /** Real name; only present when the user chose to show it on their profile */
     realName: string | null;
+    /** One-line tagline the owner wrote; null = none */
+    bio: string | null;
     socialLinks: SocialLinks;
     /** Account creation time, ms since epoch */
     joinedAt: number;
