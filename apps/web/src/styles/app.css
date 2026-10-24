@@ -1418,6 +1418,21 @@ a.game-row:hover {
     font-size: 1.1rem;
     overflow-wrap: anywhere;
 }
+.empty-state h1 {
+    margin: 0;
+    font-size: 1.4rem;
+}
+.empty-state p {
+    margin: 0;
+    overflow-wrap: anywhere;
+}
+.empty-state__actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 12px;
+}
 .empty-state__icon {
     display: grid;
     place-items: center;

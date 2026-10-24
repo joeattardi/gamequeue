@@ -1,4 +1,4 @@
-import { Navigate, Route, Routes } from 'react-router';
+import { Route, Routes } from 'react-router';
 import { useMe } from './api/auth';
 import { Splash } from './components/Splash';
 import { Shell } from './components/Shell';
@@ -26,6 +26,7 @@ import { SeriesPage } from './routes/SeriesPage';
 import { SearchPage } from './routes/SearchPage';
 import { Home } from './routes/Home';
 import { LandingPage } from './routes/LandingPage';
+import { NotFoundPage } from './routes/NotFoundPage';
 import { ListPage, QueuePage } from './routes/ListPage';
 import { ListsPage } from './routes/ListsPage';
 import { PickChoosePage } from './routes/PickChoosePage';
@@ -72,7 +73,7 @@ export function App() {
                 <Route path="/u/:username/recap/:year" element={<ProfileRecapPage />} />
                 <Route path="/u/:username/:view" element={<ProfileGamesPage />} />
                 <Route path="/u/:username/:view/:year" element={<ProfileGamesPage />} />
-                <Route path="*" element={<Navigate to="/login" replace />} />
+                <Route path="*" element={<NotFoundPage standalone />} />
             </Routes>
         );
     }
@@ -133,7 +134,7 @@ export function App() {
                         <Route path="admin/users/:id" element={<AdminUserPage />} />
                     </>
                 )}
-                <Route path="*" element={<Navigate to="/" replace />} />
+                <Route path="*" element={<NotFoundPage />} />
             </Route>
         </Routes>
     );
