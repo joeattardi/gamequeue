@@ -30,6 +30,7 @@ import { useProfile } from '../api/profile';
 import { groupActivity, limitDays } from '../activityGroups';
 import { ActivityDays } from '../components/ActivityFeed';
 import { HighlightRow } from '../components/HighlightRow';
+import { ProfileBadge } from '../components/ProfileBadge';
 import { Avatar } from '../components/Avatar';
 import { Cover } from '../components/Cover';
 import { ListCard } from '../components/ListCard';
@@ -391,7 +392,12 @@ export function ProfilePage() {
                                 avatarUpdatedAt={profile.data.avatarUpdatedAt}
                             />
                             <div>
-                                <h1>{profile.data.realName ?? profile.data.username}</h1>
+                                <div className="profile-hero__title">
+                                    <h1>{profile.data.realName ?? profile.data.username}</h1>
+                                    {profile.data.badge && (
+                                        <ProfileBadge badge={profile.data.badge} />
+                                    )}
+                                </div>
                                 {profile.data.realName && (
                                     <p className="muted profile-hero__username">
                                         {profile.data.username}

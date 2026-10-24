@@ -30,12 +30,18 @@ export const toPublicEntry = (e: EntryDto): PublicEntryDto => ({
     tags: e.tags
 });
 
+/** A badge beside the name on a public profile: the site's founder, or an admin. */
+export const PROFILE_BADGES = ['founder', 'staff'] as const;
+export type ProfileBadge = (typeof PROFILE_BADGES)[number];
+
 export interface ProfileDto {
     username: string;
     /** See `UserDto.avatarUpdatedAt` */
     avatarUpdatedAt: number | null;
     /** Real name; only present when the user chose to show it on their profile */
     realName: string | null;
+    /** `founder` for the configured founder account, `staff` for other admins; null for everyone else */
+    badge: ProfileBadge | null;
     /** One-line tagline the owner wrote; null = none */
     bio: string | null;
     socialLinks: SocialLinks;

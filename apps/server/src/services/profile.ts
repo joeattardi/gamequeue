@@ -30,7 +30,7 @@ import {
 import { HttpError } from '../errors.js';
 import { pageActivity } from './activity.js';
 import { avatarVersion } from './avatars.js';
-import { socialLinksOf } from './users.js';
+import { profileBadge, socialLinksOf } from './users.js';
 import { hydrate, listEntries, pageEntries } from './entries.js';
 import { loadGames } from './games.js';
 import { listGrids } from './grids.js';
@@ -56,7 +56,7 @@ function requireUser(db: Db, username: string) {
 }
 
 /** Read-only: must not create anything (so no `getQueue`/`ensureQueue`). The queue has its own page. */
-export function getProfile(db: Db, username: string): ProfileDto {
+export function getProfile(db: Db, username: string, founderEmail?: string): ProfileDto {
     const user = requireUser(db, username);
 
     const byStatus = Object.fromEntries(ENTRY_STATUSES.map((s) => [s, 0])) as Record<
@@ -92,6 +92,7 @@ export function getProfile(db: Db, username: string): ProfileDto {
         username: user.username,
         avatarUpdatedAt: avatarVersion(db, user.id),
         realName: user.showRealName ? fullName(user) : null,
+        badge: profileBadge(user, founderEmail),
         bio: user.bio,
         socialLinks: socialLinksOf(user),
         joinedAt: user.createdAt,

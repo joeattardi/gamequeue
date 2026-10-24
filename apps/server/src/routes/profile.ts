@@ -26,7 +26,7 @@ import { getAvatarByUsername } from '../services/avatars.js';
 import { parseRecapYear } from '../services/recap.js';
 
 /** Public: deliberately has no requireAuth. */
-export function profileRoutes({ db }: AppDeps) {
+export function profileRoutes({ db, config }: AppDeps) {
     const r = new Hono();
     const parseUsername = (raw: string) => {
         const username = usernameSchema.safeParse(raw);
@@ -34,7 +34,9 @@ export function profileRoutes({ db }: AppDeps) {
         return username.data;
     };
     r.get('/:username', (c) =>
-        c.json({ profile: getProfile(db, parseUsername(c.req.param('username'))) })
+        c.json({
+            profile: getProfile(db, parseUsername(c.req.param('username')), config.founderEmail)
+        })
     );
     // Registered before "/:username/:view" so "wishlist" isn't read as a view
     r.get('/:username/wishlist', (c) =>

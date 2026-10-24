@@ -2445,6 +2445,35 @@ fieldset.stars:disabled .stars__star {
     justify-items: end;
     text-align: right;
 }
+.profile-hero__title {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 10px;
+}
+.profile-badge {
+    --badge: var(--accent);
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 10px 3px 8px;
+    border: 1px solid color-mix(in srgb, var(--badge) 50%, var(--line));
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--badge) 14%, var(--surface));
+    color: var(--ink);
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    line-height: 1.2;
+}
+.profile-badge svg {
+    width: 14px;
+    height: 14px;
+    color: var(--badge);
+}
+.profile-badge--founder {
+    --badge: var(--status-mid);
+}
 .profile-hero__bio {
     margin: 4px 0 0;
     max-width: 52ch;

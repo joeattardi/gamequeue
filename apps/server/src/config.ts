@@ -18,6 +18,8 @@ export interface Config {
     cloudflareZoneId?: string;
     /** Link to the full analytics page in the Cloudflare dashboard, shown on the admin Traffic page */
     cloudflareAnalyticsUrl?: string;
+    /** Email of the founder's account; that profile gets the "founder" badge (never exposed) */
+    founderEmail?: string;
     resendApiKey?: string;
     notifyEmail?: string;
     notifyFrom: string;
@@ -51,6 +53,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
         cloudflareApiToken: env.CLOUDFLARE_API_TOKEN || undefined,
         cloudflareZoneId: env.CLOUDFLARE_ZONE_ID || undefined,
         cloudflareAnalyticsUrl: env.CLOUDFLARE_ANALYTICS_URL || undefined,
+        founderEmail: env.FOUNDER_EMAIL?.trim().toLowerCase() || undefined,
         // Owner alerts (new signups) by email through Resend; off unless both key and address are set
         resendApiKey: env.RESEND_API_KEY || undefined,
         notifyEmail: env.NOTIFY_EMAIL || undefined,

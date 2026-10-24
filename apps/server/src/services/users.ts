@@ -3,6 +3,7 @@ import type {
     AccountProfileInput,
     ActivityVisibilityInput,
     BioInput,
+    ProfileBadge,
     SearchIndexingInput,
     SocialLinks,
     SocialLinksInput,
@@ -15,6 +16,15 @@ import { sessions, users } from '../db/schema.js';
 import { avatarVersion } from './avatars.js';
 
 type UserRow = typeof users.$inferSelect;
+
+/** Founder wins over staff, so the founder (who is also an admin) shows one badge. */
+export function profileBadge(
+    user: { email: string; role: string },
+    founderEmail?: string
+): ProfileBadge | null {
+    if (founderEmail && user.email.toLowerCase() === founderEmail.toLowerCase()) return 'founder';
+    return user.role === 'admin' ? 'staff' : null;
+}
 
 export const socialLinksOf = (row: UserRow): SocialLinks => ({
     steam: row.steamId,
