@@ -552,13 +552,19 @@ a {
 }
 .nav__count {
     margin-left: auto;
-    font-size: 0.78rem;
+    min-width: 20px;
+    padding: 0 6px;
+    border-radius: 10px;
+    background: var(--accent);
+    font-size: 0.72rem;
     font-weight: 600;
     font-variant-numeric: tabular-nums;
-    color: var(--ink-muted);
+    line-height: 20px;
+    text-align: center;
+    color: var(--accent-ink);
 }
 .nav a.active .nav__count {
-    color: var(--accent);
+    color: var(--accent-ink);
 }
 .sidebar__collapse {
     display: none;
