@@ -1,8 +1,22 @@
 import type { UserDto } from '@gamequeue/shared';
-import { ChevronsUpDown, Database, LogOut, Settings, ShieldCheck, UserRound } from 'lucide-react';
+import {
+    ChevronsUpDown,
+    Database,
+    LogOut,
+    Monitor,
+    Moon,
+    Settings,
+    ShieldCheck,
+    Sun,
+    UserRound
+} from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink, useLocation } from 'react-router';
+import { THEMES, useTheme } from '../theme';
 import { Avatar } from './Avatar';
+
+const THEME_ICONS = { system: Monitor, light: Sun, dark: Moon };
+const THEME_LABELS = { system: 'System', light: 'Light', dark: 'Dark' };
 
 /**
  * The signed-in user at the foot of the sidebar: a button that opens a small panel with the pages
@@ -18,6 +32,8 @@ export function UserMenu({
     signingOut: boolean;
 }) {
     const [open, setOpen] = useState(false);
+    const [theme, setTheme] = useTheme();
+    const ThemeIcon = THEME_ICONS[theme];
     const root = useRef<HTMLDivElement>(null);
     const button = useRef<HTMLButtonElement>(null);
     const { pathname } = useLocation();
@@ -71,6 +87,15 @@ export function UserMenu({
                             Admin
                         </NavLink>
                     )}
+                    <button
+                        type="button"
+                        onClick={() =>
+                            setTheme(THEMES[(THEMES.indexOf(theme) + 1) % THEMES.length]!)
+                        }
+                    >
+                        <ThemeIcon />
+                        Theme: {THEME_LABELS[theme]}
+                    </button>
                     <hr />
                     <button type="button" onClick={onSignOut} disabled={signingOut}>
                         <LogOut />

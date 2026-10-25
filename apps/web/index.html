@@ -9,6 +9,13 @@
             href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='18' fill='%231d4ed8'/%3E%3Cpath transform='translate(3.8 4.2) scale(.88)' fill='%23f5f8ff' fill-rule='evenodd' d='M20 12H44A12 12 0 0 1 55.9 22.4L59.5 43A8 8 0 0 1 45.9 49.6L40.5 44A4 4 0 0 0 37.6 42.8H26.4A4 4 0 0 0 23.5 44L18.1 49.6A8 8 0 0 1 4.5 43L8.1 22.4A12 12 0 0 1 20 12ZM16.5 20h5v4.5H26v5h-4.5V34h-5v-4.5H12v-5h4.5zM40 22h12v3H40zM40 28h9v3H40zM40 34h6v3H40z'/%3E%3C/svg%3E"
         />
         <title>GameQueue</title>
+        <script>
+            // Apply the saved theme before first paint (see src/theme.ts)
+            try {
+                var t = localStorage.getItem('gq.theme');
+                if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
+            } catch (e) {}
+        </script>
         <style>
             /* Splash shown until the app mounts; React replaces #root's contents. While the app
                waits for /api/auth/me it renders the same markup (components/Splash.tsx), passing
@@ -20,11 +27,16 @@
                 --splash-bg: #f3f6fb;
             }
             @media (prefers-color-scheme: dark) {
-                html {
+                html:not([data-theme='light']) {
                     background: #0d1320;
                     --splash-accent: #6ea0ff;
                     --splash-bg: #0d1320;
                 }
+            }
+            html[data-theme='dark'] {
+                background: #0d1320;
+                --splash-accent: #6ea0ff;
+                --splash-bg: #0d1320;
             }
             body {
                 margin: 0;
