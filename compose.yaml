@@ -22,6 +22,7 @@ services:
             RESEND_API_KEY: ${RESEND_API_KEY:-}
             NOTIFY_EMAIL: ${NOTIFY_EMAIL:-}
             NOTIFY_FROM: ${NOTIFY_FROM:-GameQueue <onboarding@resend.dev>}
+            MAIL_FROM: ${MAIL_FROM:-}
         volumes:
             - ./data:/data
 
