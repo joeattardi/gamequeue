@@ -1528,6 +1528,10 @@ a.game-row:hover {
     gap: 14px;
     align-content: start;
 }
+/* A grid item stretches to the column, so a lone badge would become a full-width bar */
+.stack > .badge {
+    justify-self: start;
+}
 .row {
     display: flex;
     gap: 10px;
