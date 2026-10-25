@@ -7,6 +7,7 @@ import { useNavCounts } from '../api/counts';
 import { isRecapSeason } from '../lib';
 import { Footer } from './Footer';
 import { Logo } from './Logo';
+import { Tooltip } from './Tooltip';
 import { UserMenu } from './UserMenu';
 import {
     Bookmark,
@@ -84,16 +85,24 @@ function NavItem({
     collapsed: boolean;
 }) {
     return (
-        <NavLink to={to} end={end} className={className} title={collapsed ? label : undefined}>
-            {icon}
-            <span className="nav__text">{label}</span>
-            {count ? (
-                <span className="nav__count">
-                    <span aria-hidden="true">{count.toLocaleString()}</span>
-                    <span className="sr-only"> games</span>
-                </span>
-            ) : null}
-        </NavLink>
+        <Tooltip
+            label={label}
+            detail={
+                count ? `${count.toLocaleString()} ${count === 1 ? 'game' : 'games'}` : undefined
+            }
+            enabled={collapsed}
+        >
+            <NavLink to={to} end={end} className={className}>
+                {icon}
+                <span className="nav__text">{label}</span>
+                {count ? (
+                    <span className="nav__count">
+                        <span aria-hidden="true">{count.toLocaleString()}</span>
+                        <span className="sr-only"> games</span>
+                    </span>
+                ) : null}
+            </NavLink>
+        </Tooltip>
     );
 }
 
@@ -194,15 +203,13 @@ export function Shell({ user }: { user: UserDto }) {
                             <X />
                         </button>
                     </div>
-                    <NavLink
-                        className="nav-search"
-                        to="/search"
-                        title={collapsed ? 'Search games' : undefined}
-                    >
-                        <Search />
-                        <span className="nav__text">Search games</span>
-                        <kbd aria-hidden="true">/</kbd>
-                    </NavLink>
+                    <Tooltip label="Search games" shortcut="/" enabled={collapsed}>
+                        <NavLink className="nav-search" to="/search">
+                            <Search />
+                            <span className="nav__text">Search games</span>
+                            <kbd aria-hidden="true">/</kbd>
+                        </NavLink>
+                    </Tooltip>
                     <nav className="nav" aria-label="Main">
                         <div className="nav__group" role="group" aria-labelledby="nav-play">
                             <h2 className="nav__label" id="nav-play">
@@ -305,18 +312,19 @@ export function Shell({ user }: { user: UserDto }) {
                             )}
                         </div>
                     </nav>
-                    <button
-                        type="button"
-                        className="sidebar__collapse"
-                        aria-expanded={!collapsed}
-                        aria-controls="main-nav"
-                        aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-                        title={collapsed ? 'Expand sidebar' : undefined}
-                        onClick={toggleCollapsed}
-                    >
-                        {collapsed ? <PanelLeftOpen /> : <PanelLeftClose />}
-                        <span className="nav__text">Collapse</span>
-                    </button>
+                    <Tooltip label="Expand sidebar" enabled={collapsed}>
+                        <button
+                            type="button"
+                            className="sidebar__collapse"
+                            aria-expanded={!collapsed}
+                            aria-controls="main-nav"
+                            aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+                            onClick={toggleCollapsed}
+                        >
+                            {collapsed ? <PanelLeftOpen /> : <PanelLeftClose />}
+                            <span className="nav__text">Collapse</span>
+                        </button>
+                    </Tooltip>
                     <UserMenu
                         user={user}
                         onSignOut={() => logout.mutate()}

@@ -6314,3 +6314,67 @@ button.tier-tile__button {
         transition: none;
     }
 }
+
+/* Rich tooltip (collapsed sidebar): inverted colours so it reads in both themes */
+.tip-anchor {
+    display: contents;
+}
+.tip {
+    position: fixed;
+    z-index: 60;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    border-radius: 10px;
+    background: var(--ink);
+    color: var(--bg);
+    font-size: 0.875rem;
+    white-space: nowrap;
+    pointer-events: none;
+    transform: translateY(-50%);
+    box-shadow:
+        0 1px 2px rgb(0 0 0 / 0.2),
+        0 10px 24px -8px rgb(0 0 0 / 0.45);
+    animation: tip-in 0.14s ease-out;
+}
+.tip::before {
+    content: '';
+    position: absolute;
+    left: -4px;
+    top: 50%;
+    width: 8px;
+    height: 8px;
+    background: inherit;
+    border-radius: 2px;
+    transform: translateY(-50%) rotate(45deg);
+}
+.tip__label {
+    font-weight: 700;
+}
+.tip__detail {
+    padding-left: 10px;
+    border-left: 1px solid color-mix(in srgb, var(--bg) 30%, transparent);
+    opacity: 0.75;
+    font-variant-numeric: tabular-nums;
+}
+.tip__key {
+    min-width: 22px;
+    padding: 1px 6px;
+    border-radius: 5px;
+    border: 1px solid color-mix(in srgb, var(--bg) 35%, transparent);
+    background: color-mix(in srgb, var(--bg) 12%, transparent);
+    font: 600 0.78rem var(--font-body);
+    text-align: center;
+}
+@keyframes tip-in {
+    from {
+        opacity: 0;
+        margin-left: -4px;
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .tip {
+        animation: none;
+    }
+}
