@@ -45,6 +45,7 @@ import { ProfileRecapPage, RecapPage } from './routes/RecapPage';
 import { ProfileStatsPage, StatsPage } from './routes/StatsPage';
 import { CreditsPage } from './routes/CreditsPage';
 import { DiscoverPage } from './routes/DiscoverPage';
+import { VerifyEmailGate, VerifyEmailPage } from './routes/VerifyEmailPage';
 import { WishlistPage } from './routes/WishlistPage';
 
 export function App() {
@@ -75,6 +76,7 @@ function AppRoutes() {
                 <Route index element={<LandingPage />} />
                 <Route path="/login" element={<AuthPage mode="login" />} />
                 <Route path="/register" element={<AuthPage mode="register" />} />
+                <Route path="/verify-email" element={<VerifyEmailPage />} />
                 <Route path="/credits" element={<CreditsPage />} />
                 <Route path="/u/:username" element={<ProfilePage />} />
                 <Route path="/u/:username/wishlist" element={<ProfileWishlistPage />} />
@@ -96,8 +98,17 @@ function AppRoutes() {
             </Routes>
         );
     }
+    // Hard wall: until the address is confirmed there is nothing else to see
+    if (!me.data.emailVerified)
+        return (
+            <Routes>
+                <Route path="/verify-email" element={<VerifyEmailPage />} />
+                <Route path="*" element={<VerifyEmailGate email={me.data.email} />} />
+            </Routes>
+        );
     return (
         <Routes>
+            <Route path="/verify-email" element={<VerifyEmailPage />} />
             {/* Logging in or registering flips `me` while the URL is still the auth page. */}
             <Route path="/login" element={<Navigate to="/" replace />} />
             <Route path="/register" element={<Navigate to="/" replace />} />

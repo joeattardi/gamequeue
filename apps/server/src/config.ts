@@ -25,6 +25,10 @@ export interface Config {
     resendApiKey?: string;
     notifyEmail?: string;
     notifyFrom: string;
+    /** Sender of the verification emails (a domain verified in Resend); verification is off without it */
+    mailFrom?: string;
+    /** New accounts must confirm their email before they can use the app (needs `resendApiKey` and `mailFrom`) */
+    emailVerification: boolean;
     /** Git commit of the build, from the GIT_COMMIT build arg; shown on the admin Server page */
     version: string;
 }
@@ -68,6 +72,9 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
         notifyEmail: env.NOTIFY_EMAIL || undefined,
         // Resend's shared sender only delivers to the address on your Resend account
         notifyFrom: env.NOTIFY_FROM || 'GameQueue <onboarding@resend.dev>',
+        mailFrom: env.MAIL_FROM || undefined,
+        // Explicit sender required: with Resend's shared one, mail only reaches the account owner
+        emailVerification: Boolean(env.RESEND_API_KEY && env.MAIL_FROM),
         version: env.GIT_COMMIT || 'unknown'
     };
 }

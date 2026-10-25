@@ -76,7 +76,9 @@ export async function createUser(db: Db, input: AdminCreateUserInput): Promise<A
                     username: input.username,
                     email: input.email,
                     passwordHash,
-                    role: input.role
+                    role: input.role,
+                    // The admin vouches for the address
+                    emailVerifiedAt: Date.now()
                 })
                 .returning({ id: users.id })
                 .get();
@@ -111,6 +113,7 @@ export function updateUser(db: Db, userId: number, input: AdminUpdateUserInput):
             .set({
                 username: input.username,
                 email: input.email,
+                ...(input.email !== current.email ? { emailVerifiedAt: Date.now() } : {}),
                 role: input.role,
                 firstName: input.firstName,
                 lastName: input.lastName,

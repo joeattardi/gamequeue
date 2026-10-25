@@ -32,10 +32,11 @@ import { readBackupReport } from '../services/backup-status.js';
 import { getMirrorStatus } from '../services/mirror-status.js';
 import { getTraffic, trafficCache } from '../services/traffic.js';
 import type { AppDeps } from '../app.js';
+import { markVerified, sendVerification } from '../services/email-verification.js';
 import { requireAdmin, requireAuth, type AuthVars } from '../auth/middleware.js';
 
 /** Admin-only API. Every route here is behind `requireAuth` + `requireAdmin`. */
-export function adminRoutes({ db, config, igdb, cloudflare }: AppDeps) {
+export function adminRoutes({ db, config, igdb, cloudflare, mailer }: AppDeps) {
     const r = new Hono<{ Variables: AuthVars }>();
     r.use('*', requireAuth(db, config), requireAdmin);
     // Cheap check that the caller may use the admin area at all
@@ -139,6 +140,19 @@ export function adminRoutes({ db, config, igdb, cloudflare }: AppDeps) {
         const id = parseId(c.req.param('id'));
         const mine = id === c.get('user').id;
         await resetPassword(db, id, password, mine ? getCookie(c, SESSION_COOKIE) : undefined);
+        return c.json({ ok: true });
+    });
+    r.post('/users/:id/verify-email', (c) => {
+        const id = parseId(c.req.param('id'));
+        getUser(db, id);
+        markVerified(db, id);
+        return c.json({ user: getUser(db, id) });
+    });
+    r.post('/users/:id/resend-verification', async (c) => {
+        const user = getUser(db, parseId(c.req.param('id')));
+        if (user.emailVerified) throw new HttpError(409, 'That email address is already confirmed');
+        if (!(await sendVerification(db, config, mailer, user)))
+            throw new HttpError(502, "The email couldn't be sent; see the error log");
         return c.json({ ok: true });
     });
     r.delete('/users/:id', (c) => {

@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm';
+import { and, eq, isNotNull } from 'drizzle-orm';
 import { AVATAR_MAX_BYTES, type AvatarContentType, type AvatarIconChoice } from '@gamequeue/shared';
 import type { Db } from '../db/client.js';
 import { avatars, users } from '../db/schema.js';
@@ -92,6 +92,6 @@ export function getAvatarByUsername(db: Db, username: string) {
         .select({ contentType: avatars.contentType, data: avatars.data })
         .from(avatars)
         .innerJoin(users, eq(users.id, avatars.userId))
-        .where(eq(users.username, username))
+        .where(and(eq(users.username, username), isNotNull(users.emailVerifiedAt)))
         .get();
 }

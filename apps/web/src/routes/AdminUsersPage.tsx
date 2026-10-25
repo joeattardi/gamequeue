@@ -56,6 +56,9 @@ export function AdminUsersPage() {
                                     </div>
                                     <div className="muted admin-user__email">{u.email}</div>
                                 </div>
+                                {!u.emailVerified && (
+                                    <span className="badge badge--quiet">unverified</span>
+                                )}
                                 <span
                                     className={`badge ${u.role === 'admin' ? '' : 'badge--quiet'}`}
                                 >

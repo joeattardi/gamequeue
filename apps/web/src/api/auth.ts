@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { LoginInput, RegisterInput, UserDto } from '@gamequeue/shared';
 import { api, ApiRequestError } from './client';
@@ -49,6 +50,55 @@ export function useRegister() {
             api<{ user: UserDto }>('/auth/register', { method: 'POST', body: input }),
         onSuccess: ({ user }) => qc.setQueryData(ME, user)
     });
+}
+
+/**
+ * Sends the emailed token. A query rather than a mutation: tokens are single-use, and the cache
+ * keeps the page from sending it again when it re-mounts (StrictMode, or leaving the wall).
+ */
+export function useVerifyEmailLink(token: string | null) {
+    const qc = useQueryClient();
+    return useQuery({
+        queryKey: ['verify-email', token],
+        enabled: token !== null,
+        retry: false,
+        staleTime: Infinity,
+        gcTime: Infinity,
+        queryFn: async () => {
+            const res = await api<{ ok: true }>('/auth/verify-email', {
+                method: 'POST',
+                body: { token }
+            });
+            // A signed-in, unverified user leaves the wall as soon as `me` says so
+            await qc.invalidateQueries({ queryKey: ME });
+            return res;
+        }
+    });
+}
+
+export const useResendVerification = () =>
+    useMutation({
+        mutationFn: () => api<{ ok: true }>('/auth/resend-verification', { method: 'POST' })
+    });
+
+/** Fixes a mistyped address while the account is still unverified; the server sends a new link. */
+export function useChangeEmail() {
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: (email: string) =>
+            api<{ user: UserDto }>('/auth/email', { method: 'PUT', body: { email } }),
+        onSuccess: ({ user }) => qc.setQueryData(ME, user)
+    });
+}
+
+/** Re-reads `me` when the tab regains focus, so confirming in another tab or the phone's mail app opens the app. */
+export function useRecheckOnFocus() {
+    const qc = useQueryClient();
+    useEffect(() => {
+        const check = () => void qc.invalidateQueries({ queryKey: ME });
+        window.addEventListener('focus', check);
+        return () => window.removeEventListener('focus', check);
+    }, [qc]);
 }
 
 export function useLogout() {

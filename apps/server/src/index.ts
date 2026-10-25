@@ -13,6 +13,7 @@ import { recordIgdbAttempt, pruneIgdbHistory } from './services/igdb-history.js'
 import { endRun, HEARTBEAT_MS, heartbeat, pruneRuns, startRun } from './services/server-runs.js';
 import { createErrorAlerter } from './services/error-alerts.js';
 import { reportError, pruneErrors, setErrorAlerter } from './services/error-log.js';
+import { purgeUnverified } from './services/email-verification.js';
 import { createNotifier } from './services/notify.js';
 import { backfillSeries } from './services/games.js';
 import { MIRROR_SYNC_CHECK_MS, syncFromMirrorIfNew } from './services/mirror-sync.js';
@@ -58,6 +59,10 @@ else if (liveIgdb)
 if (process.env.NODE_ENV === 'production')
     setErrorAlerter(createErrorAlerter(db, createNotifier(config)));
 // After the alerter is set, so an unclean previous run is reported like any other error
+if (!config.emailVerification)
+    console.warn(
+        'RESEND_API_KEY / MAIL_FROM not set: new accounts are not asked to verify their email.'
+    );
 const runId = startRun(db, config.version);
 const itad = config.itadApiKey
     ? createItadClient({ apiKey: config.itadApiKey, country: config.itadCountry })
@@ -94,6 +99,7 @@ for (const signal of ['SIGTERM', 'SIGINT'] as const)
 setInterval(() => heartbeat(db, runId), HEARTBEAT_MS).unref();
 
 purgeExpiredSessions(db);
+purgeUnverified(db);
 pruneErrors(db);
 pruneIgdbHistory(db);
 pruneRuns(db);
@@ -108,6 +114,7 @@ checkMirror();
 setInterval(checkMirror, MIRROR_SYNC_CHECK_MS).unref();
 setInterval(() => {
     purgeExpiredSessions(db);
+    purgeUnverified(db);
     pruneErrors(db);
     pruneIgdbHistory(db);
     pruneRuns(db);

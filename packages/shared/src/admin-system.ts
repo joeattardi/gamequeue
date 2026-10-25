@@ -116,7 +116,7 @@ export const ERROR_KINDS = {
     job_mirror_build: 'Mirror build',
     series_refresh: 'Series refresh',
     discover_lookup: 'Discover lookup',
-    email_failed: 'Notification email',
+    email_failed: 'Email delivery',
     process_crash: 'Process crash',
     unclean_shutdown: 'Stopped without shutting down'
 } as const;

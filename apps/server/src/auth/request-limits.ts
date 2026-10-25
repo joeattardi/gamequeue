@@ -31,6 +31,17 @@ export const SPECIFIC_TIERS: Tier[] = [
         windowMs: 60 * MINUTE,
         match: (m, p) => m === 'POST' && p === '/api/auth/register'
     },
+    // Each one can send an email or burn a token guess
+    {
+        name: 'verify-email',
+        max: 20,
+        windowMs: 60 * MINUTE,
+        match: (m, p) =>
+            m !== 'GET' &&
+            (p === '/api/auth/verify-email' ||
+                p === '/api/auth/resend-verification' ||
+                p === '/api/auth/email')
+    },
     // Import (a merge inside a transaction) and the full exports
     { name: 'data', max: 20, windowMs: 10 * MINUTE, match: (_m, p) => p.startsWith('/api/data/') },
     // Cache misses render a PNG; crawlers fetch these in bursts

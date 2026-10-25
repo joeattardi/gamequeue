@@ -1,4 +1,4 @@
-import { and, count, eq } from 'drizzle-orm';
+import { and, count, eq, isNotNull } from 'drizzle-orm';
 import {
     ENTRY_STATUSES,
     FINISHED_UNKNOWN_YEAR,
@@ -52,7 +52,11 @@ const PROFILE_ACTIVITY_PREVIEW = 30;
 const HIGHLIGHT_ROW = 12;
 
 function requireUser(db: Db, username: string) {
-    const user = db.select().from(users).where(eq(users.username, username)).get();
+    const user = db
+        .select()
+        .from(users)
+        .where(and(eq(users.username, username), isNotNull(users.emailVerifiedAt)))
+        .get();
     if (!user) throw new HttpError(404, 'Not found');
     return user;
 }

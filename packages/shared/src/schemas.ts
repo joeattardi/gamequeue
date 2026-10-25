@@ -28,6 +28,8 @@ export const registerSchema = z.object({
     email: emailSchema,
     password: passwordSchema
 });
+export const verifyEmailSchema = z.object({ token: z.string().min(1).max(200) });
+export const changeEmailSchema = z.object({ email: emailSchema });
 // Login deliberately does not enforce password rules: they could leak policy and add nothing.
 export const loginSchema = z.object({
     username: usernameSchema,
@@ -90,6 +92,8 @@ export const deleteAccountSchema = z.object({
 });
 export type DeleteAccountInput = z.infer<typeof deleteAccountSchema>;
 
+export type VerifyEmailInput = z.infer<typeof verifyEmailSchema>;
+export type ChangeEmailInput = z.infer<typeof changeEmailSchema>;
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 
@@ -101,6 +105,8 @@ export interface UserDto {
     id: number;
     username: string;
     email: string;
+    /** Whether the address is confirmed; when email verification is on, an unconfirmed account can't use the app */
+    emailVerified: boolean;
     /** Only a UI hint (shows the Admin link); the server checks the role again on every admin request */
     role: UserRole;
     /** When the uploaded avatar last changed (ms); null = none, show the generated identicon */

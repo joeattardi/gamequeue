@@ -294,6 +294,8 @@ The important ideas:
 - **Every API request is rate limited per IP** (in memory): 300 a minute overall, with tighter limits on sign-up, import/export, share-card images and anything that can reach IGDB. IPv6 clients are grouped by their /64 network, and the IP comes from Cloudflare's `CF-Connecting-IP` header.
 - **Errors are vague on purpose.** A wrong username and a wrong password give the same message and take the same time, so nobody can probe which usernames exist.
 
+**Email confirmation.** A new account can't use the app until its email address is confirmed. Registering creates the account, signs you in and emails a one-time link (valid 24 hours; the database keeps only its hash). Until you click it, the app shows only a "Check your inbox" page with a resend button and a way to fix a typo in the address, and your public profile doesn't exist. Accounts that never confirm are deleted after 7 days. It switches on automatically when the server has a Resend key and a sender address (`MAIL_FROM`).
+
 **Roles.** Every user is a `gamer` or an `admin`. `requireAdmin` guards the admin API. The web app hides admin links from gamers, but that's only cosmetic; the server is what enforces it.
 
 **Signups** can be switched off (by environment variable, or by an admin at runtime), which turns registration into a 403.

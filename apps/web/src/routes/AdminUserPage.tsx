@@ -8,13 +8,15 @@ import {
     type AdminUpdateUserInput,
     type AdminUserDto
 } from '@gamequeue/shared';
-import { ArrowLeft, KeyRound, Trash2, UserPlus, UserRound } from 'lucide-react';
+import { ArrowLeft, KeyRound, Mail, MailCheck, Trash2, UserPlus, UserRound } from 'lucide-react';
 import {
     useAdminUser,
     useCreateAdminUser,
     useDeleteAdminUser,
+    useResendAdminUserVerification,
     useResetUserPassword,
-    useUpdateAdminUser
+    useUpdateAdminUser,
+    useVerifyAdminUserEmail
 } from '../api/admin';
 import { useMe } from '../api/auth';
 import { ApiRequestError } from '../api/client';
@@ -358,6 +360,42 @@ function PasswordPanel({ user, isSelf }: { user: AdminUserDto; isSelf: boolean }
     );
 }
 
+function EmailPanel({ user }: { user: AdminUserDto }) {
+    const verify = useVerifyAdminUserEmail(user.id);
+    const resend = useResendAdminUserVerification(user.id);
+    if (user.emailVerified)
+        return (
+            <p className="muted">
+                <MailCheck aria-hidden="true" /> {user.email} is confirmed.
+            </p>
+        );
+    return (
+        <section className="panel" aria-labelledby="email-h">
+            <h2 id="email-h">
+                <Mail aria-hidden="true" /> Email not confirmed
+            </h2>
+            <p className="muted">
+                {user.username} hasn't confirmed {user.email}, so the account can't use the app yet.
+                Unconfirmed accounts are deleted 7 days after signup.
+            </p>
+            <div className="admin-actions">
+                <button className="btn" onClick={() => resend.mutate()} disabled={resend.isPending}>
+                    {resend.isPending ? 'Sending…' : 'Resend the email'}
+                </button>
+                <button className="btn" onClick={() => verify.mutate()} disabled={verify.isPending}>
+                    {verify.isPending ? 'Marking…' : 'Mark as confirmed'}
+                </button>
+            </div>
+            <p role="status" className="muted">
+                {resend.isSuccess ? 'Email sent.' : ''}
+            </p>
+            {(resend.isError || verify.isError) && (
+                <p role="alert">{problemsOf(resend.error ?? verify.error).general}</p>
+            )}
+        </section>
+    );
+}
+
 function DeletePanel({ user }: { user: AdminUserDto }) {
     const del = useDeleteAdminUser();
     const confirm = useConfirm();
@@ -431,6 +469,7 @@ function EditUser({ id }: { id: number }) {
                 </div>
             </div>
             <DetailsForm key={user.id} user={user} />
+            <EmailPanel user={user} />
             <PasswordPanel user={user} isSelf={isSelf} />
             {isSelf ? (
                 <p className="muted">

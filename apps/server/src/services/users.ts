@@ -41,6 +41,7 @@ export function getUserDto(db: Db, userId: number): UserDto {
         id: row.id,
         username: row.username,
         email: row.email,
+        emailVerified: row.emailVerifiedAt !== null,
         role: row.role,
         avatarUpdatedAt: avatarVersion(db, row.id),
         avatarIcon: avatarIconOf(row),

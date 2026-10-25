@@ -32,6 +32,7 @@ import type { CloudflareClient } from './cloudflare/types.js';
 import type { ItadClient } from './itad/types.js';
 import type { AuthVars } from './auth/middleware.js';
 import { reportError } from './services/error-log.js';
+import { createMailer, type Mailer } from './services/mailer.js';
 import { createNotifier, type Notify } from './services/notify.js';
 import { similarCache } from './services/similar.js';
 
@@ -46,6 +47,8 @@ export interface AppDeps {
     cloudflare?: CloudflareClient;
     /** Owner alerts; defaults to Resend email when configured. Overridable for tests */
     notify?: Notify;
+    /** Sends verification emails; defaults to Resend when configured, else links go to the console. Overridable for tests */
+    mailer?: Mailer;
     /** Share-card renderer (holds the in-memory card cache); overridable for tests */
     cards?: CardRenderer;
     /** Overridable for tests */
@@ -84,6 +87,7 @@ export function createApp(deps: AppDeps) {
         await next();
     });
 
+    const mailer = deps.mailer ?? createMailer(config);
     app.get('/api/health', (c) => c.json({ ok: true }));
     const limiters = deps.limiters ?? {
         loginByAccount: new FailureLimiter(5, 15 * 60_000),
@@ -94,6 +98,7 @@ export function createApp(deps: AppDeps) {
         authRoutes({
             ...deps,
             limiters,
+            mailer,
             notify:
                 deps.notify ??
                 createNotifier(config, fetch, (e) => reportError(deps.db, 'email_failed', e))
@@ -101,7 +106,7 @@ export function createApp(deps: AppDeps) {
     );
 
     app.route('/api/account', accountRoutes({ ...deps, limiters }));
-    app.route('/api/admin', adminRoutes(deps));
+    app.route('/api/admin', adminRoutes({ ...deps, mailer }));
     app.route('/api/avatar', avatarRoutes(deps));
     // IGDB's similar-game lists are shared by the game pages and Discover
     const similar = similarCache();

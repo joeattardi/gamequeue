@@ -1,4 +1,4 @@
-import { and, asc, count, desc, eq, inArray } from 'drizzle-orm';
+import { and, asc, count, desc, eq, inArray, isNotNull } from 'drizzle-orm';
 import {
     GRID_LABEL_PROMPTS,
     MAX_GRIDS,
@@ -74,7 +74,9 @@ export function getPublicGrid(db: Db, username: string, id: number): PublicGridD
         .select({ g: grids })
         .from(grids)
         .innerJoin(users, eq(users.id, grids.userId))
-        .where(and(eq(grids.id, id), eq(users.username, username)))
+        .where(
+            and(eq(grids.id, id), eq(users.username, username), isNotNull(users.emailVerifiedAt))
+        )
         .get();
     if (!row) throw new HttpError(404, 'Not found');
     return { ...toDto(db, row.g), username };

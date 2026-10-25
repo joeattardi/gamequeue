@@ -1,5 +1,5 @@
 import { usernameSchema } from '@gamequeue/shared';
-import { eq } from 'drizzle-orm';
+import { and, eq, isNotNull } from 'drizzle-orm';
 import type { Config } from './config.js';
 import type { Db } from './db/client.js';
 import { users } from './db/schema.js';
@@ -57,7 +57,7 @@ export function pageSeo(db: Db, config: Config, path: string): PageSeo {
         ? db
               .select({ searchIndexable: users.searchIndexable })
               .from(users)
-              .where(eq(users.username, username.data))
+              .where(and(eq(users.username, username.data), isNotNull(users.emailVerifiedAt)))
               .get()
         : undefined;
     if (!user) return { status: 404, noindex: true, meta: null };

@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { eq } from 'drizzle-orm';
+import { and, eq, isNotNull } from 'drizzle-orm';
 import {
     TIER_COLORS,
     type AvatarIconChoice,
@@ -116,7 +116,7 @@ export function getRecapCardData(
             avatarColor: users.avatarColor
         })
         .from(users)
-        .where(eq(users.username, username))
+        .where(and(eq(users.username, username), isNotNull(users.emailVerifiedAt)))
         .get();
     if (!user) throw new HttpError(404, 'Not found');
     return recapCardData(

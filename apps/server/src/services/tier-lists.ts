@@ -1,4 +1,4 @@
-import { and, asc, count, desc, eq, inArray, isNull, max } from 'drizzle-orm';
+import { and, asc, count, desc, eq, inArray, isNotNull, isNull, max } from 'drizzle-orm';
 import {
     DEFAULT_TIERS,
     MAX_TIERS,
@@ -91,7 +91,13 @@ export function getPublicTierList(db: Db, username: string, id: number): PublicT
         .select({ l: tierLists })
         .from(tierLists)
         .innerJoin(users, eq(users.id, tierLists.userId))
-        .where(and(eq(tierLists.id, id), eq(users.username, username)))
+        .where(
+            and(
+                eq(tierLists.id, id),
+                eq(users.username, username),
+                isNotNull(users.emailVerifiedAt)
+            )
+        )
         .get();
     if (!row) throw new HttpError(404, 'Not found');
     return { ...toDto(db, row.l), username };

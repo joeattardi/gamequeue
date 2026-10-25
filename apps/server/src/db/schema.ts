@@ -38,6 +38,21 @@ export const users = sqliteTable('users', {
     searchIndexable: integer('search_indexable', { mode: 'boolean' }).notNull().default(false),
     // Whether the activity feed shows on the public profile (events are recorded either way)
     showActivity: integer('show_activity', { mode: 'boolean' }).notNull().default(true),
+    // When the email address was confirmed (ms); null = not yet, and the account stays walled off
+    emailVerifiedAt: integer('email_verified_at'),
+    createdAt: integer('created_at').notNull().default(now)
+});
+
+/** Pending email confirmations; only the SHA-256 of the emailed token is stored (see services/email-verification.ts). */
+export const emailVerifications = sqliteTable('email_verifications', {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    userId: integer('user_id')
+        .notNull()
+        .references(() => users.id, { onDelete: 'cascade' }),
+    tokenHash: text('token_hash').notNull().unique(),
+    // The address the token was sent to; a token for an address the user has since changed is void
+    email: text('email').notNull(),
+    expiresAt: integer('expires_at').notNull(),
     createdAt: integer('created_at').notNull().default(now)
 });
 

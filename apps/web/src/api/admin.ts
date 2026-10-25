@@ -73,6 +73,21 @@ export const useResetUserPassword = (id: number) =>
             api<{ ok: true }>(`/admin/users/${id}/password`, { method: 'PUT', body: input })
     });
 
+export function useVerifyAdminUserEmail(id: number) {
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: () =>
+            api<{ user: AdminUserDto }>(`/admin/users/${id}/verify-email`, { method: 'POST' }),
+        onSuccess: () => qc.invalidateQueries({ queryKey: usersKey })
+    });
+}
+
+export const useResendAdminUserVerification = (id: number) =>
+    useMutation({
+        mutationFn: () =>
+            api<{ ok: true }>(`/admin/users/${id}/resend-verification`, { method: 'POST' })
+    });
+
 export function useDeleteAdminUser() {
     const qc = useQueryClient();
     return useMutation({
