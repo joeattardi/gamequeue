@@ -2,7 +2,7 @@ import { createHash, randomBytes } from 'node:crypto';
 import { and, eq, gt, isNull, lt } from 'drizzle-orm';
 import type { Config } from '../config.js';
 import type { Db } from '../db/client.js';
-import { passwordResets, sessions, users } from '../db/schema.js';
+import { emailVerifications, passwordResets, sessions, users } from '../db/schema.js';
 import { hashPassword } from '../auth/password.js';
 import { reportError } from './error-log.js';
 import { MailQuotaError } from './mail-budget.js';
@@ -32,6 +32,58 @@ The link works once and expires in 1 hour. If this wasn't you, you can ignore th
 <p>Or paste this link into your browser:<br>${escapeHtml(link)}</p>
 <p>The link works once and expires in 1 hour. If this wasn't you, you can ignore this email; your password stays as it is.</p>`;
     return { subject: 'Reset your GameQueue password', text, html };
+}
+
+/** How the password changed, as the notice words it. */
+export type PasswordChange = 'reset' | 'account' | 'admin';
+
+const CHANGED_HOW: Record<PasswordChange, string> = {
+    reset: 'with a password reset link',
+    account: 'on the Account page',
+    admin: 'by a GameQueue administrator'
+};
+
+export function passwordChangedMail(username: string, how: PasswordChange, resetLink: string) {
+    const text = `Hi ${username},
+
+The password of your GameQueue account (username: ${username}) was just changed ${CHANGED_HOW[how]}.
+
+If that was you, there's nothing to do. If it wasn't, someone else may have access to your account or your email: reset your password now and change your email password too.
+
+${resetLink}`;
+    const html = `<p>Hi ${escapeHtml(username)},</p>
+<p>The password of your GameQueue account (username: <strong>${escapeHtml(username)}</strong>) was just changed ${CHANGED_HOW[how]}.</p>
+<p>If that was you, there's nothing to do. If it wasn't, someone else may have access to your account or your email: <a href="${escapeHtml(resetLink)}">reset your password now</a> and change your email password too.</p>`;
+    return { subject: 'Your GameQueue password was changed', text, html };
+}
+
+/**
+ * Tells the owner their password changed, so a takeover doesn't go unnoticed. Fire and forget,
+ * like the reset email. Skips unconfirmed addresses: an admin reset must not mail a stranger.
+ */
+export function sendPasswordChangedNotice(
+    db: Db,
+    config: Pick<Config, 'publicUrl'>,
+    mailer: Mailer | undefined,
+    userId: number,
+    how: PasswordChange
+) {
+    if (!mailer) return;
+    const user = db
+        .select({
+            username: users.username,
+            email: users.email,
+            verifiedAt: users.emailVerifiedAt
+        })
+        .from(users)
+        .where(eq(users.id, userId))
+        .get();
+    if (!user || user.verifiedAt === null) return;
+    const mail = passwordChangedMail(user.username, how, `${config.publicUrl}/forgot-password`);
+    void mailer({ to: user.email, ...mail }).catch((e) => {
+        if (!(e instanceof MailQuotaError))
+            reportError(db, 'email_failed', e, { context: { what: 'password-changed', userId } });
+    });
 }
 
 /**
@@ -74,9 +126,10 @@ export async function requestPasswordReset(
             createdAt: now
         })
         .run();
-    const link = `${config.publicUrl}/reset-password?token=${token}`;
+    // In the fragment, so the token never reaches the server, proxy or request logs when opened
+    const link = `${config.publicUrl}/reset-password#token=${token}`;
     if (!mailer) {
-        // Local development: no email provider, so the link goes to the console
+        // Development only (the route refuses in production): no provider, so the link goes to the console
         console.log(`Password reset link for ${user.username}: ${link}`);
         return;
     }
@@ -94,17 +147,17 @@ export const voidPasswordResets = (db: Pick<Db, 'delete'>, userId: number) =>
     void db.delete(passwordResets).where(eq(passwordResets.userId, userId)).run();
 
 /**
- * Sets a new password from a token. Returns false when the token is unknown, expired, or was sent
- * to an address the account no longer has. Signs the
- * account out everywhere, voids its other reset links, and counts as confirming the email address
- * (the link only reached the inbox's owner).
+ * Sets a new password from a token. Returns the account's id, or undefined when the token is
+ * unknown, expired, or was sent to an address the account no longer has. Signs the account out
+ * everywhere, voids its other reset links, and counts as confirming the email address (the link
+ * only reached the inbox's owner), so its pending confirmation links go too.
  */
 export async function resetPassword(
     db: Db,
     token: string,
     password: string,
     now = Date.now()
-): Promise<boolean> {
+): Promise<number | undefined> {
     const row = db
         .select({
             userId: passwordResets.userId,
@@ -116,7 +169,7 @@ export async function resetPassword(
         .innerJoin(users, eq(users.id, passwordResets.userId))
         .where(eq(passwordResets.tokenHash, hash(token)))
         .get();
-    if (!row || row.expiresAt <= now || row.email !== row.currentEmail) return false;
+    if (!row || row.expiresAt <= now || row.email !== row.currentEmail) return undefined;
     const passwordHash = await hashPassword(password);
     return db.transaction((tx) => {
         // Deleting first makes the token single-use even for two simultaneous requests
@@ -124,15 +177,16 @@ export async function resetPassword(
             .delete(passwordResets)
             .where(eq(passwordResets.tokenHash, hash(token)))
             .run().changes;
-        if (used === 0) return false;
+        if (used === 0) return undefined;
         tx.update(users).set({ passwordHash }).where(eq(users.id, row.userId)).run();
         tx.update(users)
             .set({ emailVerifiedAt: now })
             .where(and(eq(users.id, row.userId), isNull(users.emailVerifiedAt)))
             .run();
+        tx.delete(emailVerifications).where(eq(emailVerifications.userId, row.userId)).run();
         voidPasswordResets(tx, row.userId);
         tx.delete(sessions).where(eq(sessions.userId, row.userId)).run();
-        return true;
+        return row.userId;
     });
 }
 

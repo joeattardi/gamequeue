@@ -31,7 +31,7 @@ describe('registering with verification on', () => {
         expect((await res.json()).user.emailVerified).toBe(false);
         expect(sent).toHaveLength(1);
         expect(sent[0]!.to).toBe('new@example.com');
-        expect(sent[0]!.html).toContain('/verify-email?token=');
+        expect(sent[0]!.html).toContain('/verify-email#token=');
         const row = db.select().from(emailVerifications).get()!;
         // Only the hash is stored
         expect(row.tokenHash).not.toBe(tokenOf(sent[0]));

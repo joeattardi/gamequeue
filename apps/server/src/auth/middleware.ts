@@ -35,7 +35,8 @@ export const clearSessionCookie = (c: Context, config: Config) =>
 /**
  * 401 without a session. When email verification is on, 403 `email_unverified` for a signed-in user
  * who hasn't confirmed their address: that is the "wall", so only routes that pass `allowUnverified`
- * (the verification endpoints, `/auth/me`, deleting the account) are open to them.
+ * (the verification endpoints, `/auth/me`, sign out) are open to them; everything else, the
+ * Account page included, waits until the address is confirmed.
  */
 export function requireAuth(
     db: Db,

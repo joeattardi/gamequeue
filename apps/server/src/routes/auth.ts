@@ -28,7 +28,11 @@ import {
     sendVerification,
     verifyEmail
 } from '../services/email-verification.js';
-import { requestPasswordReset, resetPassword } from '../services/password-reset.js';
+import {
+    requestPasswordReset,
+    resetPassword,
+    sendPasswordChangedNotice
+} from '../services/password-reset.js';
 import type { Mailer } from '../services/mailer.js';
 import type { Notify } from '../services/notify.js';
 import { signupsEnabled } from '../services/settings.js';
@@ -68,8 +72,11 @@ async function parseBody<T>(
 export function authRoutes({ db, config, limiters, notify, mailer }: Deps) {
     const r = new Hono<{ Variables: AuthVars }>();
 
-    // Public: lets the login page hide the "Create an account" link.
-    r.get('/config', (c) => c.json({ signupsEnabled: signupsEnabled(db, config) }));
+    // Without an email provider a reset link can't reach anyone; development prints it instead
+    const passwordReset = Boolean(mailer) || !config.production;
+
+    // Public: lets the login page hide the "Create an account" and "Forgot your password?" links.
+    r.get('/config', (c) => c.json({ signupsEnabled: signupsEnabled(db, config), passwordReset }));
 
     const unverifiedOk = requireAuth(db, config, { allowUnverified: true });
 
@@ -218,6 +225,11 @@ export function authRoutes({ db, config, limiters, notify, mailer }: Deps) {
     // Public. Answers the same whether or not the address has an account, so it can't be used to
     // look addresses up (unlike signup, which names a taken address on purpose).
     r.post('/forgot-password', async (c) => {
+        if (!passwordReset)
+            return c.json(
+                { error: "Password reset isn't set up on this server. Ask its admin to reset it." },
+                503
+            );
         const body = await parseBody(c, forgotPasswordSchema);
         if (body.response) return body.response;
         await requestPasswordReset(db, config, mailer, body.data.email);
@@ -227,8 +239,10 @@ export function authRoutes({ db, config, limiters, notify, mailer }: Deps) {
     r.post('/reset-password', async (c) => {
         const body = await parseBody(c, resetPasswordSchema);
         if (body.response) return body.response;
-        if (!(await resetPassword(db, body.data.token, body.data.password)))
+        const userId = await resetPassword(db, body.data.token, body.data.password);
+        if (userId === undefined)
             return c.json({ error: 'This link is invalid or has expired' }, 400);
+        sendPasswordChangedNotice(db, config, mailer, userId, 'reset');
         return c.json({ ok: true });
     });
 

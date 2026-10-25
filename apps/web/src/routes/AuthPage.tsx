@@ -15,19 +15,29 @@ export function AuthPage({ mode }: { mode: 'login' | 'register' }) {
     const mutation = isLogin ? login : register;
     const config = useAuthConfig();
     const [error, setError] = useState<string>();
+    // Someone may have signed up with this address: the reset link is how its owner gets it back
+    const [emailTaken, setEmailTaken] = useState(false);
     usePageTitle(isLogin ? 'Sign in' : 'Create account');
 
     function onSubmit(e: FormEvent<HTMLFormElement>) {
         e.preventDefault();
         setError(undefined);
+        setEmailTaken(false);
         const form = new FormData(e.currentTarget);
         const input = {
             username: String(form.get('username')),
             email: String(form.get('email')),
             password: String(form.get('password'))
         };
-        const onError = (err: Error) =>
+        const onError = (err: Error) => {
             setError(err instanceof ApiRequestError ? err.message : 'Something went wrong');
+            setEmailTaken(
+                err instanceof ApiRequestError &&
+                    err.status === 409 &&
+                    Array.isArray(err.details) &&
+                    err.details.some((d: { path?: string }) => d.path === 'email')
+            );
+        };
         if (isLogin) {
             const parsed = loginSchema.safeParse(input);
             if (!parsed.success) return setError(parsed.error.issues[0]?.message);
@@ -103,7 +113,7 @@ export function AuthPage({ mode }: { mode: 'login' | 'register' }) {
                             />
                         </span>
                         {!isLogin && <small className="muted">At least 10 characters.</small>}
-                        {isLogin && (
+                        {isLogin && config.data?.passwordReset !== false && (
                             <small>
                                 <Link to="/forgot-password">Forgot your password?</Link>
                             </small>
@@ -111,6 +121,12 @@ export function AuthPage({ mode }: { mode: 'login' | 'register' }) {
                     </label>
                     <p className="form-error" role="alert" aria-live="assertive">
                         {error}
+                        {emailTaken && config.data?.passwordReset !== false && (
+                            <>
+                                {' '}
+                                <Link to="/forgot-password">Forgot your password?</Link>
+                            </>
+                        )}
                     </p>
                     <button
                         className="btn btn--primary"

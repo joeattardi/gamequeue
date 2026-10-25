@@ -69,7 +69,7 @@ describe('signups setting', () => {
 
         const res = await call('/settings', 'PUT', { signupsEnabled: true });
         expect(await res.json()).toMatchObject({ signupsEnabled: true, signupsOverridden: true });
-        expect(await (await app.request('/api/auth/config')).json()).toEqual({
+        expect(await (await app.request('/api/auth/config')).json()).toMatchObject({
             signupsEnabled: true
         });
         const open = await app.request(
@@ -79,7 +79,7 @@ describe('signups setting', () => {
         expect(open.status).toBe(201);
 
         await call('/settings', 'PUT', { signupsEnabled: false });
-        expect(await (await app.request('/api/auth/config')).json()).toEqual({
+        expect(await (await app.request('/api/auth/config')).json()).toMatchObject({
             signupsEnabled: false
         });
         expect((await call('/settings', 'PUT', { signupsEnabled: 'yes' })).status).toBe(400);

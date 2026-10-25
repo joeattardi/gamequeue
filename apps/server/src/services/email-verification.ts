@@ -60,14 +60,14 @@ export async function sendVerification(
     if (!mailer) {
         // Local development: no email provider, so the link goes to the console
         console.log(
-            `Email verification link for ${user.username}: ${config.publicUrl}/verify-email?token=${token}`
+            `Email verification link for ${user.username}: ${config.publicUrl}/verify-email#token=${token}`
         );
         return true;
     }
     try {
         await mailer({
             to: user.email,
-            ...verificationMail(user.username, `${config.publicUrl}/verify-email?token=${token}`)
+            ...verificationMail(user.username, `${config.publicUrl}/verify-email#token=${token}`)
         });
         return true;
     } catch (e) {

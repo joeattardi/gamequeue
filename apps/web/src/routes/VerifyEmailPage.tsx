@@ -1,6 +1,6 @@
 import { CheckCircle2, MailCheck, TriangleAlert } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
-import { Link, useSearchParams } from 'react-router';
+import { Link } from 'react-router';
 import {
     useChangeEmail,
     useLogout,
@@ -10,38 +10,20 @@ import {
     useVerifyEmailLink
 } from '../api/auth';
 import { ApiRequestError } from '../api/client';
-import { LogoMark } from '../components/Logo';
+import { AuthFrame } from '../components/AuthFrame';
+import { useLinkToken } from '../linkToken';
 import { usePageTitle } from '../lib';
-
-function AuthFrame({ children }: { children: React.ReactNode }) {
-    return (
-        <main className="auth">
-            <div className="auth__panel">
-                <div className="auth__card panel stack">
-                    <Link className="auth__brand" to="/" aria-label="GameQueue home">
-                        <span className="landing__mark auth__mark">
-                            <LogoMark />
-                        </span>
-                        <span className="auth__brand-name" aria-hidden="true">
-                            GameQueue
-                        </span>
-                    </Link>
-                    {children}
-                </div>
-            </div>
-        </main>
-    );
-}
 
 const messageOf = (err: unknown) =>
     err instanceof ApiRequestError ? err.message : 'Something went wrong';
 
-/** `/verify-email?token=…`: the page the emailed link opens; works signed in or out. */
+/** `/verify-email#token=…`: the page the emailed link opens; works signed in or out. */
 export function VerifyEmailPage() {
     usePageTitle('Confirm your email');
-    const token = useSearchParams()[0].get('token');
+    const token = useLinkToken();
     const me = useMe();
-    const verify = useVerifyEmailLink(token);
+    const [confirmed, setConfirmed] = useState(false);
+    const verify = useVerifyEmailLink(token, confirmed);
 
     const failed = !token || verify.isError;
     return (
@@ -71,12 +53,25 @@ export function VerifyEmailPage() {
                         {me.data ? 'Continue to GameQueue' : 'Sign in'}
                     </Link>
                 </>
-            ) : (
+            ) : verify.fetchStatus === 'fetching' ? (
                 <>
                     <h1>Confirming…</h1>
                     <p className="auth__sub" role="status" aria-label="Confirming your email">
                         <span className="skeleton skeleton--subtitle" aria-hidden="true" />
                     </p>
+                </>
+            ) : (
+                <>
+                    <h1>
+                        <MailCheck aria-hidden="true" /> Confirm your email
+                    </h1>
+                    <p className="auth__sub">
+                        One last step: confirm this is your email address to finish setting up your
+                        GameQueue account.
+                    </p>
+                    <button className="btn btn--primary" onClick={() => setConfirmed(true)}>
+                        Confirm my email
+                    </button>
                 </>
             )}
         </AuthFrame>

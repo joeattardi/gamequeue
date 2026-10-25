@@ -5073,6 +5073,10 @@ fieldset.stars:disabled .stars__star {
     .auth {
         grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
     }
+    /* Pages without the showcase keep their card centred */
+    .auth--single {
+        grid-template-columns: minmax(0, 1fr);
+    }
     .auth__showcase {
         position: relative;
         isolation: isolate;

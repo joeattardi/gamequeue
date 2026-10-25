@@ -8,6 +8,8 @@ export interface Config {
     /** Public address of the site, no trailing slash; share cards and link previews need absolute URLs */
     publicUrl: string;
     secureCookies: boolean;
+    /** `NODE_ENV=production`: no development shortcuts such as reset links on the console */
+    production: boolean;
     trustProxy: boolean;
     igdbClientId?: string;
     igdbClientSecret?: string;
@@ -59,6 +61,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
             ''
         ),
         secureCookies: env.NODE_ENV === 'production',
+        production: env.NODE_ENV === 'production',
         // Only enable behind a reverse proxy you control (Caddy); otherwise X-Forwarded-For is spoofable
         trustProxy: (env.TRUST_PROXY ?? 'false').toLowerCase() === 'true',
         igdbClientId: env.IGDB_CLIENT_ID || undefined,

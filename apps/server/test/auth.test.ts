@@ -44,11 +44,11 @@ describe('register', () => {
 
     it('reports whether signups are enabled', async () => {
         const on = makeApp().app;
-        expect(await (await on.request('/api/auth/config')).json()).toEqual({
+        expect(await (await on.request('/api/auth/config')).json()).toMatchObject({
             signupsEnabled: true
         });
         const off = makeApp({ signupsEnabled: false }).app;
-        expect(await (await off.request('/api/auth/config')).json()).toEqual({
+        expect(await (await off.request('/api/auth/config')).json()).toMatchObject({
             signupsEnabled: false
         });
     });

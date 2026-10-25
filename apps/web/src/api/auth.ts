@@ -29,7 +29,7 @@ export function useFirstName(): string | undefined {
 export function useAuthConfig() {
     return useQuery({
         queryKey: ['auth-config'],
-        queryFn: () => api<{ signupsEnabled: boolean }>('/auth/config'),
+        queryFn: () => api<{ signupsEnabled: boolean; passwordReset: boolean }>('/auth/config'),
         staleTime: 5 * 60_000
     });
 }
@@ -53,14 +53,16 @@ export function useRegister() {
 }
 
 /**
- * Sends the emailed token. A query rather than a mutation: tokens are single-use, and the cache
- * keeps the page from sending it again when it re-mounts (StrictMode, or leaving the wall).
+ * Sends the emailed token once `confirmed` (the user pressed the button; sending on page load let
+ * mail scanners that run scripts confirm accounts). A query rather than a mutation: tokens are
+ * single-use, and the cache keeps the result when the page re-mounts (StrictMode, or leaving the
+ * wall), where `confirmed` starts out false again.
  */
-export function useVerifyEmailLink(token: string | null) {
+export function useVerifyEmailLink(token: string | null, confirmed: boolean) {
     const qc = useQueryClient();
     return useQuery({
         queryKey: ['verify-email', token],
-        enabled: token !== null,
+        enabled: token !== null && confirmed,
         retry: false,
         staleTime: Infinity,
         gcTime: Infinity,

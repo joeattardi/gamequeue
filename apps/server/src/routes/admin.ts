@@ -33,6 +33,7 @@ import { getMirrorStatus } from '../services/mirror-status.js';
 import { getTraffic, trafficCache } from '../services/traffic.js';
 import type { AppDeps } from '../app.js';
 import { markVerified, sendVerification } from '../services/email-verification.js';
+import { sendPasswordChangedNotice } from '../services/password-reset.js';
 import { requireAdmin, requireAuth, type AuthVars } from '../auth/middleware.js';
 
 /** Admin-only API. Every route here is behind `requireAuth` + `requireAdmin`. */
@@ -140,6 +141,7 @@ export function adminRoutes({ db, config, igdb, cloudflare, mailer }: AppDeps) {
         const id = parseId(c.req.param('id'));
         const mine = id === c.get('user').id;
         await resetPassword(db, id, password, mine ? getCookie(c, SESSION_COOKIE) : undefined);
+        if (!mine) sendPasswordChangedNotice(db, config, mailer, id, 'admin');
         return c.json({ ok: true });
     });
     r.post('/users/:id/verify-email', (c) => {

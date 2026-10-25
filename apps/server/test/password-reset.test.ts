@@ -1,6 +1,12 @@
 import { eq } from 'drizzle-orm';
 import { describe, expect, it } from 'vitest';
-import { errorEvents, passwordResets, sessions, users } from '../src/db/schema.js';
+import {
+    emailVerifications,
+    errorEvents,
+    passwordResets,
+    sessions,
+    users
+} from '../src/db/schema.js';
 import { resetPassword as adminResetPassword, updateUser } from '../src/services/admin-users.js';
 import {
     RESET_COOLDOWN_MS,
@@ -36,7 +42,7 @@ describe('forgot password', () => {
         expect(res.status).toBe(200);
         expect(sent).toHaveLength(1);
         expect(sent[0]!.to).toBe('a@example.com');
-        expect(sent[0]!.html).toContain('/reset-password?token=');
+        expect(sent[0]!.html).toContain('/reset-password#token=');
         expect(sent[0]!.text).toContain('alice');
         const row = db.select().from(passwordResets).get()!;
         expect(row.tokenHash).not.toBe(tokenOf(sent[0]));
@@ -199,7 +205,18 @@ describe('reset password', () => {
     it('confirms an unconfirmed address, since the link reached its inbox', async () => {
         const { db, token } = await requested();
         db.update(users).set({ emailVerifiedAt: null }).run();
+        const id = db.select().from(users).get()!.id;
+        db.insert(emailVerifications)
+            .values({
+                userId: id,
+                tokenHash: 'h',
+                email: 'a@example.com',
+                expiresAt: Date.now() + 1e6
+            })
+            .run();
         await resetPassword(db, token, 'brand new pass 1');
+        // Its confirmation links are spent too, so a late click doesn't re-announce the signup
+        expect(db.select().from(emailVerifications).all()).toHaveLength(0);
         expect(
             db.select().from(users).where(eq(users.username, 'alice')).get()!.emailVerifiedAt
         ).not.toBeNull();
@@ -250,5 +267,81 @@ describe('reset password', () => {
                 .status
         ).toBe(400);
         expect((await login(app, 'alice', 'old password 123')).status).toBe(200);
+    });
+});
+
+describe('password changed notice', () => {
+    const origin = 'http://localhost';
+    const subjects = (sent: Mail[]) => sent.map((m) => `${m.to}: ${m.subject}`);
+
+    it('is emailed after a reset link is used', async () => {
+        const { app, sent, tokenOf } = setup();
+        await register(app, 'a@example.com', undefined, 'alice');
+        await post(app, '/auth/forgot-password', { email: 'a@example.com' });
+        await post(app, '/auth/reset-password', {
+            token: tokenOf(sent[0]),
+            password: 'brand new pass 1'
+        });
+        expect(subjects(sent)[1]).toBe('a@example.com: Your GameQueue password was changed');
+        expect(sent[1]!.text).toContain('with a password reset link');
+        expect(sent[1]!.text).toContain('/forgot-password');
+    });
+
+    it('is emailed after a change on the Account page', async () => {
+        const { app, sent } = setup();
+        const cookie = cookieFrom(await register(app, 'a@example.com', 'old password 123'));
+        const res = await app.request('/api/account/password', {
+            ...json(
+                { currentPassword: 'old password 123', newPassword: 'brand new pass 1' },
+                { cookie, origin }
+            ),
+            method: 'PUT'
+        });
+        expect(res.status).toBe(200);
+        expect(sent).toHaveLength(1);
+        expect(sent[0]!.text).toContain('on the Account page');
+    });
+
+    it('is emailed after an admin reset, but not to an unconfirmed address', async () => {
+        const { app, db, sent } = setup();
+        const admin = cookieFrom(await register(app, 'root@example.com', undefined, 'root'));
+        db.update(users).set({ role: 'admin' }).where(eq(users.username, 'root')).run();
+        await register(app, 'ann@example.com', undefined, 'ann');
+        const ann = db.select().from(users).where(eq(users.username, 'ann')).get()!.id;
+        const reset = () =>
+            app.request(`/api/admin/users/${ann}/password`, {
+                ...json({ password: 'admin set pass 1' }, { cookie: admin, origin }),
+                method: 'PUT'
+            });
+        expect((await reset()).status).toBe(200);
+        expect(subjects(sent)).toEqual(['ann@example.com: Your GameQueue password was changed']);
+        expect(sent[0]!.text).toContain('by a GameQueue administrator');
+        db.update(users).set({ emailVerifiedAt: null }).where(eq(users.id, ann)).run();
+        expect((await reset()).status).toBe(200);
+        expect(sent).toHaveLength(1);
+    });
+});
+
+describe('without an email provider', () => {
+    it('offers no password reset in production', async () => {
+        const { app, db } = makeApp({ production: true });
+        await register(app, 'a@example.com');
+        expect(await (await app.request('/api/auth/config')).json()).toMatchObject({
+            passwordReset: false
+        });
+        const res = await post(app, '/auth/forgot-password', { email: 'a@example.com' });
+        expect(res.status).toBe(503);
+        expect(db.select().from(passwordResets).all()).toHaveLength(0);
+    });
+
+    it('prints the link to the console in development', async () => {
+        const { app } = makeApp();
+        await register(app, 'a@example.com');
+        expect(await (await app.request('/api/auth/config')).json()).toMatchObject({
+            passwordReset: true
+        });
+        expect((await post(app, '/auth/forgot-password', { email: 'a@example.com' })).status).toBe(
+            200
+        );
     });
 });

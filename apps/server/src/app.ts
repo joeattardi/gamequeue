@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import { secureHeaders } from 'hono/secure-headers';
 import { csrf } from 'hono/csrf';
 import { HTTPException } from 'hono/http-exception';
 import type { Config } from './config.js';
@@ -67,6 +68,26 @@ export function createApp(deps: AppDeps) {
     const sameOrAllowed = (origin: string, requestUrl: string) =>
         origin === new URL(requestUrl).origin || config.allowedOrigins.includes(origin);
 
+    // Only the headers that are safe for every response; Cloudflare already handles HSTS
+    app.use(
+        '*',
+        secureHeaders({
+            // Nothing here is meant to be framed (clickjacking on the Account and admin pages)
+            xFrameOptions: 'DENY',
+            contentSecurityPolicy: { frameAncestors: ["'none'"] },
+            referrerPolicy: 'strict-origin-when-cross-origin',
+            xContentTypeOptions: true,
+            strictTransportSecurity: false,
+            crossOriginResourcePolicy: false,
+            crossOriginOpenerPolicy: false,
+            originAgentCluster: false,
+            xDnsPrefetchControl: false,
+            xDownloadOptions: false,
+            xPermittedCrossDomainPolicies: false,
+            xXssProtection: false
+        })
+    );
+
     if (deps.requestLimits !== false)
         app.use('/api/*', requestLimits(config.trustProxy, deps.requestLimits));
 
@@ -108,7 +129,7 @@ export function createApp(deps: AppDeps) {
         })
     );
 
-    app.route('/api/account', accountRoutes({ ...deps, limiters }));
+    app.route('/api/account', accountRoutes({ ...deps, limiters, mailer }));
     app.route('/api/admin', adminRoutes({ ...deps, mailer }));
     app.route('/api/avatar', avatarRoutes(deps));
     // IGDB's similar-game lists are shared by the game pages and Discover

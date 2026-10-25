@@ -15,6 +15,7 @@ import type { FailureLimiter } from '../auth/rate-limit.js';
 import { SESSION_COOKIE } from '../auth/sessions.js';
 import { HttpError } from '../errors.js';
 import { validate } from '../http.js';
+import { sendPasswordChangedNotice } from '../services/password-reset.js';
 import {
     changePassword,
     deleteAccount,
@@ -28,7 +29,8 @@ import {
 export function accountRoutes({
     db,
     config,
-    limiters
+    limiters,
+    mailer
 }: AppDeps & { limiters: { loginByAccount: FailureLimiter } }) {
     const r = new Hono<{ Variables: AuthVars }>();
     r.use('*', requireAuth(db, config));
@@ -95,6 +97,7 @@ export function accountRoutes({
             });
         }
         limiters.loginByAccount.reset(key);
+        sendPasswordChangedNotice(db, config, mailer, userId, 'account');
         return c.json({ ok: true });
     });
 

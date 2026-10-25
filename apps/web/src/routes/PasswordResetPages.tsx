@@ -1,31 +1,12 @@
 import { CheckCircle2, Lock, Mail, MailCheck, TriangleAlert } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
-import { Link, useSearchParams } from 'react-router';
+import { Link } from 'react-router';
 import { forgotPasswordSchema, resetPasswordSchema } from '@gamequeue/shared';
-import { useForgotPassword, useResetPassword } from '../api/auth';
+import { useAuthConfig, useForgotPassword, useResetPassword } from '../api/auth';
 import { ApiRequestError } from '../api/client';
-import { LogoMark } from '../components/Logo';
+import { AuthFrame } from '../components/AuthFrame';
+import { useLinkToken } from '../linkToken';
 import { usePageTitle } from '../lib';
-
-function AuthFrame({ children }: { children: React.ReactNode }) {
-    return (
-        <main className="auth">
-            <div className="auth__panel">
-                <div className="auth__card panel stack">
-                    <Link className="auth__brand" to="/" aria-label="GameQueue home">
-                        <span className="landing__mark auth__mark">
-                            <LogoMark />
-                        </span>
-                        <span className="auth__brand-name" aria-hidden="true">
-                            GameQueue
-                        </span>
-                    </Link>
-                    {children}
-                </div>
-            </div>
-        </main>
-    );
-}
 
 const messageOf = (err: unknown) =>
     err instanceof ApiRequestError ? err.message : 'Something went wrong';
@@ -34,6 +15,7 @@ const messageOf = (err: unknown) =>
 export function ForgotPasswordPage() {
     usePageTitle('Forgot your password?');
     const forgot = useForgotPassword();
+    const config = useAuthConfig();
     const [error, setError] = useState<string>();
 
     function onSubmit(e: FormEvent<HTMLFormElement>) {
@@ -45,6 +27,23 @@ export function ForgotPasswordPage() {
         if (!parsed.success) return setError(parsed.error.issues[0]?.message);
         forgot.mutate(parsed.data.email, { onError: (err) => setError(messageOf(err)) });
     }
+
+    // No email provider on this server: nothing could reach the inbox
+    if (config.data?.passwordReset === false)
+        return (
+            <AuthFrame>
+                <h1>
+                    <TriangleAlert aria-hidden="true" /> Not available here
+                </h1>
+                <p className="auth__sub">
+                    Password reset by email isn't set up on this server. Ask its admin to reset your
+                    password.
+                </p>
+                <Link className="btn btn--primary" to="/login">
+                    Back to sign in
+                </Link>
+            </AuthFrame>
+        );
 
     if (forgot.isSuccess)
         return (
@@ -91,10 +90,10 @@ export function ForgotPasswordPage() {
     );
 }
 
-/** `/reset-password?token=…`: the page the emailed link opens; works signed in or out. */
+/** `/reset-password#token=…`: the page the emailed link opens; works signed in or out. */
 export function ResetPasswordPage() {
     usePageTitle('Choose a new password');
-    const token = useSearchParams()[0].get('token');
+    const token = useLinkToken();
     const reset = useResetPassword();
     const [error, setError] = useState<string>();
 
