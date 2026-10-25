@@ -5,7 +5,7 @@ import { Link, Navigate } from 'react-router';
 import { useAuthConfig, useLogin, useRegister } from '../api/auth';
 import { ApiRequestError } from '../api/client';
 import { AuthShowcase } from '../components/AuthShowcase';
-import { Logo } from '../components/Logo';
+import { LogoMark } from '../components/Logo';
 import { usePageTitle } from '../lib';
 
 export function AuthPage({ mode }: { mode: 'login' | 'register' }) {
@@ -47,8 +47,13 @@ export function AuthPage({ mode }: { mode: 'login' | 'register' }) {
             <AuthShowcase />
             <div className="auth__panel">
                 <form className="auth__card" onSubmit={onSubmit} noValidate>
-                    <Link to="/" aria-label="GameQueue home">
-                        <Logo />
+                    <Link className="auth__brand" to="/" aria-label="GameQueue home">
+                        <span className="landing__mark auth__mark">
+                            <LogoMark />
+                        </span>
+                        <span className="auth__brand-name" aria-hidden="true">
+                            GameQueue
+                        </span>
                     </Link>
                     <h1>{isLogin ? 'Welcome back' : 'Create your account'}</h1>
                     <p className="muted auth__sub">

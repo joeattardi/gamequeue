@@ -5018,7 +5018,28 @@ fieldset.stars:disabled .stars__star {
     width: min(100%, 420px);
     padding: 32px;
 }
+.auth__brand {
+    display: grid;
+    justify-items: center;
+    gap: 10px;
+    color: var(--ink);
+    text-decoration: none;
+}
+.landing__mark.auth__mark {
+    width: 88px;
+    margin-bottom: 0;
+}
+.auth__brand-name {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 1.3rem;
+}
+.auth__card h1 {
+    text-align: center;
+}
 .auth__sub {
+    text-align: center;
+
     margin: -8px 0 4px;
 }
 .auth__back {
