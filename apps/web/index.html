@@ -17,11 +17,13 @@
             html {
                 background: #f3f6fb;
                 --splash-accent: #1d4ed8;
+                --splash-bg: #f3f6fb;
             }
             @media (prefers-color-scheme: dark) {
                 html {
                     background: #0d1320;
                     --splash-accent: #6ea0ff;
+                    --splash-bg: #0d1320;
                 }
             }
             body {
@@ -55,6 +57,38 @@
             .splash .bar-2 {
                 animation-delay: calc(0.6s - var(--splash-t, 0s));
             }
+            /* Hand-over to the app (components/Splash.tsx): the mark shrinks away, then this veil
+               lifts while #root fades in underneath */
+            .splash--leaving {
+                position: fixed;
+                inset: 0;
+                z-index: 100;
+                opacity: 1;
+                background: var(--bg, var(--splash-bg));
+                animation: splash-veil 0.45s ease-out 0.3s forwards;
+            }
+            .splash--leaving svg {
+                animation: splash-out 0.35s cubic-bezier(0.5, 0, 0.75, 0) forwards;
+            }
+            .root-enter {
+                animation: root-in 0.45s ease-out 0.3s backwards;
+            }
+            @keyframes splash-out {
+                to {
+                    transform: scale(0.5);
+                    opacity: 0;
+                }
+            }
+            @keyframes splash-veil {
+                to {
+                    opacity: 0;
+                }
+            }
+            @keyframes root-in {
+                from {
+                    opacity: 0;
+                }
+            }
             @keyframes splash-in {
                 to {
                     opacity: 1;
@@ -82,6 +116,8 @@
             }
             @media (prefers-reduced-motion: reduce) {
                 .splash svg,
+                .splash--leaving,
+                .root-enter,
                 .splash .bar-0,
                 .splash .bar-1,
                 .splash .bar-2 {

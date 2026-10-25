@@ -1,6 +1,6 @@
 import { Navigate, Route, Routes } from 'react-router';
 import { useMe } from './api/auth';
-import { Splash } from './components/Splash';
+import { Splash, useSplashExit } from './components/Splash';
 import { Shell } from './components/Shell';
 import { AdminPage } from './routes/AdminPage';
 import { AdminErrorsPage } from './routes/AdminErrorsPage';
@@ -48,6 +48,18 @@ import { DiscoverPage } from './routes/DiscoverPage';
 import { WishlistPage } from './routes/WishlistPage';
 
 export function App() {
+    const pending = useMe().isPending;
+    const exit = useSplashExit(!pending);
+    if (pending) return <Splash />;
+    return (
+        <>
+            <AppRoutes />
+            {exit.leaving && <Splash leaving onDone={exit.finish} />}
+        </>
+    );
+}
+
+function AppRoutes() {
     const me = useMe();
     if (me.isPending) return <Splash />;
     if (me.isError)
