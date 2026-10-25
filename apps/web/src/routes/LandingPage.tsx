@@ -16,7 +16,7 @@ import { Link } from 'react-router';
 import { useAuthConfig } from '../api/auth';
 import { useShowcase } from '../api/showcase';
 import { Footer } from '../components/Footer';
-import { Logo } from '../components/Logo';
+import { Logo, LogoMark } from '../components/Logo';
 import { usePageTitle } from '../lib';
 
 const FEATURES = [
@@ -114,6 +114,9 @@ export function LandingPage() {
             <main>
                 <section className="landing__hero">
                     <div className="landing__hero-copy">
+                        <div className="landing__mark" aria-hidden="true">
+                            <LogoMark />
+                        </div>
                         <p className="landing__eyebrow">Your collection, minus the guilt</p>
                         <h1>Know exactly what to play next.</h1>
                         <p className="landing__lead">
