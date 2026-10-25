@@ -1,4 +1,5 @@
 /** Pieces shared by the downloadable grid and tier list images (drawn on a canvas). */
+import { LOGO_PATH } from '@gamequeue/shared';
 
 /** Fixed brand palette (the dark theme), so a shared image looks the same whoever made it. */
 export const COLORS = {
@@ -14,11 +15,8 @@ export const COLORS = {
 export const DISPLAY = '"Bricolage Grotesque Variable", system-ui, sans-serif';
 export const BODY = '"Figtree Variable", system-ui, sans-serif';
 
-/** Same path as the app's logo (lucide gamepad-2), on a 24x24 grid. Built on use: Node has no Path2D. */
-const gamepad = () =>
-    new Path2D(
-        'M17.32 5H6.68a4 4 0 0 0-3.978 3.59c-.006.052-.01.101-.017.152C2.604 9.416 2 14.456 2 16a3 3 0 0 0 3 3c1 0 1.5-.5 2-1l1.414-1.414A2 2 0 0 1 9.828 16h4.344a2 2 0 0 1 1.414.586L17 18c.5.5 1 1 2 1a3 3 0 0 0 3-3c0-1.545-.604-6.584-.685-7.258-.007-.05-.011-.1-.017-.151A4 4 0 0 0 17.32 5z'
-    );
+/** The app's logo (`LOGO_PATH`, 64x64 grid, holes by even-odd). Built on use: Node has no Path2D. */
+const gamepad = () => new Path2D(LOGO_PATH);
 
 /**
  * Splits text into at most `maxLines` lines no wider than `maxWidth` (by `measure`), breaking at
@@ -148,24 +146,10 @@ export function drawBrandFooter(
     ctx.roundRect(pad, fy - mark / 2, mark, mark, 10);
     ctx.fill();
     ctx.save();
-    ctx.translate(pad + (mark - 36) / 2, fy - 18);
-    ctx.scale(36 / 24, 36 / 24);
-    ctx.strokeStyle = COLORS.accentInk;
-    ctx.lineWidth = 2;
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-    ctx.stroke(gamepad());
-    for (const [x1, y1, x2, y2] of [
-        [6, 11, 10, 11],
-        [8, 9, 8, 13],
-        [15, 12, 15.01, 12],
-        [18, 10, 18.01, 10]
-    ] as const) {
-        ctx.beginPath();
-        ctx.moveTo(x1, y1);
-        ctx.lineTo(x2, y2);
-        ctx.stroke();
-    }
+    ctx.translate(pad + (mark - 40) / 2, fy - 20);
+    ctx.scale(40 / 64, 40 / 64);
+    ctx.fillStyle = COLORS.accentInk;
+    ctx.fill(gamepad(), 'evenodd');
     ctx.restore();
     ctx.fillStyle = COLORS.ink;
     ctx.font = `700 34px ${DISPLAY}`;

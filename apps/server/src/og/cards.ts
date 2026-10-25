@@ -4,6 +4,8 @@ import {
     AVATAR_ICON_VIEWBOX,
     findAvatarIcon,
     generateIdenticon,
+    LOGO_PATH,
+    LOGO_VIEWBOX,
     type AvatarIconChoice
 } from '@gamequeue/shared';
 
@@ -77,10 +79,6 @@ export const MUTED = 'rgba(205, 218, 245, 0.72)';
 export const GLASS = 'rgba(255, 255, 255, 0.07)';
 export const GLASS_LINE = 'rgba(255, 255, 255, 0.14)';
 
-const GAMEPAD_PATHS = [
-    'M17.32 5H6.68a4 4 0 0 0-3.978 3.59c-.006.052-.01.101-.017.152C2.604 9.416 2 14.456 2 16a3 3 0 0 0 3 3c1 0 1.5-.5 2-1l1.414-1.414A2 2 0 0 1 9.828 16h4.344a2 2 0 0 1 1.414.586L17 18c.5.5 1 1 2 1a3 3 0 0 0 3-3c0-1.545-.604-6.584-.685-7.258-.007-.05-.011-.1-.017-.151A4 4 0 0 0 17.32 5z'
-];
-
 function icon(size: number, stroke: string, paths: string[], width = 2): El {
     return h(
         'svg',
@@ -98,21 +96,11 @@ function icon(size: number, stroke: string, paths: string[], width = 2): El {
     );
 }
 
-export const gamepad = (size: number, stroke: string, width = 2) =>
+export const gamepad = (size: number, fill: string) =>
     h(
         'svg',
-        {
-            width: size,
-            height: size,
-            viewBox: '0 0 24 24',
-            fill: 'none',
-            stroke,
-            'stroke-width': width,
-            'stroke-linecap': 'round',
-            'stroke-linejoin': 'round'
-        },
-        h('path', { d: GAMEPAD_PATHS[0] }),
-        h('path', { d: 'M6 11h4M8 9v4M15 12h.01M18 10h.01' })
+        { width: size, height: size, viewBox: LOGO_VIEWBOX },
+        h('path', { d: LOGO_PATH, fill, 'fill-rule': 'evenodd' })
     );
 
 export function brand(): El {
@@ -132,7 +120,7 @@ export function brand(): El {
                     boxShadow: '0 6px 18px -4px rgba(59, 110, 255, 0.7)'
                 }
             },
-            gamepad(26, '#f5f8ff')
+            gamepad(32, '#f5f8ff')
         ),
         h(
             'div',
@@ -266,7 +254,7 @@ export function cover(uri: string | null | undefined, width: number, style: Styl
                       backgroundImage: 'linear-gradient(160deg, #35508f, #1c2a55)'
                   }
               },
-              gamepad(Math.round(width * 0.36), 'rgba(255, 255, 255, 0.45)', 1.6)
+              gamepad(Math.round(width * 0.36), 'rgba(255, 255, 255, 0.45)')
           );
 }
 
@@ -499,7 +487,7 @@ export function profileCard(d: ProfileCardData, a: CardAssets): El {
                               justifyContent: 'center'
                           }
                       },
-                      gamepad(300, 'rgba(255, 255, 255, 0.16)', 0.6)
+                      gamepad(300, 'rgba(255, 255, 255, 0.1)')
                   )
         )
     );
@@ -646,7 +634,7 @@ export function recapCard(d: RecapCardData, a: CardAssets): El {
                               justifyContent: 'center'
                           }
                       },
-                      gamepad(280, 'rgba(255, 255, 255, 0.2)', 0.6)
+                      gamepad(280, 'rgba(255, 255, 255, 0.12)')
                   )
         )
     );

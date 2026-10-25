@@ -18,6 +18,7 @@ export * from './csv.js';
 export * from './stats.js';
 export * from './recap.js';
 export * from './avatar.js';
+export * from './logo.js';
 export * from './avatar-icons.js';
 export * from './social.js';
 export * from './release.js';

@@ -172,7 +172,7 @@ const emptyArt = (): El =>
         {
             style: { width: AREA_W, height: AREA_H, alignItems: 'center', justifyContent: 'center' }
         },
-        gamepad(260, 'rgba(255, 255, 255, 0.16)', 0.6)
+        gamepad(260, 'rgba(255, 255, 255, 0.1)')
     );
 
 const plural = (n: number, one: string, many: string) => (n === 1 ? one : many);

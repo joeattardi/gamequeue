@@ -6,7 +6,7 @@
         <meta name="color-scheme" content="light dark" />
         <link
             rel="icon"
-            href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='10' fill='%231d4ed8'/%3E%3Cg transform='translate%284 4%29' fill='none' stroke='%23f5f8ff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cline x1='6' x2='10' y1='11' y2='11'/%3E%3Cline x1='8' x2='8' y1='9' y2='13'/%3E%3Cline x1='15' x2='15.01' y1='12' y2='12'/%3E%3Cline x1='18' x2='18.01' y1='10' y2='10'/%3E%3Cpath d='M17.32 5H6.68a4 4 0 0 0-3.978 3.59c-.006.052-.01.101-.017.152C2.604 9.416 2 14.456 2 16a3 3 0 0 0 3 3c1 0 1.5-.5 2-1l1.414-1.414A2 2 0 0 1 9.828 16h4.344a2 2 0 0 1 1.414.586L17 18c.5.5 1 1 2 1a3 3 0 0 0 3-3c0-1.545-.604-6.584-.685-7.258-.007-.05-.011-.1-.017-.151A4 4 0 0 0 17.32 5z'/%3E%3C/g%3E%3C/svg%3E"
+            href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='18' fill='%231d4ed8'/%3E%3Cpath transform='translate(3.8 4.2) scale(.88)' fill='%23f5f8ff' fill-rule='evenodd' d='M20 12H44A12 12 0 0 1 55.9 22.4L59.5 43A8 8 0 0 1 45.9 49.6L40.5 44A4 4 0 0 0 37.6 42.8H26.4A4 4 0 0 0 23.5 44L18.1 49.6A8 8 0 0 1 4.5 43L8.1 22.4A12 12 0 0 1 20 12ZM16.5 20h5v4.5H26v5h-4.5V34h-5v-4.5H12v-5h4.5zM40 22h12v3H40zM40 28h9v3H40zM40 34h6v3H40z'/%3E%3C/svg%3E"
         />
         <title>GameQueue</title>
         <style>
@@ -39,20 +39,20 @@
             .splash svg {
                 width: clamp(140px, 22vmin, 200px);
                 height: clamp(140px, 22vmin, 200px);
-                fill: none;
-                stroke: currentColor;
-                stroke-width: 1;
-                stroke-linecap: round;
-                stroke-linejoin: round;
+                fill: currentColor;
                 opacity: 0.5;
                 animation: splash-pulse 2.4s ease-in-out calc(0s - var(--splash-t, 0s)) infinite;
             }
-            .splash .btn-a,
-            .splash .btn-b {
-                stroke-width: 1.8;
+            /* The queue lights up one bar after another */
+            .splash .bar-0,
+            .splash .bar-1,
+            .splash .bar-2 {
                 animation: splash-blink 2.4s ease-in-out calc(0s - var(--splash-t, 0s)) infinite;
             }
-            .splash .btn-b {
+            .splash .bar-1 {
+                animation-delay: calc(0.3s - var(--splash-t, 0s));
+            }
+            .splash .bar-2 {
                 animation-delay: calc(0.6s - var(--splash-t, 0s));
             }
             @keyframes splash-in {
@@ -82,8 +82,9 @@
             }
             @media (prefers-reduced-motion: reduce) {
                 .splash svg,
-                .splash .btn-a,
-                .splash .btn-b {
+                .splash .bar-0,
+                .splash .bar-1,
+                .splash .bar-2 {
                     animation: none;
                 }
             }
@@ -92,14 +93,18 @@
     <body>
         <div id="root">
             <div class="splash" role="status" aria-label="Loading GameQueue">
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <line x1="6" x2="10" y1="11" y2="11" />
-                    <line x1="8" x2="8" y1="9" y2="13" />
-                    <line class="btn-a" x1="15" x2="15.01" y1="12" y2="12" />
-                    <line class="btn-b" x1="18" x2="18.01" y1="10" y2="10" />
-                    <path
-                        d="M17.32 5H6.68a4 4 0 0 0-3.978 3.59c-.006.052-.01.101-.017.152C2.604 9.416 2 14.456 2 16a3 3 0 0 0 3 3c1 0 1.5-.5 2-1l1.414-1.414A2 2 0 0 1 9.828 16h4.344a2 2 0 0 1 1.414.586L17 18c.5.5 1 1 2 1a3 3 0 0 0 3-3c0-1.545-.604-6.584-.685-7.258-.007-.05-.011-.1-.017-.151A4 4 0 0 0 17.32 5z"
-                    />
+                <svg viewBox="-2 -1 68 68" aria-hidden="true">
+                    <mask id="splash-cut">
+                        <path
+                            d="M20 12H44A12 12 0 0 1 55.9 22.4L59.5 43A8 8 0 0 1 45.9 49.6L40.5 44A4 4 0 0 0 37.6 42.8H26.4A4 4 0 0 0 23.5 44L18.1 49.6A8 8 0 0 1 4.5 43L8.1 22.4A12 12 0 0 1 20 12Z"
+                            fill="#fff"
+                        />
+                        <path d="M16.5 20h5v4.5H26v5h-4.5V34h-5v-4.5H12v-5h4.5z" fill="#000" />
+                        <path class="bar-0" d="M40 22h12v3H40z" fill="#000" />
+                        <path class="bar-1" d="M40 28h9v3H40z" fill="#000" />
+                        <path class="bar-2" d="M40 34h6v3H40z" fill="#000" />
+                    </mask>
+                    <rect x="-2" y="-1" width="68" height="68" mask="url(#splash-cut)" />
                 </svg>
             </div>
         </div>
