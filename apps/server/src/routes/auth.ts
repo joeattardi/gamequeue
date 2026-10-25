@@ -108,8 +108,20 @@ export function authRoutes({ db, config, limiters, notify, mailer }: Deps) {
                 return u;
             });
         } catch (e) {
-            if (e instanceof Error && /UNIQUE/.test(e.message))
-                return c.json({ error: 'Could not create account with those details' }, 409);
+            if (e instanceof Error && /UNIQUE/.test(e.message)) {
+                // Named on purpose: telling people their address is already registered beats a vague
+                // error, at the price of letting anyone check whether an address has an account
+                const emailTaken = db
+                    .select({ id: users.id })
+                    .from(users)
+                    .where(eq(users.email, email))
+                    .get();
+                const field = emailTaken ? 'email' : 'username';
+                const message = emailTaken
+                    ? 'That email is already registered. Try signing in instead.'
+                    : 'That username is taken';
+                return c.json({ error: message, details: [{ path: field, message }] }, 409);
+            }
             throw e;
         }
         if (config.emailVerification) await sendVerification(db, config, mailer, user);

@@ -57,7 +57,20 @@ describe('register', () => {
         const { app } = makeApp();
         expect((await register(app, 'a@b.co', 'short')).status).toBe(400);
         expect((await register(app, 'dup@b.co')).status).toBe(201);
-        expect((await register(app, 'dup@b.co')).status).toBe(409);
+        const dup = await register(app, 'DUP@b.co', 'correct horse battery', 'someone_else');
+        expect(dup.status).toBe(409);
+        expect(await dup.json()).toMatchObject({
+            error: expect.stringContaining('email is already registered'),
+            details: [{ path: 'email' }]
+        });
+    });
+
+    it('names a taken username', async () => {
+        const { app } = makeApp();
+        await register(app, 'a@b.co', 'correct horse battery', 'taken');
+        const res = await register(app, 'c@d.co', 'correct horse battery', 'taken');
+        expect(res.status).toBe(409);
+        expect(await res.json()).toMatchObject({ details: [{ path: 'username' }] });
     });
 
     it('validates usernames and treats them as case-insensitive and unique', async () => {

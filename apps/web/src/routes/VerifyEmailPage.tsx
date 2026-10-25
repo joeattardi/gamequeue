@@ -167,6 +167,10 @@ export function VerifyEmailGate({ email }: { email: string }) {
             <button className="btn btn--quiet" onClick={() => logout.mutate()}>
                 Sign out
             </button>
+            <p className="muted">
+                Can't find it? Check your spam or junk folder for an email from GameQueue, and mark
+                it "Not junk" so later emails arrive.
+            </p>
             <p className="muted">Accounts that stay unconfirmed are deleted after 7 days.</p>
         </AuthFrame>
     );
