@@ -195,7 +195,9 @@ describe('GET /api/admin/traffic', () => {
     });
 
     it('serves the daily traffic and a clear 502 when Cloudflare is down', async () => {
-        const { client } = fakeCloudflare([row(0, 7)]);
+        // The route reads the real clock, so today's row is dated today, not the fixed NOW
+        const today = new Date().toISOString().slice(0, 10);
+        const { client } = fakeCloudflare([{ ...row(0, 7), day: today }]);
         const ok = setup(client);
         const res = await ok.app.request('/api/admin/traffic', { headers: { cookie: ok.admin } });
         const body = (await res.json()) as { enabled: boolean; days: { requests: number }[] };
