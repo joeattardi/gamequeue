@@ -14,6 +14,7 @@ import { hashPassword, verifyPassword } from '../auth/password.js';
 import { hashToken } from '../auth/sessions.js';
 import { sessions, users } from '../db/schema.js';
 import { avatarIconOf, avatarVersion } from './avatars.js';
+import { voidPasswordResets } from './password-reset.js';
 
 type UserRow = typeof users.$inferSelect;
 
@@ -109,6 +110,7 @@ export async function changePassword(
     const passwordHash = await hashPassword(newPassword);
     db.transaction((tx) => {
         tx.update(users).set({ passwordHash }).where(eq(users.id, userId)).run();
+        voidPasswordResets(tx, userId);
         tx.delete(sessions)
             .where(
                 currentToken

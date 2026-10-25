@@ -117,6 +117,7 @@ export const ERROR_KINDS = {
     series_refresh: 'Series refresh',
     discover_lookup: 'Discover lookup',
     email_failed: 'Email delivery',
+    email_quota: 'Daily email limit reached',
     process_crash: 'Process crash',
     unclean_shutdown: 'Stopped without shutting down'
 } as const;
@@ -141,7 +142,7 @@ export const ERROR_GROUPS = {
     },
     server: {
         label: 'Server and other',
-        kinds: ['server_500', 'process_crash', 'unclean_shutdown', 'email_failed']
+        kinds: ['server_500', 'process_crash', 'unclean_shutdown', 'email_failed', 'email_quota']
     }
 } as const satisfies Record<string, { label: string; kinds: readonly ErrorKind[] }>;
 export type ErrorGroup = keyof typeof ERROR_GROUPS;

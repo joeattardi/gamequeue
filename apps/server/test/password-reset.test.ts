@@ -1,8 +1,14 @@
 import { eq } from 'drizzle-orm';
 import { describe, expect, it } from 'vitest';
 import { errorEvents, passwordResets, sessions, users } from '../src/db/schema.js';
-import { RESET_COOLDOWN_MS, RESET_TTL_MS, resetPassword } from '../src/services/password-reset.js';
-import { requestPasswordReset } from '../src/services/password-reset.js';
+import { resetPassword as adminResetPassword, updateUser } from '../src/services/admin-users.js';
+import {
+    RESET_COOLDOWN_MS,
+    RESET_TTL_MS,
+    requestPasswordReset,
+    resetPassword
+} from '../src/services/password-reset.js';
+import { changePassword } from '../src/services/users.js';
 import type { Mail } from '../src/services/mailer.js';
 import { cookieFrom, json, makeApp, register } from './helpers.js';
 
@@ -87,6 +93,18 @@ describe('forgot password', () => {
                 .all()
                 .map((e) => e.kind)
         ).toContain('email_failed');
+    });
+
+    it("answers without waiting for the email provider, so timing doesn't reveal accounts", async () => {
+        const never = () => new Promise<void>(() => {});
+        const { app } = makeApp({}, undefined, undefined, undefined, never);
+        await register(app, 'a@example.com');
+        const res = await Promise.race([
+            post(app, '/auth/forgot-password', { email: 'a@example.com' }),
+            new Promise<'stuck'>((r) => setTimeout(() => r('stuck'), 500))
+        ]);
+        expect(res).not.toBe('stuck');
+        expect((res as Response).status).toBe(200);
     });
 });
 
@@ -185,5 +203,52 @@ describe('reset password', () => {
         expect(
             db.select().from(users).where(eq(users.username, 'alice')).get()!.emailVerifiedAt
         ).not.toBeNull();
+    });
+
+    async function sentLink() {
+        const ctx = await requested();
+        const id = ctx.db.select().from(users).where(eq(users.username, 'alice')).get()!.id;
+        return { ...ctx, id };
+    }
+
+    it('voids pending links when the user changes their password', async () => {
+        const { app, db, token, id } = await sentLink();
+        expect(
+            await changePassword(db, id, undefined, 'old password 123', 'changed pass 123')
+        ).toBe(true);
+        expect(
+            (await post(app, '/auth/reset-password', { token, password: 'brand new pass 1' }))
+                .status
+        ).toBe(400);
+    });
+
+    it('voids pending links when an admin resets the password', async () => {
+        const { app, db, token, id } = await sentLink();
+        await adminResetPassword(db, id, 'admin set pass 1');
+        expect(
+            (await post(app, '/auth/reset-password', { token, password: 'brand new pass 1' }))
+                .status
+        ).toBe(400);
+    });
+
+    it('voids a link once the account no longer has the address it was sent to', async () => {
+        const { app, db, token, id } = await sentLink();
+        updateUser(db, id, {
+            username: 'alice',
+            email: 'new@example.com',
+            role: 'gamer',
+            firstName: '',
+            lastName: '',
+            showRealName: false,
+            steam: '',
+            xbox: '',
+            playstation: '',
+            discord: ''
+        });
+        expect(
+            (await post(app, '/auth/reset-password', { token, password: 'brand new pass 1' }))
+                .status
+        ).toBe(400);
+        expect((await login(app, 'alice', 'old password 123')).status).toBe(200);
     });
 });

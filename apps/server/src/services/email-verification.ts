@@ -5,6 +5,7 @@ import type { Db } from '../db/client.js';
 import { emailVerifications, users } from '../db/schema.js';
 import { HttpError } from '../errors.js';
 import { reportError } from './error-log.js';
+import { MailQuotaError } from './mail-budget.js';
 import type { Mailer } from './mailer.js';
 
 export const VERIFICATION_TTL_MS = 24 * 3600_000;
@@ -70,7 +71,11 @@ export async function sendVerification(
         });
         return true;
     } catch (e) {
-        reportError(db, 'email_failed', e, { context: { what: 'verification', userId: user.id } });
+        // Already recorded as `email_quota`
+        if (!(e instanceof MailQuotaError))
+            reportError(db, 'email_failed', e, {
+                context: { what: 'verification', userId: user.id }
+            });
         return false;
     }
 }

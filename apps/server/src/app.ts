@@ -32,6 +32,7 @@ import type { CloudflareClient } from './cloudflare/types.js';
 import type { ItadClient } from './itad/types.js';
 import type { AuthVars } from './auth/middleware.js';
 import { reportError } from './services/error-log.js';
+import { limitMailer } from './services/mail-budget.js';
 import { createMailer, type Mailer } from './services/mailer.js';
 import { createNotifier, type Notify } from './services/notify.js';
 import { similarCache } from './services/similar.js';
@@ -87,7 +88,11 @@ export function createApp(deps: AppDeps) {
         await next();
     });
 
-    const mailer = deps.mailer ?? createMailer(config);
+    const notify =
+        deps.notify ??
+        createNotifier(config, fetch, (e) => reportError(deps.db, 'email_failed', e));
+    const baseMailer = deps.mailer ?? createMailer(config);
+    const mailer = baseMailer && limitMailer(deps.db, config.mailDailyLimit, baseMailer, notify);
     app.get('/api/health', (c) => c.json({ ok: true }));
     const limiters = deps.limiters ?? {
         loginByAccount: new FailureLimiter(5, 15 * 60_000),
@@ -99,9 +104,7 @@ export function createApp(deps: AppDeps) {
             ...deps,
             limiters,
             mailer,
-            notify:
-                deps.notify ??
-                createNotifier(config, fetch, (e) => reportError(deps.db, 'email_failed', e))
+            notify
         })
     );
 

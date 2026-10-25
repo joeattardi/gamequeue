@@ -5,6 +5,7 @@ import type { Db } from '../db/client.js';
 import { passwordResets, sessions, users } from '../db/schema.js';
 import { hashPassword } from '../auth/password.js';
 import { reportError } from './error-log.js';
+import { MailQuotaError } from './mail-budget.js';
 import type { Mailer } from './mailer.js';
 
 export const RESET_TTL_MS = 3600_000;
@@ -35,9 +36,10 @@ The link works once and expires in 1 hour. If this wasn't you, you can ignore th
 
 /**
  * Emails a reset link to the account with this address, if there is one. Returns nothing on
- * purpose: the route answers the same whether or not an account exists. Never throws; a failed
- * send is recorded for the admin error log. Asking again within the cooldown, or more than
- * `RESETS_PER_HOUR` times, sends nothing.
+ * purpose: the route answers the same whether or not an account exists, and it doesn't wait for
+ * the email provider either, since that wait would only happen for real accounts and its timing
+ * would tell them apart. Never throws; a failed send is recorded for the admin error log. Asking
+ * again within the cooldown, or more than `RESETS_PER_HOUR` times, sends nothing.
  */
 export async function requestPasswordReset(
     db: Db,
@@ -67,6 +69,7 @@ export async function requestPasswordReset(
         .values({
             userId: user.id,
             tokenHash: hash(token),
+            email: user.email,
             expiresAt: now + RESET_TTL_MS,
             createdAt: now
         })
@@ -77,17 +80,22 @@ export async function requestPasswordReset(
         console.log(`Password reset link for ${user.username}: ${link}`);
         return;
     }
-    try {
-        await mailer({ to: user.email, ...passwordResetMail(user.username, link) });
-    } catch (e) {
-        reportError(db, 'email_failed', e, {
-            context: { what: 'password-reset', userId: user.id }
-        });
-    }
+    void mailer({ to: user.email, ...passwordResetMail(user.username, link) }).catch((e) => {
+        // Already recorded as `email_quota`
+        if (!(e instanceof MailQuotaError))
+            reportError(db, 'email_failed', e, {
+                context: { what: 'password-reset', userId: user.id }
+            });
+    });
 }
 
+/** Voids every pending reset link of the account; call it whenever its password changes. */
+export const voidPasswordResets = (db: Pick<Db, 'delete'>, userId: number) =>
+    void db.delete(passwordResets).where(eq(passwordResets.userId, userId)).run();
+
 /**
- * Sets a new password from a token. Returns false when the token is unknown or expired. Signs the
+ * Sets a new password from a token. Returns false when the token is unknown, expired, or was sent
+ * to an address the account no longer has. Signs the
  * account out everywhere, voids its other reset links, and counts as confirming the email address
  * (the link only reached the inbox's owner).
  */
@@ -98,11 +106,17 @@ export async function resetPassword(
     now = Date.now()
 ): Promise<boolean> {
     const row = db
-        .select({ userId: passwordResets.userId, expiresAt: passwordResets.expiresAt })
+        .select({
+            userId: passwordResets.userId,
+            email: passwordResets.email,
+            expiresAt: passwordResets.expiresAt,
+            currentEmail: users.email
+        })
         .from(passwordResets)
+        .innerJoin(users, eq(users.id, passwordResets.userId))
         .where(eq(passwordResets.tokenHash, hash(token)))
         .get();
-    if (!row || row.expiresAt <= now) return false;
+    if (!row || row.expiresAt <= now || row.email !== row.currentEmail) return false;
     const passwordHash = await hashPassword(password);
     return db.transaction((tx) => {
         // Deleting first makes the token single-use even for two simultaneous requests
@@ -116,7 +130,7 @@ export async function resetPassword(
             .set({ emailVerifiedAt: now })
             .where(and(eq(users.id, row.userId), isNull(users.emailVerifiedAt)))
             .run();
-        tx.delete(passwordResets).where(eq(passwordResets.userId, row.userId)).run();
+        voidPasswordResets(tx, row.userId);
         tx.delete(sessions).where(eq(sessions.userId, row.userId)).run();
         return true;
     });

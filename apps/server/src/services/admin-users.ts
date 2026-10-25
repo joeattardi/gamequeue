@@ -10,6 +10,7 @@ import { hashToken } from '../auth/sessions.js';
 import type { Db } from '../db/client.js';
 import { entries, sessions, slots, users } from '../db/schema.js';
 import { HttpError } from '../errors.js';
+import { voidPasswordResets } from './password-reset.js';
 import { getUserDto } from './users.js';
 
 const taken = (field: 'username' | 'email') =>
@@ -144,6 +145,7 @@ export async function resetPassword(
     const passwordHash = await hashPassword(password);
     db.transaction((tx) => {
         tx.update(users).set({ passwordHash }).where(eq(users.id, userId)).run();
+        voidPasswordResets(tx, userId);
         tx.delete(sessions)
             .where(
                 keepToken

@@ -225,6 +225,13 @@
       "when": 1792964699683,
       "tag": "0031_pale_wolverine",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "6",
+      "when": 1792965108787,
+      "tag": "0032_petite_galactus",
+      "breakpoints": true
     }
   ]
 }

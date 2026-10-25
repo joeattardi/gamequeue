@@ -63,6 +63,8 @@ export const passwordResets = sqliteTable('password_resets', {
         .notNull()
         .references(() => users.id, { onDelete: 'cascade' }),
     tokenHash: text('token_hash').notNull().unique(),
+    // The address the link was sent to; once the account's email changes, the token is void
+    email: text('email').notNull(),
     expiresAt: integer('expires_at').notNull(),
     createdAt: integer('created_at').notNull().default(now)
 });
@@ -96,6 +98,12 @@ export const igdbDaily = sqliteTable('igdb_daily', {
     ok: integer('ok').notNull().default(0),
     rateLimited: integer('rate_limited').notNull().default(0),
     failed: integer('failed').notNull().default(0)
+});
+
+/** Emails sent to users per UTC day (see services/mail-budget.ts); the daily cap counts these. */
+export const mailDaily = sqliteTable('mail_daily', {
+    day: text('day').primaryKey(),
+    sent: integer('sent').notNull().default(0)
 });
 
 /** One row per server process start (see services/server-runs.ts). */

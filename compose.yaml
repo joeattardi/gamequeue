@@ -23,6 +23,7 @@ services:
             NOTIFY_EMAIL: ${NOTIFY_EMAIL:-}
             NOTIFY_FROM: ${NOTIFY_FROM:-GameQueue <onboarding@resend.dev>}
             MAIL_FROM: ${MAIL_FROM:-}
+            MAIL_DAILY_LIMIT: ${MAIL_DAILY_LIMIT:-}
         volumes:
             - ./data:/data
 

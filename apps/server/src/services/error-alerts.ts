@@ -8,8 +8,11 @@ export const ALERT_THRESHOLD = 5;
 export const ALERT_WINDOW_MS = 10 * 60_000;
 export const ALERT_COOLDOWN_MS = 60 * 60_000;
 
-/** A crash exits before an email could go out, and a failing email must not trigger another. */
-const SILENT: ErrorKind[] = ['process_crash', 'email_failed'];
+/**
+ * A crash exits before an email could go out, and a failing email must not trigger another. The
+ * email limit sends its own alert, once a day (services/mail-budget.ts).
+ */
+const SILENT: ErrorKind[] = ['process_crash', 'email_failed', 'email_quota'];
 
 /**
  * Emails the owner when one kind of error piles up: `ALERT_THRESHOLD` events inside
