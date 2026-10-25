@@ -56,6 +56,17 @@ export const emailVerifications = sqliteTable('email_verifications', {
     createdAt: integer('created_at').notNull().default(now)
 });
 
+/** Pending password resets; only the SHA-256 of the emailed token is stored (see services/password-reset.ts). */
+export const passwordResets = sqliteTable('password_resets', {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    userId: integer('user_id')
+        .notNull()
+        .references(() => users.id, { onDelete: 'cascade' }),
+    tokenHash: text('token_hash').notNull().unique(),
+    expiresAt: integer('expires_at').notNull(),
+    createdAt: integer('created_at').notNull().default(now)
+});
+
 /** Instance-wide settings an admin can change at runtime; absent key = use the environment default. */
 export const settings = sqliteTable('settings', {
     key: text('key').primaryKey(),

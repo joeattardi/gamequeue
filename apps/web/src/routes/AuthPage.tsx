@@ -103,6 +103,11 @@ export function AuthPage({ mode }: { mode: 'login' | 'register' }) {
                             />
                         </span>
                         {!isLogin && <small className="muted">At least 10 characters.</small>}
+                        {isLogin && (
+                            <small>
+                                <Link to="/forgot-password">Forgot your password?</Link>
+                            </small>
+                        )}
                     </label>
                     <p className="form-error" role="alert" aria-live="assertive">
                         {error}

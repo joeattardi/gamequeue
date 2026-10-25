@@ -40,7 +40,9 @@ export const SPECIFIC_TIERS: Tier[] = [
             m !== 'GET' &&
             (p === '/api/auth/verify-email' ||
                 p === '/api/auth/resend-verification' ||
-                p === '/api/auth/email')
+                p === '/api/auth/email' ||
+                p === '/api/auth/forgot-password' ||
+                p === '/api/auth/reset-password')
     },
     // Import (a merge inside a transaction) and the full exports
     { name: 'data', max: 20, windowMs: 10 * MINUTE, match: (_m, p) => p.startsWith('/api/data/') },

@@ -13,6 +13,7 @@ import { recordIgdbAttempt, pruneIgdbHistory } from './services/igdb-history.js'
 import { endRun, HEARTBEAT_MS, heartbeat, pruneRuns, startRun } from './services/server-runs.js';
 import { createErrorAlerter } from './services/error-alerts.js';
 import { reportError, pruneErrors, setErrorAlerter } from './services/error-log.js';
+import { purgeExpiredResets } from './services/password-reset.js';
 import { purgeUnverified } from './services/email-verification.js';
 import { createNotifier } from './services/notify.js';
 import { backfillSeries } from './services/games.js';
@@ -100,6 +101,7 @@ setInterval(() => heartbeat(db, runId), HEARTBEAT_MS).unref();
 
 purgeExpiredSessions(db);
 purgeUnverified(db);
+purgeExpiredResets(db);
 pruneErrors(db);
 pruneIgdbHistory(db);
 pruneRuns(db);
@@ -115,6 +117,7 @@ setInterval(checkMirror, MIRROR_SYNC_CHECK_MS).unref();
 setInterval(() => {
     purgeExpiredSessions(db);
     purgeUnverified(db);
+    purgeExpiredResets(db);
     pruneErrors(db);
     pruneIgdbHistory(db);
     pruneRuns(db);

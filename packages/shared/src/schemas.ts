@@ -30,6 +30,11 @@ export const registerSchema = z.object({
 });
 export const verifyEmailSchema = z.object({ token: z.string().min(1).max(200) });
 export const changeEmailSchema = z.object({ email: emailSchema });
+export const forgotPasswordSchema = z.object({ email: emailSchema });
+export const resetPasswordSchema = z.object({
+    token: z.string().min(1).max(200),
+    password: passwordSchema
+});
 // Login deliberately does not enforce password rules: they could leak policy and add nothing.
 export const loginSchema = z.object({
     username: usernameSchema,
@@ -93,6 +98,8 @@ export const deleteAccountSchema = z.object({
 export type DeleteAccountInput = z.infer<typeof deleteAccountSchema>;
 
 export type VerifyEmailInput = z.infer<typeof verifyEmailSchema>;
+export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
+export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
 export type ChangeEmailInput = z.infer<typeof changeEmailSchema>;
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;

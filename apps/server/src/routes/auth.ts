@@ -5,8 +5,10 @@ import type { Context } from 'hono';
 import {
     DEFAULT_SLOT_NAMES,
     changeEmailSchema,
+    forgotPasswordSchema,
     loginSchema,
     registerSchema,
+    resetPasswordSchema,
     verifyEmailSchema
 } from '@gamequeue/shared';
 import type { AppDeps } from '../app.js';
@@ -26,6 +28,7 @@ import {
     sendVerification,
     verifyEmail
 } from '../services/email-verification.js';
+import { requestPasswordReset, resetPassword } from '../services/password-reset.js';
 import type { Mailer } from '../services/mailer.js';
 import type { Notify } from '../services/notify.js';
 import { signupsEnabled } from '../services/settings.js';
@@ -210,6 +213,23 @@ export function authRoutes({ db, config, limiters, notify, mailer }: Deps) {
         if (!(await sendVerification(db, config, mailer, user)))
             return c.json({ error: "We couldn't send the email. Try again in a moment." }, 502);
         return c.json({ user });
+    });
+
+    // Public. Answers the same whether or not the address has an account, so it can't be used to
+    // look addresses up (unlike signup, which names a taken address on purpose).
+    r.post('/forgot-password', async (c) => {
+        const body = await parseBody(c, forgotPasswordSchema);
+        if (body.response) return body.response;
+        await requestPasswordReset(db, config, mailer, body.data.email);
+        return c.json({ ok: true });
+    });
+
+    r.post('/reset-password', async (c) => {
+        const body = await parseBody(c, resetPasswordSchema);
+        if (body.response) return body.response;
+        if (!(await resetPassword(db, body.data.token, body.data.password)))
+            return c.json({ error: 'This link is invalid or has expired' }, 400);
+        return c.json({ ok: true });
     });
 
     return r;

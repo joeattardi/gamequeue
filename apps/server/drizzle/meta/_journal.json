@@ -218,6 +218,13 @@
       "when": 1792962987695,
       "tag": "0030_free_swarm",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "6",
+      "when": 1792964699683,
+      "tag": "0031_pale_wolverine",
+      "breakpoints": true
     }
   ]
 }

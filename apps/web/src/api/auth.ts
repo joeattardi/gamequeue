@@ -111,3 +111,19 @@ export function useLogout() {
         }
     });
 }
+
+export const useForgotPassword = () =>
+    useMutation({
+        mutationFn: (email: string) =>
+            api<{ ok: true }>('/auth/forgot-password', { method: 'POST', body: { email } })
+    });
+
+export function useResetPassword() {
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: (input: { token: string; password: string }) =>
+            api<{ ok: true }>('/auth/reset-password', { method: 'POST', body: input }),
+        // Every session of the account, this browser's included, was just signed out
+        onSuccess: () => qc.invalidateQueries({ queryKey: ME })
+    });
+}
