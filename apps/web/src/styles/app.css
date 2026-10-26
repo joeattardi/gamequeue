@@ -6685,7 +6685,13 @@ button.tier-tile__button {
     animation-duration: 320ms;
     animation-timing-function: cubic-bezier(0.2, 0.7, 0.2, 1);
 }
-/* The old cover stays solid under the new one: the game page's larger image may still be loading */
+/* The old cover stays solid under the new one: the game page's larger image may still be loading.
+   Normal blending is needed: the default plus-lighter would add the two images together and wash
+   the colours out while they overlap. */
+::view-transition-old(game-cover),
+::view-transition-new(game-cover) {
+    mix-blend-mode: normal;
+}
 ::view-transition-old(game-cover) {
     animation: none;
 }
