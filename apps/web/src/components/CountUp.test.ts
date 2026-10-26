@@ -28,4 +28,9 @@ describe('formatCount', () => {
         expect(formatCount(2.13, parseCount('4.2')!)).toBe('2.1');
         expect(formatCount(6, parseCount('12.5 MB')!)).toBe('6.0 MB');
     });
+
+    it('never writes a negative zero', () => {
+        expect(formatCount(-0.0004, parseCount('42')!)).toBe('0');
+        expect(formatCount(-0.0004, parseCount('4.2')!)).toBe('0.0');
+    });
 });

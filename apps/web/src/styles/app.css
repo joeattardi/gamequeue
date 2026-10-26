@@ -6897,3 +6897,18 @@ button.tier-tile__button {
         animation: none !important;
     }
 }
+
+/* A stat figure fading in from transparent as it counts up (CountUp.tsx; same 700ms) */
+.count-up {
+    animation: count-up-in 700ms ease-out both;
+}
+@keyframes count-up-in {
+    from {
+        opacity: 0;
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .count-up {
+        animation: none;
+    }
+}

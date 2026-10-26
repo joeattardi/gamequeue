@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { prefersReducedMotion } from './motion';
 
+// Keep in step with `.count-up` in app.css
 const DURATION_MS = 700;
 
 /** A whole value that is one number, optionally grouped or with decimals, and an optional unit. */
@@ -32,7 +33,8 @@ export function parseCount(text: string): ParsedCount | null {
 /** `x` written the way the parsed figure was. */
 export function formatCount(x: number, p: ParsedCount): string {
     return (
-        x.toLocaleString('en-US', {
+        // Never negative (and never "-0"): these are counts
+        Math.max(0, x).toLocaleString('en-US', {
             minimumFractionDigits: p.decimals,
             maximumFractionDigits: p.decimals,
             useGrouping: p.grouped
@@ -51,6 +53,8 @@ export function CountUp({ value }: { value: string | number }) {
         return parsed && !prefersReducedMotion() ? formatCount(0, parsed) : text;
     });
     const from = useRef(0);
+    // Fades in from transparent while it counts, the first time only (not on later value changes)
+    const [fade] = useState(() => parseCount(text) !== null && !prefersReducedMotion());
 
     useEffect(() => {
         const parsed = parseCount(text);
@@ -61,7 +65,8 @@ export function CountUp({ value }: { value: string | number }) {
         const start = performance.now();
         const a = from.current;
         let frame = requestAnimationFrame(function tick(now) {
-            const t = Math.min(1, (now - start) / DURATION_MS);
+            // The frame's timestamp can precede `start` by a hair, which would count below zero
+            const t = Math.min(1, Math.max(0, (now - start) / DURATION_MS));
             if (t < 1) {
                 const eased = 1 - (1 - t) ** 3;
                 setShown(formatCount(a + (parsed.n - a) * eased, parsed));
@@ -76,7 +81,9 @@ export function CountUp({ value }: { value: string | number }) {
 
     return (
         <>
-            <span aria-hidden="true">{shown}</span>
+            <span aria-hidden="true" className={fade ? 'count-up' : undefined}>
+                {shown}
+            </span>
             <span className="sr-only">{text}</span>
         </>
     );
