@@ -14,6 +14,12 @@
     --accent: #1d4ed8;
     --accent-ink: #f5f8ff;
     --accent-soft: #dbe6fc;
+    /* Blue buttons and badges: a little lighter at the top, a little deeper at the bottom */
+    --accent-grad: linear-gradient(
+        180deg,
+        color-mix(in oklab, var(--accent), white 16%),
+        color-mix(in oklab, var(--accent), black 14%)
+    );
     --danger: #b42318;
     --danger-ink: #fff;
     --focus: #0a2a7a;

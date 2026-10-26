@@ -171,7 +171,7 @@ a {
     width: 32px;
     height: 32px;
     border-radius: 6px;
-    background: var(--accent);
+    background: var(--accent-grad);
     color: var(--accent-ink);
 }
 .logo__mark svg {
@@ -218,12 +218,12 @@ a {
     cursor: progress;
 }
 .btn--primary {
-    background: var(--accent);
+    background: var(--accent-grad);
     color: var(--accent-ink);
     border-color: transparent;
 }
 .btn--primary:hover:not(:disabled) {
-    background: var(--accent);
+    background: var(--accent-grad);
     border-color: transparent;
     filter: brightness(1.08);
 }
@@ -623,7 +623,7 @@ a {
     min-width: 20px;
     padding: 0 6px;
     border-radius: 10px;
-    background: var(--accent);
+    background: var(--accent-grad);
     font-size: 0.72rem;
     font-weight: 600;
     font-variant-numeric: tabular-nums;
@@ -708,7 +708,7 @@ a {
         min-width: 15px;
         padding: 0 3px;
         border-radius: 8px;
-        background: var(--accent);
+        background: var(--accent-grad);
         color: var(--accent-ink);
         font-size: 0.62rem;
         line-height: 15px;
@@ -1292,7 +1292,7 @@ a.game-row:hover {
     color: var(--ink-muted);
 }
 .badge--playing {
-    background: var(--accent);
+    background: var(--accent-grad);
     color: var(--accent-ink);
 }
 .badge--finished {
