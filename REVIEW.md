@@ -62,6 +62,8 @@ On any high-DPI screen the browser picks the only `2x` candidate, which is the a
 
 ### 2. Medium: no request body size limit on the JSON API, including routes that need no login
 
+**Status: fixed.** A 256 KB `bodyLimit` now covers all of `/api/*` (the import keeps its own 50 MB). Checked through a real local socket: 84 MB bodies, with and without `Content-Length`, get a 413 within 45 ms and memory doesn't grow.
+
 **Where:** `apps/server/src/app.ts:91-110`. Body limits exist only on `routes/data.ts:52` (import) and `routes/avatar.ts:18`. The other handlers call `c.req.json()` directly, for example `routes/auth.ts:55`.
 
 **Checked:** an 84 MB JSON body sent in-process to `POST /api/auth/login` was read and parsed in full, and the server answered `401 Invalid username or password`.
@@ -166,7 +168,7 @@ No fix is strictly needed for these.
 
 ## Fix order
 
-1. **Global request body limit** (finding 2). A small change in `app.ts` that removes the only attack that needs no account.
+1. ~~**Global request body limit** (finding 2). A small change in `app.ts` that removes the only attack that needs no account.~~ Done.
 2. ~~**Check IGDB image ids and keep imported rows out of the showcase** (finding 1).~~ Done.
 3. ~~**Cap import size, new cache rows and imports per day** (finding 3).~~ Done; import also stopped storing the file's metadata.
 4. **Encrypt off-site backups** with an rclone crypt remote (finding 5). This is setup on the Pi plus a docs change.

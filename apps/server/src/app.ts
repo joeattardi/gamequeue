@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import { secureHeaders } from 'hono/secure-headers';
+import { bodyLimit } from 'hono/body-limit';
 import { csrf } from 'hono/csrf';
 import { HTTPException } from 'hono/http-exception';
 import type { Config } from './config.js';
@@ -61,6 +62,14 @@ export interface AppDeps {
 
 const MUTATING = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 
+/**
+ * Largest JSON body the API accepts. The biggest legitimate ones are the API-only full reorders
+ * (`PUT .../order`), about 30,000 ids at this size; an avatar upload (at most ~196 KB) fits too.
+ */
+export const MAX_JSON_BODY_BYTES = 256 * 1024;
+/** Routes that set their own, larger limit (the import takes files of up to 50 MB) */
+const OWN_BODY_LIMIT = new Set(['/api/data/import']);
+
 export function createApp(deps: AppDeps) {
     const { config } = deps;
     const app = new Hono<{ Variables: AuthVars }>();
@@ -90,6 +99,15 @@ export function createApp(deps: AppDeps) {
 
     if (deps.requestLimits !== false)
         app.use('/api/*', requestLimits(config.trustProxy, deps.requestLimits));
+
+    // Without a cap, `c.req.json()` reads whatever arrives (Cloudflare lets 100 MB through), and a
+    // few such requests to the public login route could run the Pi out of memory. Checked against
+    // Content-Length and, when there is none, while the body streams in.
+    const capped = bodyLimit({
+        maxSize: MAX_JSON_BODY_BYTES,
+        onError: (c) => c.json({ error: 'Request body too large' }, 413)
+    });
+    app.use('/api/*', (c, next) => (OWN_BODY_LIMIT.has(c.req.path) ? next() : capped(c, next)));
 
     app.use('/api/*', csrf({ origin: (origin, c) => sameOrAllowed(origin, c.req.url) }));
 
