@@ -120,8 +120,10 @@ export function Shell({ user }: { user: UserDto }) {
     const [open, setOpen] = useState(false);
     const sidebar = useRef<HTMLElement>(null);
     const barLogo = useRef<HTMLAnchorElement>(null);
-    const menuButton = useRef<HTMLButtonElement>(null);
+    const hamburger = useRef<HTMLButtonElement>(null);
     const closeButton = useRef<HTMLButtonElement>(null);
+    // What opened the menu, to give focus back to it when it closes
+    const opener = useRef<HTMLButtonElement | null>(null);
     const { pathname } = useLocation();
     const navigate = useNavigate();
     // The drawer only exists on narrow screens; while it is open the rest of the page is inert
@@ -130,11 +132,10 @@ export function Shell({ user }: { user: UserDto }) {
     useEffect(() => setOpen(false), [pathname]);
     useEffect(() => {
         if (!drawerOpen) return;
-        closeButton.current?.focus({ preventScroll: true });
         const onKey = (e: KeyboardEvent) => {
             if (e.key === 'Escape') {
                 setOpen(false);
-                menuButton.current?.focus({ preventScroll: true });
+                opener.current?.focus({ preventScroll: true });
             }
         };
         document.addEventListener('keydown', onKey);
@@ -155,28 +156,36 @@ export function Shell({ user }: { user: UserDto }) {
     }, [navigate]);
 
     /**
-     * Opens the full-screen menu. The hamburger and the bar's logo are measured first and the
-     * menu's own ✕ and logo are fixed to those exact boxes, so neither moves when it opens. The
-     * variables are set (and flushed) before the open class goes on: if they changed in the same
-     * frame, the circle would start from the old origin and visibly jump on the first open.
+     * Opens or closes the full-screen menu from the hamburger. On open, the icon that was tapped (the circle's origin), the hamburger and the bar's logo are measured first:
+     * the menu's own ✕ and logo are fixed on the hamburger's and logo's boxes, so neither moves when
+     * it opens. The variables are set (and flushed) before the open class goes on: if they changed
+     * in the same frame, the circle would start from the old origin and visibly jump on the first
+     * open.
      */
-    const openMenu = () => {
+    const toggleMenu = (from: HTMLButtonElement | null) => {
+        if (drawerOpen) {
+            setOpen(false);
+            opener.current?.focus({ preventScroll: true });
+            return;
+        }
+        opener.current = from;
         const el = sidebar.current;
-        const button = menuButton.current?.getBoundingClientRect();
+        const icon = from?.querySelector('svg')?.getBoundingClientRect();
+        const bar = hamburger.current?.getBoundingClientRect();
         const logo = barLogo.current?.getBoundingClientRect();
-        if (el) {
-            // Scrolled out of view: the CSS defaults put things where the bar starts
-            const shown = button && logo && button.top >= 0 && button.bottom <= window.innerHeight;
+        if (el && icon && bar && logo) {
+            // The bar scrolled away with the page: the ✕ and logo go to where the bar starts
+            const barShown = bar.top >= 0 && bar.bottom <= window.innerHeight;
             const vars: Record<string, string | null> = {
-                '--menu-left': shown ? `${button.left}px` : null,
-                '--menu-top': shown ? `${button.top}px` : null,
-                '--menu-w': shown ? `${button.width}px` : null,
-                '--menu-h': shown ? `${button.height}px` : null,
-                '--menu-cx': shown ? `${button.left + button.width / 2}px` : null,
-                '--menu-cy': shown ? `${button.top + button.height / 2}px` : null,
-                '--logo-left': shown ? `${logo.left}px` : null,
-                '--logo-top': shown ? `${logo.top}px` : null,
-                '--logo-h': shown ? `${logo.height}px` : null
+                '--menu-cx': `${icon.left + icon.width / 2}px`,
+                '--menu-cy': `${icon.top + icon.height / 2}px`,
+                '--menu-left': barShown ? `${bar.left}px` : null,
+                '--menu-top': barShown ? `${bar.top}px` : null,
+                '--menu-w': barShown ? `${bar.width}px` : null,
+                '--menu-h': barShown ? `${bar.height}px` : null,
+                '--logo-left': `${logo.left}px`,
+                '--logo-top': `${barShown ? logo.top : 2}px`,
+                '--logo-h': `${logo.height}px`
             };
             for (const [name, value] of Object.entries(vars)) {
                 if (value === null) el.style.removeProperty(name);
@@ -195,13 +204,13 @@ export function Shell({ user }: { user: UserDto }) {
             <div className={collapsed ? 'app-shell app-shell--collapsed' : 'app-shell'}>
                 <header className="mobile-bar" inert={drawerOpen}>
                     <button
-                        ref={menuButton}
+                        ref={hamburger}
                         type="button"
                         className="btn btn--ghost mobile-bar__menu"
                         aria-label="Open menu"
                         aria-expanded={drawerOpen}
                         aria-controls="main-nav"
-                        onClick={openMenu}
+                        onClick={(e) => toggleMenu(e.currentTarget)}
                     >
                         <MenuIcon />
                     </button>
@@ -234,10 +243,7 @@ export function Shell({ user }: { user: UserDto }) {
                             type="button"
                             className="btn btn--ghost sidebar__close"
                             aria-label="Close menu"
-                            onClick={() => {
-                                setOpen(false);
-                                menuButton.current?.focus({ preventScroll: true });
-                            }}
+                            onClick={() => toggleMenu(null)}
                         >
                             <MenuIcon open={drawerOpen} />
                         </button>
@@ -373,6 +379,39 @@ export function Shell({ user }: { user: UserDto }) {
                         signingOut={logout.isPending}
                     />
                 </aside>
+                <nav className="tabbar" aria-label="Quick links">
+                    <NavLink to="/" end className="tabbar__item" onClick={() => setOpen(false)}>
+                        <Joystick />
+                        <span>Playing</span>
+                    </NavLink>
+                    <NavLink to="/queue" className="tabbar__item" onClick={() => setOpen(false)}>
+                        <SkipForward />
+                        <span>Queue</span>
+                        {counts.queue ? (
+                            <span className="tabbar__count" aria-hidden="true">
+                                {counts.queue > 99 ? '99+' : counts.queue}
+                            </span>
+                        ) : null}
+                    </NavLink>
+                    <NavLink
+                        to="/collection"
+                        className="tabbar__item"
+                        onClick={() => setOpen(false)}
+                    >
+                        <LibraryBig />
+                        <span>Collection</span>
+                    </NavLink>
+                    <NavLink to="/search" className="tabbar__item" onClick={() => setOpen(false)}>
+                        <Search />
+                        <span>Search</span>
+                    </NavLink>
+                    <UserMenu
+                        variant="tab"
+                        user={user}
+                        onSignOut={() => logout.mutate()}
+                        signingOut={logout.isPending}
+                    />
+                </nav>
                 <div className="content" inert={drawerOpen}>
                     <main id="main" className="page" tabIndex={-1}>
                         {/* A page that crashes shows the error here; the sidebar stays usable, and

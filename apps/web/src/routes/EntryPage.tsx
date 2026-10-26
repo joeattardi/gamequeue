@@ -6,6 +6,7 @@ import { ApiRequestError } from '../api/client';
 import { useConfirm } from '../components/Confirm';
 import { StarRating } from '../components/StarRating';
 import { Cover } from '../components/Cover';
+import { EntryActionBar } from '../components/EntryActionBar';
 import { SimilarGames } from '../components/SimilarGames';
 import { Screenshots } from '../components/Screenshots';
 import { NotesPanel } from '../components/NotesPanel';
@@ -44,6 +45,7 @@ function EntryDetail({ entry }: { entry: EntryDto }) {
     const del = useDeleteEntry(entry.id);
     const confirm = useConfirm();
     const [error, setError] = useState<string>();
+    const [finishRequest, setFinishRequest] = useState(0);
     const save = (body: Parameters<typeof patch.mutate>[0]) => {
         setError(undefined);
         patch.mutate(body, {
@@ -93,7 +95,7 @@ function EntryDetail({ entry }: { entry: EntryDto }) {
                     </header>
                     {game.summary && <p className="summary">{game.summary}</p>}
 
-                    <StatusPanel entry={entry} />
+                    <StatusPanel entry={entry} finishRequest={finishRequest} />
                     <HistoryPanel entry={entry} />
 
                     <TimeToBeat ttb={game.ttb} />
@@ -134,6 +136,16 @@ function EntryDetail({ entry }: { entry: EntryDto }) {
                     </div>
                 </div>
             </div>
+            <EntryActionBar entry={entry} onFinish={() => setFinishRequest((n) => n + 1)}>
+                <FavoriteButton
+                    favorite={
+                        patch.isPending && patch.variables?.favorite !== undefined
+                            ? patch.variables.favorite
+                            : entry.favorite
+                    }
+                    onToggle={(favorite) => save({ favorite })}
+                />
+            </EntryActionBar>
         </article>
     );
 }

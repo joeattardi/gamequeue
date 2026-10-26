@@ -16,11 +16,22 @@ export function readTheme(): Theme {
     }
 }
 
-/** Light and dark pin `data-theme` on <html>; system leaves it off so the media query decides. */
+/** The page background in each theme, for the browser's address bar (`<meta name="theme-color">`). */
+const THEME_COLORS = { light: '#f3f6fb', dark: '#0d1320' };
+
+/**
+ * Light and dark pin `data-theme` on <html>; system leaves it off so the media query decides. The
+ * two theme-color tags in index.html follow the system via their `media`; a chosen theme sets both
+ * to its colour, and system puts each back.
+ */
 export function applyTheme(theme: Theme) {
     const root = document.documentElement;
     if (theme === 'system') root.removeAttribute('data-theme');
     else root.setAttribute('data-theme', theme);
+    document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]').forEach((m) => {
+        const own = m.media.includes('dark') ? 'dark' : 'light';
+        m.content = THEME_COLORS[theme === 'system' ? own : theme];
+    });
 }
 
 /** The theme choice, remembered in localStorage (the inline script in index.html applies it before first paint). */

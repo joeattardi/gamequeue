@@ -4059,7 +4059,8 @@ fieldset.stars:disabled .stars__star {
 
 /* Narrow screens: the nav becomes a full-screen menu opened from the bar at the top */
 .mobile-bar,
-.sidebar__close {
+.sidebar__close,
+.tabbar {
     display: none;
 }
 .sidebar__head {
@@ -4081,12 +4082,16 @@ fieldset.stars:disabled .stars__star {
         position: relative;
         display: flex;
         align-items: center;
-        gap: 8px;
+        min-height: 52px;
         padding: 2px var(--gutter);
         border-bottom: 1px solid var(--line);
         background: var(--surface);
     }
-    /* Centred in the bar whatever the hamburger's width; the open menu copies its measured box */
+    .mobile-bar__menu {
+        padding: 0 10px;
+        margin-left: -10px;
+    }
+    /* Centred in the bar; the open menu copies its measured box so the logo never moves */
     .mobile-bar__logo {
         position: absolute;
         left: 50%;
@@ -4098,12 +4103,8 @@ fieldset.stars:disabled .stars__star {
         color: inherit;
         text-decoration: none;
     }
-    .mobile-bar__menu {
-        padding: 0 10px;
-        margin-left: -10px;
-    }
-    /* Full screen: the menu is revealed by a circle growing out of the hamburger button (and
-       shrinking back into it on close), then its rows rise in one after another. */
+    /* Full screen: the menu is revealed by a circle growing out of the Menu tab (and shrinking back
+       into it on close), then its rows rise in one after another. */
     .sidebar {
         position: fixed;
         inset: 0;
@@ -4127,9 +4128,10 @@ fieldset.stars:disabled .stars__star {
         visibility: visible;
         transition-delay: 0s;
     }
+    /* Only the menu's own rows rise in: the account tab in the tab bar is also a .user-menu */
     .nav-search,
     .nav__group,
-    .user-menu {
+    .sidebar .user-menu {
         opacity: 0;
         transform: translateY(18px);
         will-change: opacity, transform;
@@ -4164,32 +4166,30 @@ fieldset.stars:disabled .stars__star {
     .sidebar.is-open .user-menu {
         --rise: 0.5s;
     }
-    /* The close button sits exactly where the hamburger was (Shell measures it on open and sets
-       --menu-left/top/w/h), so the bars morph into the ✕ without moving; the logo is fixed the same
-       way (--logo-left/top/h), and the head just keeps the row's height. */
-    /* A header strip that stays put while the rows scroll beneath it; the fixed ✕ and logo live
-       inside it, so they sit above the rows */
+    /* A header strip that stays put while the rows scroll beneath it; the fixed logo lives inside
+       it (at the top bar's measured logo box, --logo-left/top/h), so it sits above the rows */
     .sidebar__head {
         position: sticky;
         top: 0;
         z-index: 2;
-        /* Its children are all fixed, so without this the flex column squashes it to nothing */
+        /* Its child is fixed, so without this the flex column squashes it to nothing */
         flex: none;
-        justify-content: flex-start;
-        height: calc(var(--menu-top, 2px) + var(--menu-h, 44px) + 8px);
+        height: calc(var(--logo-top, 2px) + var(--logo-h, 48px) + 8px);
         margin: 0 calc(-1 * max(16px, var(--gutter)));
         background: var(--texture-faint), var(--surface);
     }
     .sidebar__logo {
         position: fixed;
-        left: var(--logo-left, 58px);
+        left: var(--logo-left, 40%);
         top: var(--logo-top, 2px);
         display: flex;
         align-items: center;
-        height: var(--logo-h, 44px);
+        height: var(--logo-h, 48px);
         color: inherit;
         text-decoration: none;
     }
+    /* The ✕ sits exactly where the hamburger was (Shell measures it on open: --menu-left/top/w/h),
+       so the bars morph into it without moving */
     .sidebar__close {
         display: inline-flex;
         align-items: center;
@@ -4229,7 +4229,8 @@ fieldset.stars:disabled .stars__star {
     .sidebar {
         gap: 20px;
         /* No top padding: the sticky head fills the top edge, so rows can't show above it */
-        padding: 0 max(16px, var(--gutter)) 16px;
+        padding: 0 max(16px, var(--gutter))
+            calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 16px);
     }
     .nav {
         gap: 20px;
@@ -4267,6 +4268,119 @@ fieldset.stars:disabled .stars__star {
         font-size: 0.85rem;
         line-height: 24px;
         border-radius: 12px;
+    }
+}
+/* Phones: the main places are one tap away in a bar at the bottom, where thumbs are; Menu opens the
+   full list. It stays above the open menu, so the same tab closes it again. */
+@media (max-width: 899px) {
+    :root {
+        --tabbar-h: 60px;
+    }
+    /* Anything wider than the screen is clipped, not allowed to widen the page: a phone browser
+       answers a too-wide page by widening the layout viewport, which would stretch the fixed bars
+       (tab bar, quick actions) past the edge of the screen. `clip`, unlike `hidden`, makes no
+       scroll container, so sticky and window scrolling keep working. */
+    .app-shell {
+        overflow-x: clip;
+    }
+    .tabbar {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 40;
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        height: calc(var(--tabbar-h) + env(safe-area-inset-bottom));
+        padding-bottom: env(safe-area-inset-bottom);
+        border-top: 1px solid var(--line);
+        background: var(--surface);
+    }
+    .tabbar__item {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 3px;
+        min-width: 0;
+        padding: 0;
+        border: 0;
+        background: none;
+        color: var(--ink-muted);
+        font: inherit;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-decoration: none;
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
+    }
+    .tabbar__item > svg {
+        width: 24px;
+        height: 24px;
+    }
+    .tabbar__item.active {
+        color: var(--accent);
+    }
+    /* The current place is marked by position as well as colour */
+    .tabbar__item.active::before {
+        content: '';
+        position: absolute;
+        top: -1px;
+        left: 28%;
+        right: 28%;
+        height: 3px;
+        border-radius: 0 0 3px 3px;
+        background: var(--accent);
+    }
+    .tabbar__item > span:last-child {
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    /* The account tab: the avatar over "You"; its panel pops up above the bar */
+    .user-menu--tab {
+        position: relative;
+        display: flex;
+        padding: 0;
+        border: 0;
+    }
+    .user-menu--tab .tabbar__item {
+        flex: 1;
+        min-width: 0;
+    }
+    .user-menu--tab .tabbar__item[aria-expanded='true'] {
+        color: var(--accent);
+    }
+    .user-menu--tab .tabbar__item[aria-expanded='true'] .avatar {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+    }
+    .user-menu--tab .user-menu__panel {
+        left: auto;
+        right: 8px;
+        bottom: calc(100% + 8px);
+        width: min(280px, calc(100vw - 16px));
+        transform-origin: bottom right;
+    }
+    .tabbar__count {
+        position: absolute;
+        top: 6px;
+        left: calc(50% + 6px);
+        min-width: 18px;
+        padding: 0 5px;
+        border-radius: 9px;
+        background: var(--accent-grad);
+        color: var(--accent-ink);
+        font-size: 0.7rem;
+        line-height: 18px;
+        text-align: center;
+        font-variant-numeric: tabular-nums;
+    }
+    /* Room for the bar under the page, and under the page's footer */
+    .content {
+        padding-bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom));
     }
 }
 @media (max-width: 899px) and (prefers-reduced-motion: reduce) {
@@ -7683,5 +7797,62 @@ button.tier-tile__button {
     }
     68% {
         opacity: 1;
+    }
+}
+
+/* ---- Game page quick actions (phones): see components/EntryActionBar.tsx ---- */
+.action-bar {
+    display: none;
+}
+@media (max-width: 899px) {
+    .action-bar {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom));
+        z-index: 25;
+        display: grid;
+        gap: 6px;
+        padding: 8px var(--gutter);
+        border-top: 1px solid var(--line);
+        background: color-mix(in srgb, var(--surface) 92%, transparent);
+        backdrop-filter: blur(10px);
+        transition:
+            transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1),
+            opacity 0.2s ease;
+    }
+    .action-bar.is-hidden {
+        transform: translateY(110%);
+        opacity: 0;
+        pointer-events: none;
+    }
+    .action-bar__row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .action-bar__row .btn {
+        flex: 1 1 0;
+        min-width: 0;
+        min-height: 48px;
+        justify-content: center;
+    }
+    .action-bar__row .favorite-btn {
+        flex: none;
+    }
+    .action-bar__error {
+        margin: 0;
+        color: var(--danger);
+        font-size: 0.9rem;
+        font-weight: 600;
+    }
+    /* Keep the end of the page, footer included, clear of the bar */
+    .content:has(.action-bar) {
+        padding-bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 76px);
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .action-bar {
+        transition: none;
     }
 }

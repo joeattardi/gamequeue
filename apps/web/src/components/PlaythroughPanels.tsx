@@ -90,11 +90,21 @@ function StatusBadge({ status }: { status: EntryDto['status'] }) {
 }
 
 /** Status plus whatever actions are allowed from it. */
-export function StatusPanel({ entry }: { entry: EntryDto }) {
+export function StatusPanel({
+    entry,
+    finishRequest = 0
+}: {
+    entry: EntryDto;
+    /** Bumped by the page's quick-action bar to open the finish form here */
+    finishRequest?: number;
+}) {
     const panel = useRef<HTMLElement>(null);
     const act = useEntryAction(entry.id);
     const log = useLogPlaythrough(entry.id);
     const [mode, setMode] = useState<'finish' | 'abandon' | null>(null);
+    useEffect(() => {
+        if (finishRequest > 0) setMode('finish');
+    }, [finishRequest]);
     const [error, setError] = useState<string>();
     const actions = availableActions(entry.status);
 
@@ -110,7 +120,7 @@ export function StatusPanel({ entry }: { entry: EntryDto }) {
     };
 
     return (
-        <section aria-labelledby="status-h" className="panel" ref={panel}>
+        <section id="status" aria-labelledby="status-h" className="panel" ref={panel}>
             <div className="panel__head">
                 <h2 id="status-h">Status</h2>
                 <StatusBadge status={entry.status} />
