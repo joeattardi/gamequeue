@@ -178,6 +178,68 @@ a {
     width: 26px;
     height: 26px;
 }
+/* A glint sweeping across the controller when the logo link is hovered or focused */
+.logo__mark {
+    position: relative;
+    overflow: hidden;
+}
+.logo__mark::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+        105deg,
+        transparent 35%,
+        rgb(255 255 255 / 0.65) 50%,
+        transparent 65%
+    );
+    transform: translateX(-100%);
+    pointer-events: none;
+}
+a:is(:hover, :focus-visible) > .logo .logo__mark::after {
+    animation: logo-shimmer 0.7s ease-out;
+}
+@keyframes logo-shimmer {
+    to {
+        transform: translateX(100%);
+    }
+}
+/* Hovering or focusing the logo link: darker in light mode, lighter in dark mode */
+.logo__mark,
+.logo__word {
+    transition:
+        filter 0.15s,
+        color 0.15s;
+}
+a:is(:hover, :focus-visible) > .logo .logo__mark {
+    filter: brightness(0.82);
+}
+a:is(:hover, :focus-visible) > .logo .logo__word {
+    color: color-mix(in oklab, currentColor, black 35%);
+}
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme='light']) a:is(:hover, :focus-visible) > .logo .logo__mark {
+        filter: brightness(1.2);
+    }
+    :root:not([data-theme='light']) a:is(:hover, :focus-visible) > .logo .logo__word {
+        color: color-mix(in oklab, currentColor, white 40%);
+    }
+}
+:root[data-theme='dark'] a:is(:hover, :focus-visible) > .logo .logo__mark {
+    filter: brightness(1.2);
+}
+:root[data-theme='dark'] a:is(:hover, :focus-visible) > .logo .logo__word {
+    color: color-mix(in oklab, currentColor, white 40%);
+}
+@media (prefers-reduced-motion: reduce) {
+    .logo__mark,
+    .logo__word {
+        transition: none;
+    }
+    a:is(:hover, :focus-visible) > .logo .logo__mark::after {
+        animation: none;
+    }
+}
 
 /* Lucide icons: sized to the text they sit beside, inheriting its colour */
 .lucide {
@@ -739,7 +801,8 @@ a {
         transition:
             opacity 0.15s ease,
             max-height 0.2s ease,
-            margin 0.2s ease;
+            margin 0.2s ease,
+            color 0.15s;
     }
     .logo,
     .user-menu__button,
