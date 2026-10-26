@@ -5,16 +5,25 @@ export function Cover({
     imageId,
     name,
     size = 'cover_big',
-    draggable
+    draggable,
+    transitionName
 }: {
     imageId: string | null;
     name: string;
     size?: CoverSize;
     draggable?: boolean;
+    /** `view-transition-name`, for the cover morph between pages (`pageTransitions.ts`) */
+    transitionName?: string;
 }) {
+    const style = transitionName ? { viewTransitionName: transitionName } : undefined;
     if (!imageId)
         return (
-            <div className="cover cover--empty" role="img" aria-label={`${name} (no cover)`}>
+            <div
+                className="cover cover--empty"
+                role="img"
+                aria-label={`${name} (no cover)`}
+                style={style}
+            >
                 <span aria-hidden="true">{name}</span>
             </div>
         );
@@ -28,6 +37,7 @@ export function Cover({
             width={264}
             height={352}
             draggable={draggable}
+            style={style}
         />
     );
 }

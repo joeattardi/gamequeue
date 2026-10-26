@@ -32,6 +32,7 @@ import { useQueue } from '../api/queue';
 import { useConfirm } from '../components/Confirm';
 import { Cover } from '../components/Cover';
 import { reveal } from '../components/motion';
+import { useEntryLink } from '../pageTransitions';
 import { GameCard } from '../components/GameCard';
 import { LayoutToggle, useLayout } from '../components/LayoutToggle';
 import { LoadMore } from '../components/LoadMore';
@@ -335,6 +336,7 @@ function Row({
         [setNodeRef]
     );
     const { game } = entry;
+    const link = useEntryLink(entry);
     return (
         <li
             ref={nodeRef}
@@ -354,15 +356,21 @@ function Row({
                 {index + 1}
             </span>
             <Link
-                to={`/games/${entry.id}`}
+                to={link.to}
+                onClick={link.onClick}
                 className="row-item__cover"
                 tabIndex={-1}
                 aria-hidden="true"
             >
-                <Cover imageId={game.coverImageId} name={game.name} size="cover_big" />
+                <Cover
+                    imageId={game.coverImageId}
+                    name={game.name}
+                    size="cover_big"
+                    transitionName={link.coverTransition}
+                />
             </Link>
             <div className="row-item__main">
-                <Link to={`/games/${entry.id}`} className="row-item__title">
+                <Link to={link.to} onClick={link.onClick} className="row-item__title">
                     {game.name}
                 </Link>
                 <span className="muted">

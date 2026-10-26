@@ -3,10 +3,12 @@ import '@fontsource-variable/figtree';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { BrowserRouter } from 'react-router';
+import { createBrowserRouter, ScrollRestoration } from 'react-router';
+import { RouterProvider } from 'react-router/dom';
 import { ApiRequestError } from './api/client';
 import { App } from './App';
 import { ConfirmProvider } from './components/Confirm';
+import { withPageTransitions } from './pageTransitions';
 import './styles/tokens.css';
 import './styles/app.css';
 
@@ -21,14 +23,26 @@ const queryClient = new QueryClient({
     }
 });
 
+// A data router only for its view transitions and scroll restoration: one splat route, with the
+// real routes declared by `App` as descendant <Routes>
+const router = withPageTransitions(
+    createBrowserRouter([
+        {
+            path: '*',
+            element: (
+                <ConfirmProvider>
+                    <App />
+                    <ScrollRestoration />
+                </ConfirmProvider>
+            )
+        }
+    ])
+);
+
 createRoot(document.getElementById('root')!).render(
     <StrictMode>
         <QueryClientProvider client={queryClient}>
-            <BrowserRouter>
-                <ConfirmProvider>
-                    <App />
-                </ConfirmProvider>
-            </BrowserRouter>
+            <RouterProvider router={router} />
         </QueryClientProvider>
     </StrictMode>
 );

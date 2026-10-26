@@ -1,4 +1,4 @@
-import type { SlotDto } from '@gamequeue/shared';
+import type { EntryDto, SlotDto } from '@gamequeue/shared';
 import { useRef, useState } from 'react';
 import { Link } from 'react-router';
 import { useEntryAction } from '../api/collection';
@@ -7,6 +7,7 @@ import { formatDate } from '../lib';
 import { PlatformTags } from './PlatformIcon';
 import { Cover } from './Cover';
 import { celebrate } from './motion';
+import { useEntryLink } from '../pageTransitions';
 import { CloseForm } from './PlaythroughPanels';
 import { ArrowLeftRight, Ban, Check, Dices, Eraser, Gamepad2, Pause, Play } from 'lucide-react';
 
@@ -42,18 +43,10 @@ export function SlotBay({ slot, onChoose }: { slot: SlotDto; onChoose: (slot: Sl
         <li className="bay" ref={bay}>
             <h2 className="bay__name">{slot.name}</h2>
             <div className="bay__game">
-                <Link
-                    to={`/games/${entry.id}`}
-                    className="bay__cover"
-                    aria-label={`Open ${entry.game.name}`}
-                >
-                    <Cover imageId={entry.game.coverImageId} name={entry.game.name} />
-                </Link>
+                <BayCover entry={entry} />
                 <div className="stack">
                     <div>
-                        <Link to={`/games/${entry.id}`} className="bay__title">
-                            {entry.game.name}
-                        </Link>
+                        <BayTitle entry={entry} />
                         <p className="muted bay__meta">
                             <span className={`badge badge--${entry.status}`}>{entry.status}</span>{' '}
                             {open && `since ${formatDate(open.startedOn)}`}
@@ -132,5 +125,32 @@ export function SlotBay({ slot, onChoose }: { slot: SlotDto; onChoose: (slot: Sl
                 </button>
             </div>
         </li>
+    );
+}
+
+function BayCover({ entry }: { entry: EntryDto }) {
+    const link = useEntryLink(entry);
+    return (
+        <Link
+            to={link.to}
+            onClick={link.onClick}
+            className="bay__cover"
+            aria-label={`Open ${entry.game.name}`}
+        >
+            <Cover
+                imageId={entry.game.coverImageId}
+                name={entry.game.name}
+                transitionName={link.coverTransition}
+            />
+        </Link>
+    );
+}
+
+function BayTitle({ entry }: { entry: EntryDto }) {
+    const link = useEntryLink(entry);
+    return (
+        <Link to={link.to} onClick={link.onClick} className="bay__title">
+            {entry.game.name}
+        </Link>
     );
 }

@@ -18,6 +18,7 @@ import { PlatformTag } from '../components/PlatformIcon';
 import { yearOf, usePageTitle } from '../lib';
 import { ArrowLeft, Heart, Trash2, X } from 'lucide-react';
 import { TimeToBeat } from '../components/TimeToBeat';
+import { COVER_TRANSITION } from '../pageTransitions';
 
 export function EntryPage() {
     const id = Number(useParams().id);
@@ -57,7 +58,12 @@ function EntryDetail({ entry }: { entry: EntryDto }) {
             </Link>
             <div className="entry__layout">
                 <div className="entry__cover">
-                    <Cover imageId={game.coverImageId} name={game.name} size="720p" />
+                    <Cover
+                        imageId={game.coverImageId}
+                        name={game.name}
+                        size="720p"
+                        transitionName={COVER_TRANSITION}
+                    />
                     <Screenshots imageIds={game.screenshots} name={game.name} />
                 </div>
                 <div className="stack">

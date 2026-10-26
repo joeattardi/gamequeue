@@ -4,6 +4,7 @@ import { Link } from 'react-router';
 import { formatMinutes, yearOf } from '../lib';
 import { Cover } from './Cover';
 import { reveal } from './motion';
+import { useEntryLink } from '../pageTransitions';
 import { MetaLine } from './MetaLine';
 import { PlatformTags } from './PlatformIcon';
 
@@ -45,11 +46,16 @@ export function EntryChips({ entry }: { entry: EntryDto }) {
 /** Box art that links to the game; title and details show over it on hover or focus. */
 export function GameCard({ entry, position }: { entry: EntryDto; position?: number }) {
     const { game } = entry;
+    const link = useEntryLink(entry);
     return (
         <li className="card" ref={reveal}>
-            <Link to={`/games/${entry.id}`} className="card__link">
+            <Link to={link.to} onClick={link.onClick} className="card__link">
                 <div className="card__art">
-                    <Cover imageId={game.coverImageId} name={game.name} />
+                    <Cover
+                        imageId={game.coverImageId}
+                        name={game.name}
+                        transitionName={link.coverTransition}
+                    />
                     <div className="card__info">
                         <strong className="card__title">{game.name}</strong>
                         <EntrySub entry={entry} />
