@@ -4,13 +4,14 @@ import { Link, useSearchParams } from 'react-router';
 import { useFacetCounts, usePagedEntries } from '../api/collection';
 import { AddGameDialog } from '../components/AddGameDialog';
 import { FACET_KEYS, FacetSidebar, type FacetKey } from '../components/FacetSidebar';
+import { CountBadge } from '../components/CountBadge';
 import { GridSkeletons } from '../components/GridSkeletons';
 import { LayoutToggle, useLayout } from '../components/LayoutToggle';
 import { LoadMore } from '../components/LoadMore';
 import { GameCard } from '../components/GameCard';
 import { GameRow } from '../components/GameRow';
-import { useDebounced, usePageTitle } from '../lib';
-import { Library, ListTodo, Plus } from 'lucide-react';
+import { useDebounced, useMediaQuery, usePageTitle } from '../lib';
+import { Filter, Library, ListTodo, Plus } from 'lucide-react';
 
 const SORT_LABELS: Record<(typeof ENTRY_SORTS)[number], string> = {
     title: 'Title',
@@ -27,6 +28,10 @@ export function CollectionPage({ view }: { view: 'all' | 'backlog' }) {
     usePageTitle(view === 'backlog' ? 'Backlog' : 'Collection');
     const [adding, setAdding] = useState(false);
     const [layout, setLayout] = useLayout(LAYOUT_KEY);
+    // Under 900px the filter panel (with the sort) hides behind an icon button next to the search
+    const [filtersOpen, setFiltersOpen] = useState(false);
+    // The same breakpoint at which the search row turns into the compact phone layout
+    const compact = useMediaQuery('(max-width: 899px)');
 
     const [text, setText] = useState(params.get('q') ?? '');
     const q = useDebounced(text, 250);
@@ -74,6 +79,7 @@ export function CollectionPage({ view }: { view: 'all' | 'backlog' }) {
     const entries = usePagedEntries(query);
     const facets = useFacetCounts(query);
     const filtered = [...FACET_KEYS, 'q'].some((k) => params.get(k));
+    const activeFacets = FACET_KEYS.reduce((n, k) => n + params.getAll(k).length, 0);
 
     return (
         <section>
@@ -86,18 +92,20 @@ export function CollectionPage({ view }: { view: 'all' | 'backlog' }) {
                             <Library aria-hidden="true" />
                         )}
                         {view === 'backlog' ? 'Backlog' : 'Collection'}
+                        <CountBadge total={entries.total} filtered={filtered} />
                     </h1>
-                    <p className="muted" aria-live="polite">
-                        {entries.total !== undefined
-                            ? `${entries.total} ${entries.total === 1 ? 'game' : 'games'}${filtered ? ' match' : ''}`
-                            : ' '}
-                        {view === 'backlog' && " · everything you haven't started"}
-                    </p>
+                    {view === 'backlog' && <p className="muted">Everything you haven't started</p>}
                 </div>
-                <button className="btn btn--primary" onClick={() => setAdding(true)}>
-                    <Plus />
-                    Add game
-                </button>
+                <div className="page-head__tools">
+                    <LayoutToggle layout={layout} onChange={setLayout} />
+                    <button
+                        className="btn btn--primary page-head__add"
+                        onClick={() => setAdding(true)}
+                    >
+                        <Plus />
+                        Add game
+                    </button>
+                </div>
             </div>
 
             <form className="filters" role="search" onSubmit={(e) => e.preventDefault()}>
@@ -107,10 +115,10 @@ export function CollectionPage({ view }: { view: 'all' | 'backlog' }) {
                         type="search"
                         value={text}
                         onChange={(e) => setText(e.target.value)}
-                        placeholder="Title…"
+                        placeholder={compact ? 'Search games…' : 'Title…'}
                     />
                 </label>
-                <label className="field">
+                <label className="field filters__sort">
                     <span>Sort by</span>
                     <select
                         value={params.get('sort') ?? 'title'}
@@ -125,12 +133,29 @@ export function CollectionPage({ view }: { view: 'all' | 'backlog' }) {
                         ))}
                     </select>
                 </label>
+                <button
+                    type="button"
+                    className="bar-btn bar-btn--narrow"
+                    aria-label="Filters and sort"
+                    aria-expanded={filtersOpen}
+                    aria-controls="collection-facets"
+                    onClick={() => setFiltersOpen((o) => !o)}
+                >
+                    <Filter />
+                    {activeFacets > 0 && <span className="bar-btn__count">{activeFacets}</span>}
+                </button>
+                <button
+                    type="button"
+                    className="bar-btn bar-btn--narrow"
+                    aria-label="Add game"
+                    onClick={() => setAdding(true)}
+                >
+                    <Plus />
+                </button>
             </form>
 
             <div className="browse">
                 <div className="browse__main">
-                    <LayoutToggle layout={layout} onChange={setLayout} />
-
                     {entries.isError ? (
                         <p className="form-error" role="alert">
                             Couldn't load your games.
@@ -173,6 +198,27 @@ export function CollectionPage({ view }: { view: 'all' | 'backlog' }) {
                         onToggle={toggle}
                         onClear={clearFacets}
                         showStatus={view === 'all'}
+                        open={filtersOpen}
+                        sort={
+                            <label className="field">
+                                <span>Sort by</span>
+                                <select
+                                    value={params.get('sort') ?? 'title'}
+                                    onChange={(e) =>
+                                        set(
+                                            'sort',
+                                            e.target.value === 'title' ? '' : e.target.value
+                                        )
+                                    }
+                                >
+                                    {ENTRY_SORTS.map((s) => (
+                                        <option key={s} value={s}>
+                                            {SORT_LABELS[s]}
+                                        </option>
+                                    ))}
+                                </select>
+                            </label>
+                        }
                     />
                 </aside>
             </div>

@@ -1,6 +1,6 @@
 import { SelectSkeleton } from './PageSkeletons';
 import type { SearchResultDto } from '@gamequeue/shared';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { useAddEntry, useAllPlatforms, useGameSearch } from '../api/collection';
 import { useAddToWishlist } from '../api/wishlist';
@@ -35,16 +35,23 @@ export function AddGameDialog({
     initial?: { game: SearchResultDto; platformId: number | null };
 }) {
     const ref = useModalDialog(open);
+    // On phones the dialog slides away when it closes, so keep its content until that is done
+    const [shown, setShown] = useState(open);
+    useEffect(() => {
+        if (open) return setShown(true);
+        const t = setTimeout(() => setShown(false), 350);
+        return () => clearTimeout(t);
+    }, [open]);
 
     return (
         <dialog
             ref={ref}
-            className="dialog dialog--fixed"
+            className="dialog dialog--fixed dialog--sheet"
             onClose={onClose}
             aria-labelledby="add-title"
             onClick={(e) => e.target === ref.current && onClose()}
         >
-            {open && <AddGameBody onDone={onClose} mode={mode} initial={initial} />}
+            {shown && <AddGameBody onDone={onClose} mode={mode} initial={initial} />}
         </dialog>
     );
 }

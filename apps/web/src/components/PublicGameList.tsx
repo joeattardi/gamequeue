@@ -2,7 +2,7 @@ import type { EntryStatus, GameDto } from '@gamequeue/shared';
 import type { CSSProperties } from 'react';
 import { Link } from 'react-router';
 import { Cover } from './Cover';
-import { LayoutToggle, useLayout, type Layout } from './LayoutToggle';
+import { useLayout, type Layout } from './LayoutToggle';
 import { LoadMore } from './LoadMore';
 import { StarDisplay } from './StarRating';
 
@@ -20,6 +20,11 @@ export interface PublicListItem {
 
 const LAYOUT_KEY = 'gq_public_layout';
 
+/** The grid/list choice for the public pages; the page puts the toggle in its top row. */
+export function usePublicLayout() {
+    return useLayout(LAYOUT_KEY);
+}
+
 /** Fade-in delay for the item at `index`; capped so long lists don't take long to appear. */
 function staggerStyle(index: number): CSSProperties {
     return { '--i': Math.min(index, 14) } as CSSProperties;
@@ -27,12 +32,15 @@ function staggerStyle(index: number): CSSProperties {
 
 /** The one layout shared by every public profile sub-page (`/u/:username/:view`). */
 export function PublicGameList({
+    layout,
     username,
     entries,
     numbered = false,
     empty,
     paging
 }: {
+    /** From `usePublicLayout`; the page owns it so its toggle can sit in the top row */
+    layout: Layout;
     /** Whose profile this is; each game links to its page there */
     username: string;
     /** Undefined while loading: the selector stays, the list shows skeletons */
@@ -43,8 +51,6 @@ export function PublicGameList({
     /** Footer for a paged list; omit when `entries` is complete */
     paging?: Omit<LoadMoreProps, 'skeleton' | 'shown'>;
 }) {
-    const [layout, setLayout] = useLayout(LAYOUT_KEY);
-
     let content;
     if (!entries) content = <Skeleton layout={layout} numbered={numbered} />;
     else if (entries.length === 0) content = <p className="muted">{empty}</p>;
@@ -91,7 +97,6 @@ export function PublicGameList({
         );
     return (
         <>
-            <LayoutToggle layout={layout} onChange={setLayout} />
             {content}
             {paging && entries && (
                 <LoadMore

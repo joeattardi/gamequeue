@@ -9,7 +9,8 @@ import { useRef } from 'react';
 import { Link, useParams } from 'react-router';
 import { ApiRequestError } from '../api/client';
 import { useProfileGames } from '../api/profile';
-import { PublicGameList } from '../components/PublicGameList';
+import { PublicGameList, usePublicLayout } from '../components/PublicGameList';
+import { LayoutToggle } from '../components/LayoutToggle';
 import { Footer } from '../components/Footer';
 import { PublicHeader } from '../components/PublicHeader';
 import { usePageTitle } from '../lib';
@@ -47,13 +48,20 @@ export function ProfileGamesPage() {
         `${games.head?.username ?? username}'s ${meta?.title ?? 'Games'}${year ? ` in ${yearLabel(year)}` : ''}`
     );
 
+    const [layout, setLayout] = usePublicLayout();
+
     return (
         <>
             <PublicHeader />
             <main className="page">
-                <Link to={year ? `/u/${username}/finished` : `/u/${username}`} className="back">
-                    <ArrowLeft aria-hidden="true" /> {year ? 'All finished' : username}
-                </Link>
+                <div className="back-row">
+                    <Link to={year ? `/u/${username}/finished` : `/u/${username}`} className="back">
+                        <ArrowLeft aria-hidden="true" /> {year ? 'All finished' : username}
+                    </Link>
+                    {!notFound && !games.isError && (
+                        <LayoutToggle layout={layout} onChange={setLayout} />
+                    )}
+                </div>
                 {notFound && <p role="alert">There is nothing here.</p>}
                 {!notFound && games.isError && <p role="alert">Couldn't load.</p>}
                 {!notFound && !games.isError && meta && (
@@ -79,6 +87,7 @@ export function ProfileGamesPage() {
                             </nav>
                         )}
                         <PublicGameList
+                            layout={layout}
                             username={username}
                             entries={games.isPending ? undefined : games.items}
                             paging={{

@@ -422,7 +422,8 @@ a:is(:hover, :focus-visible) > .logo .logo__word {
     height: 100dvh;
     overflow-y: auto;
 }
-.sidebar .logo {
+.sidebar .logo,
+.mobile-bar .logo {
     padding: 0 12px;
 }
 .nav-search {
@@ -884,6 +885,206 @@ a:is(:hover, :focus-visible) > .logo .logo__word {
 }
 .field--grow {
     flex: 1 1 200px;
+}
+/* Plain icon buttons for the narrow search bar (no border or fill) */
+.bar-btn {
+    display: none;
+    position: relative;
+    place-items: center;
+    flex: none;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--ink);
+    cursor: pointer;
+}
+/* Toggled open: a solid fill, so it reads as pressed */
+.bar-btn[aria-expanded='true'] {
+    border-radius: var(--radius-sm);
+    background: var(--accent-grad);
+    color: var(--accent-ink);
+}
+.bar-btn[aria-expanded='true'] .bar-btn__count {
+    background: var(--accent-ink);
+    color: var(--accent);
+}
+.bar-btn .lucide {
+    width: 24px;
+    height: 24px;
+}
+.bar-btn__count {
+    position: absolute;
+    top: 4px;
+    right: 2px;
+    min-width: 18px;
+    padding: 0 5px;
+    border-radius: 9px;
+    background: var(--accent-grad);
+    color: var(--accent-ink);
+    font-size: 0.72rem;
+    font-weight: 600;
+    line-height: 18px;
+    text-align: center;
+}
+.facets__sort {
+    display: none;
+}
+@media (max-width: 899px) {
+    /* One compact row: a search field, then Filters and Add game as plain icons. Sort moves into
+       the filter panel. */
+    .page-head__add,
+    .filters__sort {
+        display: none;
+    }
+    .bar-btn--narrow {
+        display: grid;
+    }
+    .filters {
+        flex-wrap: nowrap;
+        align-items: center;
+        gap: 0;
+        margin-bottom: 12px;
+        padding: 0;
+        background: none;
+    }
+    .filters .field--grow {
+        flex: 1;
+        min-width: 0;
+        margin-right: 4px;
+    }
+    .filters .field--grow > span {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+        white-space: nowrap;
+    }
+    .facets__sort {
+        display: block;
+    }
+    /* The panel unrolls: its row grows from 0fr to 1fr while the rows inside drop in one after
+       another; closing rolls it back up. It stays in the DOM, hidden once the roll-up ends. */
+    .facets {
+        display: grid;
+        grid-template-rows: 1fr;
+        transition:
+            grid-template-rows 0.4s cubic-bezier(0.3, 0.9, 0.3, 1),
+            visibility 0s;
+    }
+    .facets--closed {
+        grid-template-rows: 0fr;
+        visibility: hidden;
+        transition:
+            grid-template-rows 0.3s cubic-bezier(0.6, 0, 0.8, 0.4),
+            visibility 0s linear 0.3s;
+    }
+    .facets__clip {
+        min-height: 0;
+        overflow: hidden;
+    }
+    /* The page's 16px gap above the results goes with the panel */
+    .browse__side {
+        transition: margin-bottom 0.4s cubic-bezier(0.3, 0.9, 0.3, 1);
+    }
+    .browse__side:has(.facets--closed) {
+        margin-bottom: -16px;
+        transition-duration: 0.3s;
+    }
+    .facets__body > * {
+        opacity: 1;
+        transform: none;
+        transition:
+            opacity 0.3s ease calc(0.08s + var(--i, 0) * 0.04s),
+            transform 0.4s cubic-bezier(0.2, 0.9, 0.3, 1.2) calc(0.08s + var(--i, 0) * 0.04s);
+    }
+    .facets--closed .facets__body > * {
+        opacity: 0;
+        transform: translateY(-14px);
+        transition-duration: 0.15s;
+        transition-delay: 0s;
+    }
+    .facets__body > :nth-child(1) {
+        --i: 1;
+    }
+    .facets__body > :nth-child(2) {
+        --i: 2;
+    }
+    .facets__body > :nth-child(3) {
+        --i: 3;
+    }
+    .facets__body > :nth-child(4) {
+        --i: 4;
+    }
+    .facets__body > :nth-child(5) {
+        --i: 5;
+    }
+    .facets__body > :nth-child(6) {
+        --i: 6;
+    }
+    .facets__body > :nth-child(7) {
+        --i: 7;
+    }
+    .facets__body > :nth-child(8) {
+        --i: 8;
+    }
+    .facets__body > :nth-child(9) {
+        --i: 9;
+    }
+    /* Bigger type and rows in the filter list: the whole row is the tap target */
+    .facets__body {
+        gap: 18px;
+        padding: 16px;
+    }
+    .facet legend {
+        margin-bottom: 8px;
+        font-size: 0.9rem;
+    }
+    .facet ul {
+        gap: 0;
+    }
+    .facet__option {
+        gap: 14px;
+        min-height: 48px;
+        font-size: 1.1rem;
+    }
+    .facet__option input {
+        flex: none;
+        width: 22px;
+        height: 22px;
+    }
+    .facet__count {
+        font-size: 0.95rem;
+    }
+    .facet__more {
+        min-height: 44px;
+        font-size: 1rem;
+    }
+    .facets__head h2 {
+        font-size: 1.2rem;
+    }
+    /* The Filters button's funnel gives a little wiggle as it is switched on */
+    .bar-btn[aria-expanded='true'] .lucide {
+        animation: bar-btn-pop 0.4s cubic-bezier(0.3, 1.6, 0.5, 1);
+    }
+}
+@keyframes bar-btn-pop {
+    40% {
+        transform: scale(1.3) rotate(-14deg);
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .facets,
+    .facets--closed,
+    .browse__side,
+    .facets__body > * {
+        transition: none !important;
+    }
+    .bar-btn[aria-expanded='true'] .lucide {
+        animation: none;
+    }
 }
 select,
 textarea {
@@ -1358,6 +1559,17 @@ a.game-row:hover {
     height: 0.95em;
     fill: currentColor;
 }
+.count-badge {
+    align-self: center;
+    min-width: 1.9em;
+    min-height: 1.6em;
+    justify-content: center;
+    font-size: 0.9rem;
+    font-variant-numeric: tabular-nums;
+}
+.count-badge:empty {
+    visibility: hidden;
+}
 .badge--quiet {
     background: var(--surface-2);
     color: var(--ink-muted);
@@ -1454,6 +1666,85 @@ a.game-row:hover {
 .dialog--fixed[open] {
     display: flex;
     height: min(90dvh, 720px);
+}
+/* Phones: the add-game dialog is a full-screen view that slides up from the bottom and back
+   down when it closes. The close works by transitioning `display` and `overlay` (the top layer)
+   discretely, so the dialog stays on screen until the slide ends; a browser without that just
+   closes it at once. The sizing is not tied to [open], or the sheet would shrink as it leaves. */
+@media (max-width: 639px) {
+    .dialog.dialog--sheet {
+        width: 100%;
+        max-width: none;
+        height: 100dvh;
+        max-height: none;
+        border: 0;
+        border-radius: 0;
+        box-shadow: none;
+        transform: translateY(100%);
+        transition:
+            transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1),
+            overlay 0.3s allow-discrete,
+            display 0.3s allow-discrete;
+    }
+    .dialog.dialog--sheet[open] {
+        transform: none;
+        animation: none;
+    }
+    .dialog--sheet::backdrop {
+        opacity: 0;
+        transition:
+            opacity 0.3s ease,
+            overlay 0.3s allow-discrete,
+            display 0.3s allow-discrete;
+    }
+    .dialog.dialog--sheet[open]::backdrop {
+        opacity: 1;
+        animation: none;
+    }
+    @starting-style {
+        .dialog.dialog--sheet[open] {
+            transform: translateY(100%);
+        }
+        .dialog.dialog--sheet[open]::backdrop {
+            opacity: 0;
+        }
+    }
+    .dialog--sheet .dialog__body {
+        padding: 16px max(16px, var(--gutter)) max(16px, env(safe-area-inset-bottom));
+        gap: 16px;
+    }
+    .dialog--sheet .dialog__head h2 {
+        font-size: 1.5rem;
+    }
+    /* A big close target, pulled out to the edge so the ✕ itself stays in the corner */
+    .dialog--sheet .dialog__head .btn {
+        flex: none;
+        width: 56px;
+        height: 56px;
+        margin: -6px -12px -6px 0;
+        padding: 0;
+        justify-content: center;
+    }
+    .dialog--sheet .dialog__head .btn .lucide {
+        width: 30px;
+        height: 30px;
+    }
+    .dialog--sheet .results {
+        gap: 10px;
+    }
+    .dialog--sheet .result {
+        padding: 10px;
+    }
+    .dialog--sheet .check {
+        min-height: 48px;
+        font-size: 1.1rem;
+    }
+}
+@media (max-width: 639px) and (prefers-reduced-motion: reduce) {
+    .dialog.dialog--sheet,
+    .dialog--sheet::backdrop {
+        transition: none;
+    }
 }
 .dialog__body--fill {
     flex: 1;
@@ -3440,6 +3731,45 @@ fieldset.stars:disabled .stars__star {
     align-items: center;
     gap: 10px;
 }
+/* The grid/list toggle lives in the page header (or the back-link row on public pages), not in a
+   row of its own above the results */
+.page-head .layout-toggle,
+.back-row .layout-toggle {
+    margin-top: 0;
+    align-self: center;
+}
+.page-head__tools {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.back-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+.back-row .back {
+    margin-bottom: 0;
+}
+@media (max-width: 899px) {
+    /* The 44px toggle is taller than a title line: give the title the same height (its content is
+       centred in it) so both sit on one line */
+    .page-head:has(.layout-toggle) h1 {
+        min-height: 44px;
+    }
+    .page-head .layout-toggle button,
+    .back-row .layout-toggle button {
+        width: 44px;
+        height: 44px;
+    }
+    .page-head .layout-toggle .lucide,
+    .back-row .layout-toggle .lucide {
+        width: 22px;
+        height: 22px;
+    }
+}
 .page-head h1 svg {
     flex: none;
     color: var(--accent);
@@ -3625,13 +3955,6 @@ fieldset.stars:disabled .stars__star {
 .browse__side {
     order: -1;
 }
-.facets__summary {
-    cursor: pointer;
-    list-style: none;
-}
-.facets__summary::-webkit-details-marker {
-    display: none;
-}
 .facets__head {
     display: flex;
     align-items: center;
@@ -3729,18 +4052,14 @@ fieldset.stars:disabled .stars__star {
         max-height: calc(100vh - 88px);
         overflow-y: auto;
     }
-    .facets__summary {
-        display: none;
-    }
     .facets__body {
         margin-top: 0;
     }
 }
 
-/* Narrow screens: the nav becomes a slide-in drawer opened from the bar at the top */
+/* Narrow screens: the nav becomes a full-screen menu opened from the bar at the top */
 .mobile-bar,
-.sidebar__close,
-.drawer-backdrop {
+.sidebar__close {
     display: none;
 }
 .sidebar__head {
@@ -3759,6 +4078,7 @@ fieldset.stars:disabled .stars__star {
         grid-template-rows: auto 1fr;
     }
     .mobile-bar {
+        position: relative;
         display: flex;
         align-items: center;
         gap: 8px;
@@ -3766,53 +4086,202 @@ fieldset.stars:disabled .stars__star {
         border-bottom: 1px solid var(--line);
         background: var(--surface);
     }
+    /* Centred in the bar whatever the hamburger's width; the open menu copies its measured box */
+    .mobile-bar__logo {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        display: flex;
+        align-items: center;
+        min-height: 44px;
+        color: inherit;
+        text-decoration: none;
+    }
     .mobile-bar__menu {
         padding: 0 10px;
         margin-left: -10px;
     }
+    /* Full screen: the menu is revealed by a circle growing out of the hamburger button (and
+       shrinking back into it on close), then its rows rise in one after another. */
     .sidebar {
         position: fixed;
-        inset: 0 auto 0 0;
-        width: min(280px, 85vw);
+        inset: 0;
+        width: auto;
+        /* Not the desktop 100dvh: that resizes as a phone's address bar slides in and out */
+        height: auto;
         z-index: 30;
-        border-right: 1px solid var(--line-strong);
-        transform: translateX(-100%);
+        border-right: 0;
+        overscroll-behavior: contain;
+        /* Keep the menu on its own compositor layer, so the first frame of the reveal doesn't
+           have to build one (the usual cause of a one-frame flash at the start) */
+        will-change: clip-path;
+        clip-path: circle(0 at var(--menu-cx, 28px) var(--menu-cy, 24px));
         visibility: hidden;
         transition:
-            transform 0.22s ease,
-            visibility 0s linear 0.22s;
+            clip-path 0.45s cubic-bezier(0.7, 0, 0.3, 1),
+            visibility 0s linear 0.45s;
     }
     .sidebar.is-open {
-        transform: none;
+        clip-path: circle(150vmax at var(--menu-cx, 28px) var(--menu-cy, 24px));
         visibility: visible;
         transition-delay: 0s;
     }
+    .nav-search,
+    .nav__group,
+    .user-menu {
+        opacity: 0;
+        transform: translateY(18px);
+        will-change: opacity, transform;
+        transition:
+            opacity 0.15s ease,
+            transform 0.15s ease;
+    }
+    .sidebar.is-open .nav-search,
+    .sidebar.is-open .nav__group,
+    .sidebar.is-open .user-menu {
+        opacity: 1;
+        transform: none;
+        transition:
+            opacity 0.35s ease var(--rise, 0.15s),
+            transform 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.2) var(--rise, 0.15s);
+    }
+    .sidebar.is-open .nav-search {
+        --rise: 0.2s;
+    }
+    .sidebar.is-open .nav__group:nth-child(1) {
+        --rise: 0.26s;
+    }
+    .sidebar.is-open .nav__group:nth-child(2) {
+        --rise: 0.32s;
+    }
+    .sidebar.is-open .nav__group:nth-child(3) {
+        --rise: 0.38s;
+    }
+    .sidebar.is-open .nav__group:nth-child(4) {
+        --rise: 0.44s;
+    }
+    .sidebar.is-open .user-menu {
+        --rise: 0.5s;
+    }
+    /* The close button sits exactly where the hamburger was (Shell measures it on open and sets
+       --menu-left/top/w/h), so the bars morph into the ✕ without moving; the logo is fixed the same
+       way (--logo-left/top/h), and the head just keeps the row's height. */
+    /* A header strip that stays put while the rows scroll beneath it; the fixed ✕ and logo live
+       inside it, so they sit above the rows */
+    .sidebar__head {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        /* Its children are all fixed, so without this the flex column squashes it to nothing */
+        flex: none;
+        justify-content: flex-start;
+        height: calc(var(--menu-top, 2px) + var(--menu-h, 44px) + 8px);
+        margin: 0 calc(-1 * max(16px, var(--gutter)));
+        background: var(--texture-faint), var(--surface);
+    }
+    .sidebar__logo {
+        position: fixed;
+        left: var(--logo-left, 58px);
+        top: var(--logo-top, 2px);
+        display: flex;
+        align-items: center;
+        height: var(--logo-h, 44px);
+        color: inherit;
+        text-decoration: none;
+    }
     .sidebar__close {
         display: inline-flex;
-        padding: 0 10px;
+        align-items: center;
+        justify-content: center;
+        position: fixed;
+        left: var(--menu-left, 6px);
+        top: var(--menu-top, 2px);
+        width: var(--menu-w, 44px);
+        height: var(--menu-h, 44px);
+        padding: 0;
     }
+    .menu-icon__bar {
+        transform-box: fill-box;
+        transform-origin: center;
+        transition:
+            transform 0.4s cubic-bezier(0.6, 0, 0.2, 1),
+            opacity 0.2s ease;
+    }
+    .menu-icon.is-open .menu-icon__bar {
+        transition-delay: 0.12s;
+    }
+    .menu-icon.is-open .menu-icon__bar--1 {
+        transform: translateY(4.75px) rotate(45deg);
+    }
+    .menu-icon.is-open .menu-icon__bar--2 {
+        opacity: 0;
+        transform: scaleX(0);
+    }
+    .menu-icon.is-open .menu-icon__bar--3 {
+        transform: translate(4px, -4.75px) rotate(-45deg) scaleX(1.8);
+    }
+    .mobile-bar .logo__word,
     .sidebar .logo__word {
         display: inline;
     }
-    .drawer-backdrop {
-        display: block;
-        position: fixed;
-        inset: 0;
-        z-index: 20;
-        background: rgb(0 0 0 / 0.45);
-        opacity: 0;
-        pointer-events: none;
-        transition: opacity 0.22s ease;
+    /* Bigger rows and type in the menu: it is operated with a thumb */
+    .sidebar {
+        gap: 20px;
+        /* No top padding: the sticky head fills the top edge, so rows can't show above it */
+        padding: 0 max(16px, var(--gutter)) 16px;
     }
-    .drawer-backdrop.is-open {
-        opacity: 1;
-        pointer-events: auto;
+    .nav {
+        gap: 20px;
+    }
+    .nav__group {
+        gap: 4px;
+    }
+    .nav__label {
+        font-size: 0.8rem;
+    }
+    .nav a,
+    .nav-search,
+    .user-menu__button,
+    .user-menu__panel a,
+    .user-menu__panel button {
+        min-height: 52px;
+        font-size: 1.1rem;
+    }
+    .nav a,
+    .nav-search {
+        gap: 14px;
+    }
+    .nav a .lucide,
+    .nav-search .lucide,
+    .user-menu__panel .lucide {
+        width: 24px;
+        height: 24px;
+    }
+    .nav a.active::before {
+        top: 10px;
+        bottom: 10px;
+    }
+    .nav__count {
+        min-width: 24px;
+        font-size: 0.85rem;
+        line-height: 24px;
+        border-radius: 12px;
     }
 }
 @media (max-width: 899px) and (prefers-reduced-motion: reduce) {
     .sidebar,
-    .drawer-backdrop {
-        transition: none;
+    .nav-search,
+    .nav__group,
+    .user-menu,
+    .menu-icon__bar {
+        transition: none !important;
+    }
+    .nav-search,
+    .nav__group,
+    .user-menu {
+        opacity: 1;
+        transform: none;
     }
 }
 
@@ -4757,10 +5226,14 @@ fieldset.stars:disabled .stars__star {
     width: 100%;
     height: 100%;
 }
+/* Phones: the banner is just the greeting */
 @media (max-width: 600px) {
-    .home-hero__icon {
-        width: 48px;
-        height: 48px;
+    .home-hero__icon,
+    .home-hero__sub {
+        display: none;
+    }
+    .home-hero h1 {
+        margin: 0;
     }
 }
 
@@ -6910,5 +7383,305 @@ button.tier-tile__button {
 @media (prefers-reduced-motion: reduce) {
     .count-up {
         animation: none;
+    }
+}
+
+/* ---- Error page (render crashes): see components/ErrorPage.tsx ---- */
+.error-page {
+    display: grid;
+    place-items: center;
+    padding: var(--gutter);
+}
+/* The last resort owns the whole window */
+.error-page--full {
+    min-height: 100dvh;
+    background:
+        radial-gradient(
+            circle at 50% 0%,
+            color-mix(in oklab, var(--danger) 13%, transparent),
+            transparent 55%
+        ),
+        var(--bg);
+}
+/* Inside the app's layout, under the sidebar's page area */
+.error-page--page {
+    padding-block: clamp(24px, 8vh, 80px);
+}
+.error-card {
+    display: grid;
+    justify-items: center;
+    gap: 14px;
+    width: min(100%, 540px);
+    padding: clamp(28px, 6vw, 44px) clamp(20px, 5vw, 36px);
+    text-align: center;
+    /* The same scanline and pixel-grid texture as the 404 card, over a solid surface */
+    background: var(--texture), var(--surface);
+    border: 1px solid var(--line);
+    border-radius: calc(var(--radius) * 1.5);
+    box-shadow: var(--shadow);
+}
+.error-card h1 {
+    margin: 4px 0 0;
+    font-size: clamp(1.6rem, 5vw, 2.1rem);
+}
+.error-card p {
+    margin: 0;
+    max-width: 44ch;
+    color: var(--ink-muted);
+    line-height: 1.55;
+    text-wrap: balance;
+}
+/* The logo tile sits inside a ring of four lights, three of them glowing red */
+.error-card__ring {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 168px;
+    height: 168px;
+}
+.error-card__ring > svg {
+    position: absolute;
+    inset: 0;
+    overflow: visible;
+}
+.ring-arc {
+    fill: none;
+    stroke: var(--line-strong);
+    stroke-width: 9;
+    stroke-linecap: round;
+}
+.ring-arc--lit {
+    stroke: var(--danger);
+    filter: drop-shadow(0 0 5px var(--danger));
+}
+.error-card__mark {
+    --power-green: #3ddc84;
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 88px;
+    height: 88px;
+    border-radius: 50%;
+    /* A dark console power button in both themes, with the red ring around it */
+    background: radial-gradient(circle at 50% 30%, #2a303b, #0e1117 75%);
+    color: var(--power-green);
+    box-shadow:
+        inset 0 1px 0 rgb(255 255 255 / 0.12),
+        0 10px 30px -10px var(--danger);
+}
+.error-card__mark svg {
+    width: 44px;
+    height: 44px;
+    stroke-width: 2.6;
+    filter: drop-shadow(0 0 6px var(--power-green));
+}
+.error-card__actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 6px;
+}
+.error-card__toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    min-height: 44px;
+    padding: 0 12px;
+    border: 0;
+    background: none;
+    color: var(--ink-muted);
+    font: inherit;
+    font-size: 0.92rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+.error-card__toggle:hover {
+    color: var(--ink);
+}
+.error-card__toggle svg {
+    width: 18px;
+    height: 18px;
+    transition: transform 0.2s ease;
+}
+.error-card__toggle[aria-expanded='true'] svg {
+    transform: rotate(180deg);
+}
+.error-card__details {
+    display: grid;
+    gap: 8px;
+    justify-items: start;
+    width: 100%;
+    text-align: left;
+}
+.error-card__details[hidden] {
+    display: none;
+}
+.error-card__details pre {
+    width: 100%;
+    max-height: 260px;
+    margin: 0;
+    padding: 12px;
+    overflow: auto;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    background: var(--surface-2);
+    color: var(--ink);
+    font:
+        0.78rem/1.5 ui-monospace,
+        SFMono-Regular,
+        Menlo,
+        Consolas,
+        monospace;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+@media (prefers-reduced-motion: no-preference) {
+    /* It settles in, then jolts as if something just broke */
+    .error-card {
+        animation:
+            error-card-in 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both,
+            error-card-shake 0.55s ease-out 0.5s;
+    }
+    .error-card__mark {
+        animation:
+            error-mark-in 0.6s cubic-bezier(0.3, 1.5, 0.5, 1) 0.1s both,
+            error-mark-wobble 0.6s ease-out 0.5s;
+    }
+    /* The lit lights flicker like they are failing, each on its own beat */
+    .ring-arc--lit {
+        animation: ring-flicker 2.6s ease-in-out calc(0.9s + var(--n) * 0.35s) infinite;
+    }
+}
+/* The 404 card jolts once when it appears, like the error card (same keyframes) */
+/* Solid under the texture: the page's faint grid would otherwise show through the transparent
+   parts of it and the two patterns would fight */
+.empty-state--shake {
+    background: var(--texture), var(--surface);
+}
+@media (prefers-reduced-motion: no-preference) {
+    .empty-state--shake {
+        animation: error-card-shake 0.55s ease-out 0.15s;
+    }
+    .empty-state--shake .cartridge {
+        animation: error-mark-wobble 0.6s ease-out 0.15s;
+    }
+    .cartridge__float {
+        animation: cartridge-hover 3.2s ease-in-out 0.8s infinite;
+    }
+}
+/* The 404 cartridge: a cart that did not quite go into its slot */
+.cartridge {
+    width: 150px;
+    height: 150px;
+    margin-bottom: 4px;
+    overflow: visible;
+}
+.cartridge__slot {
+    fill: color-mix(in oklab, var(--ink) 7%, transparent);
+    stroke: var(--line-strong);
+    stroke-width: 1.5;
+    stroke-dasharray: 4 3;
+}
+.cartridge__shell {
+    fill: var(--accent);
+}
+.cartridge__ridge {
+    fill: rgb(0 0 0 / 0.22);
+}
+.cartridge__edge {
+    fill: color-mix(in oklab, var(--accent), black 50%);
+}
+.cartridge__pin {
+    fill: color-mix(in oklab, var(--accent), white 55%);
+}
+.cartridge__label {
+    fill: var(--surface);
+    stroke: color-mix(in oklab, var(--accent), black 25%);
+    stroke-width: 1.5;
+}
+.cartridge__mark {
+    fill: var(--accent);
+}
+@keyframes cartridge-hover {
+    50% {
+        transform: translateY(-4px);
+    }
+}
+@keyframes error-card-in {
+    from {
+        opacity: 0;
+        transform: translateY(14px);
+    }
+}
+/* A shake that dies away */
+@keyframes error-card-shake {
+    10% {
+        transform: translateX(-10px);
+    }
+    20% {
+        transform: translateX(9px);
+    }
+    30% {
+        transform: translateX(-8px);
+    }
+    40% {
+        transform: translateX(6px);
+    }
+    50% {
+        transform: translateX(-5px);
+    }
+    60% {
+        transform: translateX(4px);
+    }
+    70% {
+        transform: translateX(-3px);
+    }
+    80% {
+        transform: translateX(2px);
+    }
+    90% {
+        transform: translateX(-1px);
+    }
+}
+@keyframes error-mark-wobble {
+    15% {
+        transform: rotate(-12deg);
+    }
+    35% {
+        transform: rotate(9deg);
+    }
+    55% {
+        transform: rotate(-6deg);
+    }
+    75% {
+        transform: rotate(3deg);
+    }
+}
+@keyframes error-mark-in {
+    from {
+        opacity: 0;
+        transform: scale(0.6) rotate(-14deg);
+    }
+}
+@keyframes ring-flicker {
+    0%,
+    100% {
+        opacity: 1;
+    }
+    8% {
+        opacity: 0.35;
+    }
+    14% {
+        opacity: 1;
+    }
+    55% {
+        opacity: 0.85;
+    }
+    62% {
+        opacity: 0.4;
+    }
+    68% {
+        opacity: 1;
     }
 }

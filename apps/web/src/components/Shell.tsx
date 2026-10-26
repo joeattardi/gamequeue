@@ -5,8 +5,11 @@ import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router';
 import { useLogout } from '../api/auth';
 import { useNavCounts } from '../api/counts';
 import { isRecapSeason } from '../lib';
+import { ErrorBoundary } from './ErrorBoundary';
+import { ErrorPage } from './ErrorPage';
 import { Footer } from './Footer';
 import { Logo } from './Logo';
+import { MenuIcon } from './MenuIcon';
 import { Tooltip } from './Tooltip';
 import { UserMenu } from './UserMenu';
 import {
@@ -19,14 +22,12 @@ import {
     Joystick,
     LayoutGrid,
     LibraryBig,
-    Menu,
     PanelLeftClose,
     PanelLeftOpen,
     Rows3,
     Search,
     SkipForward,
-    Sparkles,
-    X
+    Sparkles
 } from 'lucide-react';
 
 const NARROW = '(max-width: 899px)';
@@ -73,6 +74,7 @@ function NavItem({
     icon,
     label,
     count,
+    unit = 'game',
     className,
     collapsed
 }: {
@@ -81,6 +83,8 @@ function NavItem({
     icon: ReactNode;
     label: string;
     count?: number;
+    /** What the count counts, singular */
+    unit?: string;
     className?: string;
     collapsed: boolean;
 }) {
@@ -88,7 +92,7 @@ function NavItem({
         <Tooltip
             label={label}
             detail={
-                count ? `${count.toLocaleString()} ${count === 1 ? 'game' : 'games'}` : undefined
+                count ? `${count.toLocaleString()} ${count === 1 ? unit : `${unit}s`}` : undefined
             }
             enabled={collapsed}
         >
@@ -98,7 +102,7 @@ function NavItem({
                 {count ? (
                     <span className="nav__count">
                         <span aria-hidden="true">{count.toLocaleString()}</span>
-                        <span className="sr-only"> games</span>
+                        <span className="sr-only"> {count === 1 ? unit : `${unit}s`}</span>
                     </span>
                 ) : null}
             </NavLink>
@@ -114,6 +118,8 @@ export function Shell({ user }: { user: UserDto }) {
     // Collapsing is a wide-screen thing: the drawer is always the full nav
     const collapsed = collapsedPref && !narrow;
     const [open, setOpen] = useState(false);
+    const sidebar = useRef<HTMLElement>(null);
+    const barLogo = useRef<HTMLAnchorElement>(null);
     const menuButton = useRef<HTMLButtonElement>(null);
     const closeButton = useRef<HTMLButtonElement>(null);
     const { pathname } = useLocation();
@@ -124,11 +130,11 @@ export function Shell({ user }: { user: UserDto }) {
     useEffect(() => setOpen(false), [pathname]);
     useEffect(() => {
         if (!drawerOpen) return;
-        closeButton.current?.focus();
+        closeButton.current?.focus({ preventScroll: true });
         const onKey = (e: KeyboardEvent) => {
             if (e.key === 'Escape') {
                 setOpen(false);
-                menuButton.current?.focus();
+                menuButton.current?.focus({ preventScroll: true });
             }
         };
         document.addEventListener('keydown', onKey);
@@ -148,6 +154,39 @@ export function Shell({ user }: { user: UserDto }) {
         return () => document.removeEventListener('keydown', onKey);
     }, [navigate]);
 
+    /**
+     * Opens the full-screen menu. The hamburger and the bar's logo are measured first and the
+     * menu's own ✕ and logo are fixed to those exact boxes, so neither moves when it opens. The
+     * variables are set (and flushed) before the open class goes on: if they changed in the same
+     * frame, the circle would start from the old origin and visibly jump on the first open.
+     */
+    const openMenu = () => {
+        const el = sidebar.current;
+        const button = menuButton.current?.getBoundingClientRect();
+        const logo = barLogo.current?.getBoundingClientRect();
+        if (el) {
+            // Scrolled out of view: the CSS defaults put things where the bar starts
+            const shown = button && logo && button.top >= 0 && button.bottom <= window.innerHeight;
+            const vars: Record<string, string | null> = {
+                '--menu-left': shown ? `${button.left}px` : null,
+                '--menu-top': shown ? `${button.top}px` : null,
+                '--menu-w': shown ? `${button.width}px` : null,
+                '--menu-h': shown ? `${button.height}px` : null,
+                '--menu-cx': shown ? `${button.left + button.width / 2}px` : null,
+                '--menu-cy': shown ? `${button.top + button.height / 2}px` : null,
+                '--logo-left': shown ? `${logo.left}px` : null,
+                '--logo-top': shown ? `${logo.top}px` : null,
+                '--logo-h': shown ? `${logo.height}px` : null
+            };
+            for (const [name, value] of Object.entries(vars)) {
+                if (value === null) el.style.removeProperty(name);
+                else el.style.setProperty(name, value);
+            }
+            void getComputedStyle(el).clipPath;
+        }
+        setOpen(true);
+    };
+
     return (
         <>
             <a className="skip-link" href="#main">
@@ -162,20 +201,16 @@ export function Shell({ user }: { user: UserDto }) {
                         aria-label="Open menu"
                         aria-expanded={drawerOpen}
                         aria-controls="main-nav"
-                        onClick={() => setOpen(true)}
+                        onClick={openMenu}
                     >
-                        <Menu />
+                        <MenuIcon />
                     </button>
+                    <Link ref={barLogo} to="/" className="mobile-bar__logo">
+                        <Logo />
+                    </Link>
                 </header>
-                <div
-                    className={drawerOpen ? 'drawer-backdrop is-open' : 'drawer-backdrop'}
-                    onClick={() => {
-                        setOpen(false);
-                        menuButton.current?.focus();
-                    }}
-                    aria-hidden="true"
-                />
                 <aside
+                    ref={sidebar}
                     id="main-nav"
                     className={
                         drawerOpen
@@ -185,9 +220,13 @@ export function Shell({ user }: { user: UserDto }) {
                               : 'sidebar'
                     }
                     inert={narrow && !open}
+                    // A link to the page you are already on doesn't change the path, so close here too
+                    onClick={(e) => {
+                        if ((e.target as HTMLElement).closest('a')) setOpen(false);
+                    }}
                 >
                     <div className="sidebar__head">
-                        <Link to="/">
+                        <Link to="/" className="sidebar__logo">
                             <Logo />
                         </Link>
                         <button
@@ -197,10 +236,10 @@ export function Shell({ user }: { user: UserDto }) {
                             aria-label="Close menu"
                             onClick={() => {
                                 setOpen(false);
-                                menuButton.current?.focus();
+                                menuButton.current?.focus({ preventScroll: true });
                             }}
                         >
-                            <X />
+                            <MenuIcon open={drawerOpen} />
                         </button>
                     </div>
                     <Tooltip label="Search games" shortcut="/" enabled={collapsed}>
@@ -244,6 +283,7 @@ export function Shell({ user }: { user: UserDto }) {
                                 to="/collection"
                                 icon={<LibraryBig />}
                                 label="Collection"
+                                count={counts.collection}
                                 collapsed={collapsed}
                             />
                             <NavItem
@@ -257,6 +297,8 @@ export function Shell({ user }: { user: UserDto }) {
                                 to="/lists"
                                 icon={<Bookmark />}
                                 label="Lists"
+                                count={counts.lists}
+                                unit="list"
                                 collapsed={collapsed}
                             />
                             <NavItem
@@ -333,7 +375,14 @@ export function Shell({ user }: { user: UserDto }) {
                 </aside>
                 <div className="content" inert={drawerOpen}>
                     <main id="main" className="page" tabIndex={-1}>
-                        <Outlet />
+                        {/* A page that crashes shows the error here; the sidebar stays usable, and
+                            navigating anywhere clears it */}
+                        <ErrorBoundary
+                            resetKey={pathname}
+                            fallback={(error) => <ErrorPage error={error} variant="page" />}
+                        >
+                            <Outlet />
+                        </ErrorBoundary>
                     </main>
                     <Footer sitemap />
                 </div>

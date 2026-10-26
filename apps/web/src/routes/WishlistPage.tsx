@@ -29,6 +29,7 @@ import {
     useMoveInWishlist,
     useWishlist
 } from '../api/wishlist';
+import { CountBadge } from '../components/CountBadge';
 import { AddGameDialog } from '../components/AddGameDialog';
 import { Cover } from '../components/Cover';
 import { reveal } from '../components/motion';
@@ -119,17 +120,16 @@ function WishlistView({ paged }: { paged: ReturnType<typeof useWishlist> }) {
                     <h1>
                         <Gift aria-hidden="true" />
                         Wishlist
+                        <CountBadge total={total} />
                     </h1>
-                    <p className="muted" aria-live="polite">
-                        {total} {total === 1 ? 'game' : 'games'} · top of the list is what you want
-                        most
-                    </p>
+                    <p className="muted">Top of the list is what you want most</p>
                 </div>
                 <div className="row">
                     <button className="btn btn--primary" onClick={() => setAdding(true)}>
                         <Plus />
                         Add to wishlist
                     </button>
+                    {total > 0 && <LayoutToggle layout={layout} onChange={setLayout} />}
                 </div>
             </div>
 
@@ -149,7 +149,6 @@ function WishlistView({ paged }: { paged: ReturnType<typeof useWishlist> }) {
                 </div>
             ) : (
                 <>
-                    <LayoutToggle layout={layout} onChange={setLayout} />
                     {layout === 'grid' ? (
                         <ol className="grid">
                             {order.map((item, i) => (

@@ -2,7 +2,8 @@ import { ArrowLeft, WandSparkles } from 'lucide-react';
 import { Link, useParams } from 'react-router';
 import { ApiRequestError } from '../api/client';
 import { useProfileList } from '../api/profile';
-import { PublicGameList } from '../components/PublicGameList';
+import { PublicGameList, usePublicLayout } from '../components/PublicGameList';
+import { LayoutToggle } from '../components/LayoutToggle';
 import { PublicHeader } from '../components/PublicHeader';
 import { usePageTitle } from '../lib';
 
@@ -19,13 +20,20 @@ export function ProfileListPage({ kind }: { kind: 'lists' | 'smart-lists' }) {
     usePageTitle(name ? `${name} · ${username}` : `${username}'s list`);
     const notFound = !valid || (list.error instanceof ApiRequestError && list.error.status === 404);
 
+    const [layout, setLayout] = usePublicLayout();
+
     return (
         <>
             <PublicHeader />
             <main className="page">
-                <Link to={`/u/${username}`} className="back">
-                    <ArrowLeft aria-hidden="true" /> {username}
-                </Link>
+                <div className="back-row">
+                    <Link to={`/u/${username}`} className="back">
+                        <ArrowLeft aria-hidden="true" /> {username}
+                    </Link>
+                    {!notFound && !list.isError && (
+                        <LayoutToggle layout={layout} onChange={setLayout} />
+                    )}
+                </div>
                 {notFound && <p role="alert">There is nothing here.</p>}
                 {!notFound && list.isError && <p role="alert">Couldn't load.</p>}
                 {!notFound && !list.isError && (
@@ -47,6 +55,7 @@ export function ProfileListPage({ kind }: { kind: 'lists' | 'smart-lists' }) {
                             </ul>
                         )}
                         <PublicGameList
+                            layout={layout}
                             username={username}
                             entries={list.isPending ? undefined : list.items}
                             numbered={kind === 'lists'}

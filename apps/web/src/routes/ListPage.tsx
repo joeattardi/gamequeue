@@ -29,6 +29,7 @@ import {
     useMoveInList
 } from '../api/lists';
 import { useQueue } from '../api/queue';
+import { CountBadge } from '../components/CountBadge';
 import { useConfirm } from '../components/Confirm';
 import { Cover } from '../components/Cover';
 import { reveal } from '../components/motion';
@@ -173,11 +174,9 @@ function ListView({
                     <h1>
                         {isQueue ? <ListOrdered aria-hidden="true" /> : <List aria-hidden="true" />}
                         {name}
+                        <CountBadge total={total} />
                     </h1>
-                    <p className="muted" aria-live="polite">
-                        {total} {total === 1 ? 'game' : 'games'}
-                        {isQueue && ' · starting a game takes it off the queue'}
-                    </p>
+                    {isQueue && <p className="muted">Starting a game takes it off the queue</p>}
                 </div>
                 <div className="row">
                     <Link className="btn btn--primary" to={`/pick/criteria?list=${id}`}>
@@ -216,6 +215,7 @@ function ListView({
                             </button>
                         </>
                     )}
+                    {total > 0 && <LayoutToggle layout={layout} onChange={setLayout} />}
                 </div>
             </div>
 
@@ -248,7 +248,6 @@ function ListView({
                 </div>
             ) : (
                 <>
-                    <LayoutToggle layout={layout} onChange={setLayout} />
                     {layout === 'grid' ? (
                         <ol className="grid">
                             {order.map((entry, i) => (

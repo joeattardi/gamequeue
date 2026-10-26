@@ -23,12 +23,34 @@ function wantsTransition(to: unknown, opts: NavigateOptions): boolean {
 }
 
 /**
+ * The browser aborts a running view transition when the viewport changes size (a phone's address
+ * bar sliding away, rotating, a resized window) and rejects the transition's `ready` and
+ * `finished` promises with an `InvalidStateError`. Nobody awaits those here, so each abort shows up
+ * as an "Uncaught (in promise)" console error even though the navigation itself went through. Mark
+ * the promises as handled. The page update still runs (`updateCallbackDone` is left alone, so a
+ * real error in it is still reported).
+ */
+let quieted = false;
+function quietAbortedTransitions() {
+    if (quieted || typeof document.startViewTransition !== 'function') return;
+    quieted = true;
+    const start = document.startViewTransition.bind(document);
+    document.startViewTransition = ((...args: Parameters<typeof start>) => {
+        const transition = start(...args);
+        transition.ready.catch(() => {});
+        transition.finished.catch(() => {});
+        return transition;
+    }) as typeof document.startViewTransition;
+}
+
+/**
  * Turns on React Router's `viewTransition` for every link and `navigate()` that leaves the page,
  * so no call site has to ask for it. Every link, `useNavigate` and `<Navigate>` goes through
  * `router.navigate`; an explicit `viewTransition` option still wins. Browser back and forward
  * (history pops) never animate.
  */
 export function withPageTransitions(router: DataRouter): DataRouter {
+    quietAbortedTransitions();
     const navigate = router.navigate.bind(router);
     router.navigate = ((to: unknown, opts?: NavigateOptions) =>
         typeof to === 'number'

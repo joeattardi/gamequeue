@@ -1,5 +1,5 @@
-import { Compass } from 'lucide-react';
 import { Link, useLocation } from 'react-router';
+import { CartridgeArt } from '../components/CartridgeArt';
 import { Footer } from '../components/Footer';
 import { PublicHeader } from '../components/PublicHeader';
 import { usePageTitle } from '../lib';
@@ -13,11 +13,9 @@ export function NotFoundPage({ standalone = false }: { standalone?: boolean }) {
     const { pathname } = useLocation();
 
     const content = (
-        <div className="empty-state">
-            <span className="empty-state__icon" aria-hidden="true">
-                <Compass />
-            </span>
-            <h1>Page not found</h1>
+        <div className="empty-state empty-state--shake">
+            <CartridgeArt />
+            <h1>Cartridge not found</h1>
             <p className="muted">
                 There is nothing at <code>{pathname}</code>. The link may be broken, or the page may
                 have moved.

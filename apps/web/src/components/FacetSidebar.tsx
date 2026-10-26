@@ -1,8 +1,5 @@
 import type { FacetCountsDto } from '@gamequeue/shared';
-import { Filter } from 'lucide-react';
-import { useState } from 'react';
-
-const WIDE = '(min-width: 900px)';
+import { useState, type ReactNode } from 'react';
 
 export const FACET_KEYS = ['status', 'platform', 'genre', 'series', 'tag', 'favorite'] as const;
 export type FacetKey = (typeof FACET_KEYS)[number];
@@ -25,13 +22,19 @@ export function FacetSidebar({
     selected,
     onToggle,
     onClear,
-    showStatus
+    showStatus,
+    open,
+    sort
 }: {
     facets: FacetCountsDto | undefined;
     selected: (key: FacetKey) => string[];
     onToggle: (key: FacetKey, value: string) => void;
     onClear: () => void;
     showStatus: boolean;
+    /** Narrow screens only: whether the panel is shown (the page's Filters button toggles it). */
+    open: boolean;
+    /** Narrow screens only: the sort control, which sits in the page's search bar on wide ones. */
+    sort: ReactNode;
 }) {
     const groups: { key: FacetKey; title: string; options: Option[] }[] = facets
         ? [
@@ -93,47 +96,46 @@ export function FacetSidebar({
         : [];
     const active = FACET_KEYS.reduce((n, k) => n + selected(k).length, 0);
 
-    // Always open beside the results on wide screens; a collapsed disclosure above them otherwise
-    const [open, setOpen] = useState(() => window.matchMedia(WIDE).matches);
+    // Always shown beside the results on wide screens; under 900px it is a panel above the results
+    // that the page's Filters button opens
     return (
-        <details className="facets" open={open} onToggle={(e) => setOpen(e.currentTarget.open)}>
-            <summary className="facets__summary btn btn--ghost">
-                <Filter aria-hidden="true" />
-                Filters{active > 0 && ` (${active})`}
-            </summary>
-            <div className="facets__body">
-                <div className="facets__head">
-                    <h2>Filters</h2>
-                    {active > 0 && (
-                        <button type="button" className="btn btn--ghost" onClick={onClear}>
-                            Clear all
-                        </button>
+        <div className={open ? 'facets' : 'facets facets--closed'}>
+            <div className="facets__clip">
+                <div className="facets__body" id="collection-facets">
+                    <div className="facets__sort">{sort}</div>
+                    <div className="facets__head">
+                        <h2>Filters</h2>
+                        {active > 0 && (
+                            <button type="button" className="btn btn--ghost" onClick={onClear}>
+                                Clear all
+                            </button>
+                        )}
+                    </div>
+                    {!facets ? (
+                        <FacetSkeletons />
+                    ) : (
+                        groups
+                            .map((g) => ({
+                                ...g,
+                                // Options that would match nothing are hidden unless ticked
+                                options: g.options.filter(
+                                    (o) => o.count > 0 || selected(g.key).includes(o.value)
+                                )
+                            }))
+                            .filter((g) => g.options.length > 0)
+                            .map((g) => (
+                                <FacetGroup
+                                    key={g.key}
+                                    title={g.title}
+                                    options={g.options}
+                                    selected={selected(g.key)}
+                                    onToggle={(v) => onToggle(g.key, v)}
+                                />
+                            ))
                     )}
                 </div>
-                {!facets ? (
-                    <FacetSkeletons />
-                ) : (
-                    groups
-                        .map((g) => ({
-                            ...g,
-                            // Options that would match nothing are hidden unless ticked
-                            options: g.options.filter(
-                                (o) => o.count > 0 || selected(g.key).includes(o.value)
-                            )
-                        }))
-                        .filter((g) => g.options.length > 0)
-                        .map((g) => (
-                            <FacetGroup
-                                key={g.key}
-                                title={g.title}
-                                options={g.options}
-                                selected={selected(g.key)}
-                                onToggle={(v) => onToggle(g.key, v)}
-                            />
-                        ))
-                )}
             </div>
-        </details>
+        </div>
     );
 }
 

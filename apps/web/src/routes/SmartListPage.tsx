@@ -1,5 +1,6 @@
 import { Link, useNavigate, useParams } from 'react-router';
 import { useDeleteSmartList, useSmartList } from '../api/smartLists';
+import { CountBadge } from '../components/CountBadge';
 import { useConfirm } from '../components/Confirm';
 import { GameCard } from '../components/GameCard';
 import { GameRow } from '../components/GameRow';
@@ -56,10 +57,9 @@ function SmartListView({ paged }: { paged: ReturnType<typeof useSmartList> }) {
                     <h1>
                         <WandSparkles aria-hidden="true" />
                         {list.name}
+                        <CountBadge total={total} />
                     </h1>
-                    <p className="muted" aria-live="polite">
-                        {total} {total === 1 ? 'game' : 'games'} · always up to date
-                    </p>
+                    <p className="muted">Always up to date</p>
                 </div>
                 <div className="row">
                     <Link className="btn btn--primary" to={`/pick/criteria?smart=${list.id}`}>
@@ -89,6 +89,7 @@ function SmartListView({ paged }: { paged: ReturnType<typeof useSmartList> }) {
                         <Trash2 />
                         Delete
                     </button>
+                    {total > 0 && <LayoutToggle layout={layout} onChange={setLayout} />}
                 </div>
             </div>
 
@@ -112,7 +113,6 @@ function SmartListView({ paged }: { paged: ReturnType<typeof useSmartList> }) {
                 </div>
             ) : (
                 <>
-                    <LayoutToggle layout={layout} onChange={setLayout} />
                     {layout === 'list' ? (
                         <ul className="game-rows" aria-busy={isFetching}>
                             {entries.map((e) => (

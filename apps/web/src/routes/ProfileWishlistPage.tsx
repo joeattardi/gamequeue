@@ -2,7 +2,8 @@ import { ArrowLeft } from 'lucide-react';
 import { Link, useParams } from 'react-router';
 import { ApiRequestError } from '../api/client';
 import { useProfileWishlist } from '../api/profile';
-import { PublicGameList } from '../components/PublicGameList';
+import { PublicGameList, usePublicLayout } from '../components/PublicGameList';
+import { LayoutToggle } from '../components/LayoutToggle';
 import { Footer } from '../components/Footer';
 import { PublicHeader } from '../components/PublicHeader';
 import { platformLabel, releaseText, usePageTitle } from '../lib';
@@ -14,19 +15,27 @@ export function ProfileWishlistPage() {
     usePageTitle(`${wishlist.head?.username ?? username}'s Wishlist`);
     const notFound = wishlist.error instanceof ApiRequestError && wishlist.error.status === 404;
 
+    const [layout, setLayout] = usePublicLayout();
+
     return (
         <>
             <PublicHeader />
             <main className="page">
-                <Link to={`/u/${username}`} className="back">
-                    <ArrowLeft aria-hidden="true" /> {username}
-                </Link>
+                <div className="back-row">
+                    <Link to={`/u/${username}`} className="back">
+                        <ArrowLeft aria-hidden="true" /> {username}
+                    </Link>
+                    {!notFound && !wishlist.isError && (
+                        <LayoutToggle layout={layout} onChange={setLayout} />
+                    )}
+                </div>
                 {notFound && <p role="alert">There is nothing here.</p>}
                 {!notFound && wishlist.isError && <p role="alert">Couldn't load.</p>}
                 {!notFound && !wishlist.isError && (
                     <>
                         <h1>{wishlist.head?.username ?? username}: wishlist</h1>
                         <PublicGameList
+                            layout={layout}
                             username={username}
                             paging={{
                                 total: wishlist.total,

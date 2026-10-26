@@ -8,6 +8,7 @@ import { RouterProvider } from 'react-router/dom';
 import { ApiRequestError } from './api/client';
 import { App } from './App';
 import { ConfirmProvider } from './components/Confirm';
+import { RouteErrorPage } from './components/ErrorPage';
 import { withPageTransitions } from './pageTransitions';
 import './styles/tokens.css';
 import './styles/app.css';
@@ -29,6 +30,7 @@ const router = withPageTransitions(
     createBrowserRouter([
         {
             path: '*',
+            errorElement: <RouteErrorPage />,
             element: (
                 <ConfirmProvider>
                     <App />
