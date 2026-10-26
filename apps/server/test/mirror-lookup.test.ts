@@ -27,6 +27,7 @@ function liveClient(overrides: Partial<IgdbClient> = {}): IgdbClient {
     return {
         search: never('search'),
         fetchGame: never('fetchGame'),
+        fetchGames: never('fetchGames'),
         fetchPlatforms: never('fetchPlatforms'),
         fetchReleaseDates: never('fetchReleaseDates'),
         fetchGameSeries: never('fetchGameSeries'),
@@ -223,6 +224,15 @@ describe('fetchGame', () => {
         const fetchGame = vi.fn().mockResolvedValue(game);
         expect(await client(liveClient({ fetchGame })).fetchGame(5000)).toBe(game);
         expect(await client().fetchGame(5000)).toBeNull();
+    });
+
+    it('fetches many games locally and asks live IGDB only for the ones it lacks', async () => {
+        const game = fakeGame(5000, 'Brand New', { platforms: [PC] });
+        const fetchGames = vi.fn().mockResolvedValue([game]);
+        const out = await client(liveClient({ fetchGames })).fetchGames([1, 4, 5000, 5001]);
+        expect(out.map((g) => g.id)).toEqual([1, 4, 5000]);
+        expect(fetchGames).toHaveBeenCalledWith([5000, 5001]);
+        expect((await client().fetchGames([1, 5001])).map((g) => g.id)).toEqual([1]);
     });
 });
 

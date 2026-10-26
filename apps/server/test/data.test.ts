@@ -1,7 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import { EXPORT_FORMAT, EXPORT_VERSION, type ExportFile } from '@gamequeue/shared';
+import {
+    EXPORT_FORMAT,
+    EXPORT_VERSION,
+    MAX_IMPORT_GAMES,
+    exportFileSchema,
+    type ExportFile
+} from '@gamequeue/shared';
 import { games, platforms } from '../src/db/schema.js';
 import { PC, PS5, SWITCH, setupApi } from './api.js';
+import { cookieFrom, makeApp, register } from './helpers.js';
+import { IMPORTS_PER_DAY } from '../src/routes/data.js';
+import { importData, resolveImportCatalog } from '../src/services/import.js';
 
 type Api = Awaited<ReturnType<typeof setupApi>>;
 
@@ -137,7 +146,7 @@ describe('import into an empty account (a restore)', () => {
         await richCollection(a);
         const file = await exportOf(a);
 
-        const b = await setupApi(); // a fresh install: no IGDB, nothing cached
+        const b = await setupApi(); // a fresh install: nothing cached, games come from IGDB
         const res = await importFile(b, file, true);
         expect(res.status).toBe(200);
         expect(res.report).toMatchObject({
@@ -165,16 +174,36 @@ describe('import into an empty account (a restore)', () => {
         expect((await b.call('/entries?view=backlog')).entries).toHaveLength(1);
     });
 
-    it('works without IGDB because the file carries the metadata', async () => {
+    it("takes every game's metadata from IGDB, never from the file", async () => {
         const a = await setupApi();
         await richCollection(a);
-        const file = await exportOf(a);
+        const file: ExportFile = JSON.parse(JSON.stringify(await exportOf(a)));
+        const hadesSnapshot = file.games.find((g) => g.igdbId === 1)!.game;
+        hadesSnapshot.name = 'Renamed By File';
+        hadesSnapshot.coverImageId = 'cofile';
+        hadesSnapshot.summary = 'Written by the file';
         const b = await setupApi();
         await importFile(b, file, true);
         const hades = (await b.call('/entries?q=hades')).entries[0];
         expect(hades.game).toMatchObject({ name: 'Hades', coverImageId: 'co1', igdbRating: 80 });
+        expect(hades.game.summary).not.toBe('Written by the file');
         expect(hades.game.genres.length).toBeGreaterThan(0);
         expect(hades.game.ttb.normally).toBe(1200);
+    });
+
+    it("refuses, importing nothing, when games aren't cached and IGDB isn't configured", async () => {
+        const a = await setupApi();
+        await richCollection(a);
+        const file = await exportOf(a);
+        const { app, db } = makeApp();
+        const cookie = cookieFrom(await register(app));
+        const res = await app.request('/api/data/import?commit=true', {
+            method: 'POST',
+            body: JSON.stringify(file),
+            headers: { origin: 'http://localhost', cookie, 'content-type': 'application/json' }
+        });
+        expect(res.status).toBe(503);
+        expect(db.select().from(games).all()).toHaveLength(0);
     });
 
     it('is idempotent: importing the same file again changes nothing', async () => {
@@ -206,7 +235,8 @@ describe('import into an empty account (a restore)', () => {
         expect(preview.report.games.added).toBe(4);
         expect((await exportOf(b)).games).toEqual([]);
         expect((await exportOf(b)).lists).toEqual([]);
-        expect(b.db.select().from(games).all()).toHaveLength(0);
+        // Nothing of the user's; the games it looked up on IGDB stay cached, as browsing would leave them
+        expect(b.db.select({ name: games.name }).from(games).all()).toHaveLength(4);
 
         const real = await importFile(b, file, true);
         expect({ ...real.report, dryRun: true }).toEqual(preview.report);
@@ -348,19 +378,61 @@ describe('merging into existing data', () => {
         ).toBe(false);
     });
 
-    it('adds games the cache has never seen using the file snapshot', async () => {
+    it("skips a game IGDB doesn't know, with everything of it, and keeps the rest", async () => {
         const { file, b } = await scenario();
-        const withNew: ExportFile = JSON.parse(JSON.stringify(file));
-        const clone = JSON.parse(JSON.stringify(withNew.games[0]!));
+        const withFake: ExportFile = JSON.parse(JSON.stringify(file));
+        const clone = JSON.parse(JSON.stringify(withFake.games[0]!));
         clone.igdbId = 999;
-        clone.game.name = 'Brand New Game';
+        clone.game.name = 'Made Up Game';
         clone.status = 'unplayed';
         clone.playthroughs = [];
         clone.tags = [];
-        withNew.games.push(clone);
-        const res = await importFile(b, withNew, true);
+        withFake.games.push(clone);
+        withFake.queue.push(999);
+        withFake.lists[0]!.games.push(999);
+        withFake.wishlist.push({
+            igdbId: 998,
+            game: { ...clone.game, name: 'Made Up Wish' },
+            platform: null,
+            note: '',
+            addedAt: 1
+        });
+        const res = await importFile(b, withFake, true);
         expect(res.status).toBe(200);
-        expect((await b.call('/entries?q=brand')).entries[0].game.name).toBe('Brand New Game');
+        expect(res.report.games.skipped).toBe(1);
+        expect(res.report.notes).toEqual(
+            expect.arrayContaining([
+                "Made Up Game (IGDB id 999) isn't on IGDB, so it was skipped",
+                "Made Up Wish (IGDB id 998) isn't on IGDB, so it was skipped in the wishlist"
+            ])
+        );
+        expect((await b.call('/entries?q=made')).entries).toEqual([]);
+        expect(
+            b.db
+                .select()
+                .from(games)
+                .all()
+                .map((g) => g.id)
+        ).not.toContain(999);
+    });
+
+    it("drops platforms IGDB doesn't list, and skips a game left with none", async () => {
+        const { file, b } = await scenario();
+        const odd: ExportFile = JSON.parse(JSON.stringify(file));
+        const fake = { id: 99999, name: 'Made Up Console', abbreviation: null };
+        const celeste = odd.games.find((g) => g.igdbId === 2)!;
+        celeste.platforms = [fake];
+        const res = await importFile(b, odd, true);
+        expect(res.report.notes).toContain(
+            'Celeste was skipped: none of its platforms are on IGDB'
+        );
+        expect(
+            b.db
+                .select()
+                .from(platforms)
+                .all()
+                .map((p) => p.id)
+        ).not.toContain(99999);
     });
 });
 
@@ -555,7 +627,7 @@ describe('grids and tier lists in the export', () => {
         expect(tl.unranked.map((g) => g.game.name)).toEqual(['Outer Wilds']);
     });
 
-    it('restores them exactly on a fresh install, without IGDB, and keeps the games cached', async () => {
+    it('restores them exactly on a fresh install, and keeps the games cached', async () => {
         const a = await setupApi();
         await social(a);
         const file = await exportOf(a);
@@ -662,5 +734,60 @@ describe('grids and tier lists in the export', () => {
         )) as unknown as ExportFile;
         expect(theirs.grids).toEqual([]);
         expect(theirs.tierLists).toEqual([]);
+    });
+});
+
+describe('import limits', () => {
+    it('looks up at most so many new games per run; running the file again adds the rest', async () => {
+        const a = await setupApi();
+        await richCollection(a);
+        const file = exportFileSchema.parse(await exportOf(a));
+        const b = await setupApi();
+        const first = await resolveImportCatalog(b.db, b.igdb, file, 2);
+        expect(first.games.size).toBe(2);
+        expect(first.deferred.size).toBe(2);
+        const report = importData(b.db, b.userId, file, first, { dryRun: false });
+        expect(report.games).toMatchObject({ added: 2, skipped: 2 });
+        // One note for all of them, not one per game
+        expect(report.notes.filter((n) => n.includes('import the same file again'))).toHaveLength(
+            1
+        );
+
+        const second = await resolveImportCatalog(b.db, b.igdb, file, 2);
+        expect(second.deferred.size).toBe(0);
+        const again = importData(b.db, b.userId, file, second, { dryRun: false });
+        expect(again.games).toMatchObject({ added: 2, unchanged: 2, skipped: 0 });
+    });
+
+    it(`allows ${IMPORTS_PER_DAY} committed imports a day per user; dry runs are free`, async () => {
+        const s = await setupApi();
+        await richCollection(s);
+        const file = await exportOf(s);
+        for (let i = 0; i < IMPORTS_PER_DAY + 2; i++)
+            expect((await importFile(s, file, false)).status).toBe(200);
+        for (let i = 0; i < IMPORTS_PER_DAY; i++)
+            expect((await importFile(s, file, true)).status).toBe(200);
+        const over = await importFile(s, file, true);
+        expect(over.status).toBe(429);
+        expect(over.error).toMatch(/a day/);
+    });
+
+    it('refuses a file with more games than the limit', async () => {
+        const s = await setupApi();
+        const res = await importFile(
+            s,
+            {
+                format: EXPORT_FORMAT,
+                version: EXPORT_VERSION,
+                exportedAt: '2026-01-01',
+                games: [],
+                lists: [],
+                slots: [],
+                queue: Array.from({ length: MAX_IMPORT_GAMES + 1 }, (_, i) => i + 1)
+            },
+            false
+        );
+        expect(res.status).toBe(400);
+        expect(res.details.map((d: { path: string }) => d.path)).toContain('queue');
     });
 });

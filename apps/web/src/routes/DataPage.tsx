@@ -97,8 +97,8 @@ export function DataPage() {
                     <h2 id="export-h">Export</h2>
                     <p>
                         One JSON file with your collection, playthroughs, slots, lists, queue,
-                        wishlist, smart lists, grids, tier lists and tags, plus the game details
-                        needed to restore it without IGDB.
+                        wishlist, smart lists, grids, tier lists and tags, plus the names and
+                        details of its games so the file makes sense on its own.
                     </p>
                     <div>
                         <a className="btn btn--primary" href="/api/data/export" download>
@@ -257,7 +257,7 @@ function ReportSummary({ report }: { report: ImportReport }) {
         0;
     return (
         <div className="stack">
-            {nothing && (
+            {nothing && games.skipped === 0 && (
                 <p>
                     <strong>Nothing new in this file.</strong> Everything in it is already in your
                     collection.
@@ -267,6 +267,7 @@ function ReportSummary({ report }: { report: ImportReport }) {
                 <Stat label={`${verb} games`} value={games.added} />
                 <Stat label={report.dryRun ? 'Will update' : 'Updated'} value={games.updated} />
                 <Stat label="Already up to date" value={games.unchanged} />
+                {games.skipped > 0 && <Stat label="Games skipped" value={games.skipped} />}
                 <Stat label={`${verb} playthroughs`} value={playthroughs.added} />
                 <Stat label="Playthroughs you already had" value={playthroughs.duplicates} />
                 <Stat label={`${verb} lists`} value={lists.created} />

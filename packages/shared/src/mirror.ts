@@ -39,6 +39,7 @@ export interface MirrorFileDto {
 export const MIRROR_LOOKUP_METHODS = {
     search: 'Search',
     fetchGame: 'Game details',
+    fetchGames: 'Games in an import',
     fetchSimilarGames: 'Similar games',
     fetchSeries: 'Series pages',
     fetchGameSeries: 'Series of a game',

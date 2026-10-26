@@ -149,6 +149,17 @@ export function createMirrorIgdbClient(opts: {
             );
         },
 
+        async fetchGames(igdbIds) {
+            const reader = handle.get();
+            const local = reader
+                ? igdbIds.flatMap((id) => {
+                      const g = reader.game(id);
+                      return g ? [g] : [];
+                  })
+                : [];
+            return rest('fetchGames', igdbIds, local, (c, ids) => c.fetchGames(ids));
+        },
+
         async fetchPlatforms() {
             const local = handle.get()?.platforms() ?? [];
             const useLive = !local.length && !!fallback;

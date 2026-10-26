@@ -13,7 +13,7 @@ import {
     type RawTtb
 } from './mappers.js';
 import { TokenProvider } from './token.js';
-import { IgdbError, type IgdbClient } from './types.js';
+import { IgdbError, type GameRecord, type IgdbClient } from './types.js';
 
 const BASE = 'https://api.igdb.com/v4';
 const GAME_FIELDS =
@@ -176,6 +176,29 @@ export function createIgdbClient(opts: IgdbClientOptions): IgdbClient {
             if (!game) return null;
             const ttb = results.find((r) => r.name === 'ttb')?.result[0] as RawTtb | undefined;
             return mapGame(game, ttb);
+        },
+
+        async fetchGames(igdbIds) {
+            // 100 games and their time-to-beat per round trip, so a big import is a few requests
+            const out: GameRecord[] = [];
+            for (let i = 0; i < igdbIds.length; i += 100) {
+                const ids = igdbIds.slice(i, i + 100).join(',');
+                const results = await request<{ name: string; result: unknown[] }[]>(
+                    'multiquery',
+                    `query games "games" { fields ${GAME_FIELDS},${DETAIL_FIELDS}; where id = (${ids}); limit 100; };\n` +
+                        `query game_time_to_beats "ttb" { fields game_id,hastily,normally,completely,count; where game_id = (${ids}); limit 100; };`
+                );
+                const ttb = new Map(
+                    ((results.find((r) => r.name === 'ttb')?.result ?? []) as RawTtb[]).map((t) => [
+                        t.game_id,
+                        t
+                    ])
+                );
+                for (const g of (results.find((r) => r.name === 'games')?.result ??
+                    []) as RawGame[])
+                    out.push(mapGame(g, ttb.get(g.id)));
+            }
+            return out;
         },
 
         async fetchReleaseDates(igdbIds) {

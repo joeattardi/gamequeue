@@ -91,6 +91,7 @@ export function fakeIgdb(catalog: GameRecord[], similar: Record<number, number[]
     const calls = {
         search: 0,
         fetchGame: 0,
+        fetchGames: 0,
         fetchPlatforms: 0,
         fetchReleaseDates: 0,
         fetchGameSeries: 0,
@@ -115,6 +116,10 @@ export function fakeIgdb(catalog: GameRecord[], similar: Record<number, number[]
         async fetchGame(id) {
             calls.fetchGame++;
             return catalog.find((g) => g.id === id) ?? null;
+        },
+        async fetchGames(ids) {
+            calls.fetchGames++;
+            return catalog.filter((g) => ids.includes(g.id));
         },
         async fetchReleaseDates(ids) {
             calls.fetchReleaseDates++;

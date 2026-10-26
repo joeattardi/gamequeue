@@ -227,6 +227,30 @@ describe('IGDB client', () => {
         expect(await none.client.fetchGame(404)).toBeNull();
     });
 
+    it('fetches many games 100 per multiquery, pairing each with its time-to-beat', async () => {
+        const { client, requests } = setup((_e, init) => {
+            const ids = /where id = \(([\d,]+)\)/.exec(String(init.body))![1]!.split(',');
+            return json([
+                {
+                    name: 'games',
+                    // IGDB doesn't know id 150; it is left out
+                    result: ids
+                        .filter((id) => id !== '150')
+                        .map((id) => ({ id: +id, name: `G${id}` }))
+                },
+                { name: 'ttb', result: [{ game_id: +ids[0]!, normally: 3600, count: 2 }] }
+            ]);
+        });
+        const ids = Array.from({ length: 205 }, (_, i) => i + 1);
+        const games = await client.fetchGames(ids);
+        expect(requests).toHaveLength(3);
+        expect(requests[0]!.body).toContain('limit 100');
+        expect(games).toHaveLength(204);
+        expect(games.find((g) => g.id === 150)).toBeUndefined();
+        expect(games.find((g) => g.id === 101)?.ttb?.normallySeconds).toBe(3600);
+        expect(games.find((g) => g.id === 102)?.ttb).toBeNull();
+    });
+
     it('refreshes the token once on a 401 and retries', async () => {
         const { client, requests } = setup((_e, init, n) => (n === 1 ? json({}, 401) : json([])));
         await client.search('zelda');

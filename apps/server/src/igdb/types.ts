@@ -87,6 +87,8 @@ export interface LookupStats {
 export interface IgdbClient {
     search(query: string): Promise<IgdbSearchHit[]>;
     fetchGame(igdbId: number): Promise<GameRecord | null>;
+    /** Many games at once (an import); ids IGDB doesn't know are left out */
+    fetchGames(igdbIds: number[]): Promise<GameRecord[]>;
     fetchPlatforms(): Promise<PlatformDto[]>;
     /** Current release dates for these games; ids IGDB no longer knows are left out */
     fetchReleaseDates(igdbIds: number[]): Promise<ReleaseInfo[]>;

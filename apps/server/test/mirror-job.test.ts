@@ -193,7 +193,7 @@ describe('lookup counters on the admin route', () => {
 
         expect(body.lookups).toMatchObject({ local: 3, live: 0 });
         expect(body.lookups.since).toBeGreaterThan(0);
-        expect(body.lookups.methods).toHaveLength(8);
+        expect(body.lookups.methods).toHaveLength(9);
         expect(body.lookups.methods.find((m: { method: string }) => m.method === 'search')).toEqual(
             { method: 'search', local: 2, live: 0 }
         );

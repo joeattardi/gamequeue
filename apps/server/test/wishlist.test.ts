@@ -129,7 +129,7 @@ describe('wishlist export and import', () => {
     const exportOf = async (s: Awaited<ReturnType<typeof setup>>) =>
         (await s.call('/data/export')) as unknown as ExportFile & { status: number };
 
-    it('round-trips, with metadata so import never needs IGDB, and importing twice changes nothing', async () => {
+    it('round-trips, and importing twice changes nothing', async () => {
         const a = await setup();
         await a.add(3);
         await a.wish(2, { platformId: PC.id, note: 'sale' });

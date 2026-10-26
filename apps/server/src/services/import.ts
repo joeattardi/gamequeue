@@ -1,11 +1,10 @@
-import { and, asc, eq, max } from 'drizzle-orm';
+import { and, asc, eq, inArray, max } from 'drizzle-orm';
 import {
     MAX_GRIDS,
     MAX_TIER_LISTS,
     MAX_SLOTS,
     type ExportEntry,
     type ExportFile,
-    type ExportGame,
     type ImportReport
 } from '@gamequeue/shared';
 import type { Db } from '../db/client.js';
@@ -28,13 +27,98 @@ import {
     tiers,
     wishlistItems
 } from '../db/schema.js';
-import { saveGame, upsertPlatforms } from './games.js';
+import { HttpError } from '../errors.js';
+import type { IgdbClient } from '../igdb/types.js';
+import { callIgdb, existingPlatformIds, saveGame, upsertPlatforms } from './games.js';
 import { setTags } from './entries.js';
 import { ensureQueue } from './lists.js';
 import { syncStatus } from './playthroughs.js';
 import { dropFromWishlists, ensureWishlist } from './wishlist.js';
 
 const MAX_NOTES = 50;
+/**
+ * Most games one import looks up (in the mirror or on IGDB) that the server hasn't cached yet. The
+ * rest are left for the next run of the same file, which is safe since importing again only adds.
+ */
+export const MAX_NEW_GAMES_PER_IMPORT = 5000;
+
+/** What the server knows of the games and platforms a file mentions, worked out before the merge. */
+export interface ImportCatalog {
+    /** Games in the shared cache: from IGDB or the mirror, never from the file */
+    games: Set<number>;
+    /** Platforms in the shared list */
+    platforms: Set<number>;
+    /** Games over `MAX_NEW_GAMES_PER_IMPORT`, not looked up this time */
+    deferred: Set<number>;
+}
+
+/** Every IGDB id the file mentions, in file order. */
+function fileGameIds(file: ExportFile): number[] {
+    const ids = new Set<number>();
+    for (const g of file.games) ids.add(g.igdbId);
+    for (const w of file.wishlist) ids.add(w.igdbId);
+    for (const g of file.grids) for (const c of g.cells) if (c.game) ids.add(c.game.igdbId);
+    for (const l of file.tierLists)
+        for (const it of [...l.tiers.flatMap((t) => t.games), ...l.unranked]) ids.add(it.igdbId);
+    return [...ids];
+}
+
+function filePlatformIds(file: ExportFile): number[] {
+    const ids = new Set<number>();
+    for (const g of file.games) {
+        for (const p of g.platforms) ids.add(p.id);
+        for (const p of g.playthroughs) if (p.platform) ids.add(p.platform.id);
+    }
+    for (const w of file.wishlist) if (w.platform) ids.add(w.platform.id);
+    return [...ids];
+}
+
+/**
+ * Looks up the file's games the server hasn't cached yet, in the mirror or on IGDB, and caches
+ * them, along with the platform list when the file names a platform we don't have. The file's own
+ * metadata snapshots are never stored: they are whatever its author typed, and the cache is shared
+ * by every user. Games and platforms IGDB doesn't know are left out, and the merge skips them.
+ * Runs before a dry run too: what it caches is real IGDB data, as browsing a game page would.
+ */
+export async function resolveImportCatalog(
+    db: Db,
+    igdb: IgdbClient | undefined,
+    file: ExportFile,
+    maxNew = MAX_NEW_GAMES_PER_IMPORT
+): Promise<ImportCatalog> {
+    const ids = fileGameIds(file);
+    const known = new Set<number>();
+    for (let i = 0; i < ids.length; i += 500)
+        for (const r of db
+            .select({ id: games.id })
+            .from(games)
+            .where(inArray(games.id, ids.slice(i, i + 500)))
+            .all())
+            known.add(r.id);
+    const missing = ids.filter((id) => !known.has(id));
+    const lookup = missing.slice(0, maxNew);
+    if (lookup.length > 0) {
+        if (!igdb)
+            throw new HttpError(
+                503,
+                "This file has games this server hasn't seen, and IGDB isn't configured to look them up."
+            );
+        const records = await callIgdb(() => igdb.fetchGames(lookup));
+        db.transaction((tx) => {
+            for (const r of records) saveGame(tx as unknown as Db, r);
+        });
+        for (const r of records) known.add(r.id);
+    }
+
+    const platformIds = filePlatformIds(file);
+    let platforms = platformIds.length ? existingPlatformIds(db, platformIds) : new Set<number>();
+    if (igdb && platformIds.some((id) => !platforms.has(id))) {
+        const all = await callIgdb(() => igdb.fetchPlatforms());
+        db.transaction((tx) => upsertPlatforms(tx as unknown as Db, all));
+        platforms = existingPlatformIds(db, platformIds);
+    }
+    return { games: known, platforms, deferred: new Set(missing.slice(maxNew)) };
+}
 
 /** Thrown to roll the transaction back after a dry run has produced its report. */
 class DryRunComplete extends Error {}
@@ -47,6 +131,10 @@ const lower = (s: string) => s.toLowerCase();
  * (games), name (lists, slots) or identical dates/platform/outcome (playthroughs), so importing the
  * same file twice changes nothing.
  *
+ * Games and platforms come from `catalog` (see `resolveImportCatalog`): a game the server couldn't
+ * find on IGDB is skipped with a note, and so is everything of it (list items, slots, wishlist, grid
+ * cells, tier items); an unknown platform is dropped.
+ *
  * Everything runs in one transaction. A dry run executes the real import and then rolls back, so its
  * report is exactly what committing would do.
  */
@@ -54,11 +142,12 @@ export function importData(
     db: Db,
     userId: number,
     file: ExportFile,
+    catalog: ImportCatalog,
     opts: { dryRun: boolean }
 ): ImportReport {
     const report: ImportReport = {
         dryRun: opts.dryRun,
-        games: { added: 0, updated: 0, unchanged: 0 },
+        games: { added: 0, updated: 0, unchanged: 0, skipped: 0 },
         playthroughs: { added: 0, duplicates: 0, skipped: 0 },
         lists: { created: 0, itemsAdded: 0 },
         queue: { added: 0 },
@@ -72,10 +161,14 @@ export function importData(
     };
     const note = (message: string) =>
         report.notes.length < MAX_NOTES ? report.notes.push(message) : report.moreNotes++;
+    if (catalog.deferred.size > 0)
+        note(
+            `${catalog.deferred.size.toLocaleString('en-US')} games weren't looked up this time (at most ${MAX_NEW_GAMES_PER_IMPORT.toLocaleString('en-US')} new games per import): import the same file again to add them`
+        );
 
     try {
         db.transaction((tx) => {
-            merge(tx as unknown as Db, userId, file, report, note);
+            merge(tx as unknown as Db, userId, file, catalog, report, note);
             if (opts.dryRun) throw new DryRunComplete();
         });
     } catch (e) {
@@ -84,10 +177,30 @@ export function importData(
     return report;
 }
 
+/**
+ * Whether the game is in the catalog; notes it when not (deferred games are covered by one note).
+ * `what` names where the file had it, e.g. "the grid Best of".
+ */
+function knownGame(
+    catalog: ImportCatalog,
+    igdbId: number,
+    name: string,
+    note: (m: string) => void,
+    what?: string
+) {
+    if (catalog.games.has(igdbId)) return true;
+    if (!catalog.deferred.has(igdbId))
+        note(
+            `${name} (IGDB id ${igdbId}) isn't on IGDB, so it was skipped${what ? ` in ${what}` : ''}`
+        );
+    return false;
+}
+
 function merge(
     db: Db,
     userId: number,
     file: ExportFile,
+    catalog: ImportCatalog,
     report: ImportReport,
     note: (m: string) => void
 ) {
@@ -103,69 +216,39 @@ function merge(
             .all()
             .map((e) => [e.gameId, e])
     );
-    const cached = new Set(
-        db
-            .select({ id: games.id })
-            .from(games)
-            .all()
-            .map((r) => r.id)
-    );
+    const platformKnown = (p: { id: number } | null) => p !== null && catalog.platforms.has(p.id);
 
     for (const g of file.games) {
-        // Shared metadata cache: add games we've never seen, never touch ones we have
-        if (!cached.has(g.igdbId)) {
-            saveGame(
-                db,
-                {
-                    id: g.igdbId,
-                    ...g.game,
-                    releasePrecision: g.game.releasePrecision ?? null,
-                    series: [],
-                    screenshots: []
-                },
-                now,
-                {
-                    keepExistingPlatforms: true,
-                    fromImport: true
-                }
-            );
-            cached.add(g.igdbId);
+        if (!knownGame(catalog, g.igdbId, g.game.name, note)) {
+            report.games.skipped++;
+            continue;
         }
-        upsertPlatforms(
-            db,
-            [...g.platforms, ...g.playthroughs.flatMap((p) => (p.platform ? [p.platform] : []))],
-            { keepExisting: true }
-        );
+        // Platforms IGDB doesn't list are dropped; a game left with none is skipped
+        const owned = g.platforms.filter(platformKnown);
+        if (owned.length === 0) {
+            report.games.skipped++;
+            note(`${g.game.name} was skipped: none of its platforms are on IGDB`);
+            continue;
+        }
+        const entry: ExportEntry = {
+            ...g,
+            platforms: owned,
+            playthroughs: g.playthroughs.map((p) =>
+                platformKnown(p.platform) ? p : { ...p, platform: null }
+            )
+        };
         entryIdByGame.set(
             g.igdbId,
-            mergeGame(db, userId, g, existing.get(g.igdbId), report, note, now)
+            mergeGame(db, userId, entry, existing.get(g.igdbId), report, note, now)
         );
     }
 
     mergeLists(db, userId, file, entryIdByGame, report);
     mergeSmartLists(db, userId, file, report);
     mergeSlots(db, userId, file, entryIdByGame, nameByGame, report, note);
-    mergeWishlist(db, userId, file, cached, report, note, now);
-    mergeGrids(db, userId, file, cached, report, note, now);
-    mergeTierLists(db, userId, file, cached, report, note, now);
-}
-
-/** Puts a game's snapshot in the shared cache if we have never seen it; cached games are never touched. */
-function cacheSnapshot(db: Db, cached: Set<number>, igdbId: number, game: ExportGame, now: number) {
-    if (cached.has(igdbId)) return;
-    saveGame(
-        db,
-        {
-            id: igdbId,
-            ...game,
-            releasePrecision: game.releasePrecision ?? null,
-            series: [],
-            screenshots: []
-        },
-        now,
-        { keepExistingPlatforms: true, fromImport: true }
-    );
-    cached.add(igdbId);
+    mergeWishlist(db, userId, file, catalog, report, note, now);
+    mergeGrids(db, userId, file, catalog, report, note);
+    mergeTierLists(db, userId, file, catalog, report, note);
 }
 
 /**
@@ -176,10 +259,9 @@ function mergeGrids(
     db: Db,
     userId: number,
     file: ExportFile,
-    cached: Set<number>,
+    catalog: ImportCatalog,
     report: ImportReport,
-    note: (m: string) => void,
-    now: number
+    note: (m: string) => void
 ) {
     if (file.grids.length === 0) return;
     const titles = new Set(
@@ -214,9 +296,8 @@ function mergeGrids(
             })
             .returning({ id: grids.id })
             .get();
-        for (const c of g.cells) {
-            if (c.game) cacheSnapshot(db, cached, c.game.igdbId, c.game.game, now);
-        }
+        // A cell whose game isn't on IGDB keeps its label
+        const where = `the grid "${g.title}"`;
         if (g.cells.length > 0)
             db.insert(gridCells)
                 .values(
@@ -224,7 +305,11 @@ function mergeGrids(
                         gridId: row.id,
                         position: c.position,
                         label: c.label,
-                        gameId: c.game?.igdbId ?? null
+                        gameId:
+                            c.game &&
+                            knownGame(catalog, c.game.igdbId, c.game.game.name, note, where)
+                                ? c.game.igdbId
+                                : null
                     }))
                 )
                 .run();
@@ -238,10 +323,9 @@ function mergeTierLists(
     db: Db,
     userId: number,
     file: ExportFile,
-    cached: Set<number>,
+    catalog: ImportCatalog,
     report: ImportReport,
-    note: (m: string) => void,
-    now: number
+    note: (m: string) => void
 ) {
     if (file.tierLists.length === 0) return;
     const titles = new Set(
@@ -272,8 +356,14 @@ function mergeTierLists(
             .values({ userId, title: l.title, description: l.description })
             .returning({ id: tierLists.id })
             .get();
-        const place = (tierId: number | null, items: { igdbId: number; game: ExportGame }[]) => {
-            for (const it of items) cacheSnapshot(db, cached, it.igdbId, it.game, now);
+        const where = `the tier list "${l.title}"`;
+        const place = (
+            tierId: number | null,
+            placed: { igdbId: number; game: { name: string } }[]
+        ) => {
+            const items = placed.filter((it) =>
+                knownGame(catalog, it.igdbId, it.game.name, note, where)
+            );
             if (items.length > 0)
                 db.insert(tierItems)
                     .values(
@@ -543,8 +633,9 @@ function mergeLists(
                 .where(eq(listItems.listId, listId))
                 .get()!.n ?? -1) + 1;
         for (const gameId of new Set(fl.games)) {
-            const entryId = entryIdByGame.get(gameId)!;
-            if (present.has(entryId)) continue;
+            // Undefined for a game that was skipped
+            const entryId = entryIdByGame.get(gameId);
+            if (entryId === undefined || present.has(entryId)) continue;
             db.insert(listItems).values({ listId, entryId, position: position++ }).run();
             present.add(entryId);
             report.lists.itemsAdded++;
@@ -569,8 +660,8 @@ function mergeLists(
                 .where(eq(listItems.listId, queueId))
                 .get()!.n ?? -1) + 1;
         for (const gameId of new Set(file.queue)) {
-            const entryId = entryIdByGame.get(gameId)!;
-            if (queued.has(entryId)) continue;
+            const entryId = entryIdByGame.get(gameId);
+            if (entryId === undefined || queued.has(entryId)) continue;
             db.insert(listItems).values({ listId: queueId, entryId, position: position++ }).run();
             queued.add(entryId);
             report.queue.added++;
@@ -645,7 +736,8 @@ function mergeSlots(
 
         // Only ever fill an empty slot with a game that's genuinely in progress and not slotted elsewhere
         const game = nameByGame.get(fs.igdbId)!;
-        const entryId = entryIdByGame.get(fs.igdbId)!;
+        const entryId = entryIdByGame.get(fs.igdbId);
+        if (entryId === undefined) continue; // skipped, and noted, with the game
         const row = db.select().from(slots).where(eq(slots.id, slot.id)).get()!;
         if (row.entryId !== null) {
             if (row.entryId !== entryId)
@@ -684,7 +776,7 @@ function mergeWishlist(
     db: Db,
     userId: number,
     file: ExportFile,
-    cached: Set<number>,
+    catalog: ImportCatalog,
     report: ImportReport,
     note: (m: string) => void,
     now: number
@@ -719,30 +811,14 @@ function mergeWishlist(
             note(`${w.game.name} is in your collection, so it wasn't added to your wishlist`);
             continue;
         }
-        if (!cached.has(w.igdbId)) {
-            saveGame(
-                db,
-                {
-                    id: w.igdbId,
-                    ...w.game,
-                    releasePrecision: w.game.releasePrecision ?? null,
-                    series: [],
-                    screenshots: []
-                },
-                now,
-                {
-                    keepExistingPlatforms: true,
-                    fromImport: true
-                }
-            );
-            cached.add(w.igdbId);
-        }
-        if (w.platform) upsertPlatforms(db, [w.platform], { keepExisting: true });
+        if (!knownGame(catalog, w.igdbId, w.game.name, note, 'the wishlist')) continue;
+        const platformId =
+            w.platform && catalog.platforms.has(w.platform.id) ? w.platform.id : null;
 
         const have = present.get(w.igdbId);
         if (have) {
             const set: Partial<typeof wishlistItems.$inferInsert> = {};
-            if (have.platformId === null && w.platform) set.platformId = w.platform.id;
+            if (have.platformId === null && platformId !== null) set.platformId = platformId;
             if (have.note === '' && w.note !== '') set.note = w.note;
             if (Object.keys(set).length > 0)
                 db.update(wishlistItems)
@@ -761,7 +837,7 @@ function mergeWishlist(
                 wishlistId,
                 gameId: w.igdbId,
                 position: position++,
-                platformId: w.platform?.id ?? null,
+                platformId,
                 note: w.note,
                 addedAt: w.addedAt || now
             })

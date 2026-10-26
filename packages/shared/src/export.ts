@@ -44,7 +44,13 @@ const platformRef = z.object({
 const namedRef = z.object({ id, name: z.string().min(1).max(200) });
 const seconds = z.number().int().min(0).nullable();
 
-/** Snapshot of the shared metadata cache, so an import never needs IGDB. */
+/** Most games (and queue or wishlist items) one export file may hold. */
+export const MAX_IMPORT_GAMES = 10_000;
+
+/**
+ * Snapshot of the game's metadata. Import never stores it (games are looked up in the mirror or on
+ * IGDB); only the name is used, in the import report.
+ */
 export const exportGameSchema = z.object({
     name: z.string().min(1).max(500),
     slug: z.string().max(500).nullable(),
@@ -219,7 +225,7 @@ export const exportFileSchema = z
         format: z.literal(EXPORT_FORMAT),
         version: z.literal(EXPORT_VERSION),
         exportedAt: z.string().max(40),
-        games: z.array(exportEntrySchema).max(50_000),
+        games: z.array(exportEntrySchema).max(MAX_IMPORT_GAMES),
         slots: z
             .array(
                 z.object({
@@ -245,12 +251,12 @@ export const exportFileSchema = z
          * IGDB ids in queue order. Added after v1 shipped: files without it are still valid v1,
          * and an older reader just ignores it.
          */
-        queue: z.array(id).max(50_000).default([]),
+        queue: z.array(id).max(MAX_IMPORT_GAMES).default([]),
         /**
          * The wishlist, in order. Also added after v1 shipped, so optional in the same way as `queue`.
          * Only the first (today: only) wishlist is exported.
          */
-        wishlist: z.array(exportWishlistItemSchema).max(50_000).default([]),
+        wishlist: z.array(exportWishlistItemSchema).max(MAX_IMPORT_GAMES).default([]),
         /**
          * Smart lists (rules only: their games are computed). Also added after v1 shipped, so
          * optional in the same way. Platform rules refer to IGDB platform ids.
@@ -335,7 +341,8 @@ export type ExportTierList = z.infer<typeof exportTierListSchema>;
 export interface ImportReport {
     /** True when nothing was written: this is a preview of what importing would do */
     dryRun: boolean;
-    games: { added: number; updated: number; unchanged: number };
+    /** `skipped`: games IGDB doesn't know (or whose platforms it doesn't), or left for the next run */
+    games: { added: number; updated: number; unchanged: number; skipped: number };
     playthroughs: { added: number; duplicates: number; skipped: number };
     lists: { created: number; itemsAdded: number };
     /** Games added to the end of the queue */

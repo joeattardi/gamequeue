@@ -9,20 +9,22 @@ import {
 } from '@gamequeue/shared';
 import type { AppDeps } from '../app.js';
 import { requireAuth, type AuthVars } from '../auth/middleware.js';
+import { HitLimiter } from '../auth/rate-limit.js';
 import { HttpError } from '../errors.js';
 import { csvResponse } from '../http.js';
 import { listEntries } from '../services/entries.js';
 import { buildExport } from '../services/export.js';
-import { backfillSeries } from '../services/games.js';
-import { syncImportedFromMirror } from '../services/mirror-sync.js';
-import { importData } from '../services/import.js';
+import { importData, resolveImportCatalog } from '../services/import.js';
 
 const MAX_BYTES = 50 * 1024 * 1024;
 const MAX_ISSUES = 50;
+/** Committed imports per user per day; dry runs don't count. In memory, so a restart resets it. */
+export const IMPORTS_PER_DAY = 10;
 
 export function dataRoutes({ db, config, igdb }: AppDeps) {
     const r = new Hono<{ Variables: AuthVars }>();
     r.use('*', requireAuth(db, config));
+    const commits = new HitLimiter(IMPORTS_PER_DAY, 24 * 3600_000);
 
     r.get('/export', (c) => {
         const now = new Date();
@@ -45,7 +47,7 @@ export function dataRoutes({ db, config, igdb }: AppDeps) {
 
     /**
      * Merges an export file into the user's data. Without `?commit=true` this is a dry run that
-     * writes nothing and returns what importing would do.
+     * writes nothing of the user's and returns what importing would do.
      */
     r.post(
         '/import',
@@ -80,11 +82,21 @@ export function dataRoutes({ db, config, igdb }: AppDeps) {
                 });
             }
 
+            const userId = c.get('user').id;
             const dryRun = c.req.query('commit') !== 'true';
-            const report = importData(db, c.get('user').id, parsed.data, { dryRun });
-            // Imported games carry only the file's snapshot: take the mirror's copy (the mirror wins),
-            // then learn the series of whatever it didn't have, in the background
-            if (!dryRun) void syncImportedFromMirror(db, igdb).then(() => backfillSeries(db, igdb));
+            if (!dryRun) {
+                const { retryAfter } = commits.hit(String(userId));
+                if (retryAfter > 0) {
+                    c.header('Retry-After', String(retryAfter));
+                    throw new HttpError(
+                        429,
+                        `You can import up to ${IMPORTS_PER_DAY} files a day. Try again tomorrow.`
+                    );
+                }
+            }
+            // Games come from the mirror or IGDB, never from the file (see resolveImportCatalog)
+            const catalog = await resolveImportCatalog(db, igdb, parsed.data);
+            const report = importData(db, userId, parsed.data, catalog, { dryRun });
             return c.json({ report });
         }
     );

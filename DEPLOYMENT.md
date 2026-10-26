@@ -575,6 +575,6 @@ For one to a few users, IGDB's limit (4 requests/second) is not a concern. What 
 - The platform list is synced once, then served from the database.
 - Search results are cached in memory for 5 minutes (`routes/igdb.ts`, `TtlCache`), and the search box is debounced by 300 ms.
 - Requests are throttled by `RequestLimiter`, and the Twitch token is cached.
-- Import never calls IGDB; the export file carries a metadata snapshot per game.
+- Import looks up games the server hasn't cached yet in the mirror, then live IGDB at 100 games per request (at most 5,000 per run).
 
 If it ever matters: raise the search cache TTL (search results barely change), or persist the cache in SQLite so it survives restarts.

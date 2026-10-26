@@ -1,4 +1,4 @@
-import { isNotNull, isNull } from 'drizzle-orm';
+import { isNotNull } from 'drizzle-orm';
 import type { Db } from '../db/client.js';
 import { games, series } from '../db/schema.js';
 import type { IgdbClient, LocalIgdb } from '../igdb/types.js';
@@ -24,21 +24,19 @@ export interface SyncResult {
 /**
  * Overwrites cached games with the mirror's copy: names, summaries, release dates, ratings, time to
  * beat, covers, screenshots, platforms, genres, themes and series. Games the mirror doesn't have
- * are left as they are. A full run also refreshes the platform list and the member lists of the
- * series pages already cached; `onlyDue` is for rows saved from an import file, whose metadata
- * is only the file's snapshot (they have no series check yet), and touches just those.
+ * are left as they are. Also refreshes the platform list and the member lists of the series pages
+ * already cached.
  */
 export async function syncCachedGames(
     db: Db,
     /** Asked for again before every batch: a rebuilt mirror may replace (and close) the file between batches */
     getLocal: () => LocalIgdb | null,
-    opts: { onlyDue?: boolean; now?: number } = {}
+    opts: { now?: number } = {}
 ): Promise<SyncResult> {
     const now = opts.now ?? Date.now();
     const ids = db
         .select({ id: games.id })
         .from(games)
-        .where(opts.onlyDue ? isNull(games.seriesCheckedAt) : undefined)
         .all()
         .map((g) => g.id);
 
@@ -59,7 +57,7 @@ export async function syncCachedGames(
 
     let seriesUpdated = 0;
     const local = getLocal();
-    if (local && !opts.onlyDue) {
+    if (local) {
         db.transaction((tx) => upsertPlatforms(tx as unknown as Db, local.platforms()));
         const cachedPages = db
             .select({ id: series.id })
@@ -102,15 +100,5 @@ export async function syncFromMirrorIfNew(
         return null;
     } finally {
         syncing = false;
-    }
-}
-
-/** After an import: games saved from the file take the mirror's metadata at once. */
-export async function syncImportedFromMirror(db: Db, igdb: IgdbClient | undefined) {
-    if (!igdb?.local?.()) return;
-    try {
-        await syncCachedGames(db, () => igdb.local!(), { onlyDue: true });
-    } catch (e) {
-        reportError(db, 'job_mirror_sync', e, { context: { after: 'import' } });
     }
 }

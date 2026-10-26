@@ -72,7 +72,11 @@ On any high-DPI screen the browser picks the only `2x` candidate, which is the a
 
 ### 3. Medium (Low if signups are closed or email verification is on): import can fill the Pi's disk
 
-**Where:** `packages/shared/src/export.ts` sets no `.max()` on the top-level `games` array, and each game's `summary` can be up to 20,000 characters. `apps/server/src/services/import.ts:114-142` writes the rows.
+**Status: fixed.** Import no longer stores the file's game metadata at all: uncached games are looked up in the mirror or on IGDB (100 per request), and ones IGDB doesn't know are skipped. Files hold at most 10,000 games (and queue and wishlist items), a run looks up at most 5,000 uncached games, and each user may commit 10 imports a day.
+
+**Correction:** the first version of this review said the `games` array had no `.max()`. It did: 50,000. The finding stands, since 50,000 snapshots with 20,000-character summaries still fill a 50 MB request.
+
+**Where:** `packages/shared/src/export.ts` capped the top-level `games` array at 50,000, and each game's `summary` can be up to 20,000 characters. `apps/server/src/services/import.ts:114-142` writes the rows.
 
 **Attack:** an account sends 50 MB imports, using new made-up ids each time. The `data` rate limit allows 20 requests per 10 minutes per IP, which is roughly 1 GB of committed rows per 10 minutes from one IP. That fills the microSD card within hours. Once the disk is full, both the app and the backups fail.
 
@@ -164,7 +168,7 @@ No fix is strictly needed for these.
 
 1. **Global request body limit** (finding 2). A small change in `app.ts` that removes the only attack that needs no account.
 2. ~~**Check IGDB image ids and keep imported rows out of the showcase** (finding 1).~~ Done.
-3. **Cap import size, new cache rows and imports per day** (finding 3).
+3. ~~**Cap import size, new cache rows and imports per day** (finding 3).~~ Done; import also stopped storing the file's metadata.
 4. **Encrypt off-site backups** with an rclone crypt remote (finding 5). This is setup on the Pi plus a docs change.
 5. **Bind the dev server to 127.0.0.1** (finding 4).
 6. **Lower-priority hardening:**

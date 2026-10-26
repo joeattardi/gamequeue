@@ -26,7 +26,8 @@ export const CATALOG = [
 
 /** An app with one signed-in user and small helpers for the JSON API. */
 export async function setupApi(catalog = CATALOG, itad?: ItadClient) {
-    const { app, db } = makeApp({}, fakeIgdb(catalog).client, itad);
+    const igdb = fakeIgdb(catalog).client;
+    const { app, db } = makeApp({}, igdb, itad);
     const cookie = cookieFrom(await register(app));
     const request = (path: string, method = 'GET', body?: unknown, who = cookie) =>
         app.request(`/api${path}`, {
@@ -60,5 +61,6 @@ export async function setupApi(catalog = CATALOG, itad?: ItadClient) {
                 })
             )
         );
-    return { app, db, cookie, call, add, secondUser };
+    const userId = ((await call('/auth/me')).user as { id: number }).id;
+    return { app, db, igdb, userId, cookie, call, add, secondUser };
 }

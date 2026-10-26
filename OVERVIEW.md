@@ -579,7 +579,7 @@ Code: `services/profile.ts`, `routes/profile.ts`, `apps/server/src/og/`, `web.ts
 
 You can download your whole collection as one JSON file and import it again, here or on another server.
 
-- **The file is self-contained.** Each game carries a snapshot of its IGDB metadata, so importing never needs to call IGDB.
+- **The file is readable on its own, but import trusts IGDB, not the file.** Each game carries a snapshot of its IGDB metadata so the file makes sense by itself, but import never stores it: the shared game cache is used by every user, so games come from the mirror or IGDB (100 per request), and games IGDB doesn't know are skipped and reported. Limits: 10,000 games per file, 5,000 new games looked up per run (import again for the rest), 10 imports a day.
 - **The file is versioned** (`format: gamequeue-export`, `version: 1`). Changing the format means bumping the version and keeping a reader for older files.
 - **Import merges; it never replaces.** Games match by IGDB id, lists and slots by name. Your existing values win, empty fields get filled in, and nothing is ever removed. Importing the same file twice changes nothing.
 - **Import is a dry run by default.** The server performs the real merge inside a transaction, records what happened, then rolls it back. You see an exact report first, and only `?commit=true` keeps the changes.
@@ -693,7 +693,7 @@ A few things happen on timers, not in response to a click. All run inside the sa
 | Purge expired sessions                     | Startup, then every 6 hours                         | Keep the `sessions` table clean                           |
 | Prune error log, IGDB history, server runs | Startup, then every 6 hours                         | Keep only 30 / 90 days                                    |
 | Heartbeat                                  | Every minute                                        | Detect unclean shutdowns on the next start                |
-| Series backfill                            | Startup and after an import                         | Fill in series for games cached before series were stored |
+| Series backfill                            | Startup                                             | Fill in series for games cached before series were stored |
 | Release date refresh                       | When you open your wishlist, at most daily per game | Unreleased games' dates change                            |
 | Mirror sync                                | Startup, then every 10 minutes (only if a new dump) | Refresh every cached game from the local IGDB mirror      |
 | Mirror failure check                       | Same 10-minute tick                                 | Record a failed daily mirror run in the error log         |

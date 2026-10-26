@@ -19,11 +19,7 @@ import type { IgdbClient } from '../src/igdb/types.js';
 import { createMirrorIgdbClient, MirrorHandle } from '../src/mirror/client.js';
 import { runMirror } from '../src/mirror/run.js';
 import { saveGame } from '../src/services/games.js';
-import {
-    syncCachedGames,
-    syncFromMirrorIfNew,
-    syncImportedFromMirror
-} from '../src/services/mirror-sync.js';
+import { syncCachedGames, syncFromMirrorIfNew } from '../src/services/mirror-sync.js';
 import { fakeGame, makeApp, cookieFrom, register, PS5 } from './helpers.js';
 import { fakeSource, GAMES } from './mirror-fixtures.js';
 
@@ -182,16 +178,6 @@ describe('syncCachedGames', () => {
         expect(names).toEqual(['Nintendo Switch', 'PC (Microsoft Windows)']);
     });
 
-    it('with onlyDue, touches just the games saved from an import file', async () => {
-        const db = openDb(':memory:');
-        saveGame(db, staleHades(), 1000, { fromImport: true });
-        saveGame(db, fakeGame(4, 'Stale Tunic'), 1000); // fetched normally: not due
-        const result = await syncCachedGames(db, local(mirrorClient()), { onlyDue: true });
-        expect(result).toEqual({ games: 1, series: 0 });
-        expect(rows.game(db, 1).name).toBe('Hades');
-        expect(rows.game(db, 4).name).toBe('Stale Tunic');
-    });
-
     it('does nothing when the mirror disappears', async () => {
         const db = openDb(':memory:');
         saveGame(db, staleHades(), 1000);
@@ -324,21 +310,5 @@ describe('syncFromMirrorIfNew', () => {
         expect(await syncFromMirrorIfNew(db, flaky)).toMatchObject({ games: 1 });
         expect(rows.game(db, 1).name).toBe('Hades');
         spy.mockRestore();
-    });
-});
-
-describe('syncImportedFromMirror', () => {
-    it('refreshes games saved from an import file and ignores a client without a mirror', async () => {
-        const db = openDb(':memory:');
-        saveGame(db, staleHades(), 1000, { fromImport: true });
-        await syncImportedFromMirror(db, undefined);
-        await syncImportedFromMirror(db, { search: vi.fn() } as unknown as IgdbClient);
-        expect(rows.game(db, 1).name).toBe('Old Hades');
-
-        await syncImportedFromMirror(db, mirrorClient());
-        expect(rows.game(db, 1)).toMatchObject({
-            name: 'Hades',
-            seriesCheckedAt: expect.any(Number)
-        });
     });
 });

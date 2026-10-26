@@ -38,26 +38,16 @@ export async function callIgdb<T>(fn: () => Promise<T>): Promise<T> {
     }
 }
 
-/**
- * Inserts platforms into the shared list. By default IGDB's names win and update what we have;
- * `keepExisting` (used for user-supplied import files) never touches a row that already exists.
- */
-export function upsertPlatforms(
-    db: Db,
-    list: PlatformDto[],
-    opts: { keepExisting?: boolean } = {}
-) {
-    for (const p of list) {
-        const insert = db.insert(platforms).values(p);
-        if (opts.keepExisting) insert.onConflictDoNothing().run();
-        else
-            insert
-                .onConflictDoUpdate({
-                    target: platforms.id,
-                    set: { name: p.name, abbreviation: p.abbreviation }
-                })
-                .run();
-    }
+/** Inserts platforms from IGDB (or the mirror) into the shared list; IGDB's names win. */
+export function upsertPlatforms(db: Db, list: PlatformDto[]) {
+    for (const p of list)
+        db.insert(platforms)
+            .values(p)
+            .onConflictDoUpdate({
+                target: platforms.id,
+                set: { name: p.name, abbreviation: p.abbreviation }
+            })
+            .run();
 }
 
 /** Records which series a game is in (the series rows themselves are shared). */
@@ -83,12 +73,10 @@ export function saveGame(
     db: Db,
     g: GameRecord,
     now = Date.now(),
-    opts: { keepExistingPlatforms?: boolean; fromImport?: boolean; overwrite?: boolean } = {}
+    opts: { overwrite?: boolean } = {}
 ) {
     db.transaction((tx) => {
-        upsertPlatforms(tx as unknown as Db, g.platforms, {
-            keepExisting: opts.keepExistingPlatforms
-        });
+        upsertPlatforms(tx as unknown as Db, g.platforms);
         for (const [table, list] of [
             [genres, g.genres],
             [themes, g.themes]
@@ -105,12 +93,10 @@ export function saveGame(
             summary: g.summary,
             releaseDate: g.releaseDate,
             releasePrecision: g.releasePrecision,
-            // An import file is only a snapshot: its dates and series are due for a check
-            releaseCheckedAt: opts.fromImport ? null : now,
-            seriesCheckedAt: opts.fromImport ? null : now,
+            releaseCheckedAt: now,
+            seriesCheckedAt: now,
             coverImageId: g.coverImageId,
-            // An import file carries no screenshots: they are fetched when the game is opened
-            screenshots: opts.fromImport ? null : JSON.stringify(g.screenshots),
+            screenshots: JSON.stringify(g.screenshots),
             igdbRating: g.igdbRating,
             igdbRatingCount: g.igdbRatingCount,
             gameType: g.gameType,
@@ -163,7 +149,7 @@ export async function ensureGame(db: Db, igdb: IgdbClient | undefined, igdbId: n
 
 /**
  * Makes sure a cached game has its screenshots, asking once for games cached before they were
- * stored (or saved from an import file). The mirror sync fills these in for mirrored games; this
+ * stored (or saved from an import file by older versions). The mirror sync fills these in for mirrored games; this
  * remains for games newer than the last dump. Best effort: a failure just leaves the gallery empty
  * until the next visit. Returns whether anything was stored.
  */
