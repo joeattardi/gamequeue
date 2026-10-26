@@ -6,6 +6,7 @@ import {
     ratingSchema,
     tagsSchema
 } from './collection.js';
+import { IGDB_IMAGE_ID } from './igdb-images.js';
 import { isoDateSchema, playtimeSchema } from './playthroughs.js';
 import { releasePrecisionSchema } from './release.js';
 import { MAX_SLOTS } from './slots.js';
@@ -51,7 +52,7 @@ export const exportGameSchema = z.object({
     releaseDate: isoDateSchema.nullable(),
     // Optional so files from before it existed are still valid v1
     releasePrecision: releasePrecisionSchema.nullable().optional(),
-    coverImageId: z.string().max(100).nullable(),
+    coverImageId: z.string().regex(IGDB_IMAGE_ID, 'Not an IGDB image id').nullable(),
     igdbRating: z.number().int().min(0).max(100).nullable(),
     igdbRatingCount: z.number().int().min(0).nullable(),
     gameType: z.string().max(100).nullable(),

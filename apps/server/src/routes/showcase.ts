@@ -1,25 +1,19 @@
 import { Hono } from 'hono';
-import { and, isNotNull, ne, sql } from 'drizzle-orm';
-import type { ShowcaseGameDto } from '@gamequeue/shared';
 import type { AppDeps } from '../app.js';
-import { games } from '../db/schema.js';
 
 const COUNT = 3;
 
-/** Public: deliberately has no requireAuth. Metadata of cached games only, nothing about any user. */
-export function showcaseRoutes({ db }: AppDeps) {
+/**
+ * Public: deliberately has no requireAuth. Covers of random well-known games from the IGDB mirror,
+ * never from the shared cache: an import file can put its own games and cover ids there, and this is
+ * the one page every anonymous visitor sees. Empty without a mirror (the page shows placeholders).
+ */
+export function showcaseRoutes({ igdb }: AppDeps) {
     const r = new Hono();
     r.get('/', (c) => {
-        const rows = db
-            .select({ id: games.id, name: games.name, coverImageId: games.coverImageId })
-            .from(games)
-            .where(and(isNotNull(games.coverImageId), ne(games.coverImageId, '')))
-            .orderBy(sql`random()`)
-            .limit(COUNT)
-            .all();
         // A different pick on every visit, so it must not be cached
         c.header('Cache-Control', 'no-store');
-        return c.json({ games: rows as ShowcaseGameDto[] });
+        return c.json({ games: igdb?.local?.()?.showcase(COUNT) ?? [] });
     });
     return r;
 }

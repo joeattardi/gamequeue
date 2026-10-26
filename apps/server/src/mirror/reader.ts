@@ -1,5 +1,10 @@
 import type Database from 'better-sqlite3';
-import { SERIES_GAME_TYPES, type PlatformDto, type SeriesRefDto } from '@gamequeue/shared';
+import {
+    SERIES_GAME_TYPES,
+    type PlatformDto,
+    type SeriesRefDto,
+    type ShowcaseGameDto
+} from '@gamequeue/shared';
 import type { GameRecord, IgdbSearchHit, ReleaseInfo, SeriesRecord } from '../igdb/types.js';
 
 /** What search returns at most, as the live client does. */
@@ -17,6 +22,13 @@ const ALIAS_WEIGHT = 0.3;
 const SCATTERED_WEIGHT = 0.1;
 /** A series page lists at most this many games, as the live query does. */
 const SERIES_LIMIT = 500;
+/**
+ * The landing page's covers come from games at least this many people rated: recognisable ones, not
+ * IGDB's long tail (about 3,400 of the 384,000 games in October 2026).
+ */
+export const SHOWCASE_MIN_RATINGS = 50;
+/** IGDB's "Erotic" theme (`/v4/themes`); those covers are never shown to anonymous visitors. */
+export const EROTIC_THEME_ID = 42;
 
 interface GameRow {
     id: number;
@@ -176,6 +188,17 @@ function prepareStatements(db: Database.Database) {
              ORDER BY g.release_date IS NULL, g.release_date, g.id
              LIMIT ${SERIES_LIMIT}`
         ),
+        showcaseIds: db
+            .prepare(
+                `SELECT g.id FROM games g
+                 WHERE g.searchable = 1 AND g.cover_image_id IS NOT NULL
+                   AND g.igdb_rating_count >= ${SHOWCASE_MIN_RATINGS}
+                   AND NOT EXISTS (SELECT 1 FROM game_themes t
+                                   WHERE t.game_id = g.id AND t.theme_id = ${EROTIC_THEME_ID})
+                 ORDER BY g.id`
+            )
+            .pluck(),
+        showcaseGame: db.prepare('SELECT id, name, cover_image_id FROM games WHERE id = ?'),
         allPlatforms: db.prepare('SELECT id, name, abbreviation FROM platforms ORDER BY name'),
         meta: db.prepare('SELECT key, value FROM meta')
     };
@@ -185,6 +208,8 @@ type Statements = ReturnType<typeof prepareStatements>;
 /** Reads the mirror (see `schema.ts`) and answers in the shapes the live IGDB client does. */
 export class MirrorReader {
     private stmt: Statements;
+    /** Games the landing page may show, read once per mirror file (a new build gets a new reader) */
+    private showcasePool?: number[];
 
     constructor(db: Database.Database) {
         this.stmt = prepareStatements(db);
@@ -269,6 +294,26 @@ export class MirrorReader {
                   }
                 : null
         };
+    }
+
+    /**
+     * Up to `count` different well-known games with a cover, picked at random (see
+     * `SHOWCASE_MIN_RATINGS` and `EROTIC_THEME_ID`). The pool is a few thousand ids, so picking from it
+     * in memory spares a table scan on every landing page visit.
+     */
+    showcase(count: number, rng: () => number = Math.random): ShowcaseGameDto[] {
+        const pool = (this.showcasePool ??= this.stmt.showcaseIds.all() as number[]);
+        const picked = new Set<number>();
+        while (picked.size < Math.min(count, pool.length))
+            picked.add(pool[Math.floor(rng() * pool.length)]!);
+        return [...picked].map((id) => {
+            const g = this.stmt.showcaseGame.get(id) as {
+                id: number;
+                name: string;
+                cover_image_id: string;
+            };
+            return { id: g.id, name: g.name, coverImageId: g.cover_image_id };
+        });
     }
 
     /** Release info for the ids the mirror knows; the others are left out. */

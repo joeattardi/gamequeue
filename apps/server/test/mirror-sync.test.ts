@@ -307,7 +307,8 @@ describe('syncFromMirrorIfNew', () => {
                         return l.game(id);
                     },
                     seriesRecord: (id) => l.seriesRecord(id),
-                    platforms: () => l.platforms()
+                    platforms: () => l.platforms(),
+                    showcase: (n) => l.showcase(n)
                 };
             }
         };

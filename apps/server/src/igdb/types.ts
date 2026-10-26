@@ -4,7 +4,8 @@ import type {
     IgdbStatusDto,
     PlatformDto,
     ReleasePrecision,
-    SeriesRefDto
+    SeriesRefDto,
+    ShowcaseGameDto
 } from '@gamequeue/shared';
 
 /** A game as we cache it (shared across users) */
@@ -72,6 +73,8 @@ export interface LocalIgdb {
     game(igdbId: number): GameRecord | null;
     seriesRecord(seriesId: number): SeriesRecord | null;
     platforms(): PlatformDto[];
+    /** Random well-known games with a cover, for the public landing page */
+    showcase(count: number): ShowcaseGameDto[];
 }
 
 /** How a client answered its lookups, per kind: from the local copy or by asking live IGDB. */

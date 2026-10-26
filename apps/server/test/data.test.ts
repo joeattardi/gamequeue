@@ -431,6 +431,20 @@ describe('validation', () => {
         expect((await exportOf(s)).games).toEqual([]);
     });
 
+    it('refuses a cover id that is not an IGDB image id, so it can never add an image URL', async () => {
+        const s = await setupApi();
+        const file = await validFile();
+        // In a srcset this would add an attacker's image as the 2x candidate
+        file.games[0]!.game.coverImageId = 'x 1x, https://attacker.example/i.png?';
+        file.games[1]!.game.coverImageId = 'CO1';
+        const res = await importFile(s, file, true);
+        expect(res.status).toBe(400);
+        expect(paths(res)).toEqual(
+            expect.arrayContaining(['games.0.game.coverImageId', 'games.1.game.coverImageId'])
+        );
+        expect((await exportOf(s)).games).toEqual([]);
+    });
+
     it('catches cross-references and duplicates in the file', async () => {
         const s = await setupApi();
         const file = await validFile();

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { coverSrcSet, coverUrl } from './igdb-images.js';
+import { coverSrcSet, coverUrl, IGDB_IMAGE_ID, screenshotUrl } from './igdb-images.js';
 
 describe('cover images', () => {
     it('builds IGDB image urls from an image id', () => {
@@ -21,6 +21,23 @@ describe('cover images', () => {
         );
         // defaults to cover_big
         expect(coverSrcSet('x')).toBe(coverSrcSet('x', 'cover_big'));
+    });
+
+    it('keeps a stored id inside one path segment, so it can never add a srcset candidate', () => {
+        const evil = 'x 1x, https://attacker.example/i.png?';
+        const set = coverSrcSet(evil)!;
+        expect(set.split(', ')).toHaveLength(2);
+        expect(set).not.toContain('https://attacker.example');
+        expect(screenshotUrl('a/../b')).toBe(
+            'https://images.igdb.com/igdb/image/upload/t_screenshot_big/a%2F..%2Fb.jpg'
+        );
+    });
+
+    it('describes what an IGDB image id looks like', () => {
+        for (const ok of ['co1wyy', 'puvydf5d6v0zirxfhzpg'])
+            expect(IGDB_IMAGE_ID.test(ok)).toBe(true);
+        for (const bad of ['', 'CO1', 'co 1', 'co1,x', 'a/b', 'x'.repeat(41)])
+            expect(IGDB_IMAGE_ID.test(bad), bad).toBe(false);
     });
 
     it('has no retina step for sizes that are already the largest or are not covers', () => {

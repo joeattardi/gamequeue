@@ -8,9 +8,19 @@ export type CoverSize =
 
 const BASE = 'https://images.igdb.com/igdb/image/upload';
 
+/**
+ * What an IGDB image_id looks like (every cover in the full IGDB dump is lowercase letters and digits,
+ * at most 20 characters). Anything else is refused on import: the id ends up in `srcset`, where a
+ * space or comma would add an image URL of the file author's choosing.
+ */
+export const IGDB_IMAGE_ID = /^[a-z0-9]{1,40}$/;
+
+/** Encoded as a second guard: a stored id can never be more than one path segment of IGDB's CDN. */
+const image = (size: string, imageId: string) =>
+    `${BASE}/t_${size}/${encodeURIComponent(imageId)}.jpg`;
+
 /** IGDB serves images by image_id; we only ever store the id. */
-export const coverUrl = (imageId: string, size: CoverSize = 'cover_big') =>
-    `${BASE}/t_${size}/${imageId}.jpg`;
+export const coverUrl = (imageId: string, size: CoverSize = 'cover_big') => image(size, imageId);
 
 /**
  * `screenshot_*` sizes are cropped to 16:9 (`screenshot_med` is 569x320); `720p` and `1080p` keep the
@@ -20,7 +30,7 @@ export type ScreenshotSize =
     'screenshot_med' | 'screenshot_big' | 'screenshot_huge' | '720p' | '1080p';
 
 export const screenshotUrl = (imageId: string, size: ScreenshotSize = 'screenshot_big') =>
-    `${BASE}/t_${size}/${imageId}.jpg`;
+    image(size, imageId);
 
 /** The next size up, for screens with a higher pixel density. */
 const RETINA: Partial<Record<CoverSize, CoverSize>> = {
