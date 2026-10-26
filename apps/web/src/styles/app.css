@@ -1996,7 +1996,7 @@ a.game-row:hover {
     text-transform: uppercase;
     color: var(--ink-muted);
 }
-/* The game being played right now: a glowing edge that breathes, and a LIVE tag with a beating dot */
+/* The game being played right now: a glowing edge that breathes, and a pulsing play icon */
 .bay--live {
     border-color: color-mix(in oklab, var(--accent) 55%, var(--line));
     animation: bay-glow 3.2s ease-in-out infinite;
@@ -2011,36 +2011,23 @@ a.game-row:hover {
     }
 }
 .bay__live {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 0.72rem;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
+    flex: none;
+    width: 14px;
+    height: 14px;
     color: var(--accent);
-    white-space: nowrap;
-}
-.bay__live i {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: var(--accent);
-    animation: bay-beat 1.6s ease-out infinite;
-}
-.bay__days {
-    font-weight: 600;
-    letter-spacing: 0.02em;
-    text-transform: none;
-    color: var(--ink-muted);
+    fill: currentColor;
+    animation: bay-beat 1.6s ease-in-out infinite;
 }
 @keyframes bay-beat {
-    0% {
-        box-shadow: 0 0 0 0 color-mix(in oklab, var(--accent) 55%, transparent);
-    }
-    70%,
+    0%,
     100% {
-        box-shadow: 0 0 0 7px color-mix(in oklab, var(--accent) 0%, transparent);
+        transform: scale(1);
+        opacity: 0.65;
+    }
+    50% {
+        transform: scale(1.25);
+        opacity: 1;
+        filter: drop-shadow(0 0 4px color-mix(in oklab, var(--accent) 70%, transparent));
     }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -2048,8 +2035,9 @@ a.game-row:hover {
         animation: none;
         box-shadow: 0 0 14px -4px color-mix(in oklab, var(--accent) 38%, transparent);
     }
-    .bay__live i {
+    .bay__live {
         animation: none;
+        opacity: 1;
     }
 }
 .bay__game {

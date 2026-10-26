@@ -3,7 +3,7 @@ import { useRef, useState } from 'react';
 import { Link } from 'react-router';
 import { useEntryAction } from '../api/collection';
 import { useClearSlot } from '../api/slots';
-import { daysBetween, formatDate, todayLocal } from '../lib';
+import { formatDate } from '../lib';
 import { PlatformTags } from './PlatformIcon';
 import { Cover } from './Cover';
 import { celebrate } from './motion';
@@ -41,23 +41,12 @@ export function SlotBay({ slot, onChoose }: { slot: SlotDto; onChoose: (slot: Sl
     const open = entry.openPlaythrough;
     // Only a game being played glows; a paused one keeps its slot but sits quiet
     const live = entry.status === 'playing';
-    const daysIn = live ? daysBetween(open?.startedOn ?? null, todayLocal()) : null;
     return (
         <li className={`bay${live ? ' bay--live' : ''}`} ref={bay}>
             <div className="bay__head">
                 <h2 className="bay__name">{slot.name}</h2>
-                {live && (
-                    <span className="bay__live">
-                        <i aria-hidden="true" />
-                        Live
-                        {daysIn !== null && daysIn > 0 && (
-                            <span className="bay__days">
-                                {' '}
-                                · {daysIn} {daysIn === 1 ? 'day' : 'days'} in
-                            </span>
-                        )}
-                    </span>
-                )}
+                {/* Decoration: the status badge below already says "playing" */}
+                {live && <Play className="bay__live" aria-hidden="true" />}
             </div>
             <div className="bay__game">
                 <BayCover entry={entry} />
