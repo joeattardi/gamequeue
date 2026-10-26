@@ -9,6 +9,7 @@ import type {
     SocialLinksInput,
     UserDto
 } from '@gamequeue/shared';
+import { useSignedOut } from './auth';
 import { api } from './client';
 
 export function useUpdateAccount() {
@@ -76,13 +77,10 @@ export const useChangePassword = () =>
 
 /** Deletes the account; on success the session is gone, so the app drops back to the login screen. */
 export function useDeleteAccount() {
-    const qc = useQueryClient();
+    const signedOut = useSignedOut();
     return useMutation({
         mutationFn: (input: DeleteAccountInput) =>
             api<{ ok: true }>('/account', { method: 'DELETE', body: input }),
-        onSuccess: () => {
-            qc.setQueryData(['me'], null);
-            qc.removeQueries({ predicate: (q) => q.queryKey[0] !== 'me' });
-        }
+        onSuccess: signedOut
     });
 }

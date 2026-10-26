@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { useNavigate } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { LoginInput, RegisterInput, UserDto } from '@gamequeue/shared';
 import { api, ApiRequestError } from './client';
@@ -103,14 +104,26 @@ export function useRecheckOnFocus() {
     }, [qc]);
 }
 
-export function useLogout() {
+/**
+ * Ends the signed-in session in the client: back to the landing page, then forget `me` and every
+ * cached private query. Signed-out visitors have no page at the signed-in paths (it would be a
+ * 404), and `replace` keeps Back from returning to a private page.
+ */
+export function useSignedOut() {
     const qc = useQueryClient();
+    const navigate = useNavigate();
+    return () => {
+        navigate('/', { replace: true });
+        qc.setQueryData(ME, null);
+        qc.removeQueries({ predicate: (q) => q.queryKey[0] !== 'me' });
+    };
+}
+
+export function useLogout() {
+    const signedOut = useSignedOut();
     return useMutation({
         mutationFn: () => api('/auth/logout', { method: 'POST' }),
-        onSuccess: () => {
-            qc.setQueryData(ME, null);
-            qc.removeQueries({ predicate: (q) => q.queryKey[0] !== 'me' });
-        }
+        onSuccess: signedOut
     });
 }
 
