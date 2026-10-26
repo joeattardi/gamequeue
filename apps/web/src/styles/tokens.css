@@ -14,6 +14,15 @@
     --accent: #1d4ed8;
     --accent-ink: #f5f8ff;
     --accent-soft: #dbe6fc;
+    /* Faint scanlines plus a pixel grid for banners and empty states (a background layer list) */
+    --texture:
+        repeating-linear-gradient(
+            0deg,
+            color-mix(in oklab, var(--ink) 4.5%, transparent) 0 1px,
+            transparent 1px 3px
+        ),
+        linear-gradient(90deg, color-mix(in oklab, var(--ink) 3%, transparent) 1px, transparent 1px)
+            0 0 / 4px 4px;
     /* Blue buttons and badges: a little lighter at the top, a little deeper at the bottom */
     --accent-grad: linear-gradient(
         180deg,

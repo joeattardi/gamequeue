@@ -10,6 +10,7 @@ import { formatMinutes, yearOf } from '../lib';
 import { MetaLine } from './MetaLine';
 import { PlatformTags } from './PlatformIcon';
 import { Cover } from './Cover';
+import { LogoMark } from './Logo';
 import { useAssign } from './useAssign';
 import { ArrowRight, Dices, Gift, Library, RefreshCw, SlidersHorizontal } from 'lucide-react';
 
@@ -74,6 +75,27 @@ export function Rolling({ covers }: { covers?: { imageId: string | null; name: s
     );
 }
 
+/**
+ * The winner's cover as a loot reveal: it arrives face down (the logo on a blue card), flips over,
+ * lights up with a burst of rays behind it and a glint, and the details rise in after it (the CSS
+ * is `.loot` in `app.css`). Plain and instant under reduced motion.
+ */
+function LootCover({ imageId, name }: { imageId: string | null; name: string }) {
+    return (
+        <div className="loot">
+            <span className="loot__burst" aria-hidden="true" />
+            <div className="loot__card">
+                <div className="loot__face">
+                    <Cover imageId={imageId} name={name} />
+                </div>
+                <div className="loot__back" aria-hidden="true">
+                    <LogoMark />
+                </div>
+            </div>
+        </div>
+    );
+}
+
 export function PickResult({
     note,
     entry,
@@ -98,7 +120,7 @@ export function PickResult({
     return (
         <article className="pick-result panel">
             <div className="pick-result__cover">
-                <Cover imageId={game.coverImageId} name={game.name} />
+                <LootCover imageId={game.coverImageId} name={game.name} />
             </div>
             <div className="stack">
                 <p className="muted">{note}</p>
@@ -230,7 +252,7 @@ export function UnownedPickResult({
     return (
         <article className="pick-result panel">
             <div className="pick-result__cover">
-                <Cover imageId={game.coverImageId} name={game.name} />
+                <LootCover imageId={game.coverImageId} name={game.name} />
             </div>
             <div className="stack">
                 <p className="muted">{note}</p>

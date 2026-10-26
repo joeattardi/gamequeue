@@ -1397,6 +1397,7 @@ a.game-row:hover {
 .empty {
     text-align: center;
     padding: 48px 16px;
+    background: var(--texture);
     border: 1px dashed var(--line);
     border-radius: var(--radius);
     display: grid;
@@ -1544,6 +1545,7 @@ a.game-row:hover {
     text-align: center;
     border: 1px dashed var(--line);
     border-radius: var(--radius-sm);
+    background: var(--texture);
     text-wrap: balance;
 }
 .empty-state strong {
@@ -1978,12 +1980,74 @@ a.game-row:hover {
     justify-content: space-between;
     min-height: 200px;
 }
+.bay__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
 .bay__name {
     margin: 0;
     font-size: 0.85rem;
     letter-spacing: 0.06em;
     text-transform: uppercase;
     color: var(--ink-muted);
+}
+/* The game being played right now: a glowing edge that breathes, and a LIVE tag with a beating dot */
+.bay--live {
+    border-color: color-mix(in oklab, var(--accent) 55%, var(--line));
+    animation: bay-glow 3.2s ease-in-out infinite;
+}
+@keyframes bay-glow {
+    0%,
+    100% {
+        box-shadow: 0 0 0 0 color-mix(in oklab, var(--accent) 0%, transparent);
+    }
+    50% {
+        box-shadow: 0 0 22px -2px color-mix(in oklab, var(--accent) 38%, transparent);
+    }
+}
+.bay__live {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent);
+    white-space: nowrap;
+}
+.bay__live i {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+    animation: bay-beat 1.6s ease-out infinite;
+}
+.bay__days {
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-transform: none;
+    color: var(--ink-muted);
+}
+@keyframes bay-beat {
+    0% {
+        box-shadow: 0 0 0 0 color-mix(in oklab, var(--accent) 55%, transparent);
+    }
+    70%,
+    100% {
+        box-shadow: 0 0 0 7px color-mix(in oklab, var(--accent) 0%, transparent);
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .bay--live {
+        animation: none;
+        box-shadow: 0 0 14px -4px color-mix(in oklab, var(--accent) 38%, transparent);
+    }
+    .bay__live i {
+        animation: none;
+    }
 }
 .bay__game {
     display: grid;
@@ -2290,6 +2354,134 @@ a.game-row:hover {
 }
 .pick-result__cover {
     max-width: 240px;
+}
+/* Loot reveal: face-down card flips over, rays burst out behind it, a glint crosses the art, and
+   the details rise in once it has landed */
+.loot {
+    position: relative;
+    perspective: 900px;
+}
+.loot__card {
+    position: relative;
+    z-index: 1;
+    transform-style: preserve-3d;
+    animation: loot-flip 0.85s cubic-bezier(0.2, 0.8, 0.2, 1) 0.1s both;
+}
+.loot__face,
+.loot__back {
+    backface-visibility: hidden;
+}
+.loot__face {
+    position: relative;
+    overflow: hidden;
+    border-radius: 6px;
+}
+.loot__face::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+        105deg,
+        transparent 35%,
+        rgb(255 255 255 / 0.6) 50%,
+        transparent 65%
+    );
+    transform: translateX(-100%);
+    animation: loot-glint 0.8s ease-out 0.95s both;
+    pointer-events: none;
+}
+.loot__back {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    border-radius: 6px;
+    background: var(--accent-grad);
+    color: var(--accent-ink);
+    transform: rotateY(180deg);
+}
+.loot__back svg {
+    width: 45%;
+    height: 45%;
+}
+.loot__burst {
+    position: absolute;
+    inset: -45%;
+    border-radius: 50%;
+    background: repeating-conic-gradient(
+        color-mix(in oklab, var(--accent) 40%, transparent) 0 5deg,
+        transparent 5deg 15deg
+    );
+    -webkit-mask-image: radial-gradient(circle, #000 0, #000 28%, transparent 68%);
+    mask-image: radial-gradient(circle, #000 0, #000 28%, transparent 68%);
+    opacity: 0;
+    pointer-events: none;
+    animation: loot-burst 1.2s ease-out 0.6s both;
+}
+.pick-result > .stack > * {
+    animation: loot-rise 0.45s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+    animation-delay: calc(0.75s + var(--n, 0) * 70ms);
+}
+.pick-result > .stack > :nth-child(1) {
+    --n: 0;
+}
+.pick-result > .stack > :nth-child(2) {
+    --n: 1;
+}
+.pick-result > .stack > :nth-child(3) {
+    --n: 2;
+}
+.pick-result > .stack > :nth-child(4) {
+    --n: 3;
+}
+.pick-result > .stack > :nth-child(5) {
+    --n: 4;
+}
+.pick-result > .stack > :nth-child(n + 6) {
+    --n: 5;
+}
+@keyframes loot-flip {
+    from {
+        transform: rotateY(180deg) scale(0.92);
+    }
+    60% {
+        transform: rotateY(-8deg) scale(1.04);
+    }
+    to {
+        transform: rotateY(0) scale(1);
+    }
+}
+@keyframes loot-glint {
+    to {
+        transform: translateX(100%);
+    }
+}
+@keyframes loot-burst {
+    0% {
+        opacity: 0.95;
+        transform: scale(0.35) rotate(0);
+    }
+    100% {
+        opacity: 0;
+        transform: scale(1.25) rotate(28deg);
+    }
+}
+@keyframes loot-rise {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .loot__card,
+    .loot__face::after,
+    .loot__burst,
+    .pick-result > .stack > * {
+        animation: none;
+    }
+    .loot__burst {
+        display: none;
+    }
 }
 .pick-result__title {
     margin: 0;
@@ -2651,7 +2843,7 @@ fieldset.stars:disabled .stars__star {
     padding: 20px;
     border: 1px solid var(--line);
     border-radius: var(--radius);
-    background: linear-gradient(135deg, var(--accent-soft), var(--surface) 70%);
+    background: var(--texture), linear-gradient(135deg, var(--accent-soft), var(--surface) 70%);
 }
 .profile-hero__cta {
     margin-left: auto;
@@ -4546,7 +4738,7 @@ fieldset.stars:disabled .stars__star {
     border: 1px solid var(--line);
     border-radius: var(--radius);
     background:
-        radial-gradient(circle at 100% 0%, var(--accent-soft), transparent 60%),
+        var(--texture), radial-gradient(circle at 100% 0%, var(--accent-soft), transparent 60%),
         linear-gradient(135deg, var(--surface), var(--surface-2));
 }
 .home-hero h1 {
