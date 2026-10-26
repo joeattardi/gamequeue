@@ -413,7 +413,7 @@ a:is(:hover, :focus-visible) > .logo .logo__word {
     gap: 16px;
     padding: 16px 12px;
     border-right: 1px solid var(--line);
-    background: var(--surface);
+    background: var(--texture), var(--surface);
     position: sticky;
     top: 0;
     height: 100dvh;
