@@ -3,6 +3,7 @@ import { Star } from 'lucide-react';
 import { Link } from 'react-router';
 import { formatMinutes, yearOf } from '../lib';
 import { Cover } from './Cover';
+import { reveal } from './motion';
 import { MetaLine } from './MetaLine';
 import { PlatformTags } from './PlatformIcon';
 
@@ -45,7 +46,7 @@ export function EntryChips({ entry }: { entry: EntryDto }) {
 export function GameCard({ entry, position }: { entry: EntryDto; position?: number }) {
     const { game } = entry;
     return (
-        <li className="card">
+        <li className="card" ref={reveal}>
             <Link to={`/games/${entry.id}`} className="card__link">
                 <div className="card__art">
                     <Cover imageId={game.coverImageId} name={game.name} />

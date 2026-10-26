@@ -1273,6 +1273,14 @@ a.game-row:hover {
     color: var(--accent);
     border: 0;
     text-transform: capitalize;
+    transition:
+        background-color 0.3s,
+        color 0.3s;
+}
+@media (prefers-reduced-motion: reduce) {
+    .badge {
+        transition: none;
+    }
 }
 .badge .lucide {
     width: 0.95em;
@@ -1340,6 +1348,30 @@ a.game-row:hover {
 }
 .dialog::backdrop {
     background: rgb(5 10 25 / 0.55);
+}
+/* Opening only: most dialogs clear their content as they close, so a fade-out would show it empty */
+.dialog[open] {
+    animation: dialog-in 0.18s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.dialog[open]::backdrop {
+    animation: backdrop-in 0.18s ease-out;
+}
+@keyframes dialog-in {
+    from {
+        opacity: 0;
+        transform: translateY(8px) scale(0.97);
+    }
+}
+@keyframes backdrop-in {
+    from {
+        opacity: 0;
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .dialog[open],
+    .dialog[open]::backdrop {
+        animation: none;
+    }
 }
 .dialog__body {
     padding: 20px;
@@ -1760,20 +1792,6 @@ a.game-row:hover {
 /* ---- Confirmation dialog ---- */
 .dialog--confirm {
     width: min(100% - 24px, 420px);
-}
-.dialog--confirm[open] {
-    animation: confirm-in 0.14s ease-out;
-}
-@keyframes confirm-in {
-    from {
-        opacity: 0;
-        transform: translateY(6px) scale(0.98);
-    }
-}
-@media (prefers-reduced-motion: reduce) {
-    .dialog--confirm[open] {
-        animation: none;
-    }
 }
 .confirm {
     grid-template-columns: auto 1fr;
@@ -2386,6 +2404,63 @@ input[type='file'] {
 .favorite-btn[aria-pressed='true'] svg {
     fill: currentColor;
 }
+.favorite-btn {
+    position: relative;
+}
+.favorite-btn--pop svg {
+    animation: heart-pop 0.45s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.favorite-burst {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+}
+.favorite-burst i {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 6px;
+    height: 6px;
+    margin: -3px;
+    border-radius: 50%;
+    background: var(--favorite);
+    opacity: 0;
+    animation: heart-burst 0.55s ease-out;
+}
+.favorite-burst i:nth-child(even) {
+    width: 4px;
+    height: 4px;
+    margin: -2px;
+}
+@keyframes heart-pop {
+    0% {
+        transform: scale(0.6);
+    }
+    50% {
+        transform: scale(1.3);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+@keyframes heart-burst {
+    0% {
+        opacity: 1;
+        transform: rotate(calc(var(--k) * 45deg)) translateY(-14px) scale(1);
+    }
+    100% {
+        opacity: 0;
+        transform: rotate(calc(var(--k) * 45deg)) translateY(-34px) scale(0.4);
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .favorite-btn--pop svg {
+        animation: none;
+    }
+    .favorite-burst {
+        display: none;
+    }
+}
 .entry__head h1 {
     overflow-wrap: anywhere;
 }
@@ -2456,12 +2531,47 @@ fieldset.stars:disabled .stars__star {
     cursor: progress;
     opacity: 0.6;
 }
+/* A pick fills its stars one after another; the chosen one bounces a little more */
+.stars__star[data-sweep] .lucide {
+    animation: star-sweep 0.4s cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
+    animation-delay: calc(var(--k) * 45ms);
+}
+.stars__star[data-chosen] .lucide {
+    animation: star-chosen 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
+    animation-delay: calc(var(--k) * 45ms);
+}
+@keyframes star-sweep {
+    0% {
+        transform: scale(0.7);
+    }
+    55% {
+        transform: scale(1.2);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+@keyframes star-chosen {
+    0% {
+        transform: scale(0.7) rotate(0);
+    }
+    50% {
+        transform: scale(1.4) rotate(-12deg);
+    }
+    100% {
+        transform: scale(1) rotate(0);
+    }
+}
 @media (prefers-reduced-motion: reduce) {
     .stars__star {
         transition: none;
     }
     .stars__star:hover {
         transform: none;
+    }
+    .stars__star[data-sweep] .lucide,
+    .stars__star[data-chosen] .lucide {
+        animation: none;
     }
 }
 
@@ -6484,4 +6594,20 @@ button.tier-tile__button {
     .tip {
         animation: none;
     }
+}
+
+/* ---- Confetti for finishing a game (pieces are placed and moved by celebrate() in motion.ts) ---- */
+.confetti {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    overflow: hidden;
+    pointer-events: none;
+}
+.confetti i {
+    position: absolute;
+    width: 7px;
+    height: 11px;
+    margin: -5px -3px;
+    border-radius: 2px;
 }

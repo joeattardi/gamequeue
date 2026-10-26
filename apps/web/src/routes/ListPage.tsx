@@ -16,7 +16,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { MAX_LIST_DESCRIPTION, type EntryDto } from '@gamequeue/shared';
-import { useEffect, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import { useEntries } from '../api/collection';
 import { ApiRequestError } from '../api/client';
@@ -31,6 +31,7 @@ import {
 import { useQueue } from '../api/queue';
 import { useConfirm } from '../components/Confirm';
 import { Cover } from '../components/Cover';
+import { reveal } from '../components/motion';
 import { GameCard } from '../components/GameCard';
 import { LayoutToggle, useLayout } from '../components/LayoutToggle';
 import { LoadMore } from '../components/LoadMore';
@@ -326,10 +327,17 @@ function Row({
         transition,
         isDragging
     } = useSortable({ id: entry.id });
+    const nodeRef = useCallback(
+        (el: HTMLElement | null) => {
+            setNodeRef(el);
+            reveal(el);
+        },
+        [setNodeRef]
+    );
     const { game } = entry;
     return (
         <li
-            ref={setNodeRef}
+            ref={nodeRef}
             className={`row-item${isDragging ? ' row-item--dragging' : ''}`}
             style={{ transform: CSS.Transform.toString(transform), transition }}
         >

@@ -1,5 +1,5 @@
 import { Star } from 'lucide-react';
-import { useId, useState } from 'react';
+import { useId, useState, type CSSProperties } from 'react';
 import { RATING_MAX } from '@gamequeue/shared';
 
 const STARS = Array.from({ length: RATING_MAX }, (_, i) => i + 1);
@@ -21,6 +21,9 @@ export function StarRating({
 }) {
     const name = useId();
     const [hover, setHover] = useState<number | null>(null);
+    // The last pick, so its stars play a fill sweep; `n` restarts it on every pick. Kept here
+    // rather than read from `value`, which may only change once the save comes back.
+    const [sweep, setSweep] = useState<{ to: number; n: number } | null>(null);
     const shown = hover ?? value ?? 0;
     return (
         <fieldset className="field stars" disabled={disabled}>
@@ -32,6 +35,9 @@ export function StarRating({
                             key={n}
                             className="stars__star"
                             data-on={n <= shown}
+                            data-sweep={sweep && n < sweep.to ? true : undefined}
+                            data-chosen={sweep?.to === n ? true : undefined}
+                            style={{ '--k': n - 1 } as CSSProperties}
                             onMouseEnter={() => setHover(n)}
                         >
                             <input
@@ -39,10 +45,13 @@ export function StarRating({
                                 name={name}
                                 className="sr-only"
                                 checked={value === n}
-                                onChange={() => onChange(n)}
+                                onChange={() => {
+                                    setSweep((s) => ({ to: n, n: (s?.n ?? 0) + 1 }));
+                                    onChange(n);
+                                }}
                                 aria-label={`${n} ${n === 1 ? 'star' : 'stars'}`}
                             />
-                            <Star />
+                            <Star key={sweep && n <= sweep.to ? sweep.n : 0} />
                         </label>
                     ))}
                 </div>
@@ -50,7 +59,10 @@ export function StarRating({
                     <button
                         type="button"
                         className="btn btn--ghost stars__clear"
-                        onClick={() => onChange(null)}
+                        onClick={() => {
+                            setSweep(null);
+                            onChange(null);
+                        }}
                     >
                         Clear
                     </button>

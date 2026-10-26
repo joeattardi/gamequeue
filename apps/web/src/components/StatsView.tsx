@@ -2,6 +2,7 @@ import { STATS_UNKNOWN_YEAR, type BreakdownRow, type StatsDto } from '@gamequeue
 import type { CSSProperties } from 'react';
 import { Star } from 'lucide-react';
 import { formatMinutes } from '../lib';
+import { CountUp } from './CountUp';
 import { Cover } from './Cover';
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -151,7 +152,9 @@ export function StatsView({ stats }: { stats: StatsDto }) {
 function Tile({ label, value, note }: { label: string; value: string | number; note?: string }) {
     return (
         <li className="sv-tile">
-            <span className="sv-tile__value">{value}</span>
+            <span className="sv-tile__value">
+                <CountUp value={value} />
+            </span>
             <span className="sv-tile__label">{label}</span>
             {note && <span className="muted sv-tile__note">{note}</span>}
         </li>

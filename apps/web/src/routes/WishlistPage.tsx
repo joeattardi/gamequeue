@@ -21,7 +21,7 @@ import {
     type SearchResultDto,
     type WishlistItemDto
 } from '@gamequeue/shared';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router';
 import {
     usePatchWishlistItem,
@@ -31,6 +31,7 @@ import {
 } from '../api/wishlist';
 import { AddGameDialog } from '../components/AddGameDialog';
 import { Cover } from '../components/Cover';
+import { reveal } from '../components/motion';
 import { LayoutToggle, useLayout } from '../components/LayoutToggle';
 import { LoadMore } from '../components/LoadMore';
 import { GridSkeletons, RowSkeletons } from '../components/GridSkeletons';
@@ -278,7 +279,7 @@ function PriceLine({ price, name }: { price: GamePriceDto; name: string }) {
 function WishlistTile({ item, position }: { item: WishlistItemDto; position: number }) {
     const { game } = item;
     return (
-        <li className="card">
+        <li className="card" ref={reveal}>
             <Link to={`/games/igdb/${item.igdbId}`} className="card__link">
                 <div className="card__art">
                     <Cover imageId={game.coverImageId} name={game.name} />
@@ -330,6 +331,13 @@ function Row({
         transition,
         isDragging
     } = useSortable({ id: item.igdbId });
+    const nodeRef = useCallback(
+        (el: HTMLElement | null) => {
+            setNodeRef(el);
+            reveal(el);
+        },
+        [setNodeRef]
+    );
     const patch = usePatchWishlistItem();
     const [note, setNote] = useState(item.note);
     const [error, setError] = useState<string>();
@@ -353,7 +361,7 @@ function Row({
 
     return (
         <li
-            ref={setNodeRef}
+            ref={nodeRef}
             className={`row-item${isDragging ? ' row-item--dragging' : ''}`}
             style={{ transform: CSS.Transform.toString(transform), transition }}
         >

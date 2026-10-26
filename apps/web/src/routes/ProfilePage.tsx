@@ -33,6 +33,7 @@ import { ActivityDays } from '../components/ActivityFeed';
 import { HighlightRow } from '../components/HighlightRow';
 import { ProfileBadge } from '../components/ProfileBadge';
 import { Avatar } from '../components/Avatar';
+import { CountUp } from '../components/CountUp';
 import { Cover } from '../components/Cover';
 import { ListCard } from '../components/ListCard';
 import { SocialLinksList } from '../components/SocialLinks';
@@ -121,7 +122,9 @@ function Counter({
         <li className={`counter ${className}`}>
             <Link to={to} className="counter__link">
                 <span className="counter__icon">{icon}</span>
-                <span className="counter__value">{value}</span>
+                <span className="counter__value">
+                    <CountUp value={value} />
+                </span>
                 <span className="counter__label">{label}</span>
             </Link>
         </li>

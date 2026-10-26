@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { ArrowRight } from 'lucide-react';
 import { Link } from 'react-router';
+import { CountUp } from './CountUp';
 import { UserStatsSkeleton } from './PageSkeletons';
 
 /** A dashboard tile: a few number/label pairs and a link to the detail page. */
@@ -45,7 +46,9 @@ export function AdminTile({
                     <dl className="admin-stats">
                         {stats.map((s) => (
                             <div key={s.label}>
-                                <dd title={s.title}>{s.value}</dd>
+                                <dd title={s.title}>
+                                    <CountUp value={s.value} />
+                                </dd>
                                 <dt>{s.label}</dt>
                             </div>
                         ))}

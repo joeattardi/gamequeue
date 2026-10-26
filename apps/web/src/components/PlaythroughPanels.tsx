@@ -5,7 +5,7 @@ import {
     type EntryDto,
     type PlaythroughDto
 } from '@gamequeue/shared';
-import { useState, type FormEvent, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import {
     useDeletePlaythrough,
     useEntryAction,
@@ -26,6 +26,7 @@ import {
     todayLocal
 } from '../lib';
 import { MetaLine } from './MetaLine';
+import { celebrate, pop } from './motion';
 import { PlatformTags } from './PlatformIcon';
 
 const errorText = (e: unknown) =>
@@ -72,8 +73,25 @@ function PlaytimeField({ value, onChange }: { value: string; onChange: (v: strin
     );
 }
 
+/** The entry's status; its colour eases over and it swells when the status changes in place. */
+function StatusBadge({ status }: { status: EntryDto['status'] }) {
+    const ref = useRef<HTMLSpanElement>(null);
+    const prev = useRef(status);
+    useEffect(() => {
+        if (prev.current === status) return;
+        prev.current = status;
+        pop(ref.current);
+    }, [status]);
+    return (
+        <span ref={ref} className={`badge badge--${status}`}>
+            {status}
+        </span>
+    );
+}
+
 /** Status plus whatever actions are allowed from it. */
 export function StatusPanel({ entry }: { entry: EntryDto }) {
+    const panel = useRef<HTMLElement>(null);
     const act = useEntryAction(entry.id);
     const log = useLogPlaythrough(entry.id);
     const [mode, setMode] = useState<'finish' | 'abandon' | null>(null);
@@ -92,10 +110,10 @@ export function StatusPanel({ entry }: { entry: EntryDto }) {
     };
 
     return (
-        <section aria-labelledby="status-h" className="panel">
+        <section aria-labelledby="status-h" className="panel" ref={panel}>
             <div className="panel__head">
                 <h2 id="status-h">Status</h2>
-                <span className={`badge badge--${entry.status}`}>{entry.status}</span>
+                <StatusBadge status={entry.status} />
             </div>
             {entry.openPlaythrough && (
                 <p className="muted">
@@ -182,7 +200,11 @@ export function StatusPanel({ entry }: { entry: EntryDto }) {
                     key={mode}
                     mode={mode}
                     pending={act.isPending}
-                    onSubmit={(body) => run({ action: mode, body })}
+                    onSubmit={(body) =>
+                        run({ action: mode, body }, () => {
+                            if (mode === 'finish') celebrate(panel.current);
+                        })
+                    }
                     onCancel={() => setMode(null)}
                 />
             )}

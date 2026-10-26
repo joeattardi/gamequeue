@@ -1,11 +1,12 @@
 import type { SlotDto } from '@gamequeue/shared';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Link } from 'react-router';
 import { useEntryAction } from '../api/collection';
 import { useClearSlot } from '../api/slots';
 import { formatDate } from '../lib';
 import { PlatformTags } from './PlatformIcon';
 import { Cover } from './Cover';
+import { celebrate } from './motion';
 import { CloseForm } from './PlaythroughPanels';
 import { ArrowLeftRight, Ban, Check, Dices, Eraser, Gamepad2, Pause, Play } from 'lucide-react';
 
@@ -15,6 +16,7 @@ export function SlotBay({ slot, onChoose }: { slot: SlotDto; onChoose: (slot: Sl
     const clear = useClearSlot();
     const [closing, setClosing] = useState<'finish' | 'abandon' | null>(null);
     const busy = act.isPending || clear.isPending;
+    const bay = useRef<HTMLLIElement>(null);
 
     if (!entry) {
         return (
@@ -37,7 +39,7 @@ export function SlotBay({ slot, onChoose }: { slot: SlotDto; onChoose: (slot: Sl
 
     const open = entry.openPlaythrough;
     return (
-        <li className="bay">
+        <li className="bay" ref={bay}>
             <h2 className="bay__name">{slot.name}</h2>
             <div className="bay__game">
                 <Link
@@ -100,7 +102,16 @@ export function SlotBay({ slot, onChoose }: { slot: SlotDto; onChoose: (slot: Sl
                     mode={closing}
                     pending={act.isPending}
                     onSubmit={(body) =>
-                        act.mutate({ action: closing, body }, { onSuccess: () => setClosing(null) })
+                        act.mutate(
+                            { action: closing, body },
+                            {
+                                onSuccess: () => {
+                                    // Measured now: the bay empties once the slots refetch
+                                    if (closing === 'finish') celebrate(bay.current);
+                                    setClosing(null);
+                                }
+                            }
+                        )
                     }
                     onCancel={() => setClosing(null)}
                 />
