@@ -19,7 +19,7 @@ export function Cover({
     if (!imageId)
         return (
             <div
-                className="cover cover--empty"
+                className={`cover cover--empty${transitionName ? ' cover--morph' : ''}`}
                 role="img"
                 aria-label={`${name} (no cover)`}
                 style={style}
@@ -29,7 +29,7 @@ export function Cover({
         );
     return (
         <img
-            className="cover"
+            className={`cover${transitionName ? ' cover--morph' : ''}`}
             src={coverUrl(imageId, size)}
             srcSet={coverSrcSet(imageId, size)}
             alt={`${name} cover`}

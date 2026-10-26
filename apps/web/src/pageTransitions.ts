@@ -1,4 +1,4 @@
-import type { EntryDto } from '@gamequeue/shared';
+import { coverUrl, type EntryDto } from '@gamequeue/shared';
 import { useQueryClient } from '@tanstack/react-query';
 import { useViewTransitionState, type createBrowserRouter } from 'react-router';
 
@@ -52,7 +52,12 @@ export function useEntryLink(entry: EntryDto) {
     const morphing = useViewTransitionState(to);
     return {
         to,
-        onClick: () => qc.setQueryData<EntryDto>(['entry', entry.id], (old) => old ?? entry),
+        onClick: () => {
+            qc.setQueryData<EntryDto>(['entry', entry.id], (old) => old ?? entry);
+            // Start fetching the game page's larger cover now, so it is there when the morph lands
+            if (entry.game.coverImageId)
+                new Image().src = coverUrl(entry.game.coverImageId, '720p');
+        },
         coverTransition: morphing ? COVER_TRANSITION : undefined
     };
 }

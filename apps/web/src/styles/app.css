@@ -1105,6 +1105,11 @@ select:disabled {
         transform 0.15s,
         box-shadow 0.15s;
 }
+/* A cover that morphs between pages: no placeholder fill, or while the larger image is still
+   loading the fill would fade in over the old cover and wash it out */
+.cover--morph:not(.cover--empty) {
+    background: transparent;
+}
 .cover--empty {
     display: grid;
     place-items: center;
