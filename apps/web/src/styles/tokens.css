@@ -23,6 +23,19 @@
         ),
         linear-gradient(90deg, color-mix(in oklab, var(--ink) 3%, transparent) 1px, transparent 1px)
             0 0 / 4px 4px;
+    /* The same, about half as strong, for the sidebar */
+    --texture-faint:
+        repeating-linear-gradient(
+            0deg,
+            color-mix(in oklab, var(--ink) 2.2%, transparent) 0 1px,
+            transparent 1px 3px
+        ),
+        linear-gradient(
+                90deg,
+                color-mix(in oklab, var(--ink) 1.5%, transparent) 1px,
+                transparent 1px
+            )
+            0 0 / 4px 4px;
     /* Blue buttons and badges: a little lighter at the top, a little deeper at the bottom */
     --accent-grad: linear-gradient(
         180deg,

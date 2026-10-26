@@ -413,7 +413,10 @@ a:is(:hover, :focus-visible) > .logo .logo__word {
     gap: 16px;
     padding: 16px 12px;
     border-right: 1px solid var(--line);
-    background: var(--texture), var(--surface);
+    /* The texture fades out towards the bottom: the top layer melts into the plain surface */
+    background:
+        linear-gradient(180deg, transparent 20%, var(--surface) 92%), var(--texture-faint),
+        var(--surface);
     position: sticky;
     top: 0;
     height: 100dvh;
