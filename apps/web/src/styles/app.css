@@ -511,6 +511,74 @@ a {
     background: var(--surface);
     box-shadow: var(--shadow);
     z-index: 5;
+    transform-origin: bottom center;
+}
+.user-menu__panel:not([data-open]) {
+    visibility: hidden;
+    opacity: 0;
+}
+@media (prefers-reduced-motion: no-preference) {
+    /* Rises out of the button with a slight scale, the rows following a beat behind; closing is
+       quicker and drops the stagger. Visibility flips at the end of the close, not the start. */
+    .user-menu__panel {
+        transition:
+            opacity 0.18s ease-out,
+            transform 0.24s cubic-bezier(0.22, 1, 0.36, 1),
+            visibility 0s;
+    }
+    .user-menu__panel:not([data-open]) {
+        transform: translateY(8px) scale(0.96);
+        transition:
+            opacity 0.12s ease-in,
+            transform 0.12s ease-in,
+            visibility 0s 0.12s;
+    }
+    .user-menu__panel > * {
+        transition:
+            opacity 0.2s ease-out calc(var(--i, 0) * 25ms + 40ms),
+            transform 0.28s cubic-bezier(0.22, 1, 0.36, 1) calc(var(--i, 0) * 25ms + 40ms);
+    }
+    .user-menu__panel:not([data-open]) > * {
+        opacity: 0;
+        transform: translateY(4px);
+        transition: opacity 0.1s ease-in;
+    }
+    .user-menu__panel > :nth-last-child(2) {
+        --i: 1;
+    }
+    .user-menu__panel > :nth-last-child(3) {
+        --i: 2;
+    }
+    .user-menu__panel > :nth-last-child(4) {
+        --i: 3;
+    }
+    .user-menu__panel > :nth-last-child(5) {
+        --i: 4;
+    }
+    .user-menu__panel > :nth-last-child(6) {
+        --i: 5;
+    }
+    .user-menu__panel > :nth-last-child(7) {
+        --i: 6;
+    }
+    .is-collapsed .user-menu__panel {
+        transform-origin: bottom left;
+    }
+    .is-collapsed .user-menu__panel:not([data-open]) {
+        transform: translateX(-6px) scale(0.96);
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .user-menu__panel {
+        transition:
+            opacity 0.12s ease-out,
+            visibility 0s;
+    }
+    .user-menu__panel:not([data-open]) {
+        transition:
+            opacity 0.12s ease-out,
+            visibility 0s 0.12s;
+    }
 }
 .user-menu__panel hr {
     width: 100%;

@@ -67,42 +67,44 @@ export function UserMenu({
                 if (!e.currentTarget.contains(e.relatedTarget)) setOpen(false);
             }}
         >
-            {open && (
-                <div id="user-menu-panel" className="user-menu__panel">
-                    <Link to={`/u/${user.username}`}>
-                        <UserRound />
-                        Your profile
-                    </Link>
-                    <NavLink to="/account">
-                        <Settings />
-                        Account
+            {/* Always mounted so it can animate out; inert keeps it out of the tab order while closed */}
+            <div
+                id="user-menu-panel"
+                className="user-menu__panel"
+                data-open={open || undefined}
+                inert={!open}
+            >
+                <Link to={`/u/${user.username}`}>
+                    <UserRound />
+                    Your profile
+                </Link>
+                <NavLink to="/account">
+                    <Settings />
+                    Account
+                </NavLink>
+                <NavLink to="/data">
+                    <Database />
+                    Data
+                </NavLink>
+                {user.role === 'admin' && (
+                    <NavLink to="/admin">
+                        <ShieldCheck />
+                        Admin
                     </NavLink>
-                    <NavLink to="/data">
-                        <Database />
-                        Data
-                    </NavLink>
-                    {user.role === 'admin' && (
-                        <NavLink to="/admin">
-                            <ShieldCheck />
-                            Admin
-                        </NavLink>
-                    )}
-                    <button
-                        type="button"
-                        onClick={() =>
-                            setTheme(THEMES[(THEMES.indexOf(theme) + 1) % THEMES.length]!)
-                        }
-                    >
-                        <ThemeIcon />
-                        Theme: {THEME_LABELS[theme]}
-                    </button>
-                    <hr />
-                    <button type="button" onClick={onSignOut} disabled={signingOut}>
-                        <LogOut />
-                        Sign out
-                    </button>
-                </div>
-            )}
+                )}
+                <button
+                    type="button"
+                    onClick={() => setTheme(THEMES[(THEMES.indexOf(theme) + 1) % THEMES.length]!)}
+                >
+                    <ThemeIcon />
+                    Theme: {THEME_LABELS[theme]}
+                </button>
+                <hr />
+                <button type="button" onClick={onSignOut} disabled={signingOut}>
+                    <LogOut />
+                    Sign out
+                </button>
+            </div>
             <button
                 ref={button}
                 type="button"
