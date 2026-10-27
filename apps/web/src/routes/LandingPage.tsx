@@ -17,6 +17,7 @@ import { useAuthConfig } from '../api/auth';
 import { useShowcase } from '../api/showcase';
 import { Footer } from '../components/Footer';
 import { Logo, LogoMark } from '../components/Logo';
+import { PreviewNotice } from '../components/PreviewNotice';
 import { usePageTitle } from '../lib';
 
 const FEATURES = [
@@ -110,6 +111,8 @@ export function LandingPage() {
                     )}
                 </nav>
             </header>
+
+            <PreviewNotice />
 
             <main>
                 <section className="landing__hero">

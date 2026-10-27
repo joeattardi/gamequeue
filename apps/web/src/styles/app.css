@@ -7856,3 +7856,32 @@ button.tier-tile__button {
         transition: none;
     }
 }
+
+/* ---- Preview notice (landing, sign in, register) ---- */
+.preview-notice {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 12px 14px;
+    border: 1px solid var(--line);
+    border-left: 4px solid var(--status-mid);
+    border-radius: var(--radius);
+    background: var(--surface);
+}
+.preview-notice p {
+    margin: 0;
+}
+.preview-notice svg {
+    flex: none;
+    margin-top: 2px;
+    color: var(--status-mid);
+}
+.preview-notice--compact {
+    width: 100%;
+    font-size: 0.9rem;
+}
+.landing > .preview-notice {
+    width: calc(100% - 2 * var(--gutter));
+}

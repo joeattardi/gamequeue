@@ -6,6 +6,7 @@ import { useAuthConfig, useLogin, useRegister } from '../api/auth';
 import { ApiRequestError } from '../api/client';
 import { AuthShowcase } from '../components/AuthShowcase';
 import { LogoMark } from '../components/Logo';
+import { PreviewNotice } from '../components/PreviewNotice';
 import { usePageTitle } from '../lib';
 
 export function AuthPage({ mode }: { mode: 'login' | 'register' }) {
@@ -65,6 +66,7 @@ export function AuthPage({ mode }: { mode: 'login' | 'register' }) {
                             GameQueue
                         </span>
                     </Link>
+                    <PreviewNotice compact />
                     <h1>{isLogin ? 'Welcome back' : 'Create your account'}</h1>
                     <p className="muted auth__sub">
                         {isLogin
