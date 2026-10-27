@@ -11,16 +11,11 @@ export function LogoMark() {
 
 export function Logo() {
     return (
-        <span className="logo" aria-label="GameQueue, preview">
+        <span className="logo" aria-label="GameQueue">
             <span className="logo__mark" aria-hidden="true">
                 <LogoMark />
             </span>
-            <span className="logo__name">
-                <span className="logo__word">GameQueue</span>
-                <span className="logo__badge" aria-hidden="true">
-                    Preview
-                </span>
-            </span>
+            <span className="logo__word">GameQueue</span>
         </span>
     );
 }

@@ -17,6 +17,7 @@ import { useAuthConfig } from '../api/auth';
 import { useShowcase } from '../api/showcase';
 import { Footer } from '../components/Footer';
 import { Logo, LogoMark } from '../components/Logo';
+import { PreviewBadge } from '../components/PreviewBadge';
 import { PreviewNotice } from '../components/PreviewNotice';
 import { usePageTitle } from '../lib';
 
@@ -99,7 +100,10 @@ export function LandingPage() {
     return (
         <div className="landing">
             <header className="landing__bar">
-                <Logo />
+                <span className="logo-row">
+                    <Logo />
+                    <PreviewBadge />
+                </span>
                 <nav className="landing__nav" aria-label="Account">
                     <Link className="btn btn--ghost" to="/login">
                         Sign in

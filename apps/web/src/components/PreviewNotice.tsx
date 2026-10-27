@@ -1,8 +1,26 @@
 import { FlaskConical, X } from 'lucide-react';
 import { useState } from 'react';
 import { Link } from 'react-router';
+import { useMe } from '../api/auth';
 
 const DISMISSED_KEY = 'gq.preview-notice.dismissed';
+
+/** What "preview" means, shared by the notices and the badge's dialog. */
+export function PreviewDetail() {
+    const me = useMe();
+    return (
+        <>
+            Features may change, and your data could be lost at any time.{' '}
+            {me.data ? (
+                <>
+                    <Link to="/data">Export a copy</Link> now and then.
+                </>
+            ) : (
+                'Export your data now and then to keep a copy.'
+            )}
+        </>
+    );
+}
 
 /** Tells visitors the site is a preview: things change and data can be lost. */
 export function PreviewNotice({ compact = false }: { compact?: boolean }) {
@@ -10,8 +28,7 @@ export function PreviewNotice({ compact = false }: { compact?: boolean }) {
         <aside className={`preview-notice${compact ? ' preview-notice--compact' : ''}`}>
             <FlaskConical aria-hidden="true" />
             <p>
-                <strong>GameQueue is in preview.</strong> Features may change, and your data could
-                be lost at any time. Export your data now and then to keep a copy.
+                <strong>GameQueue is in preview.</strong> <PreviewDetail />
             </p>
         </aside>
     );
@@ -31,8 +48,7 @@ export function DismissiblePreviewNotice() {
         <aside className="preview-notice preview-notice--inline">
             <FlaskConical aria-hidden="true" />
             <p>
-                <strong>GameQueue is in preview.</strong> Features may change, and your data could
-                be lost at any time. <Link to="/data">Export a copy</Link> now and then.
+                <strong>GameQueue is in preview.</strong> <PreviewDetail />
             </p>
             <button
                 type="button"

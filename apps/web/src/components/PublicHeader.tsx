@@ -2,6 +2,7 @@ import { Link } from 'react-router';
 import type { AvatarIconChoice } from '@gamequeue/shared';
 import { Avatar } from './Avatar';
 import { Logo } from './Logo';
+import { PreviewBadge } from './PreviewBadge';
 
 /**
  * Whose page this is, shown in the header once the page's own heading has scrolled away
@@ -19,9 +20,12 @@ export interface HeaderIdentity {
 export function PublicHeader({ identity }: { identity?: HeaderIdentity }) {
     return (
         <header className="topbar">
-            <Link to="/">
-                <Logo />
-            </Link>
+            <span className="logo-row">
+                <Link to="/">
+                    <Logo />
+                </Link>
+                <PreviewBadge />
+            </span>
             {identity && (
                 <div
                     className={`topbar__identity${identity.shown ? ' topbar__identity--shown' : ''}`}

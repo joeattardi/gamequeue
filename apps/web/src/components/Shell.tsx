@@ -8,6 +8,7 @@ import { isRecapSeason } from '../lib';
 import { ErrorBoundary } from './ErrorBoundary';
 import { ErrorPage } from './ErrorPage';
 import { Footer } from './Footer';
+import { PreviewBadge } from './PreviewBadge';
 import { Logo } from './Logo';
 import { MenuIcon } from './MenuIcon';
 import { Tooltip } from './Tooltip';
@@ -214,9 +215,12 @@ export function Shell({ user }: { user: UserDto }) {
                     >
                         <MenuIcon />
                     </button>
-                    <Link ref={barLogo} to="/" className="mobile-bar__logo">
-                        <Logo />
-                    </Link>
+                    <div className="mobile-bar__brand">
+                        <Link ref={barLogo} to="/" className="mobile-bar__logo">
+                            <Logo />
+                        </Link>
+                        <PreviewBadge />
+                    </div>
                 </header>
                 <aside
                     ref={sidebar}
@@ -235,9 +239,12 @@ export function Shell({ user }: { user: UserDto }) {
                     }}
                 >
                     <div className="sidebar__head">
-                        <Link to="/" className="sidebar__logo">
-                            <Logo />
-                        </Link>
+                        <div className="sidebar__brand">
+                            <Link to="/" className="sidebar__logo">
+                                <Logo />
+                            </Link>
+                            <PreviewBadge />
+                        </div>
                         <button
                             ref={closeButton}
                             type="button"

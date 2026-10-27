@@ -745,7 +745,6 @@ a:is(:hover, :focus-visible) > .logo .logo__word {
     .is-collapsed .nav__text,
     .is-collapsed .nav__label,
     .is-collapsed .logo__word,
-    .is-collapsed .logo__badge,
     .is-collapsed .user-menu__name,
     .is-collapsed .user-menu__button .lucide:last-child,
     .is-collapsed .nav-search kbd {
@@ -858,7 +857,7 @@ a:is(:hover, :focus-visible) > .logo .logo__word {
     fill: var(--avatar-fg);
 }
 @media (max-width: 640px) {
-    .logo__name {
+    .logo-row .logo__badge {
         display: none;
     }
 }
@@ -4093,11 +4092,21 @@ fieldset.stars:disabled .stars__star {
         margin-left: -10px;
     }
     /* Centred in the bar; the open menu copies its measured box so the logo never moves */
-    .mobile-bar__logo {
+    .mobile-bar__brand {
         position: absolute;
         left: 50%;
         top: 50%;
         transform: translate(-50%, -50%);
+    }
+    /* Out of the flow, so the logo itself stays centred */
+    .mobile-bar__brand .logo__badge {
+        position: absolute;
+        left: 100%;
+        top: 50%;
+        margin-left: 8px;
+        transform: translateY(-50%);
+    }
+    .mobile-bar__logo {
         display: flex;
         align-items: center;
         min-height: 44px;
@@ -4225,10 +4234,6 @@ fieldset.stars:disabled .stars__star {
     .mobile-bar .logo__word,
     .sidebar .logo__word {
         display: inline;
-    }
-    .mobile-bar .logo__name,
-    .sidebar .logo__name {
-        display: inline-flex;
     }
     /* Bigger rows and type in the menu: it is operated with a thumb */
     .sidebar {
@@ -7908,20 +7913,30 @@ button.tier-tile__button {
     margin: 0;
     color: var(--ink-muted);
 }
-/* "Preview" pill beside the wordmark; the 220px desktop sidebar is too narrow for both on one line, so it sits underneath there */
-.logo__name {
+/* "Preview" pill by the wordmark: a button that sits beside the logo's link, never inside it */
+.logo-row {
     display: inline-flex;
     align-items: center;
     gap: 8px;
 }
-@media (min-width: 900px) {
-    .sidebar .logo__name {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 2px;
+.sidebar__brand {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+}
+/* Under the wordmark: the sidebar is too narrow for both on a line (12px padding + 32px mark + 8px gap) */
+.sidebar__brand .logo__badge {
+    margin-left: 52px;
+}
+@media (max-width: 899px) {
+    .sidebar__brand .logo__badge {
+        display: none;
     }
-    .sidebar .logo__word {
-        line-height: 1;
+}
+@media (min-width: 900px) {
+    .sidebar.is-collapsed .logo__badge {
+        display: none;
     }
 }
 .logo__badge {
@@ -7936,4 +7951,11 @@ button.tier-tile__button {
     text-transform: uppercase;
     line-height: 1.4;
     white-space: nowrap;
+}
+.logo__badge {
+    background: transparent;
+    cursor: pointer;
+}
+.logo__badge:is(:hover, :focus-visible) {
+    background: color-mix(in srgb, var(--status-mid) 16%, transparent);
 }
