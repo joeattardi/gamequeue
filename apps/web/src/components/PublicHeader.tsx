@@ -2,7 +2,7 @@ import { Link } from 'react-router';
 import type { AvatarIconChoice } from '@gamequeue/shared';
 import { Avatar } from './Avatar';
 import { Logo } from './Logo';
-import { PreviewBadge } from './PreviewBadge';
+import { DevBadge } from './DevBadge';
 
 /**
  * Whose page this is, shown in the header once the page's own heading has scrolled away
@@ -24,7 +24,7 @@ export function PublicHeader({ identity }: { identity?: HeaderIdentity }) {
                 <Link to="/">
                     <Logo />
                 </Link>
-                <PreviewBadge />
+                <DevBadge />
             </span>
             {identity && (
                 <div

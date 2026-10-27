@@ -7905,7 +7905,7 @@ button.tier-tile__button {
     margin: 0;
     color: var(--ink-muted);
 }
-/* The "Preview" / "Dev" badge is a rubber stamp over the corner of the wordmark. It is a button that
+/* The "Dev" badge (development mode only) is a rubber stamp over the corner of the wordmark. It is a button that
    sits beside the logo's link, never inside it (a button in a link is invalid), on top of it. */
 .logo-row,
 .sidebar__brand {
@@ -7928,10 +7928,10 @@ button.tier-tile__button {
     top: -7px;
     z-index: 1;
     padding: 0 6px;
-    border: 2px solid var(--status-mid);
+    border: 2px solid var(--accent);
     border-radius: 4px;
     background: color-mix(in srgb, var(--surface) 82%, transparent);
-    color: var(--status-mid);
+    color: var(--accent);
     font-family: var(--font-body);
     font-size: 0.62rem;
     font-weight: 800;
@@ -7944,16 +7944,8 @@ button.tier-tile__button {
     transition: transform 0.15s;
 }
 .logo__badge:is(:hover, :focus-visible) {
-    background: color-mix(in srgb, var(--status-mid) 16%, var(--surface));
-    transform: rotate(-9deg) scale(1.08);
-}
-/* The development version: blue instead of the preview amber */
-.logo__badge--dev {
-    border-color: var(--accent);
-    color: var(--accent);
-}
-.logo__badge--dev:is(:hover, :focus-visible) {
     background: color-mix(in srgb, var(--accent) 16%, var(--surface));
+    transform: rotate(-9deg) scale(1.08);
 }
 /* Hovering or focusing the logo gives the stamp a wiggle */
 :is(.logo-row, .sidebar__brand, .mobile-bar__brand)

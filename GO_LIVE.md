@@ -102,7 +102,7 @@ verification, signup toggle, per-IP rate limits, preview notices.
 - [ ] **Account recovery without email.** Login is by username, and reset needs Resend. Decide
       what you do if someone loses access (admin reset exists).
 - [ ] **Hosting.** Stay on the Pi, or move. See section 5, which has the checks that should decide it.
-- [ ] **When the preview label comes off.** The notices, badge, footer line and Data page sentence
+- [ ] **When the preview label comes off.** The notices, footer line and Data page sentence
       are listed in `ARCHITECTURE.md` (Web client, landing page) so removal is one pass.
 
 ## 4. Find out and verify

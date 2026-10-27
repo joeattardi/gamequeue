@@ -5,7 +5,7 @@ import { useMe } from '../api/auth';
 
 const DISMISSED_KEY = 'gq.preview-notice.dismissed';
 
-/** What "preview" means, shared by the notices and the badge's dialog. */
+/** What "preview" means, used by both notices. */
 export function PreviewDetail() {
     const me = useMe();
     return (

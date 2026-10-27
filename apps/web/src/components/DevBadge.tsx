@@ -1,32 +1,30 @@
 import { FlaskConical } from 'lucide-react';
 import { useState } from 'react';
-import { PreviewDetail } from './PreviewNotice';
 import { useModalDialog } from './useModalDialog';
 
-/** `npm run dev` (Vite's dev mode) shows "Dev" instead of "Preview". */
-const DEV = import.meta.env.DEV;
-
-/** The "Preview" pill by the logo; opens a dialog saying what that means. Keep it outside the logo's link. */
-export function PreviewBadge() {
+/**
+ * A "Dev" stamp by the logo, only under `npm run dev` (Vite's dev mode); the production build drops it.
+ * It opens a dialog saying this is the development version. Keep it outside the logo's link.
+ */
+export function DevBadge() {
     const [open, setOpen] = useState(false);
     const ref = useModalDialog(open);
+    if (!import.meta.env.DEV) return null;
     return (
         <>
             <button
                 type="button"
-                className={`logo__badge${DEV ? ' logo__badge--dev' : ''}`}
+                className="logo__badge"
                 aria-haspopup="dialog"
-                aria-label={
-                    DEV ? 'Development version: more info' : 'Preview: what does that mean?'
-                }
+                aria-label="Development version: more info"
                 onClick={() => setOpen(true)}
             >
-                {DEV ? 'Dev' : 'Preview'}
+                Dev
             </button>
             <dialog
                 ref={ref}
                 className="dialog dialog--confirm"
-                aria-labelledby="preview-title"
+                aria-labelledby="dev-title"
                 onClose={() => setOpen(false)}
                 onClick={(e) => e.target === ref.current && setOpen(false)}
             >
@@ -35,15 +33,10 @@ export function PreviewBadge() {
                         <FlaskConical />
                     </div>
                     <div className="confirm__text">
-                        <h2 id="preview-title">
-                            {DEV ? 'Development version' : 'GameQueue is in preview'}
-                        </h2>
+                        <h2 id="dev-title">Development version</h2>
                         <p className="muted">
-                            {DEV ? (
-                                'This is the development version of GameQueue, started with npm run dev. It is not the live site.'
-                            ) : (
-                                <PreviewDetail />
-                            )}
+                            This is the development version of GameQueue, started with npm run dev.
+                            It is not the live site.
                         </p>
                     </div>
                     <div className="confirm__actions">
