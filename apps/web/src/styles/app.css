@@ -858,8 +858,7 @@ a:is(:hover, :focus-visible) > .logo .logo__word {
     fill: var(--avatar-fg);
 }
 @media (max-width: 640px) {
-    .logo__word,
-    .logo__badge {
+    .logo__name {
         display: none;
     }
 }
@@ -4227,9 +4226,9 @@ fieldset.stars:disabled .stars__star {
     .sidebar .logo__word {
         display: inline;
     }
-    .mobile-bar .logo__badge,
-    .sidebar .logo__badge {
-        display: inline-block;
+    .mobile-bar .logo__name,
+    .sidebar .logo__name {
+        display: inline-flex;
     }
     /* Bigger rows and type in the menu: it is operated with a thumb */
     .sidebar {
@@ -7909,7 +7908,22 @@ button.tier-tile__button {
     margin: 0;
     color: var(--ink-muted);
 }
-/* "Preview" pill beside the wordmark */
+/* "Preview" pill beside the wordmark; the 220px desktop sidebar is too narrow for both on one line, so it sits underneath there */
+.logo__name {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+@media (min-width: 900px) {
+    .sidebar .logo__name {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 2px;
+    }
+    .sidebar .logo__word {
+        line-height: 1;
+    }
+}
 .logo__badge {
     padding: 1px 6px;
     border: 1px solid var(--status-mid);
