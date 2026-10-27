@@ -6,6 +6,28 @@ people. Not legal advice. It's a working checklist: tick things off, and put the
 
 Signups are off or limited until this is done: **Admin > signups toggle** (`SIGNUPS_ENABLED`).
 
+## If signups stay off
+
+You don't need the rest of this file. The people who already have accounts still have their email
+and names in the database, so do these four things and stop:
+
+- [ ] **Backups:** they go off the Pi (rclone `offsite` remote working), and you have restored one
+      successfully at least once. This is the biggest real risk. See "Backups and recovery" in
+      section 4.
+- [ ] **A short privacy note** and a contact email, linked from the footer: what is stored, that
+      it's a preview and data could be lost, how to export or delete, and who to write to. One page;
+      the full policy and terms can wait. Set up the address with Cloudflare Email Routing
+      (forward `privacy@gamequeue.app` to your Gmail).
+- [ ] **Security basics:** production env is right (`NODE_ENV=production`, `ALLOWED_ORIGINS` /
+      `PUBLIC_URL`, `TRUST_PROXY` only behind your proxy), a strong unique admin password, SSH by key
+      only, the Pi reachable only through Cloudflare. See "Server and network" and "Security" in
+      section 4.
+- [ ] **Signups really are off in production:** the Admin toggle can override `SIGNUPS_ENABLED`, so
+      check **Admin > Allow new signups** in the running app, not just the env file. Friends can
+      still be added from **Admin > Users**, which works with signups off.
+
+Everything below is for opening signups to people you don't know.
+
 ## 1. What the code already tells us
 
 Checked against the code on 2026-10-27. Re-check anything that has changed since.
