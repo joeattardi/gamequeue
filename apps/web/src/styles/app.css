@@ -7959,3 +7959,11 @@ button.tier-tile__button {
 .logo__badge:is(:hover, :focus-visible) {
     background: color-mix(in srgb, var(--status-mid) 16%, transparent);
 }
+/* The development version: blue instead of the preview amber */
+.logo__badge--dev {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+.logo__badge--dev:is(:hover, :focus-visible) {
+    background: color-mix(in srgb, var(--accent) 16%, transparent);
+}
