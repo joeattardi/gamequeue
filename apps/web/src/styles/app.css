@@ -7955,8 +7955,33 @@ button.tier-tile__button {
 .logo__badge--dev:is(:hover, :focus-visible) {
     background: color-mix(in srgb, var(--accent) 16%, var(--surface));
 }
+/* Hovering or focusing the logo gives the stamp a wiggle */
+:is(.logo-row, .sidebar__brand, .mobile-bar__brand)
+    > :is(a, .logo):is(:hover, :focus-visible)
+    ~ .logo__badge {
+    animation: badge-wiggle 0.55s ease-in-out;
+}
+@keyframes badge-wiggle {
+    0%,
+    100% {
+        transform: rotate(-9deg);
+    }
+    20% {
+        transform: rotate(-17deg) translateY(-1px);
+    }
+    40% {
+        transform: rotate(-2deg);
+    }
+    60% {
+        transform: rotate(-14deg);
+    }
+    80% {
+        transform: rotate(-6deg);
+    }
+}
 @media (prefers-reduced-motion: reduce) {
     .logo__badge {
         transition: none;
+        animation: none !important;
     }
 }
