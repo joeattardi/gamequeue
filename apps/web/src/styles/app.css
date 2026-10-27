@@ -4098,14 +4098,6 @@ fieldset.stars:disabled .stars__star {
         top: 50%;
         transform: translate(-50%, -50%);
     }
-    /* Out of the flow, so the logo itself stays centred */
-    .mobile-bar__brand .logo__badge {
-        position: absolute;
-        left: 100%;
-        top: 50%;
-        margin-left: 8px;
-        transform: translateY(-50%);
-    }
     .mobile-bar__logo {
         display: flex;
         align-items: center;
@@ -7913,21 +7905,12 @@ button.tier-tile__button {
     margin: 0;
     color: var(--ink-muted);
 }
-/* "Preview" pill by the wordmark: a button that sits beside the logo's link, never inside it */
-.logo-row {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-}
+/* The "Preview" / "Dev" badge is a rubber stamp over the corner of the wordmark. It is a button that
+   sits beside the logo's link, never inside it (a button in a link is invalid), on top of it. */
+.logo-row,
 .sidebar__brand {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 2px;
-}
-/* Under the wordmark: the sidebar is too narrow for both on a line (12px padding + 32px mark + 8px gap) */
-.sidebar__brand .logo__badge {
-    margin-left: 52px;
+    position: relative;
+    display: inline-flex;
 }
 @media (max-width: 899px) {
     .sidebar__brand .logo__badge {
@@ -7940,24 +7923,29 @@ button.tier-tile__button {
     }
 }
 .logo__badge {
-    padding: 1px 6px;
-    border: 1px solid var(--status-mid);
-    border-radius: 999px;
+    position: absolute;
+    right: 4px;
+    bottom: -5px;
+    z-index: 1;
+    padding: 0 6px;
+    border: 2px solid var(--status-mid);
+    border-radius: 4px;
+    background: color-mix(in srgb, var(--surface) 82%, transparent);
     color: var(--status-mid);
     font-family: var(--font-body);
     font-size: 0.62rem;
-    font-weight: 700;
-    letter-spacing: 0.06em;
+    font-weight: 800;
+    letter-spacing: 0.1em;
     text-transform: uppercase;
-    line-height: 1.4;
+    line-height: 1.5;
     white-space: nowrap;
-}
-.logo__badge {
-    background: transparent;
     cursor: pointer;
+    transform: rotate(-9deg);
+    transition: transform 0.15s;
 }
 .logo__badge:is(:hover, :focus-visible) {
-    background: color-mix(in srgb, var(--status-mid) 16%, transparent);
+    background: color-mix(in srgb, var(--status-mid) 16%, var(--surface));
+    transform: rotate(-9deg) scale(1.08);
 }
 /* The development version: blue instead of the preview amber */
 .logo__badge--dev {
@@ -7965,5 +7953,10 @@ button.tier-tile__button {
     color: var(--accent);
 }
 .logo__badge--dev:is(:hover, :focus-visible) {
-    background: color-mix(in srgb, var(--accent) 16%, transparent);
+    background: color-mix(in srgb, var(--accent) 16%, var(--surface));
+}
+@media (prefers-reduced-motion: reduce) {
+    .logo__badge {
+        transition: none;
+    }
 }
