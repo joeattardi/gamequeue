@@ -35,6 +35,7 @@ export function Footer({ sitemap = false }: { sitemap?: boolean }) {
                 </nav>
             )}
             <span>© {new Date().getFullYear()} Joe Attardi</span>
+            <span>Preview: features may change and data could be lost.</span>
             <span>
                 Game data from{' '}
                 <a href="https://www.igdb.com" target="_blank" rel="noreferrer">

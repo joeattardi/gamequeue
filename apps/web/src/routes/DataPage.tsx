@@ -96,6 +96,10 @@ export function DataPage() {
                 <section aria-labelledby="export-h" className="panel">
                     <h2 id="export-h">Export</h2>
                     <p>
+                        <strong>GameQueue is in preview</strong>, so your data could be lost. Export
+                        a copy now and then.
+                    </p>
+                    <p>
                         One JSON file with your collection, playthroughs, slots, lists, queue,
                         wishlist, smart lists, grids, tier lists and tags, plus the names and
                         details of its games so the file makes sense on its own.

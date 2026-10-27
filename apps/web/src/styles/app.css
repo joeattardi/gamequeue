@@ -745,6 +745,7 @@ a:is(:hover, :focus-visible) > .logo .logo__word {
     .is-collapsed .nav__text,
     .is-collapsed .nav__label,
     .is-collapsed .logo__word,
+    .is-collapsed .logo__badge,
     .is-collapsed .user-menu__name,
     .is-collapsed .user-menu__button .lucide:last-child,
     .is-collapsed .nav-search kbd {
@@ -857,7 +858,8 @@ a:is(:hover, :focus-visible) > .logo .logo__word {
     fill: var(--avatar-fg);
 }
 @media (max-width: 640px) {
-    .logo__word {
+    .logo__word,
+    .logo__badge {
         display: none;
     }
 }
@@ -4224,6 +4226,10 @@ fieldset.stars:disabled .stars__star {
     .mobile-bar .logo__word,
     .sidebar .logo__word {
         display: inline;
+    }
+    .mobile-bar .logo__badge,
+    .sidebar .logo__badge {
+        display: inline-block;
     }
     /* Bigger rows and type in the menu: it is operated with a thumb */
     .sidebar {
@@ -7884,4 +7890,36 @@ button.tier-tile__button {
 }
 .landing > .preview-notice {
     width: calc(100% - 2 * var(--gutter));
+}
+.preview-notice--inline {
+    margin: 0 0 16px;
+}
+.preview-notice--inline p {
+    flex: 1;
+    min-width: 0;
+}
+.preview-notice__close {
+    flex: none;
+    min-width: 32px;
+    min-height: 32px;
+    padding: 4px;
+    margin: -4px -6px -4px 0;
+}
+.preview-notice__close svg {
+    margin: 0;
+    color: var(--ink-muted);
+}
+/* "Preview" pill beside the wordmark */
+.logo__badge {
+    padding: 1px 6px;
+    border: 1px solid var(--status-mid);
+    border-radius: 999px;
+    color: var(--status-mid);
+    font-family: var(--font-body);
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    line-height: 1.4;
+    white-space: nowrap;
 }
