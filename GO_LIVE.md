@@ -56,8 +56,10 @@ verification, signup toggle, per-IP rate limits, preview notices.
       terms, governing law.
 - [ ] **Footer links** to both (next to Credits in `Footer`), and a "by signing up you agree to the
       Terms and Privacy Policy" line on the register form.
-- [ ] **Contact address** for privacy and abuse reports. A dedicated address, not a personal one if
-      avoidable. Publish it in the policy, the terms and the footer.
+- [ ] **Contact email address** for privacy and abuse reports. A dedicated address, not a personal
+      one if avoidable. Publish it in the policy, the terms and the footer. A postal address is not
+      needed for this site; it would become relevant only if you start sending marketing email or
+      taking payments, or if a lawyer says your situation needs an imprint.
 - [ ] **Credits page**: confirm IGDB, ITAD, game-icons.net (CC BY 3.0) and fonts attribution is
       complete.
 - [ ] **Update `ARCHITECTURE.md`** for the new pages (and `README`/`OVERVIEW` if the shape changes).
@@ -188,6 +190,6 @@ Fill these in as you go. The policy is written from this section.
 - ITAD terms reviewed on (date):
 - Minimum age:
 - Governing law and operator name:
-- Contact and abuse address:
+- Contact and abuse email:
 - Breach plan (who, how, how fast):
 - Anything the code does that the policy must mention:
