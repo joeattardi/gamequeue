@@ -7925,7 +7925,7 @@ button.tier-tile__button {
 .logo__badge {
     position: absolute;
     right: 4px;
-    bottom: -5px;
+    top: -7px;
     z-index: 1;
     padding: 0 6px;
     border: 2px solid var(--status-mid);
