@@ -63,13 +63,37 @@ describe('POST /pick', () => {
         const { post, call, hades, celeste, knight } = await setup();
         const list = (await call('/lists', 'POST', { name: 'Up next' })).list.id;
         for (const e of [hades, celeste, knight])
-            await call(`/lists/${list}/items`, 'POST', { entryId: e.id });
+            await call(`/lists/${list}/items`, 'POST', { igdbId: e.game.id });
         await call(`/entries/${celeste.id}/start`, 'POST', {});
         const res = await post({ source: { type: 'list', listId: list } });
         expect(res.candidateCount).toBe(2);
         expect([hades.id, knight.id]).toContain(res.entry.id);
 
         expect((await post({ source: { type: 'list', listId: 99999 } })).status).toBe(404);
+    });
+
+    it('skips games on a list that are not in the collection, and says how many', async () => {
+        const { post, call, hades, wilds } = await setup();
+        await call(`/entries/${wilds.id}`, 'DELETE'); // Outer Wilds is no longer owned
+        const list = (await call('/lists', 'POST', { name: 'Mixed' })).list.id;
+        // it is on the list but can never be picked
+        await call(`/lists/${list}/items`, 'POST', { igdbId: hades.game.id });
+        await call(`/lists/${list}/items`, 'POST', { igdbId: wilds.game.id });
+        for (let i = 0; i < 10; i++) {
+            const res = await post({ source: { type: 'list', listId: list } });
+            expect(res).toMatchObject({ candidateCount: 1, skippedUnowned: 1 });
+            expect(res.entry.id).toBe(hades.id);
+        }
+        // a list of only unowned games has nothing to pick, and still isn't an error
+        const only = (await call('/lists', 'POST', { name: 'Wishy' })).list.id;
+        await call(`/lists/${only}/items`, 'POST', { igdbId: wilds.game.id });
+        expect(await post({ source: { type: 'list', listId: only } })).toMatchObject({
+            status: 200,
+            entry: null,
+            candidateCount: 0,
+            skippedUnowned: 1
+        });
+        expect((await post({ source: { type: 'backlog' } })).skippedUnowned).toBe(0);
     });
 
     it('returns no entry when nothing matches (an empty backlog is not an error)', async () => {

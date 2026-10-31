@@ -135,19 +135,19 @@ export async function getSeries(
 
     const queued = new Set(
         db
-            .select({ entryId: listItems.entryId })
+            .select({ gameId: listItems.gameId })
             .from(listItems)
             .innerJoin(lists, eq(lists.id, listItems.listId))
             .where(and(eq(lists.userId, userId), eq(lists.kind, 'queue')))
             .all()
-            .map((q) => q.entryId)
+            .map((q) => q.gameId)
     );
     const entryOf = new Map(owned.map((o) => [o.gameId, o]));
     const members: SeriesMemberDto[] = [...byGame.values()].map((m) => {
         const e = entryOf.get(m.igdbId);
         return {
             ...m,
-            entry: e ? { id: e.id, status: e.status, queued: queued.has(e.id) } : null,
+            entry: e ? { id: e.id, status: e.status, queued: queued.has(m.igdbId) } : null,
             wishlisted: wished.has(m.igdbId)
         };
     });
@@ -174,7 +174,7 @@ export async function queueSeries(
     return db.transaction((tx) => {
         const d = tx as unknown as Db;
         const queue = ensureQueue(d, userId);
-        for (const m of todo) addToList(d, userId, queue.id, m.entry!.id);
+        for (const m of todo) addToList(d, userId, queue.id, m.igdbId);
         return { added: todo.length };
     });
 }

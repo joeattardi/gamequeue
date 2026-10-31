@@ -1,7 +1,7 @@
 import { SelectSkeleton } from '../components/PageSkeletons';
 import { ResultListSkeleton } from '../components/ResultSkeletons';
 import type { EntryDto, SearchResultDto } from '@gamequeue/shared';
-import { pickRandom } from '@gamequeue/shared';
+import { ownedEntries, pickRandom } from '@gamequeue/shared';
 import { useState } from 'react';
 import { Link } from 'react-router';
 import { useQueryClient } from '@tanstack/react-query';
@@ -345,7 +345,7 @@ function LoadList({ id, onAdd }: { id: number; onAdd: (games: Contender[]) => vo
                 ['list', id],
                 `/lists/${id}`,
                 (r: { list: ListDetailDto }) => ({
-                    items: r.list.entries,
+                    items: ownedEntries(r.list.items),
                     total: r.list.total
                 })
             );

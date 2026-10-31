@@ -19,11 +19,13 @@ import {
     MAX_LIST_DESCRIPTION,
     availableActions,
     statusLabel,
-    type EntryDto
+    type EntryDto,
+    type ListItemDto,
+    type SearchResultDto
 } from '@gamequeue/shared';
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
-import { useEntries } from '../api/collection';
+import { useEntries, useGameSearch } from '../api/collection';
 import { ApiRequestError } from '../api/client';
 import {
     useAddToList,
@@ -39,7 +41,7 @@ import { CountBadge } from '../components/CountBadge';
 import { useConfirm } from '../components/Confirm';
 import { Cover } from '../components/Cover';
 import { reveal } from '../components/motion';
-import { useEntryLink } from '../pageTransitions';
+import { useGameLink } from '../pageTransitions';
 import { GameCard } from '../components/GameCard';
 import { LayoutToggle, useLayout } from '../components/LayoutToggle';
 import { LoadMore } from '../components/LoadMore';
@@ -128,18 +130,18 @@ function ListView({
     isQueue?: boolean;
 }) {
     const navigate = useNavigate();
-    const entries = paged.items;
-    const total = paged.total ?? entries.length;
+    const items = paged.items;
+    const total = paged.total ?? items.length;
     const reorder = useMoveInList(id);
     const remove = useRemoveFromList();
     const del = useDeleteList(id);
     const confirm = useConfirm();
     // Reordering and removing only exist in the list layout; tiles are for browsing
     const [layout, setLayout] = useLayout(LAYOUT_KEY, 'list');
-    const [order, setOrder] = useState(entries);
+    const [order, setOrder] = useState(items);
     const [error, setError] = useState<string>();
     const [editing, setEditing] = useState(false);
-    useEffect(() => setOrder(entries), [entries]);
+    useEffect(() => setOrder(items), [items]);
 
     const sensors = useSensors(
         useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -149,11 +151,11 @@ function ListView({
     // Only the first pages are loaded, so an index here is also the game's index in the whole
     // list, and the server moves just that one game.
     function commit(from: number, to: number) {
-        const entryId = order[from]!.id;
+        const igdbId = order[from]!.igdbId;
         setOrder(arrayMove(order, from, to)); // optimistic; the query refetches and corrects it if the save fails
         setError(undefined);
         reorder.mutate(
-            { entryId, toIndex: to },
+            { igdbId, toIndex: to },
             { onError: () => setError("Couldn't save the new order.") }
         );
     }
@@ -161,8 +163,8 @@ function ListView({
     function onDragEnd({ active, over }: DragEndEvent) {
         if (!over || active.id === over.id) return;
         commit(
-            order.findIndex((e) => e.id === active.id),
-            order.findIndex((e) => e.id === over.id)
+            order.findIndex((e) => e.igdbId === active.id),
+            order.findIndex((e) => e.igdbId === over.id)
         );
     }
 
@@ -236,7 +238,7 @@ function ListView({
                 description && <p className="list-description">{description}</p>
             )}
 
-            <AddGames listId={id} isQueue={isQueue} />
+            <AddGames listId={id} isQueue={isQueue} inList={new Set(items.map((i) => i.igdbId))} />
             <p className="form-error" role="alert">
                 {error}
             </p>
@@ -256,9 +258,17 @@ function ListView({
                 <>
                     {layout === 'grid' ? (
                         <ol className="grid">
-                            {order.map((entry, i) => (
-                                <GameCard key={entry.id} entry={entry} position={i + 1} />
-                            ))}
+                            {order.map((item, i) =>
+                                item.entry ? (
+                                    <GameCard
+                                        key={item.igdbId}
+                                        entry={item.entry}
+                                        position={i + 1}
+                                    />
+                                ) : (
+                                    <UnownedTile key={item.igdbId} item={item} position={i + 1} />
+                                )
+                            )}
                         </ol>
                     ) : (
                         <DndContext
@@ -267,20 +277,20 @@ function ListView({
                             onDragEnd={onDragEnd}
                         >
                             <SortableContext
-                                items={order.map((e) => e.id)}
+                                items={order.map((e) => e.igdbId)}
                                 strategy={verticalListSortingStrategy}
                             >
                                 <ol className="rows">
-                                    {order.map((entry, i) => (
+                                    {order.map((item, i) => (
                                         <Row
-                                            key={entry.id}
-                                            entry={entry}
+                                            key={item.igdbId}
+                                            item={item}
                                             index={i}
                                             last={i === order.length - 1}
                                             isQueue={isQueue}
                                             onMove={(by) => move(i, by)}
                                             onRemove={() =>
-                                                remove.mutate({ listId: id, entryId: entry.id })
+                                                remove.mutate({ listId: id, igdbId: item.igdbId })
                                             }
                                         />
                                     ))}
@@ -309,15 +319,34 @@ function ListView({
     );
 }
 
+/** A game on the list that isn't in your collection: links to its IGDB page, where it can be added. */
+function UnownedTile({ item, position }: { item: ListItemDto; position: number }) {
+    const { game } = item;
+    return (
+        <li className="card" ref={reveal}>
+            <Link to={`/games/igdb/${item.igdbId}`} className="card__link">
+                <div className="card__art">
+                    <Cover imageId={game.coverImageId} name={game.name} />
+                    <div className="card__info">
+                        <strong className="card__title">{game.name}</strong>
+                        <span className="muted card__sub">Not in your collection</span>
+                    </div>
+                    <span className="card__pos">{position}</span>
+                </div>
+            </Link>
+        </li>
+    );
+}
+
 function Row({
-    entry,
+    item,
     index,
     last,
     isQueue,
     onMove,
     onRemove
 }: {
-    entry: EntryDto;
+    item: ListItemDto;
     isQueue: boolean;
     index: number;
     last: boolean;
@@ -332,7 +361,7 @@ function Row({
         transform,
         transition,
         isDragging
-    } = useSortable({ id: entry.id });
+    } = useSortable({ id: item.igdbId });
     const nodeRef = useCallback(
         (el: HTMLElement | null) => {
             setNodeRef(el);
@@ -340,8 +369,8 @@ function Row({
         },
         [setNodeRef]
     );
-    const { game } = entry;
-    const link = useEntryLink(entry);
+    const { game, entry } = item;
+    const link = useGameLink(entry, item.igdbId);
     return (
         <li
             ref={nodeRef}
@@ -382,19 +411,30 @@ function Row({
                     <MetaLine
                         parts={[
                             yearOf(game.releaseDate),
-                            <PlatformTags key="p" platforms={entry.platforms} />,
-                            entry.ttbMinutes !== null ? formatMinutes(entry.ttbMinutes) : null
+                            <PlatformTags
+                                key="p"
+                                platforms={entry ? entry.platforms : game.platforms.slice(0, 4)}
+                            />,
+                            (entry ? entry.ttbMinutes : (game.ttb?.normally ?? null)) !== null
+                                ? formatMinutes((entry ? entry.ttbMinutes : game.ttb?.normally)!)
+                                : null
                         ]}
                     />
                 </span>
-                {entry.status !== 'unplayed' && (
-                    <span className={`badge badge--${entry.status}`}>
-                        {statusLabel(entry.status)}
-                    </span>
+                {entry ? (
+                    (!isQueue || entry.status !== 'unplayed') && (
+                        <span
+                            className={`badge ${entry.status === 'unplayed' ? 'badge--quiet' : `badge--${entry.status}`}`}
+                        >
+                            {statusLabel(entry.status)}
+                        </span>
+                    )
+                ) : (
+                    <span className="badge badge--quiet">Not in collection</span>
                 )}
             </div>
             <div className="row-item__actions">
-                {isQueue && availableActions(entry.status).includes('start') && (
+                {isQueue && entry && availableActions(entry.status).includes('start') && (
                     <StartPlayingButton entry={entry} className="btn btn--small btn--primary" />
                 )}
                 <button
@@ -494,13 +534,25 @@ function EditListForm({
     );
 }
 
-function AddGames({ listId, isQueue }: { listId: number; isQueue: boolean }) {
+function AddGames({
+    listId,
+    isQueue,
+    inList
+}: {
+    listId: number;
+    isQueue: boolean;
+    inList: Set<number>;
+}) {
     const [text, setText] = useState('');
     const q = useDebounced(text.trim(), 250);
     return (
         <div className="panel">
             <label className="field">
-                <span>{isQueue ? 'Add games to the queue' : 'Add games from your collection'}</span>
+                <span>
+                    {isQueue
+                        ? 'Add games from your collection to the queue'
+                        : 'Add any game: search IGDB, owned or not'}
+                </span>
                 <input
                     type="search"
                     value={text}
@@ -509,26 +561,23 @@ function AddGames({ listId, isQueue }: { listId: number; isQueue: boolean }) {
                     autoComplete="off"
                 />
             </label>
-            {q && <AddResults listId={listId} q={q} isQueue={isQueue} />}
+            {q &&
+                (isQueue ? (
+                    <QueueAddResults listId={listId} q={q} />
+                ) : (
+                    <AddResults listId={listId} q={q} inList={inList} />
+                ))}
         </div>
     );
 }
 
-function AddResults({ listId, q, isQueue }: { listId: number; q: string; isQueue: boolean }) {
-    // Entries say which lists hold them, so membership doesn't depend on what the page has loaded
+/** The queue takes games you own, so it searches your collection. */
+function QueueAddResults({ listId, q }: { listId: number; q: string }) {
+    // Entries say whether they are queued, so membership doesn't depend on what the page has loaded
     const results = useEntries(new URLSearchParams({ view: 'all', q }), 20);
     const add = useAddToList();
-    const inList = (e: EntryDto) => (isQueue ? e.queued : e.lists.some((l) => l.id === listId));
-    const matches = (results.data?.entries ?? []).filter((e) => !inList(e)).slice(0, 8);
-    if (results.isPending)
-        return (
-            <ul className="results" aria-busy="true">
-                <li className="sr-only" role="status">
-                    Searching…
-                </li>
-                <ResultSkeletons trailing="badge" />
-            </ul>
-        );
+    const matches = (results.data?.entries ?? []).filter((e) => !e.queued).slice(0, 8);
+    if (results.isPending) return <SearchingResults />;
     if (matches.length === 0)
         return (
             <p className="muted">{results.data?.total ? 'Already in this list.' : 'No matches.'}</p>
@@ -540,7 +589,7 @@ function AddResults({ listId, q, isQueue }: { listId: number; q: string; isQueue
                     <button
                         className="result"
                         disabled={add.isPending}
-                        onClick={() => add.mutate({ listId, entryId: e.id })}
+                        onClick={() => add.mutate({ listId, igdbId: e.game.id })}
                     >
                         <Cover imageId={e.game.coverImageId} name={e.game.name} size="cover_big" />
                         <span className="result__text">
@@ -559,5 +608,84 @@ function AddResults({ listId, q, isQueue }: { listId: number; q: string; isQueue
                 </li>
             ))}
         </ul>
+    );
+}
+
+function SearchingResults() {
+    return (
+        <ul className="results" aria-busy="true">
+            <li className="sr-only" role="status">
+                Searching…
+            </li>
+            <ResultSkeletons trailing="badge" />
+        </ul>
+    );
+}
+
+/** A regular list takes any game, so it searches IGDB; games already on the list are marked. */
+function AddResults({ listId, q, inList }: { listId: number; q: string; inList: Set<number> }) {
+    const search = useGameSearch(q);
+    const add = useAddToList();
+    const [error, setError] = useState<string>();
+    if (search.isPending) return <SearchingResults />;
+    if (search.isError)
+        return (
+            <p className="form-error" role="alert">
+                {search.error instanceof ApiRequestError ? search.error.message : 'Search failed.'}
+            </p>
+        );
+    const hits: SearchResultDto[] = (search.data ?? []).slice(0, 8);
+    if (hits.length === 0) return <p className="muted">No matches.</p>;
+    return (
+        <>
+            <ul className="results">
+                {hits.map((r) => {
+                    const here = inList.has(r.igdbId);
+                    return (
+                        <li key={r.igdbId}>
+                            <button
+                                className="result"
+                                disabled={add.isPending || here}
+                                onClick={() => {
+                                    setError(undefined);
+                                    add.mutate(
+                                        { listId, igdbId: r.igdbId },
+                                        {
+                                            onError: (e) =>
+                                                setError(
+                                                    e instanceof ApiRequestError
+                                                        ? e.message
+                                                        : "Couldn't add the game."
+                                                )
+                                        }
+                                    );
+                                }}
+                            >
+                                <Cover imageId={r.coverImageId} name={r.name} size="cover_big" />
+                                <span className="result__text">
+                                    <strong>{r.name}</strong>
+                                    <span className="muted">
+                                        <MetaLine
+                                            parts={[
+                                                r.year,
+                                                <PlatformTags
+                                                    key="p"
+                                                    platforms={r.platforms.slice(0, 4)}
+                                                />,
+                                                r.entryId !== null ? 'In your collection' : null
+                                            ]}
+                                        />
+                                    </span>
+                                </span>
+                                <span className="badge">{here ? 'On the list' : '+ Add'}</span>
+                            </button>
+                        </li>
+                    );
+                })}
+            </ul>
+            <p className="form-error" role="alert">
+                {error}
+            </p>
+        </>
     );
 }

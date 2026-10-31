@@ -22,7 +22,7 @@ export function ListsPanel({ entry }: { entry: EntryDto }) {
 
     function toggleList(listId: number) {
         setError(undefined);
-        const vars = { listId, entryId: entry.id };
+        const vars = { listId, igdbId: entry.game.id };
         if (member.has(listId)) remove.mutate(vars, { onError: fail });
         else add.mutate(vars, { onError: fail });
     }
@@ -30,7 +30,7 @@ export function ListsPanel({ entry }: { entry: EntryDto }) {
     function toggleQueue() {
         setError(undefined);
         const m = entry.queued ? dequeue : enqueue;
-        m.mutate(entry.id, { onError: fail });
+        m.mutate(entry.game.id, { onError: fail });
     }
 
     function submit(e: FormEvent) {
@@ -41,7 +41,7 @@ export function ListsPanel({ entry }: { entry: EntryDto }) {
             {
                 onSuccess: (list) => {
                     setName('');
-                    add.mutate({ listId: list.id, entryId: entry.id }, { onError: fail });
+                    add.mutate({ listId: list.id, igdbId: entry.game.id }, { onError: fail });
                 },
                 onError: fail
             }

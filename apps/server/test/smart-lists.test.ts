@@ -266,7 +266,7 @@ describe('CSV export', () => {
         const s = await setup();
         const list = (await s.call('/lists', 'POST', { name: 'Mine' })).list.id;
         for (const e of [s.wilds, s.hades])
-            await s.call(`/lists/${list}/items`, 'POST', { entryId: e.id });
+            await s.call(`/lists/${list}/items`, 'POST', { igdbId: e.game.id });
         const rows = (text: string) =>
             text
                 .slice(1)
@@ -279,7 +279,7 @@ describe('CSV export', () => {
             'Hades'
         ]);
 
-        await s.call('/queue/items', 'POST', { entryId: s.knight.id });
+        await s.call('/queue/items', 'POST', { igdbId: s.knight.game.id });
         const queueId = (await s.call('/queue')).list.id;
         expect(rows((await csvOf(s, `/lists/${queueId}/export.csv`)).text)).toEqual([
             'Hollow Knight'
@@ -361,7 +361,7 @@ describe('smart lists in export, import and the public profile', () => {
             name: 'Cozy',
             ruleText: ['Tagged cozy'],
             total: 2,
-            entries: [
+            items: [
                 expect.objectContaining({ game: expect.objectContaining({ name: 'Celeste' }) }),
                 expect.objectContaining({ game: expect.objectContaining({ name: 'Outer Wilds' }) })
             ]

@@ -219,7 +219,7 @@ export function PickCriteriaPage() {
                             key={result.entry.id}
                             note={`${result.candidateCount} ${
                                 result.candidateCount === 1 ? 'game matches' : 'games match'
-                            }${result.wrapped ? ' · you’ve seen them all, so this starts over' : ''}`}
+                            }${result.wrapped ? ' · you’ve seen them all, so this starts over' : ''}${skippedNote(result.skippedUnowned)}`}
                             entry={result.entry}
                             onReroll={() => run(seen)}
                             onPickAgain={() => {
@@ -234,6 +234,8 @@ export function PickCriteriaPage() {
                             </p>
                             <p className="muted">
                                 Try loosening the filters or picking from a different source.
+                                {skippedNote(result.skippedUnowned) &&
+                                    ` ${skippedNote(result.skippedUnowned).replace(' · ', '')}.`}
                             </p>
                         </div>
                     ))}
@@ -241,3 +243,9 @@ export function PickCriteriaPage() {
         </section>
     );
 }
+
+/** Tells the user when the list they picked from held games they don't own, which can't be picked. */
+const skippedNote = (n: number) =>
+    n > 0
+        ? ` · ${n} ${n === 1 ? 'game on the list isn’t' : 'games on the list aren’t'} in your collection, so ${n === 1 ? 'it was' : 'they were'} skipped`
+        : '';

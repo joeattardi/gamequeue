@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { EntryDto } from './collection.js';
+import type { EntryDto, GameDto } from './collection.js';
 import { moveItemSchema } from './pagination.js';
 
 export interface ListSummaryDto {
@@ -10,6 +10,13 @@ export interface ListSummaryDto {
     covers: string[];
 }
 
+/** A game on a list. `entry` is the collection entry when the user owns the game, else null. */
+export interface ListItemDto {
+    igdbId: number;
+    game: GameDto;
+    entry: EntryDto | null;
+}
+
 export interface ListDetailDto {
     id: number;
     name: string;
@@ -17,7 +24,7 @@ export interface ListDetailDto {
     /** What the owner wrote about the list; empty if nothing (always empty for the queue) */
     description: string;
     /** One page, in list order */
-    entries: EntryDto[];
+    items: ListItemDto[];
     /** Games in the whole list */
     total: number;
 }
@@ -37,6 +44,11 @@ export const patchListSchema = z
     .partial()
     .refine((v) => Object.keys(v).length > 0, 'Nothing to update');
 export type PatchListInput = z.infer<typeof patchListSchema>;
-export const addListItemSchema = z.object({ entryId: z.number().int().positive() });
-export const moveListItemSchema = moveItemSchema.extend({ entryId: z.number().int().positive() });
-export const reorderListSchema = z.object({ entryIds: z.array(z.number().int().positive()) });
+/** Items are addressed by IGDB game id, owned or not. */
+export const addListItemSchema = z.object({ igdbId: z.number().int().positive() });
+export const moveListItemSchema = moveItemSchema.extend({ igdbId: z.number().int().positive() });
+export const reorderListSchema = z.object({ igdbIds: z.array(z.number().int().positive()) });
+
+/** The entries of the games a list holds that the user owns, in list order (CSV, pick). */
+export const ownedEntries = (items: ListItemDto[]): EntryDto[] =>
+    items.flatMap((i) => (i.entry ? [i.entry] : []));

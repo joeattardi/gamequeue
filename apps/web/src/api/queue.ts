@@ -10,14 +10,14 @@ export const useQueue = (limit?: number) =>
         key: ['queue', limit ?? null],
         load: async (offset, size) =>
             (await api<{ list: ListDetailDto }>(withPage('/queue', offset, size))).list,
-        read: (l) => ({ items: l.entries, total: l.total }),
+        read: (l) => ({ items: l.items, total: l.total }),
         limit
     });
 
 export function useAddToQueue() {
     const invalidate = useInvalidateCollection();
     return useMutation({
-        mutationFn: (entryId: number) => api('/queue/items', { method: 'POST', body: { entryId } }),
+        mutationFn: (igdbId: number) => api('/queue/items', { method: 'POST', body: { igdbId } }),
         onSuccess: invalidate
     });
 }
@@ -25,7 +25,7 @@ export function useAddToQueue() {
 export function useRemoveFromQueue() {
     const invalidate = useInvalidateCollection();
     return useMutation({
-        mutationFn: (entryId: number) => api(`/queue/items/${entryId}`, { method: 'DELETE' }),
+        mutationFn: (igdbId: number) => api(`/queue/items/${igdbId}`, { method: 'DELETE' }),
         onSuccess: invalidate
     });
 }

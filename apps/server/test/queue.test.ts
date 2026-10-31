@@ -4,16 +4,16 @@ import { PC, setupApi } from './api.js';
 
 async function setup() {
     const s = await setupApi();
-    const names = (list: Record<string, any>) => list.entries.map((e: any) => e.game.name);
+    const names = (list: Record<string, any>) => list.items.map((e: any) => e.game.name);
     const queue = async () => (await s.call('/queue')).list;
-    const enqueue = (entryId: number) => s.call('/queue/items', 'POST', { entryId });
+    const enqueue = (igdbId: number) => s.call('/queue/items', 'POST', { igdbId });
     return { ...s, names, queue, enqueue };
 }
 
 describe('queue', () => {
     it('exists from the start, empty, and is not one of your lists', async () => {
         const { call, queue } = await setup();
-        expect(await queue()).toMatchObject({ kind: 'queue', entries: [] });
+        expect(await queue()).toMatchObject({ kind: 'queue', items: [] });
         expect((await call('/lists')).lists).toEqual([]);
         // asking twice gives the same one
         expect((await queue()).id).toBe((await call('/queue')).list.id);
@@ -28,22 +28,32 @@ describe('queue', () => {
         await act(c.id, 'start', { date: '2025-01-01' });
         await act(c.id, 'finish', { date: '2025-01-02' });
 
-        for (const e of [c, a, b]) expect((await enqueue(e.id)).status).toBe(200);
-        expect((await enqueue(a.id)).list.entries).toHaveLength(3);
+        for (const e of [c, a, b]) expect((await enqueue(e.game.id)).status).toBe(200);
+        expect((await enqueue(a.game.id)).list.items).toHaveLength(3);
         expect(names(await queue())).toEqual(['Hollow Knight', 'Hades', 'Celeste']);
         expect((await call(`/entries/${a.id}`)).entry).toMatchObject({ queued: true, lists: [] });
+    });
+
+    it('rejects a game you do not own, with a clear message', async () => {
+        const { enqueue, queue } = await setup();
+        const res = await enqueue(3); // on IGDB, not in the collection
+        expect(res.status).toBe(400);
+        expect(res.error).toBe('Only games in your collection can go on the queue');
+        expect((await queue()).items).toEqual([]);
     });
 
     it('reorders and removes', async () => {
         const { add, enqueue, queue, names, call } = await setup();
         const [a, b, c] = [await add(1), await add(2), await add(3)];
-        for (const e of [a, b, c]) await enqueue(e.id);
+        for (const e of [a, b, c]) await enqueue(e.game.id);
 
-        const res = await call('/queue/order', 'PUT', { entryIds: [c.id, a.id, b.id] });
+        const res = await call('/queue/order', 'PUT', {
+            igdbIds: [c.game.id, a.game.id, b.game.id]
+        });
         expect(names(res.list)).toEqual(['Hollow Knight', 'Hades', 'Celeste']);
-        expect((await call('/queue/order', 'PUT', { entryIds: [a.id] })).status).toBe(400);
+        expect((await call('/queue/order', 'PUT', { igdbIds: [a.game.id] })).status).toBe(400);
 
-        const removed = await call(`/queue/items/${a.id}`, 'DELETE');
+        const removed = await call(`/queue/items/${a.game.id}`, 'DELETE');
         expect(names(removed.list)).toEqual(['Hollow Knight', 'Celeste']);
         expect((await call(`/entries/${a.id}`)).entry.queued).toBe(false);
         expect(names(await queue())).toEqual(['Hollow Knight', 'Celeste']);
@@ -52,22 +62,22 @@ describe('queue', () => {
     it('cannot be renamed or deleted, and is private to you', async () => {
         const { call, add, enqueue, queue, secondUser } = await setup();
         const e = await add(1);
-        await enqueue(e.id);
+        await enqueue(e.game.id);
         const { id } = await queue();
         expect((await call(`/lists/${id}`, 'PATCH', { name: 'x' })).status).toBe(400);
         expect((await call(`/lists/${id}`, 'DELETE')).status).toBe(400);
 
         const other = await secondUser();
-        expect((await call('/queue', 'GET', undefined, other)).list.entries).toEqual([]);
-        expect((await call('/queue/items', 'POST', { entryId: e.id }, other)).status).toBe(404);
+        expect((await call('/queue', 'GET', undefined, other)).list.items).toEqual([]);
+        expect((await call('/queue/items', 'POST', { igdbId: e.game.id }, other)).status).toBe(400);
         expect((await call(`/lists/${id}`, 'GET', undefined, other)).status).toBe(404);
-        expect((await queue()).entries).toHaveLength(1);
+        expect((await queue()).items).toHaveLength(1);
     });
 
     it('leaves the queue when the game is started, and closes the gap', async () => {
         const { add, enqueue, queue, names, call } = await setup();
         const [a, b, c] = [await add(1), await add(2), await add(3)];
-        for (const e of [a, b, c]) await enqueue(e.id);
+        for (const e of [a, b, c]) await enqueue(e.game.id);
 
         const started = await call(`/entries/${b.id}/start`, 'POST', { date: '2025-01-01' });
         expect(started.entry).toMatchObject({ status: 'playing', queued: false });
@@ -75,20 +85,20 @@ describe('queue', () => {
 
         // positions were compacted, so a new game lands at the end
         const d = await add(4);
-        await enqueue(d.id);
+        await enqueue(d.game.id);
         expect(names(await queue())).toEqual(['Hades', 'Hollow Knight', 'Outer Wilds']);
     });
 
     it('leaves the queue when a game is started, but not when paused or resumed', async () => {
         const { add, enqueue, queue, names, call } = await setup();
         const [a, b] = [await add(1), await add(2)];
-        await enqueue(a.id);
-        await enqueue(b.id);
+        await enqueue(a.game.id);
+        await enqueue(b.game.id);
         await call(`/entries/${a.id}/start`, 'POST', { date: '2025-01-01', platformId: PC.id });
         expect(names(await queue())).toEqual(['Celeste']);
 
         // queued while playing, then pause/resume leave it alone
-        await enqueue(a.id);
+        await enqueue(a.game.id);
         await call(`/entries/${a.id}/pause`, 'POST');
         await call(`/entries/${a.id}/resume`, 'POST');
         expect(names(await queue())).toEqual(['Celeste', 'Hades']);
@@ -97,15 +107,15 @@ describe('queue', () => {
     it('drops a game from the queue when it leaves the collection', async () => {
         const { add, enqueue, queue, call } = await setup();
         const e = await add(1);
-        await enqueue(e.id);
+        await enqueue(e.game.id);
         await call(`/entries/${e.id}`, 'DELETE');
-        expect((await queue()).entries).toEqual([]);
+        expect((await queue()).items).toEqual([]);
     });
 
     it('can be a random pick source', async () => {
         const { add, enqueue, queue, call } = await setup();
         const e = await add(1);
-        await enqueue(e.id);
+        await enqueue(e.game.id);
         const res = await call('/pick', 'POST', {
             source: { type: 'list', listId: (await queue()).id },
             filters: {}
@@ -116,7 +126,7 @@ describe('queue', () => {
     it('round-trips through export and import, merging into an existing queue', async () => {
         const a = await setup();
         const [h, c, k] = [await a.add(1), await a.add(2), await a.add(3)];
-        for (const e of [k, h, c]) await a.enqueue(e.id);
+        for (const e of [k, h, c]) await a.enqueue(e.game.id);
         const file = (await a.call('/data/export')) as unknown as ExportFile;
         expect(file.queue).toEqual([3, 1, 2]);
         expect(file.lists).toEqual([]);
@@ -124,7 +134,7 @@ describe('queue', () => {
         const b = await setup();
         const dry = await b.call('/data/import', 'POST', file);
         expect(dry.report.queue.added).toBe(3);
-        expect((await b.queue()).entries).toEqual([]);
+        expect((await b.queue()).items).toEqual([]);
 
         const done = await b.call('/data/import?commit=true', 'POST', file);
         expect(done.report.queue.added).toBe(3);
@@ -138,15 +148,15 @@ describe('queue', () => {
     it('keeps its own place when your queue already has games, and an old file has no queue', async () => {
         const a = await setup();
         const [h, c] = [await a.add(1), await a.add(2)];
-        await a.enqueue(h.id);
-        await a.enqueue(c.id);
+        await a.enqueue(h.game.id);
+        await a.enqueue(c.game.id);
         const file = (await a.call('/data/export')) as unknown as Record<string, unknown>;
 
         const b = await setup();
         const w = await b.add(4);
         const celeste = await b.add(2);
-        await b.enqueue(w.id);
-        await b.enqueue(celeste.id);
+        await b.enqueue(w.game.id);
+        await b.enqueue(celeste.game.id);
         await b.call('/data/import?commit=true', 'POST', file);
         expect(b.names(await b.queue())).toEqual(['Outer Wilds', 'Celeste', 'Hades']);
 

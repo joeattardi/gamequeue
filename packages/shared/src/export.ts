@@ -137,7 +137,7 @@ export const exportFileSchema = z
                     name: z.string().trim().min(1).max(60),
                     /** Added after v1 shipped: optional, an older file has none */
                     description: listDescription.default(''),
-                    /** IGDB ids in list order */
+                    /** IGDB ids in list order; the games need not be in the collection */
                     games: z.array(id)
                 })
             )
@@ -201,17 +201,6 @@ export const exportFileSchema = z
             }
             wished.add(w.igdbId);
         });
-        f.lists.forEach((l, i) =>
-            l.games.forEach((g, j) => {
-                if (!ids.has(g)) {
-                    ctx.addIssue({
-                        code: 'custom',
-                        path: ['lists', i, 'games', j],
-                        message: `Game ${g} isn't in the file`
-                    });
-                }
-            })
-        );
     });
 
 export type ExportFile = z.infer<typeof exportFileSchema>;

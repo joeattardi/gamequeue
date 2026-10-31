@@ -1,5 +1,6 @@
 import {
     filterCandidates,
+    ownedEntries,
     pickRandom,
     toCandidate,
     type EntryDto,
@@ -19,8 +20,12 @@ export function pick(
     rng: () => number = Math.random
 ): PickResultDto {
     let pool: EntryDto[];
+    let skippedUnowned = 0;
     if (input.source.type === 'list') {
-        pool = getList(db, userId, input.source.listId).entries;
+        // A list can hold games that aren't in the collection; only owned ones can be picked
+        const { items } = getList(db, userId, input.source.listId);
+        pool = ownedEntries(items);
+        skippedUnowned = items.length - pool.length;
     } else if (input.source.type === 'smart') {
         pool = getSmartList(db, userId, input.source.smartListId).entries;
     } else {
@@ -36,6 +41,7 @@ export function pick(
     return {
         entry: pool.find((e) => e.id === outcome.id) ?? null,
         candidateCount: outcome.candidateCount,
-        wrapped: outcome.wrapped
+        wrapped: outcome.wrapped,
+        skippedUnowned
     };
 }

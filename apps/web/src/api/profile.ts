@@ -61,7 +61,7 @@ export const useProfileList = (username: string, kind: 'lists' | 'smart-lists', 
         key: ['profile', username, kind, id],
         load: (offset, limit) =>
             api<ProfileListPageDto>(withPage(`/profiles/${username}/${kind}/${id}`, offset, limit)),
-        read: (p) => ({ items: p.entries, total: p.total }),
+        read: (p) => ({ items: p.items, total: p.total }),
         retry: false
     });
 

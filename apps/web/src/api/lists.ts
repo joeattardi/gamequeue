@@ -22,7 +22,7 @@ export const useList = (id: number) =>
         key: ['list', id],
         load: async (offset, limit) =>
             (await api<{ list: ListDetailDto }>(withPage(`/lists/${id}`, offset, limit))).list,
-        read: (l) => ({ items: l.entries, total: l.total }),
+        read: (l) => ({ items: l.items, total: l.total }),
         retry: false
     });
 
@@ -55,8 +55,8 @@ export function useDeleteList(id: number) {
 export function useAddToList() {
     const invalidate = useInvalidateCollection();
     return useMutation({
-        mutationFn: (v: { listId: number; entryId: number }) =>
-            api(`/lists/${v.listId}/items`, { method: 'POST', body: { entryId: v.entryId } }),
+        mutationFn: (v: { listId: number; igdbId: number }) =>
+            api(`/lists/${v.listId}/items`, { method: 'POST', body: { igdbId: v.igdbId } }),
         onSuccess: invalidate
     });
 }
@@ -64,8 +64,8 @@ export function useAddToList() {
 export function useRemoveFromList() {
     const invalidate = useInvalidateCollection();
     return useMutation({
-        mutationFn: (v: { listId: number; entryId: number }) =>
-            api(`/lists/${v.listId}/items/${v.entryId}`, { method: 'DELETE' }),
+        mutationFn: (v: { listId: number; igdbId: number }) =>
+            api(`/lists/${v.listId}/items/${v.igdbId}`, { method: 'DELETE' }),
         onSuccess: invalidate
     });
 }
@@ -74,7 +74,7 @@ export function useRemoveFromList() {
 export function useMoveInList(listId: number) {
     const invalidate = useInvalidateCollection();
     return useMutation({
-        mutationFn: (v: { entryId: number; toIndex: number }) =>
+        mutationFn: (v: { igdbId: number; toIndex: number }) =>
             api(`/lists/${listId}/move`, { method: 'PUT', body: v }),
         // Refetch either way so the UI snaps back to the server's order if the save failed
         onSettled: invalidate

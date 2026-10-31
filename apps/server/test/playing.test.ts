@@ -10,7 +10,7 @@ async function setup() {
             .map((e) => e.game.name)
             .sort();
     const queued = async () =>
-        ((await s.call('/queue')).list.entries as { game: { name: string } }[]).map(
+        ((await s.call('/queue')).list.items as { game: { name: string } }[]).map(
             (e) => e.game.name
         );
     return { ...s, act, byStatus, queued };
@@ -47,7 +47,7 @@ describe('playing without slots', () => {
     it('starting a queued game opens a playthrough, sets playing and dequeues it', async () => {
         const { add, act, queued, call } = await setup();
         const e = await add(1);
-        await call('/queue/items', 'POST', { entryId: e.id });
+        await call('/queue/items', 'POST', { igdbId: e.game.id });
         expect(await queued()).toEqual(['Hades']);
         const started = (await act(e.id, 'start')).entry;
         expect(started).toMatchObject({ status: 'playing', openPlaythrough: { outcome: null } });
@@ -57,7 +57,7 @@ describe('playing without slots', () => {
     it('starting the random pick result does the same', async () => {
         const { add, act, queued, call } = await setup();
         const e = await add(1);
-        await call('/queue/items', 'POST', { entryId: e.id });
+        await call('/queue/items', 'POST', { igdbId: e.game.id });
         const picked = (await call('/pick', 'POST', { source: { type: 'backlog' }, filters: {} }))
             .entry;
         expect(picked.id).toBe(e.id);

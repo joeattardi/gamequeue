@@ -9,7 +9,8 @@ const SHOWN = 4;
 /** The first few games on the queue, for the home page. */
 export function UpNext() {
     const queue = useQueue(SHOWN);
-    const entries = queue.items;
+    // The queue only holds games you own, so every item has its entry
+    const entries = queue.items.flatMap((i) => (i.entry ? [i.entry] : []));
     const total = queue.total ?? 0;
     return (
         <section aria-labelledby="upnext-h" className="home-section">

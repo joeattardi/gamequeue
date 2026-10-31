@@ -5,6 +5,7 @@ import {
     entryQuerySchema,
     fullName,
     toPublicEntry,
+    ownedEntries,
     type EntryDto,
     type ActivityPageDto,
     type TimelineDto,
@@ -147,11 +148,16 @@ export function getProfileList(
         .where(and(eq(lists.id, listId), eq(lists.userId, user.id), eq(lists.kind, 'list')))
         .get();
     if (!list) throw new HttpError(404, 'Not found');
-    const { entries, total } = getList(db, user.id, list.id, page);
+    const { items, total } = getList(db, user.id, list.id, page);
     return {
         name: list.name,
         description: list.description,
-        entries: entries.map(toPublic),
+        items: items.map((i) => ({
+            igdbId: i.igdbId,
+            game: i.game,
+            status: i.entry?.status ?? null,
+            rating: i.entry?.rating ?? null
+        })),
         total
     };
 }
@@ -169,7 +175,18 @@ export function getProfileSmartList(
         smartListId,
         page
     );
-    return { name, description, ruleText, entries: entries.map(toPublic), total };
+    return {
+        name,
+        description,
+        ruleText,
+        items: entries.map((e) => ({
+            igdbId: e.game.id,
+            game: e.game,
+            status: e.status,
+            rating: e.rating
+        })),
+        total
+    };
 }
 
 /** Read-only and public: the year in review, no notes (see `RecapDto`). */
@@ -214,7 +231,8 @@ export function getProfileGames(
             .from(lists)
             .where(and(eq(lists.userId, user.id), eq(lists.kind, 'queue')))
             .get();
-        result = queue ? getList(db, user.id, queue.id, page) : { entries: [], total: 0 };
+        const list = queue ? getList(db, user.id, queue.id, page) : { items: [], total: 0 };
+        result = { entries: ownedEntries(list.items), total: list.total };
     } else {
         result = pageEntries(
             db,

@@ -186,7 +186,7 @@ describe('series page', () => {
         const e2 = await add(2);
         await call(`/entries/${e2.id}/start`, 'POST', {});
         expect((await call(`/series/${WITCHER.id}/queue`, 'POST')).added).toBe(2);
-        const q = (await call('/queue')).list.entries.map((e: any) => e.id);
+        const q = (await call('/queue')).list.items.map((e: any) => e.entry.id);
         expect(q).toEqual([e1.id, e3.id]);
         expect((await call(`/series/${WITCHER.id}/queue`, 'POST')).added).toBe(0);
         expect((await call(`/series/${WITCHER.id}`)).series.members[0].entry.queued).toBe(true);

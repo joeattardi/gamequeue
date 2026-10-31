@@ -32,6 +32,8 @@ export interface PickResultDto {
     candidateCount: number;
     /** True when every match had been shown, so the pool started over */
     wrapped: boolean;
+    /** Games on the chosen list that aren't in the collection, so they could not be picked */
+    skippedUnowned: number;
 }
 
 /** The slice of an entry that picking cares about. */

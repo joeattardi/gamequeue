@@ -45,7 +45,7 @@ describe('activity feed', () => {
         const { add, call, lines, feed } = await setup();
         const hades = await add(1);
         await call(`/entries/${hades.id}`, 'PATCH', { rating: 4, favorite: true });
-        await call('/queue/items', 'POST', { entryId: hades.id });
+        await call('/queue/items', 'POST', { igdbId: hades.game.id });
         await call('/wishlist/items', 'POST', { igdbId: 2 });
         await call('/lists', 'POST', { name: 'Roguelikes' });
         expect(await lines()).toEqual([
@@ -74,8 +74,8 @@ describe('activity feed', () => {
         const hades = await add(1);
         await call(`/entries/${hades.id}`, 'PATCH', { rating: 3 });
         await call(`/entries/${hades.id}`, 'PATCH', { rating: 3, tags: ['x'] });
-        await call('/queue/items', 'POST', { entryId: hades.id });
-        await call('/queue/items', 'POST', { entryId: hades.id });
+        await call('/queue/items', 'POST', { igdbId: hades.game.id });
+        await call('/queue/items', 'POST', { igdbId: hades.game.id });
         expect((await feed()).total).toBe(3);
     });
 

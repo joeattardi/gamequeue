@@ -80,6 +80,14 @@ export interface ProfileListTileDto {
     covers: string[];
 }
 
+/** A game on a public list: `status` and `rating` are null when the owner doesn't have the game. */
+export interface PublicListItemDto {
+    igdbId: number;
+    game: GameDto;
+    status: EntryStatus | null;
+    rating: number | null;
+}
+
 /** One list on the profile, a page at a time (`/profiles/:username/lists/:id`, `/smart-lists/:id`). */
 export interface ProfileListPageDto {
     name: string;
@@ -87,7 +95,7 @@ export interface ProfileListPageDto {
     description: string;
     /** Smart lists only: the rules in words */
     ruleText?: string[];
-    entries: PublicEntryDto[];
+    items: PublicListItemDto[];
     total: number;
 }
 

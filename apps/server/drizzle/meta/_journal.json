@@ -15,6 +15,13 @@
       "when": 1793484006260,
       "tag": "0001_parched_apocalypse",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1793487569063,
+      "tag": "0002_wide_doctor_spectrum",
+      "breakpoints": true
     }
   ]
 }

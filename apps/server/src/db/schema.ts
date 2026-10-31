@@ -487,15 +487,23 @@ export const listItems = sqliteTable(
         listId: integer('list_id')
             .notNull()
             .references(() => lists.id, { onDelete: 'cascade' }),
-        entryId: integer('entry_id')
+        // Any game in the shared cache, owned or not; the collection entry (if any) is found by
+        // joining on (user, game)
+        gameId: integer('game_id')
             .notNull()
-            .references(() => entries.id, { onDelete: 'cascade' }),
+            .references(() => games.id),
         // 0-based order within the list; rewritten wholesale on reorder
-        position: integer('position').notNull()
+        position: integer('position').notNull(),
+        // Used by the wishlist: the platform the user means to buy it on, and a private note
+        platformId: integer('platform_id').references(() => platforms.id, {
+            onDelete: 'set null'
+        }),
+        note: text('note').notNull().default(''),
+        addedAt: integer('added_at').notNull().default(now)
     },
     (t) => [
-        primaryKey({ columns: [t.listId, t.entryId] }),
-        index('list_items_entry_idx').on(t.entryId)
+        primaryKey({ columns: [t.listId, t.gameId] }),
+        index('list_items_game_idx').on(t.gameId)
     ]
 );
 

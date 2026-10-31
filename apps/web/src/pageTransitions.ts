@@ -68,13 +68,14 @@ export function withPageTransitions(router: DataRouter): DataRouter {
  * entry already in hand, so the page renders with its cover at once instead of a skeleton. The
  * seed is stale straight away, so the page still refetches it.
  */
-export function useEntryLink(entry: EntryDto) {
+export function useGameLink(entry: EntryDto | null, igdbId: number) {
     const qc = useQueryClient();
-    const to = `/games/${entry.id}`;
+    const to = entry ? `/games/${entry.id}` : `/games/igdb/${igdbId}`;
     const morphing = useViewTransitionState(to);
     return {
         to,
         onClick: () => {
+            if (!entry) return;
             qc.setQueryData<EntryDto>(['entry', entry.id], (old) => old ?? entry);
             // Start fetching the game page's larger cover now, so it is there when the morph lands
             if (entry.game.coverImageId)
@@ -83,3 +84,6 @@ export function useEntryLink(entry: EntryDto) {
         coverTransition: morphing ? COVER_TRANSITION : undefined
     };
 }
+
+/** The link to an owned game's page (see `useGameLink`, which also covers games you don't own). */
+export const useEntryLink = (entry: EntryDto) => useGameLink(entry, entry.game.id);

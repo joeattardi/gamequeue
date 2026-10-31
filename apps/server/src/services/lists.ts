@@ -1,8 +1,9 @@
-import { and, asc, count, eq, isNotNull, max, sql } from 'drizzle-orm';
+import { and, asc, count, eq, inArray, isNotNull, max, sql } from 'drizzle-orm';
 import { FIRST_PAGE } from '@gamequeue/shared';
 import type {
     EntryDto,
     ListDetailDto,
+    ListItemDto,
     ListSummaryDto,
     PageQuery,
     PatchListInput
@@ -10,8 +11,10 @@ import type {
 import type { Db } from '../db/client.js';
 import { entries, games, listItems, lists } from '../db/schema.js';
 import { HttpError } from '../errors.js';
+import type { IgdbClient } from '../igdb/types.js';
 import { forgetSubject, recordActivity } from './activity.js';
 import { hydrate } from './entries.js';
+import { ensureGame, loadGames } from './games.js';
 import { moveInOrder } from './order.js';
 
 function requireList(db: Db, userId: number, id: number) {
@@ -71,8 +74,7 @@ export function listLists(db: Db, userId: number): ListSummaryDto[] {
         .select({ listId: listItems.listId, coverImageId: games.coverImageId })
         .from(listItems)
         .innerJoin(lists, eq(lists.id, listItems.listId))
-        .innerJoin(entries, eq(entries.id, listItems.entryId))
-        .innerJoin(games, eq(games.id, entries.gameId))
+        .innerJoin(games, eq(games.id, listItems.gameId))
         .where(and(eq(lists.userId, userId), eq(lists.kind, 'list'), isNotNull(games.coverImageId)))
         .orderBy(asc(listItems.listId), asc(listItems.position))
         .all();
@@ -84,27 +86,58 @@ export function listLists(db: Db, userId: number): ListSummaryDto[] {
     return rows.map((r) => ({ ...r, covers: covers.get(r.id) ?? [] }));
 }
 
+const CHUNK = 500;
+
+/**
+ * The items for these games, in the order given: the collection entry where the user owns the
+ * game, just the cached game where they don't.
+ */
+export function itemsFor(db: Db, userId: number, gameIds: number[]): ListItemDto[] {
+    const owned = new Map<number, EntryDto>();
+    for (let i = 0; i < gameIds.length; i += CHUNK) {
+        const chunk = gameIds.slice(i, i + CHUNK);
+        const rows = db
+            .select({ id: entries.id, gameId: entries.gameId })
+            .from(entries)
+            .where(and(eq(entries.userId, userId), inArray(entries.gameId, chunk)))
+            .all();
+        for (const dto of hydrate(
+            db,
+            userId,
+            rows.map((r) => r.id)
+        ))
+            owned.set(dto.game.id, dto);
+    }
+    const unowned = loadGames(
+        db,
+        gameIds.filter((id) => !owned.has(id))
+    );
+    return gameIds.flatMap((igdbId) => {
+        const entry = owned.get(igdbId) ?? null;
+        const game = entry?.game ?? unowned.get(igdbId);
+        return game ? [{ igdbId, game, entry }] : [];
+    });
+}
+
 /** One page of a list in list order, or all of it when `page` is omitted (server-side callers). */
 export function getList(db: Db, userId: number, id: number, page?: PageQuery): ListDetailDto {
     const list = requireList(db, userId, id);
     const total = db.select({ n: count() }).from(listItems).where(eq(listItems.listId, id)).get()!
         .n;
     const query = db
-        .select({ entryId: listItems.entryId })
+        .select({ gameId: listItems.gameId })
         .from(listItems)
         .where(eq(listItems.listId, id))
         .orderBy(asc(listItems.position));
     const ids = (page ? query.limit(page.limit).offset(page.offset) : query)
         .all()
-        .map((r) => r.entryId);
-    // hydrate() keeps the order it's given
-    const dtos: EntryDto[] = hydrate(db, userId, ids);
+        .map((r) => r.gameId);
     return {
         id: list.id,
         name: list.name,
         kind: list.kind,
         description: list.description,
-        entries: dtos,
+        items: itemsFor(db, userId, ids),
         total
     };
 }
@@ -136,15 +169,23 @@ export function deleteList(db: Db, userId: number, id: number) {
     });
 }
 
-/** Adds to the end. Adding something already in the list is a no-op. */
-export function addToList(db: Db, userId: number, listId: number, entryId: number): ListDetailDto {
-    const list = requireList(db, userId, listId);
-    const entry = db
-        .select({ id: entries.id, gameId: entries.gameId })
+const owns = (db: Db, userId: number, gameId: number) =>
+    !!db
+        .select({ id: entries.id })
         .from(entries)
-        .where(and(eq(entries.id, entryId), eq(entries.userId, userId)))
+        .where(and(eq(entries.userId, userId), eq(entries.gameId, gameId)))
         .get();
-    if (!entry) throw new HttpError(404, 'Entry not found');
+
+/**
+ * Adds a game to the end, owned or not (the game must already be in the shared cache). Adding
+ * something already in the list is a no-op. The queue takes collection games only.
+ */
+export function addToList(db: Db, userId: number, listId: number, igdbId: number): ListDetailDto {
+    const list = requireList(db, userId, listId);
+    if (list.kind === 'queue' && !owns(db, userId, igdbId))
+        throw new HttpError(400, 'Only games in your collection can go on the queue');
+    if (!db.select({ id: games.id }).from(games).where(eq(games.id, igdbId)).get())
+        throw new HttpError(404, 'Game not found');
     const top = db
         .select({ n: max(listItems.position) })
         .from(listItems)
@@ -153,22 +194,37 @@ export function addToList(db: Db, userId: number, listId: number, entryId: numbe
     db.transaction((tx) => {
         const added = tx
             .insert(listItems)
-            .values({ listId, entryId, position: (top ?? -1) + 1 })
+            .values({ listId, gameId: igdbId, position: (top ?? -1) + 1 })
             .onConflictDoNothing()
             .run();
         if (added.changes > 0 && list.kind === 'queue')
-            recordActivity(tx as unknown as Db, userId, { type: 'queued', gameId: entry.gameId });
+            recordActivity(tx as unknown as Db, userId, { type: 'queued', gameId: igdbId });
     });
     return getList(db, userId, listId, FIRST_PAGE);
 }
 
+/** `addToList` for a game that may not be cached yet: fetches it from IGDB first (never for a refused queue add). */
+export async function addGameToList(
+    db: Db,
+    igdb: IgdbClient | undefined,
+    userId: number,
+    listId: number,
+    igdbId: number
+): Promise<ListDetailDto> {
+    const list = requireList(db, userId, listId);
+    if (list.kind === 'queue' && !owns(db, userId, igdbId))
+        throw new HttpError(400, 'Only games in your collection can go on the queue');
+    await ensureGame(db, igdb, igdbId);
+    return addToList(db, userId, listId, igdbId);
+}
+
 /** Deletes one item and closes the gap so positions stay 0..n-1. */
-function removeItem(db: Db, listId: number, entryId: number) {
+function removeItem(db: Db, listId: number, gameId: number) {
     db.delete(listItems)
-        .where(and(eq(listItems.listId, listId), eq(listItems.entryId, entryId)))
+        .where(and(eq(listItems.listId, listId), eq(listItems.gameId, gameId)))
         .run();
     const rest = db
-        .select({ entryId: listItems.entryId })
+        .select({ gameId: listItems.gameId })
         .from(listItems)
         .where(eq(listItems.listId, listId))
         .orderBy(asc(listItems.position))
@@ -177,29 +233,29 @@ function removeItem(db: Db, listId: number, entryId: number) {
         db
             .update(listItems)
             .set({ position: i })
-            .where(and(eq(listItems.listId, listId), eq(listItems.entryId, r.entryId)))
+            .where(and(eq(listItems.listId, listId), eq(listItems.gameId, r.gameId)))
             .run()
     );
 }
 
-/** Starting a game takes it off the queue. Does nothing if it wasn't queued. */
-export function dequeue(db: Db, userId: number, entryId: number) {
+/** Starting a game, or removing it from the collection, takes it off the queue. A no-op if it wasn't queued. */
+export function dequeue(db: Db, userId: number, gameId: number) {
     const queue = db
         .select({ id: lists.id })
         .from(lists)
         .where(and(eq(lists.userId, userId), eq(lists.kind, 'queue')))
         .get();
-    if (queue) removeItem(db, queue.id, entryId);
+    if (queue) removeItem(db, queue.id, gameId);
 }
 
 export function removeFromList(
     db: Db,
     userId: number,
     listId: number,
-    entryId: number
+    igdbId: number
 ): ListDetailDto {
     requireList(db, userId, listId);
-    db.transaction((tx) => removeItem(tx as unknown as Db, listId, entryId));
+    db.transaction((tx) => removeItem(tx as unknown as Db, listId, igdbId));
     return getList(db, userId, listId, FIRST_PAGE);
 }
 
@@ -208,24 +264,24 @@ export function moveInList(
     db: Db,
     userId: number,
     listId: number,
-    entryId: number,
+    igdbId: number,
     toIndex: number
 ): ListDetailDto {
     requireList(db, userId, listId);
     const ids = db
-        .select({ entryId: listItems.entryId })
+        .select({ gameId: listItems.gameId })
         .from(listItems)
         .where(eq(listItems.listId, listId))
         .orderBy(asc(listItems.position))
         .all()
-        .map((r) => r.entryId);
-    const moved = moveInOrder(ids, entryId, toIndex);
+        .map((r) => r.gameId);
+    const moved = moveInOrder(ids, igdbId, toIndex);
     if (!moved) throw new HttpError(404, 'That game is not in the list');
     db.transaction((tx) => {
         for (let i = moved.first; i <= moved.last; i++)
             tx.update(listItems)
                 .set({ position: i })
-                .where(and(eq(listItems.listId, listId), eq(listItems.entryId, moved.next[i]!)))
+                .where(and(eq(listItems.listId, listId), eq(listItems.gameId, moved.next[i]!)))
                 .run();
     });
     return getList(db, userId, listId, FIRST_PAGE);
@@ -235,25 +291,25 @@ export function reorderList(
     db: Db,
     userId: number,
     listId: number,
-    entryIds: number[]
+    igdbIds: number[]
 ): ListDetailDto {
     requireList(db, userId, listId);
     const current = db
-        .select({ entryId: listItems.entryId })
+        .select({ gameId: listItems.gameId })
         .from(listItems)
         .where(eq(listItems.listId, listId))
         .all();
     const same =
-        entryIds.length === current.length &&
-        new Set(entryIds).size === entryIds.length &&
-        current.every((r) => entryIds.includes(r.entryId));
+        igdbIds.length === current.length &&
+        new Set(igdbIds).size === igdbIds.length &&
+        current.every((r) => igdbIds.includes(r.gameId));
     if (!same) throw new HttpError(400, "The new order must contain exactly the list's games");
     db.transaction((tx) =>
-        entryIds.forEach((entryId, i) =>
+        igdbIds.forEach((gameId, i) =>
             tx
                 .update(listItems)
                 .set({ position: i })
-                .where(and(eq(listItems.listId, listId), eq(listItems.entryId, entryId)))
+                .where(and(eq(listItems.listId, listId), eq(listItems.gameId, gameId)))
                 .run()
         )
     );

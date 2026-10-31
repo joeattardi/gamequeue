@@ -9,6 +9,7 @@ import {
     smartListInputSchema,
     reorderListSchema,
     moveListItemSchema,
+    ownedEntries,
     pageQuerySchema,
     smartListPreviewSchema
 } from '@gamequeue/shared';
@@ -16,7 +17,7 @@ import type { AppDeps } from '../app.js';
 import { requireAuth, type AuthVars } from '../auth/middleware.js';
 import { csvResponse, parseId, validate } from '../http.js';
 import {
-    addToList,
+    addGameToList,
     createList,
     deleteList,
     ensureQueue,
@@ -40,7 +41,7 @@ import {
 
 const body = (c: { req: { json(): Promise<unknown> } }) => c.req.json().catch(() => undefined);
 
-export function listRoutes({ db, config }: AppDeps) {
+export function listRoutes({ db, config, igdb }: AppDeps) {
     const r = new Hono<{ Variables: AuthVars }>();
     r.use('*', requireAuth(db, config));
     const uid = (c: { get(k: 'user'): { id: number } }) => c.get('user').id;
@@ -62,7 +63,7 @@ export function listRoutes({ db, config }: AppDeps) {
     );
     r.get('/:id/export.csv', (c) => {
         const list = getList(db, uid(c), parseId(c.req.param('id')));
-        return csvResponse(c, list.name, entriesToCsv(list.entries));
+        return csvResponse(c, list.name, entriesToCsv(ownedEntries(list.items)));
     });
     r.patch('/:id', async (c) => {
         const id = parseId(c.req.param('id'));
@@ -75,28 +76,29 @@ export function listRoutes({ db, config }: AppDeps) {
     });
     r.post('/:id/items', async (c) =>
         c.json({
-            list: addToList(
+            list: await addGameToList(
                 db,
+                igdb,
                 uid(c),
                 parseId(c.req.param('id')),
-                validate(addListItemSchema, await body(c)).entryId
+                validate(addListItemSchema, await body(c)).igdbId
             )
         })
     );
-    r.delete('/:id/items/:entryId', (c) =>
+    r.delete('/:id/items/:igdbId', (c) =>
         c.json({
             list: removeFromList(
                 db,
                 uid(c),
                 parseId(c.req.param('id')),
-                parseId(c.req.param('entryId'))
+                parseId(c.req.param('igdbId'))
             )
         })
     );
     r.put('/:id/move', async (c) => {
-        const { entryId, toIndex } = validate(moveListItemSchema, await body(c));
+        const { igdbId, toIndex } = validate(moveListItemSchema, await body(c));
         return c.json({
-            list: moveInList(db, uid(c), parseId(c.req.param('id')), entryId, toIndex)
+            list: moveInList(db, uid(c), parseId(c.req.param('id')), igdbId, toIndex)
         });
     });
     r.put('/:id/order', async (c) =>
@@ -105,7 +107,7 @@ export function listRoutes({ db, config }: AppDeps) {
                 db,
                 uid(c),
                 parseId(c.req.param('id')),
-                validate(reorderListSchema, await body(c)).entryIds
+                validate(reorderListSchema, await body(c)).igdbIds
             )
         })
     );
@@ -122,7 +124,7 @@ export function pickRoutes({ db, config }: AppDeps) {
 }
 
 /** The queue is a list with its own URL, so clients don't need to know its id up front. */
-export function queueRoutes({ db, config }: AppDeps) {
+export function queueRoutes({ db, config, igdb }: AppDeps) {
     const r = new Hono<{ Variables: AuthVars }>();
     r.use('*', requireAuth(db, config));
     const uid = (c: { get(k: 'user'): { id: number } }) => c.get('user').id;
@@ -133,22 +135,23 @@ export function queueRoutes({ db, config }: AppDeps) {
     );
     r.post('/items', async (c) =>
         c.json({
-            list: addToList(
+            list: await addGameToList(
                 db,
+                igdb,
                 uid(c),
                 queueId(c),
-                validate(addListItemSchema, await body(c)).entryId
+                validate(addListItemSchema, await body(c)).igdbId
             )
         })
     );
-    r.delete('/items/:entryId', (c) =>
+    r.delete('/items/:igdbId', (c) =>
         c.json({
-            list: removeFromList(db, uid(c), queueId(c), parseId(c.req.param('entryId')))
+            list: removeFromList(db, uid(c), queueId(c), parseId(c.req.param('igdbId')))
         })
     );
     r.put('/move', async (c) => {
-        const { entryId, toIndex } = validate(moveListItemSchema, await body(c));
-        return c.json({ list: moveInList(db, uid(c), queueId(c), entryId, toIndex) });
+        const { igdbId, toIndex } = validate(moveListItemSchema, await body(c));
+        return c.json({ list: moveInList(db, uid(c), queueId(c), igdbId, toIndex) });
     });
     r.put('/order', async (c) =>
         c.json({
@@ -156,7 +159,7 @@ export function queueRoutes({ db, config }: AppDeps) {
                 db,
                 uid(c),
                 queueId(c),
-                validate(reorderListSchema, await body(c)).entryIds
+                validate(reorderListSchema, await body(c)).igdbIds
             )
         })
     );

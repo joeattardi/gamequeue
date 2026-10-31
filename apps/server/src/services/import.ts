@@ -44,6 +44,7 @@ function fileGameIds(file: ExportFile): number[] {
     const ids = new Set<number>();
     for (const g of file.games) ids.add(g.igdbId);
     for (const w of file.wishlist) ids.add(w.igdbId);
+    for (const l of file.lists) for (const g of l.games) ids.add(g);
     return [...ids];
 }
 
@@ -222,7 +223,7 @@ function merge(
         );
     }
 
-    mergeLists(db, userId, file, entryIdByGame, report);
+    mergeLists(db, userId, file, entryIdByGame, catalog, report, note);
     mergeSmartLists(db, userId, file, report);
     mergeWishlist(db, userId, file, catalog, report, note, now);
 }
@@ -427,8 +428,15 @@ function mergeLists(
     userId: number,
     file: ExportFile,
     entryIdByGame: Map<number, number>,
-    report: ImportReport
+    catalog: ImportCatalog,
+    report: ImportReport,
+    note: (m: string) => void
 ) {
+    const names = new Map([
+        ...file.wishlist.map((w) => [w.igdbId, w.game.name] as const),
+        ...file.games.map((g) => [g.igdbId, g.game.name] as const)
+    ]);
+    const nameOf = (gameId: number) => names.get(gameId) ?? `Game ${gameId}`;
     const byName = new Map<string, number>();
     const described = new Set<number>();
     for (const l of db
@@ -440,6 +448,31 @@ function mergeLists(
         if (!byName.has(lower(l.name))) byName.set(lower(l.name), l.id);
         if (l.description) described.add(l.id);
     }
+    /** Adds the games not yet on the list to its end; returns how many went in */
+    const append = (listId: number, gameIds: number[], accept: (gameId: number) => boolean) => {
+        const present = new Set(
+            db
+                .select({ gameId: listItems.gameId })
+                .from(listItems)
+                .where(eq(listItems.listId, listId))
+                .all()
+                .map((r) => r.gameId)
+        );
+        let position =
+            (db
+                .select({ n: max(listItems.position) })
+                .from(listItems)
+                .where(eq(listItems.listId, listId))
+                .get()!.n ?? -1) + 1;
+        let added = 0;
+        for (const gameId of new Set(gameIds)) {
+            if (present.has(gameId) || !accept(gameId)) continue;
+            db.insert(listItems).values({ listId, gameId, position: position++ }).run();
+            present.add(gameId);
+            added++;
+        }
+        return added;
+    };
     for (const fl of file.lists) {
         let listId = byName.get(lower(fl.name));
         if (listId === undefined) {
@@ -455,54 +488,16 @@ function mergeLists(
             db.update(lists).set({ description: fl.description }).where(eq(lists.id, listId)).run();
             described.add(listId);
         }
-        const present = new Set(
-            db
-                .select({ entryId: listItems.entryId })
-                .from(listItems)
-                .where(eq(listItems.listId, listId))
-                .all()
-                .map((r) => r.entryId)
+        // A list can hold games you don't own; only games IGDB doesn't know are left out (and noted)
+        report.lists.itemsAdded += append(listId, fl.games, (gameId) =>
+            knownGame(catalog, gameId, nameOf(gameId), note, `the list ${fl.name}`)
         );
-        let position =
-            (db
-                .select({ n: max(listItems.position) })
-                .from(listItems)
-                .where(eq(listItems.listId, listId))
-                .get()!.n ?? -1) + 1;
-        for (const gameId of new Set(fl.games)) {
-            // Undefined for a game that was skipped
-            const entryId = entryIdByGame.get(gameId);
-            if (entryId === undefined || present.has(entryId)) continue;
-            db.insert(listItems).values({ listId, entryId, position: position++ }).run();
-            present.add(entryId);
-            report.lists.itemsAdded++;
-        }
     }
 
-    // Queue: games already queued keep their place; new ones go on the end
+    // Queue: games already queued keep their place; new ones go on the end. Only games you own.
     if (file.queue.length > 0) {
         const queueId = ensureQueue(db, userId).id;
-        const queued = new Set(
-            db
-                .select({ entryId: listItems.entryId })
-                .from(listItems)
-                .where(eq(listItems.listId, queueId))
-                .all()
-                .map((r) => r.entryId)
-        );
-        let position =
-            (db
-                .select({ n: max(listItems.position) })
-                .from(listItems)
-                .where(eq(listItems.listId, queueId))
-                .get()!.n ?? -1) + 1;
-        for (const gameId of new Set(file.queue)) {
-            const entryId = entryIdByGame.get(gameId);
-            if (entryId === undefined || queued.has(entryId)) continue;
-            db.insert(listItems).values({ listId: queueId, entryId, position: position++ }).run();
-            queued.add(entryId);
-            report.queue.added++;
-        }
+        report.queue.added += append(queueId, file.queue, (gameId) => entryIdByGame.has(gameId));
     }
 }
 

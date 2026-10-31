@@ -239,7 +239,7 @@ erDiagram
     entries ||--o{ entry_tags : "tagged"
     tags ||--o{ entry_tags : ""
     lists ||--o{ list_items : "contains"
-    list_items }o--|| entries : "points to"
+    list_items }o--|| games : "points to"
     wishlists ||--o{ wishlist_items : "contains"
     wishlist_items }o--|| games : "points to"
 ```
@@ -423,7 +423,7 @@ There are four ways to group games. They look similar on screen but work differe
 
 | Feature        | What it holds                  | Order                 | Stored as                             |
 | -------------- | ------------------------------ | --------------------- | ------------------------------------- |
-| **List**       | Games you own                  | Manual (drag to sort) | `lists` + `list_items`                |
+| **List**       | Any games, owned or not        | Manual (drag to sort) | `lists` + `list_items`                |
 | **Queue**      | Games you own                  | Manual                | A special `lists` row, `kind = queue` |
 | **Smart list** | Games you own that match rules | Sorted by a field     | Only the rules, in `smart_lists`      |
 | **Wishlist**   | Games you _don't_ own          | Manual                | `wishlists` + `wishlist_items`        |
@@ -438,7 +438,7 @@ flowchart LR
     W["wishlist"]
 
     E --> G
-    L -- "items point at" --> E
+    L -- "items point at" --> G
     Q -- "items point at" --> E
     S -. "rules evaluated over" .-> E
     W -- "items point at" --> G

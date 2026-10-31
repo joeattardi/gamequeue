@@ -25,8 +25,8 @@ async function setup() {
         await call(cookie, '/entries', 'POST', { igdbId: 2, platformIds: [6] });
         await call(cookie, `/entries/${entry.id}/start`, 'POST', {});
         const list = (await (await call(cookie, '/lists', 'POST', { name: 'Faves' })).json()).list;
-        await call(cookie, `/lists/${list.id}/items`, 'POST', { entryId: entry.id });
-        await call(cookie, '/queue/items', 'POST', { entryId: entry.id });
+        await call(cookie, `/lists/${list.id}/items`, 'POST', { igdbId: entry.game.id });
+        await call(cookie, '/queue/items', 'POST', { igdbId: entry.game.id });
         await call(cookie, '/account/social', 'PUT', {
             steam: 'x1',
             xbox: '',

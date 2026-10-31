@@ -135,7 +135,6 @@ export function buildExport(db: Db, userId: number, now = new Date()): ExportFil
         name: p.name,
         abbreviation: p.abbreviation
     });
-    const igdbIdOfEntry = new Map(rows.map(({ e }) => [e.id, e.gameId]));
 
     const snapshot = (g: typeof games.$inferSelect) => ({
         name: g.name,
@@ -187,11 +186,6 @@ export function buildExport(db: Db, userId: number, now = new Date()): ExportFil
         }))
     }));
 
-    const igdbIds = (entryIds: number[] = []) =>
-        entryIds.flatMap((entryId) => {
-            const igdbId = igdbIdOfEntry.get(entryId);
-            return igdbId === undefined ? [] : [igdbId];
-        });
     const listRows = db
         .select()
         .from(lists)
@@ -201,7 +195,7 @@ export function buildExport(db: Db, userId: number, now = new Date()): ExportFil
     const queueRow = listRows.find((l) => l.kind === 'queue');
     const items = group(
         db
-            .select({ key: listItems.listId, value: listItems.entryId })
+            .select({ key: listItems.listId, value: listItems.gameId })
             .from(listItems)
             .innerJoin(lists, eq(lists.id, listItems.listId))
             .where(eq(lists.userId, userId))
@@ -219,9 +213,9 @@ export function buildExport(db: Db, userId: number, now = new Date()): ExportFil
             .map((l) => ({
                 name: l.name,
                 description: l.description,
-                games: igdbIds(items.get(l.id))
+                games: items.get(l.id) ?? []
             })),
-        queue: igdbIds(queueRow && items.get(queueRow.id)),
+        queue: (queueRow && items.get(queueRow.id)) ?? [],
         smartLists: listSmartListRows(db, userId),
         wishlist: wished.map(({ item, g, platform }): ExportWishlistItem => ({
             igdbId: g.id,

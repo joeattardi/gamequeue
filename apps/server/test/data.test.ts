@@ -42,8 +42,8 @@ async function richCollection(s: Api) {
     const queue = (await call('/lists', 'POST', { name: 'Up next' })).list.id;
     const cozy = (await call('/lists', 'POST', { name: 'Cozy' })).list.id;
     for (const e of [knight, hades, wilds])
-        await call(`/lists/${queue}/items`, 'POST', { entryId: e.id });
-    await call(`/lists/${cozy}/items`, 'POST', { entryId: celeste.id });
+        await call(`/lists/${queue}/items`, 'POST', { igdbId: e.game.id });
+    await call(`/lists/${cozy}/items`, 'POST', { igdbId: celeste.game.id });
     return { hades, celeste, knight, wilds, queue, cozy };
 }
 
@@ -244,7 +244,7 @@ describe('merging into existing data', () => {
         const celeste = await b.add(2, [SWITCH.id]);
         const extra = await b.add(4);
         const list = (await b.call('/lists', 'POST', { name: 'UP NEXT' })).list.id;
-        await b.call(`/lists/${list}/items`, 'POST', { entryId: extra.id });
+        await b.call(`/lists/${list}/items`, 'POST', { igdbId: extra.game.id });
         return { file, b, hades, celeste, extra, list };
     }
 
@@ -305,7 +305,7 @@ describe('merging into existing data', () => {
             ['Cozy', 1],
             ['UP NEXT', 3]
         ]);
-        const merged = (await b.call(`/lists/${list}`)).list.entries as {
+        const merged = (await b.call(`/lists/${list}`)).list.items as {
             game: { name: string };
         }[];
         // your Outer Wilds stays first; Hollow Knight and Hades follow in the file's order
@@ -485,7 +485,7 @@ describe('validation', () => {
         const res = await importFile(s, file, false);
         expect(res.status).toBe(400);
         expect(paths(res)).toEqual(
-            expect.arrayContaining(['games.4.igdbId', 'lists.0.games.3', 'games.0.playthroughs'])
+            expect.arrayContaining(['games.4.igdbId', 'games.0.playthroughs'])
         );
     });
 
@@ -630,5 +630,48 @@ describe('import limits', () => {
         );
         expect(res.status).toBe(400);
         expect(res.details.map((d: { path: string }) => d.path)).toContain('queue');
+    });
+});
+
+describe('lists with games you do not own', () => {
+    it('round-trips through export and import with their order, and the queue stays owned-only', async () => {
+        const a = await setupApi();
+        const hades = await a.add(1);
+        const list = (await a.call('/lists', 'POST', { name: 'Mixed' })).list.id;
+        for (const igdbId of [3, hades.game.id, 2])
+            await a.call(`/lists/${list}/items`, 'POST', { igdbId });
+        await a.call('/queue/items', 'POST', { igdbId: hades.game.id });
+        const file = await exportOf(a);
+        expect(file.games.map((g) => g.igdbId)).toEqual([1]);
+        expect(file.lists).toEqual([{ name: 'Mixed', description: '', games: [3, 1, 2] }]);
+        expect(file.queue).toEqual([1]);
+
+        const b = await setupApi();
+        const res = await importFile(b, file, true);
+        expect(res.status).toBe(200);
+        expect(res.report).toMatchObject({
+            lists: { created: 1, itemsAdded: 3 },
+            queue: { added: 1 },
+            notes: []
+        });
+        const imported = (await b.call('/lists')).lists[0].id;
+        const items = (await b.call(`/lists/${imported}`)).list.items as any[];
+        expect(items.map((i) => [i.game.name, i.entry?.status ?? null])).toEqual([
+            ['Hollow Knight', null],
+            ['Hades', 'unplayed'],
+            ['Celeste', null]
+        ]);
+        expect(stable(await exportOf(b))).toEqual(stable(file));
+    });
+
+    it('skips list games IGDB does not know, with a note', async () => {
+        const a = await setupApi();
+        await a.call('/lists', 'POST', { name: 'L' });
+        const file = JSON.parse(JSON.stringify(await exportOf(a)));
+        file.lists[0].games = [3, 777777];
+        const b = await setupApi();
+        const res = await importFile(b, file, true);
+        expect(res.report.lists.itemsAdded).toBe(1);
+        expect(res.report.notes.join('\n')).toMatch(/777777.*isn't on IGDB.*the list L/);
     });
 });

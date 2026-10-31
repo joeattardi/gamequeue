@@ -57,7 +57,16 @@ export function ProfileListPage({ kind }: { kind: 'lists' | 'smart-lists' }) {
                         <PublicGameList
                             layout={layout}
                             username={username}
-                            entries={list.isPending ? undefined : list.items}
+                            entries={
+                                list.isPending
+                                    ? undefined
+                                    : list.items.map((i) => ({
+                                          id: i.igdbId,
+                                          game: i.game,
+                                          status: i.status ?? undefined,
+                                          rating: i.rating
+                                      }))
+                            }
                             numbered={kind === 'lists'}
                             empty="Nothing here yet."
                             paging={{

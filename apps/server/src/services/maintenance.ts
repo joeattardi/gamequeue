@@ -6,7 +6,7 @@ import type { Db } from '../db/client.js';
 import { gameSeries, games, series, sessions } from '../db/schema.js';
 
 /**
- * Deletes cached games that no collection entry or wishlist item points at, plus series left
+ * Deletes cached games that no collection entry, wishlist item or list item points at, plus series left
  * with no cached game. Nothing a user can see is lost; the games are fetched from IGDB again
  * if someone adds them later. Join rows (platforms, genres, themes, series links) cascade.
  */
@@ -15,7 +15,7 @@ export function purgeUnusedGames(db: Db): PurgeUnusedGamesResult {
         const deletedGames = tx
             .delete(games)
             .where(
-                sql`${games.id} not in (select game_id from entries union select game_id from wishlist_items)`
+                sql`${games.id} not in (select game_id from entries union select game_id from wishlist_items union select game_id from list_items)`
             )
             .run().changes;
         // Series cascade to series_members; only series nothing links to any more are unreachable

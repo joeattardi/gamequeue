@@ -133,7 +133,7 @@ export function startPlaythrough(
             .set({ status: input.paused ? 'paused' : to, updatedAt: Date.now() })
             .where(eq(entries.id, entryId))
             .run();
-        dequeue(t, userId, entryId);
+        dequeue(t, userId, entry.gameId);
         recordActivity(t, userId, { type: 'started', gameId: entry.gameId });
     });
     return getEntry(db, userId, entryId)!;

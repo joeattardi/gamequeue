@@ -28,8 +28,8 @@ describe('public profile', () => {
 
         await post(`/entries/${celeste.id}/notes`, { body: 'secret note' });
         const list = (await (await post('/lists', { name: 'Favourites' })).json()).list;
-        await post(`/lists/${list.id}/items`, { entryId: hades.id });
-        await post('/queue/items', { entryId: celeste.id });
+        await post(`/lists/${list.id}/items`, { igdbId: hades.game.id });
+        await post('/queue/items', { igdbId: celeste.game.id });
 
         const res = await app.request('/api/profiles/JOE');
         expect(res.status).toBe(200);
@@ -54,14 +54,14 @@ describe('public profile', () => {
         expect((await (await app.request('/api/profiles/joe/queue')).json()).games.entries).toEqual(
             []
         );
-        await post('/queue/items', { entryId: hades.id });
-        await post('/queue/items', { entryId: celeste.id });
+        await post('/queue/items', { igdbId: hades.game.id });
+        await post('/queue/items', { igdbId: celeste.game.id });
         // the queue is counted in the summary but is not among the profile's lists
         expect((await (await app.request('/api/profiles/joe')).json()).profile.summary.queued).toBe(
             2
         );
         expect((await (await app.request('/api/profiles/joe')).json()).profile.lists).toEqual([]);
-        await put('/queue/order', { entryIds: [celeste.id, hades.id] });
+        await put('/queue/order', { igdbIds: [celeste.game.id, hades.game.id] });
 
         const res = await app.request('/api/profiles/JOE/queue');
         expect(res.status).toBe(200);
@@ -210,5 +210,21 @@ describe('public profile', () => {
             expect((await get('backlog/2026')).status).toBe(404);
             expect((await get('finished/2026')).status).toBe(200);
         });
+    });
+});
+
+describe('public lists with games the owner does not have', () => {
+    it('shows them without a status or rating', async () => {
+        const { app, post, add } = await setup();
+        const hades = await add(1);
+        const list = (await (await post('/lists', { name: 'Mixed' })).json()).list;
+        await post(`/lists/${list.id}/items`, { igdbId: 2 });
+        await post(`/lists/${list.id}/items`, { igdbId: hades.game.id });
+        const page = await (await app.request(`/api/profiles/joe/lists/${list.id}`)).json();
+        expect(page.total).toBe(2);
+        expect(page.items.map((i: any) => [i.game.name, i.status])).toEqual([
+            ['Celeste', null],
+            ['Hades', 'unplayed']
+        ]);
     });
 });

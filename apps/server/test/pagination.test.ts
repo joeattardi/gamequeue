@@ -10,7 +10,7 @@ const CATALOG = Array.from({ length: 30 }, (_, i) =>
 async function setup(owned = 30) {
     const s = await setupApi(CATALOG);
     const ids: number[] = [];
-    for (let i = 1; i <= owned; i++) ids.push((await s.add(i)).id);
+    for (let i = 1; i <= owned; i++) ids.push((await s.add(i)).game.id);
     const names = (rows: any[]) => rows.map((r) => r.game.name);
     return { ...s, ids, names };
 }
@@ -49,38 +49,32 @@ describe('paging an ordered list and the queue', () => {
         const { call, ids, names } = await setup();
         const { list } = await call('/lists', 'POST', { name: 'Mine' });
         for (const id of [...ids].reverse())
-            await call(`/lists/${list.id}/items`, 'POST', { entryId: id });
+            await call(`/lists/${list.id}/items`, 'POST', { igdbId: id });
         const page = (await call(`/lists/${list.id}?limit=5&offset=10`)).list;
         expect(page.total).toBe(30);
-        expect(names(page.entries)).toEqual([
-            'Game 20',
-            'Game 19',
-            'Game 18',
-            'Game 17',
-            'Game 16'
-        ]);
+        expect(names(page.items)).toEqual(['Game 20', 'Game 19', 'Game 18', 'Game 17', 'Game 16']);
     });
 
     it('moves a game to an absolute position without the rest of the list', async () => {
         const { call, ids, names } = await setup(8);
-        for (const id of ids) await call('/queue/items', 'POST', { entryId: id });
-        const order = async () => names((await call('/queue?limit=100')).list.entries);
+        for (const id of ids) await call('/queue/items', 'POST', { igdbId: id });
+        const order = async () => names((await call('/queue?limit=100')).list.items);
 
-        await call('/queue/move', 'PUT', { entryId: ids[6], toIndex: 1 });
+        await call('/queue/move', 'PUT', { igdbId: ids[6], toIndex: 1 });
         expect((await order()).slice(0, 4)).toEqual(['Game 01', 'Game 07', 'Game 02', 'Game 03']);
-        await call('/queue/move', 'PUT', { entryId: ids[0], toIndex: 999 });
+        await call('/queue/move', 'PUT', { igdbId: ids[0], toIndex: 999 });
         expect((await order()).at(-1)).toBe('Game 01');
         expect(await order()).toHaveLength(8);
         // positions stay contiguous, so a later append lands at the end
-        expect((await call('/queue/move', 'PUT', { entryId: 9999, toIndex: 0 })).status).toBe(404);
+        expect((await call('/queue/move', 'PUT', { igdbId: 9999, toIndex: 0 })).status).toBe(404);
     });
 
     it('moves a game inside a user list', async () => {
         const { call, ids, names } = await setup(4);
         const { list } = await call('/lists', 'POST', { name: 'Mine' });
-        for (const id of ids) await call(`/lists/${list.id}/items`, 'POST', { entryId: id });
-        await call(`/lists/${list.id}/move`, 'PUT', { entryId: ids[3], toIndex: 0 });
-        expect(names((await call(`/lists/${list.id}`)).list.entries)).toEqual([
+        for (const id of ids) await call(`/lists/${list.id}/items`, 'POST', { igdbId: id });
+        await call(`/lists/${list.id}/move`, 'PUT', { igdbId: ids[3], toIndex: 0 });
+        expect(names((await call(`/lists/${list.id}`)).list.items)).toEqual([
             'Game 04',
             'Game 01',
             'Game 02',

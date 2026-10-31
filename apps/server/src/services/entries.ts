@@ -55,6 +55,7 @@ import type { IgdbClient } from '../igdb/types.js';
 import { ensureGame, existingPlatformIds, loadGames } from './games.js';
 import { toDto } from './playthrough-dto.js';
 import { forgetGame, recordActivity } from './activity.js';
+import { dequeue } from './lists.js';
 import { dropFromWishlists } from './wishlist.js';
 
 const dedupeTags = (names: string[]) => {
@@ -304,7 +305,11 @@ export function deleteEntry(db: Db, userId: number, entryId: number): boolean {
         .where(and(eq(entries.id, entryId), eq(entries.userId, userId)))
         .run();
     if (res.changes > 0) {
-        if (entry) forgetGame(db, userId, entry.gameId);
+        if (entry) {
+            forgetGame(db, userId, entry.gameId);
+            // The queue is collection-only; other lists keep the game, now as one you don't own
+            dequeue(db, userId, entry.gameId);
+        }
         db.delete(tags)
             .where(
                 and(eq(tags.userId, userId), sql`${tags.id} NOT IN (SELECT tag_id FROM entry_tags)`)
@@ -493,23 +498,32 @@ export function hydrate(db: Db, userId: number, ids: number[]): EntryDto[] {
                 toDto(r.p, r.platform)
             );
         }
+        // Lists hold games, not entries: an entry is on a list when its game is, for the same user
+        const entryOfGame = new Map<number, number>();
+        for (const id of chunk) {
+            const row = rows.get(id);
+            if (row) entryOfGame.set(row.g.id, id);
+        }
         for (const r of db
             .select({
-                entryId: listItems.entryId,
+                gameId: listItems.gameId,
                 id: lists.id,
                 name: lists.name,
                 kind: lists.kind
             })
             .from(listItems)
             .innerJoin(lists, eq(lists.id, listItems.listId))
-            .where(inArray(listItems.entryId, chunk))
+            .where(
+                and(eq(lists.userId, userId), inArray(listItems.gameId, [...entryOfGame.keys()]))
+            )
             .orderBy(asc(sql`lower(${lists.name})`))
             .all()) {
+            const entryId = entryOfGame.get(r.gameId)!;
             if (r.kind === 'queue') {
-                queued.add(r.entryId);
+                queued.add(entryId);
                 continue;
             }
-            (listsOf.get(r.entryId) ?? listsOf.set(r.entryId, []).get(r.entryId)!).push({
+            (listsOf.get(entryId) ?? listsOf.set(entryId, []).get(entryId)!).push({
                 id: r.id,
                 name: r.name
             });
