@@ -145,28 +145,6 @@ export const sessions = sqliteTable(
     (t) => [index('sessions_user_idx').on(t.userId)]
 );
 
-export const slots = sqliteTable(
-    'slots',
-    {
-        id: integer('id').primaryKey({ autoIncrement: true }),
-        userId: integer('user_id')
-            .notNull()
-            .references(() => users.id, { onDelete: 'cascade' }),
-        name: text('name').notNull(),
-        position: integer('position').notNull(),
-        // The game occupying this slot. One row per slot means a slot holds at most one game.
-        // Deleting an entry just empties its slot.
-        entryId: integer('entry_id').references(() => entries.id, { onDelete: 'set null' })
-    },
-    (t) => [
-        uniqueIndex('slots_user_position_idx').on(t.userId, t.position),
-        // ...and a game can't sit in two slots at once
-        uniqueIndex('slots_user_entry_idx')
-            .on(t.userId, t.entryId)
-            .where(sql`${t.entryId} IS NOT NULL`)
-    ]
-);
-
 // ---------------------------------------------------------------------------
 // Shared game metadata cache (no user_id). Ids are IGDB ids.
 // ---------------------------------------------------------------------------
@@ -426,7 +404,7 @@ export const lists = sqliteTable(
 
 // ---------------------------------------------------------------------------
 // Wishlist: games the user wants but doesn't own. Separate from entries on purpose, so nothing
-// about the collection (backlog, stats, pick, slots) has to know about unowned games.
+// about the collection (backlog, stats, pick) has to know about unowned games.
 // ---------------------------------------------------------------------------
 
 // A user's first wishlist (lowest id) is "the" wishlist today; `ensureWishlist` creates it lazily.
@@ -536,7 +514,7 @@ export const activityEvents = sqliteTable(
         at: integer('at').notNull().default(now),
         // IGDB game id; the shared cache is never pruned, so no cascade is needed
         gameId: integer('game_id').references(() => games.id),
-        // List / smart list id (so deleting one can take its events along) or a slot name
+        // List / smart list id (so deleting one can take its events along)
         subjectId: integer('subject_id'),
         subjectName: text('subject_name'),
         detail: integer('detail')

@@ -18,7 +18,7 @@ const MAX_COVERS = 3;
 
 /** `host` is the site's host name, printed at the bottom of the profile card */
 export function profileCardData(profile: ProfileDto, host: string): ProfileCardData {
-    const covers = profile.slots.flatMap((s) => s.entry?.game.coverImageId ?? []);
+    const covers = profile.playing.flatMap((e) => e.game.coverImageId ?? []);
     return {
         host,
         username: profile.username,

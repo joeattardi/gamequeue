@@ -1,5 +1,5 @@
 import { SelectSkeleton } from './PageSkeletons';
-import type { SearchResultDto } from '@gamequeue/shared';
+import { statusLabel, type SearchResultDto } from '@gamequeue/shared';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { useAddEntry, useAllPlatforms, useGameSearch } from '../api/collection';
@@ -14,7 +14,7 @@ import { useModalDialog } from './useModalDialog';
 import { ScoreGauge } from './ScoreGauge';
 import { SearchX, X } from 'lucide-react';
 
-type AddStatus = 'unplayed' | 'paused' | 'abandoned';
+type AddStatus = 'unplayed' | 'playing' | 'paused' | 'abandoned';
 
 export type AddGameMode = 'collection' | 'wishlist';
 
@@ -316,7 +316,8 @@ function PlatformStep({
             <label className="field">
                 <span>Add as</span>
                 <select value={status} onChange={(e) => setStatus(e.target.value as AddStatus)}>
-                    <option value="unplayed">Unplayed</option>
+                    <option value="unplayed">{statusLabel('unplayed')}</option>
+                    <option value="playing">Playing (start it today)</option>
                     <option value="paused">Paused (already started)</option>
                     <option value="abandoned">Abandoned (dates unknown)</option>
                 </select>

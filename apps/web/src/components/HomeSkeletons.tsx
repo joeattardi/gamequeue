@@ -1,29 +1,24 @@
-/** Placeholder bays shaped like `SlotBay`, shown while the slots load. */
-export function SlotSkeletons({ count = 2 }: { count?: number }) {
+/** Placeholder cards shaped like `PlayingCard`, shown while the playing games load. */
+export function PlayingSkeletons({ count = 2 }: { count?: number }) {
     return (
-        <ul className="bays" role="status" aria-label="Loading slots">
+        <ul className="play-grid" role="status" aria-label="Loading what you are playing">
             {Array.from({ length: count }, (_, i) => (
-                <li key={i} className="bay bay--skeleton" aria-hidden="true">
-                    <span className="skeleton skeleton--line skeleton--bay-name" />
-                    <div className="bay__game">
-                        <span className="skeleton skeleton--bay-cover" />
+                <li key={i} className="play-card play-card--skeleton" aria-hidden="true">
+                    <div className="play-card__game">
+                        <span className="skeleton skeleton--play-cover" />
                         <div className="stack">
                             <div>
                                 <span
-                                    className="skeleton skeleton--line skeleton--bay-title"
+                                    className="skeleton skeleton--line skeleton--play-title"
                                     style={{ width: `${82 - (i % 2) * 18}%` }}
                                 />
-                                <span className="skeleton skeleton--line skeleton--sub skeleton--bay-meta" />
+                                <span className="skeleton skeleton--line skeleton--sub skeleton--play-meta" />
                             </div>
                             <div className="row">
                                 <span className="skeleton skeleton--btn" />
                                 <span className="skeleton skeleton--btn skeleton--btn-wide" />
                             </div>
                         </div>
-                    </div>
-                    <div className="row bay__foot">
-                        <span className="skeleton skeleton--btn skeleton--btn-ghost" />
-                        <span className="skeleton skeleton--btn skeleton--btn-ghost" />
                     </div>
                 </li>
             ))}

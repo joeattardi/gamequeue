@@ -100,9 +100,9 @@ export function DataPage() {
                         a copy now and then.
                     </p>
                     <p>
-                        One JSON file with your collection, playthroughs, slots, lists, queue,
-                        wishlist, smart lists and tags, plus the names and details of its games so
-                        the file makes sense on its own.
+                        One JSON file with your collection, playthroughs, lists, queue, wishlist,
+                        smart lists and tags, plus the names and details of its games so the file
+                        makes sense on its own.
                     </p>
                     <div>
                         <a className="btn btn--primary" href="/api/data/export" download>
@@ -242,7 +242,7 @@ export function DataPage() {
 }
 
 function ReportSummary({ report }: { report: ImportReport }) {
-    const { games, playthroughs, lists, queue, wishlist, smartLists, slots } = report;
+    const { games, playthroughs, lists, queue, wishlist, smartLists } = report;
     const verb = report.dryRun ? 'Will add' : 'Added';
     const nothing =
         games.added +
@@ -252,9 +252,7 @@ function ReportSummary({ report }: { report: ImportReport }) {
             lists.itemsAdded +
             queue.added +
             wishlist.added +
-            smartLists.created +
-            slots.created +
-            slots.filled ===
+            smartLists.created ===
         0;
     return (
         <div className="stack">
@@ -276,8 +274,6 @@ function ReportSummary({ report }: { report: ImportReport }) {
                 <Stat label={`${verb} smart lists`} value={smartLists.created} />
                 <Stat label={`${verb} to queue`} value={queue.added} />
                 <Stat label={`${verb} to wishlist`} value={wishlist.added} />
-                <Stat label={`${verb} slots`} value={slots.created} />
-                <Stat label="Slots filled" value={slots.filled} />
             </dl>
             {report.notes.length > 0 && (
                 <div>

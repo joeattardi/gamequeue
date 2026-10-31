@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { ExportFile } from '@gamequeue/shared';
-import { setupApi } from './api.js';
+import { PC, setupApi } from './api.js';
 
 async function setup() {
     const s = await setupApi();
@@ -79,13 +79,12 @@ describe('queue', () => {
         expect(names(await queue())).toEqual(['Hades', 'Hollow Knight', 'Outer Wilds']);
     });
 
-    it('leaves the queue when a game is put in a slot, but not when paused or resumed', async () => {
+    it('leaves the queue when a game is started, but not when paused or resumed', async () => {
         const { add, enqueue, queue, names, call } = await setup();
         const [a, b] = [await add(1), await add(2)];
         await enqueue(a.id);
         await enqueue(b.id);
-        const slot = (await call('/slots')).slots[0];
-        await call(`/slots/${slot.id}/entry`, 'PUT', { entryId: a.id, date: '2025-01-01' });
+        await call(`/entries/${a.id}/start`, 'POST', { date: '2025-01-01', platformId: PC.id });
         expect(names(await queue())).toEqual(['Celeste']);
 
         // queued while playing, then pause/resume leave it alone

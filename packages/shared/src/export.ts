@@ -9,7 +9,6 @@ import {
 import { IGDB_IMAGE_ID } from './igdb-images.js';
 import { isoDateSchema, playtimeSchema } from './playthroughs.js';
 import { releasePrecisionSchema } from './release.js';
-import { MAX_SLOTS } from './slots.js';
 import { listDescription } from './lists.js';
 import { SMART_SORTS, smartRulesSchema } from './smart-lists.js';
 
@@ -132,16 +131,6 @@ export const exportFileSchema = z
         version: z.literal(EXPORT_VERSION),
         exportedAt: z.string().max(40),
         games: z.array(exportEntrySchema).max(MAX_IMPORT_GAMES),
-        slots: z
-            .array(
-                z.object({
-                    name: z.string().trim().min(1).max(40),
-                    position: z.number().int().min(0),
-                    /** IGDB id of the game in the slot, if any */
-                    igdbId: id.nullable()
-                })
-            )
-            .max(MAX_SLOTS),
         lists: z
             .array(
                 z.object({
@@ -191,15 +180,6 @@ export const exportFileSchema = z
                 });
             }
             ids.add(g.igdbId);
-        });
-        f.slots.forEach((s, i) => {
-            if (s.igdbId !== null && !ids.has(s.igdbId)) {
-                ctx.addIssue({
-                    code: 'custom',
-                    path: ['slots', i, 'igdbId'],
-                    message: `Game ${s.igdbId} isn't in the file`
-                });
-            }
         });
         f.queue.forEach((g, i) => {
             if (!ids.has(g)) {
@@ -252,7 +232,6 @@ export interface ImportReport {
     wishlist: { added: number };
     smartLists: { created: number };
     /** Ones you already have by title are kept as they are and counted as skipped */
-    slots: { created: number; filled: number };
     /** Things worth knowing, e.g. values of yours that were kept over the file's */
     notes: string[];
     /** Notes beyond the first 50 */

@@ -48,20 +48,6 @@ export function useEntries(params: URLSearchParams, limit = 8) {
     });
 }
 
-/** Games to put in a slot: queue first, then in progress, then the backlog; searchable. */
-export function useSlotCandidates(q: string, excludeEntryId?: number) {
-    const base = `/entries/candidates?${new URLSearchParams({
-        ...(q ? { q } : {}),
-        ...(excludeEntryId ? { exclude: String(excludeEntryId) } : {})
-    })}`;
-    return usePagedQuery({
-        key: ['entries', 'candidates', q, excludeEntryId ?? null],
-        load: (offset, limit) => api<EntriesPageDto>(withPage(base, offset, limit)),
-        read: (r) => ({ items: r.entries, total: r.total }),
-        placeholder: true
-    });
-}
-
 /** Facet options with counts under the current filters (the view and search text included). */
 export function useFacetCounts(params: URLSearchParams) {
     const qs = params.toString();
@@ -125,7 +111,6 @@ const COLLECTION_KEYS = [
     'facets',
     'search',
     'playthroughs',
-    'slots',
     'lists',
     'list',
     'smartLists',

@@ -20,7 +20,6 @@ import {
     getFacetCounts,
     getFacets,
     pageEntries,
-    pageSlotCandidates,
     patchEntry,
     patchNote
 } from '../services/entries.js';
@@ -48,23 +47,6 @@ export function entryRoutes({ db, config, igdb }: AppDeps) {
                 db,
                 c.get('user').id,
                 parseEntryQuery(c.req.queries()),
-                validate(pageQuerySchema, c.req.query())
-            )
-        )
-    );
-
-    // Games to put in a slot (queue first, then in progress, then the backlog), searchable
-    r.get('/candidates', (c) =>
-        c.json(
-            pageSlotCandidates(
-                db,
-                c.get('user').id,
-                {
-                    q: c.req.query('q')?.trim() || undefined,
-                    excludeEntryId: c.req.query('exclude')
-                        ? parseId(c.req.query('exclude')!)
-                        : undefined
-                },
                 validate(pageQuerySchema, c.req.query())
             )
         )

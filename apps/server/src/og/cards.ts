@@ -24,7 +24,7 @@ export interface ProfileCardData {
     /** Bumps when the uploaded avatar changes; null means no upload (a preset icon or the identicon) */
     avatarVersion: number | null;
     avatarIcon: AvatarIconChoice | null;
-    /** The slots hold a game, so the card says "now playing" and fans their covers */
+    /** A game is being played, so the card says "now playing" and fans their covers */
     playing: boolean;
     total: number;
     finished: number;

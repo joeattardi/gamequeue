@@ -1,3 +1,4 @@
+import { statusLabel } from '@gamequeue/shared';
 import type { EntryDto } from '@gamequeue/shared';
 import { Star } from 'lucide-react';
 import { Link } from 'react-router';
@@ -28,7 +29,7 @@ export function EntryChips({ entry }: { entry: EntryDto }) {
                 <span className={`badge badge--${entry.status}`}>
                     {entry.status === 'finished' && entry.lastFinishedOn
                         ? `finished ${entry.lastFinishedOn.slice(0, 4)}`
-                        : entry.status}
+                        : statusLabel(entry.status)}
                 </span>
             )}
             {entry.rating !== null && (

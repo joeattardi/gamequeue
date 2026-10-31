@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { listDescription } from './lists.js';
+import { statusLabel } from './status.js';
 import { ENTRY_STATUSES, type EntryDto, type EntryStatus } from './collection.js';
 
 /**
@@ -304,14 +305,14 @@ function amount(field: SmartNumberField, value: number): string {
     }
 }
 
-/** "Status is unplayed or paused", "Time to beat at most 5 h", … */
+/** "Status is not started or paused", "Time to beat at most 5 h", … */
 export function describeRule(
     rule: SmartRule,
     platformName: (id: number) => string = (id) => `#${id}`
 ): string {
     switch (rule.field) {
         case 'status':
-            return `Status is ${joinOr(rule.anyOf)}`;
+            return `Status is ${joinOr(rule.anyOf.map((s) => statusLabel(s).toLowerCase()))}`;
         case 'platform':
             return `Platform is ${joinOr(rule.anyOf.map(platformName))}`;
         case 'genre':
@@ -362,7 +363,7 @@ export const SMART_LIST_PRESETS: SmartListPreset[] = [
     {
         key: 'quick-wins',
         name: 'Quick wins',
-        blurb: 'Unplayed games you can beat in 5 hours or less.',
+        blurb: 'Not Started games you can beat in 5 hours or less.',
         rules: [unplayed, { field: 'ttb', op: 'lte', value: 300 }],
         sort: 'ttb',
         dir: 'asc'
@@ -370,7 +371,7 @@ export const SMART_LIST_PRESETS: SmartListPreset[] = [
     {
         key: 'hidden-gems',
         name: 'Hidden gems',
-        blurb: 'Unplayed games IGDB scores 80 or higher.',
+        blurb: 'Not Started games IGDB scores 80 or higher.',
         rules: [unplayed, { field: 'igdbScore', op: 'gte', value: 80 }],
         sort: 'score',
         dir: 'desc'
@@ -378,7 +379,7 @@ export const SMART_LIST_PRESETS: SmartListPreset[] = [
     {
         key: 'long-neglected',
         name: 'Long-neglected',
-        blurb: 'Unplayed games that have sat in your collection for over a year.',
+        blurb: 'Not Started games that have sat in your collection for over a year.',
         rules: [unplayed, { field: 'addedDays', op: 'gte', value: 365 }],
         sort: 'added',
         dir: 'asc'

@@ -23,7 +23,6 @@ import { recapRoutes } from './routes/recap.js';
 import { statsRoutes } from './routes/stats.js';
 import { showcaseRoutes } from './routes/showcase.js';
 import { seriesRoutes } from './routes/series.js';
-import { slotRoutes } from './routes/slots.js';
 import { wishlistRoutes } from './routes/wishlist.js';
 import { entryActionRoutes, playthroughRoutes } from './routes/playthroughs.js';
 import { HttpError } from './errors.js';
@@ -152,7 +151,6 @@ export function createApp(deps: AppDeps) {
     app.route('/api/entries', entryRoutes(deps));
     app.route('/api/entries', entryActionRoutes(deps));
     app.route('/api/playthroughs', playthroughRoutes(deps));
-    app.route('/api/slots', slotRoutes(deps));
     app.route('/api/lists', listRoutes(deps));
     app.route('/api/smart-lists', smartListRoutes(deps));
     app.route('/api/queue', queueRoutes(deps));

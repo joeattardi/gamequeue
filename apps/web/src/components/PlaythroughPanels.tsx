@@ -1,5 +1,6 @@
 import { HistorySkeletons } from './PageSkeletons';
 import {
+    statusLabel,
     availableActions,
     RATING_MAX,
     type EntryDto,
@@ -84,7 +85,7 @@ function StatusBadge({ status }: { status: EntryDto['status'] }) {
     }, [status]);
     return (
         <span ref={ref} className={`badge badge--${status}`}>
-            {status}
+            {statusLabel(status)}
         </span>
     );
 }

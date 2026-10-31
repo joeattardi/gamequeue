@@ -149,8 +149,6 @@ export interface EntryDto {
     lastFinishedOn: string | null;
     /** Every year with a finished playthrough that has a known end date, oldest first */
     finishedYears: number[];
-    /** The slot it currently occupies, if any */
-    slotId: number | null;
     /** Lists it belongs to (the queue is separate, see `queued`) */
     lists: { id: number; name: string }[];
     /** On the queue */
@@ -195,10 +193,11 @@ export const addEntrySchema = z.object({
     /** Omit to pre-fill from IGDB genres and themes */
     tags: tagsSchema.optional(),
     /**
-     * Add a game you already have history with. `paused` opens a playthrough (started on `date`,
-     * default today) and pauses it; `abandoned` logs a closed playthrough with unknown dates.
+     * Add a game you already have history with. `playing` opens a playthrough (started on `date`,
+     * default today); `paused` does the same and pauses it; `abandoned` logs a closed playthrough
+     * with unknown dates.
      */
-    status: z.enum(['unplayed', 'paused', 'abandoned']).optional(),
+    status: z.enum(['unplayed', 'playing', 'paused', 'abandoned']).optional(),
     date: z.string().refine(isValidIsoDate, 'Use a valid date (YYYY-MM-DD)').optional()
 });
 export type AddEntryInput = z.infer<typeof addEntrySchema>;

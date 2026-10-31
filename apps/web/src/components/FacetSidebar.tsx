@@ -1,4 +1,4 @@
-import type { FacetCountsDto } from '@gamequeue/shared';
+import { statusLabel, type EntryStatus, type FacetCountsDto } from '@gamequeue/shared';
 import { useState, type ReactNode } from 'react';
 
 export const FACET_KEYS = ['status', 'platform', 'genre', 'series', 'tag', 'favorite'] as const;
@@ -45,7 +45,7 @@ export function FacetSidebar({
                             title: 'Status',
                             options: facets.statuses.map((s) => ({
                                 value: s.value,
-                                label: cap(s.value),
+                                label: statusLabel(s.value as EntryStatus),
                                 count: s.count
                             }))
                         }

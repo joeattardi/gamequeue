@@ -1,4 +1,5 @@
 import {
+    statusLabel,
     MAX_LIST_DESCRIPTION,
     SMART_NUMBER_FIELDS,
     SMART_NUMBER_FIELD_INFO,
@@ -393,7 +394,6 @@ function RuleEditor({
     );
 }
 
-const cap = (s: string) => s[0]!.toUpperCase() + s.slice(1);
 const toggle = <T,>(xs: T[], x: T) => (xs.includes(x) ? xs.filter((y) => y !== x) : [...xs, x]);
 
 function RuleBody({
@@ -415,7 +415,7 @@ function RuleBody({
         return (
             <CheckSet
                 label={`${label}: status is any of`}
-                options={ENTRY_STATUSES.map((s) => ({ key: s, label: cap(s) }))}
+                options={ENTRY_STATUSES.map((s) => ({ key: s, label: statusLabel(s) }))}
                 selected={rule.anyOf}
                 onToggle={(s) => onChange({ ...rule, anyOf: toggle(rule.anyOf, s) })}
             />

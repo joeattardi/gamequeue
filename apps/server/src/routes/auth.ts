@@ -3,7 +3,6 @@ import { Hono } from 'hono';
 import { getCookie } from 'hono/cookie';
 import type { Context } from 'hono';
 import {
-    DEFAULT_SLOT_NAMES,
     changeEmailSchema,
     forgotPasswordSchema,
     loginSchema,
@@ -37,7 +36,7 @@ import type { Mailer } from '../services/mailer.js';
 import type { Notify } from '../services/notify.js';
 import { signupsEnabled } from '../services/settings.js';
 import { getUserDto } from '../services/users.js';
-import { slots, users } from '../db/schema.js';
+import { users } from '../db/schema.js';
 
 type Deps = Pick<AppDeps, 'db' | 'config'> &
     Required<Pick<AppDeps, 'limiters'>> & { notify: Notify; mailer?: Mailer };
@@ -106,15 +105,6 @@ export function authRoutes({ db, config, limiters, notify, mailer }: Deps) {
                     })
                     .returning({ id: users.id, username: users.username, email: users.email })
                     .get();
-                tx.insert(slots)
-                    .values(
-                        DEFAULT_SLOT_NAMES.map((name, position) => ({
-                            userId: u.id,
-                            name,
-                            position
-                        }))
-                    )
-                    .run();
                 return u;
             });
         } catch (e) {

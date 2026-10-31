@@ -52,8 +52,8 @@ export function Welcome() {
                     </span>
                     <h2>Play and keep track</h2>
                     <p className="muted">
-                        Put a game in a slot to start it. Finish it and it goes into your history,
-                        stats and yearly Save File.
+                        Start a game and it shows up under Playing. Finish it and it goes into your
+                        history, stats and yearly Save File.
                     </p>
                 </li>
             </ol>

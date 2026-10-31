@@ -33,8 +33,8 @@ function dayLabel(at: number, now: number): string {
     });
 }
 
-/** Only things done to a game can be folded together; creating a list or moving a slot stays single. */
-const foldable = (e: ActivityEventDto) => e.game !== null && e.type !== 'slotted';
+/** Only things done to a game can be folded together; creating a list stays single. */
+const foldable = (e: ActivityEventDto) => e.game !== null;
 
 /**
  * Newest-first events into days, with each day's consecutive runs of the same action on games

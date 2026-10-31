@@ -24,7 +24,7 @@ describe('public profile', () => {
         const { app, post, put, add } = await setup();
         const hades = await add(1);
         const celeste = await add(2);
-        expect((await app.request('/api/slots')).status).toBe(401); // the rest of the API stays private
+        expect((await app.request('/api/stats')).status).toBe(401); // the rest of the API stays private
 
         await post(`/entries/${celeste.id}/notes`, { body: 'secret note' });
         const list = (await (await post('/lists', { name: 'Favourites' })).json()).list;
@@ -42,11 +42,7 @@ describe('public profile', () => {
             { id: list.id, name: 'Favourites', total: 1, covers: [hades.game.coverImageId] }
         ]);
         expect(profile.lists[0].entries).toBeUndefined();
-        expect(profile.slots.map((s: { name: string }) => s.name)).toEqual([
-            'Main',
-            'Secondary',
-            'Palate cleanser'
-        ]);
+        expect(profile.playing).toEqual([]);
         expect(text).not.toContain('secret note');
         expect(text).not.toContain('me@example.com');
     });
@@ -80,10 +76,10 @@ describe('public profile', () => {
     });
 
     it('lists games per status, backlog and collection', async () => {
-        const { app, put, add } = await setup();
+        const { app, post, add } = await setup();
         const hades = await add(1);
         await add(2);
-        await put('/slots/1/entry', { entryId: hades.id });
+        await post(`/entries/${hades.id}/start`, {});
         const names = async (view: string) =>
             (await (await app.request(`/api/profiles/joe/${view}`)).json()).games.entries.map(
                 (e: { game: { name: string } }) => e.game.name
@@ -101,15 +97,20 @@ describe('public profile', () => {
         expect(db.select().from(lists).all()).toHaveLength(0);
     });
 
-    it('shows games in slots', async () => {
-        const { app, put, add } = await setup();
+    it('shows every game being played', async () => {
+        const { app, post, add } = await setup();
         const hades = await add(1);
-        const slots = (await (await app.request('/api/profiles/joe')).json()).profile.slots;
-        expect(slots.every((s: { entry: unknown }) => s.entry === null)).toBe(true);
-        // slot ids are 1..3 in a fresh database
-        expect((await put('/slots/1/entry', { entryId: hades.id })).status).toBe(200);
-        const after = (await (await app.request('/api/profiles/joe')).json()).profile;
-        expect(after.slots[0].entry).toMatchObject({ status: 'playing', game: { name: 'Hades' } });
+        const celeste = await add(2);
+        const playing = async () =>
+            (await (await app.request('/api/profiles/joe')).json()).profile.playing;
+        expect(await playing()).toEqual([]);
+        expect((await post(`/entries/${hades.id}/start`, {})).status).toBe(200);
+        expect((await post(`/entries/${celeste.id}/start`, {})).status).toBe(200);
+        expect(
+            (await playing()).map((e: { game: { name: string } }) => e.game.name).sort()
+        ).toEqual(['Celeste', 'Hades']);
+        await post(`/entries/${celeste.id}/pause`, {});
+        expect(await playing()).toHaveLength(1);
     });
 
     it('does not create a queue for the viewed user', async () => {

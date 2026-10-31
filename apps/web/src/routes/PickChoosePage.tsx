@@ -181,7 +181,7 @@ export function PickChoosePage() {
     );
 }
 
-/** Owned games get the full result with slot buttons; any other game gets add buttons. */
+/** Owned games get the full result with Start playing; any other game gets add buttons. */
 function Winner({
     game,
     note,

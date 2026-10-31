@@ -123,7 +123,7 @@ export async function changePassword(
 }
 
 /**
- * Permanently deletes the user. Everything they own (entries, playthroughs, slots, lists, wishlist,
+ * Permanently deletes the user. Everything they own (entries, playthroughs, lists, wishlist,
  * tags, smart lists, avatar, sessions) goes with the row through `ON DELETE cascade`; the shared
  * game metadata cache stays. Returns false when the password is wrong.
  */

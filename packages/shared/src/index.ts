@@ -4,7 +4,6 @@ export * from './collection.js';
 export * from './igdb-images.js';
 export * from './status.js';
 export * from './playthroughs.js';
-export * from './slots.js';
 export * from './lists.js';
 export * from './pick.js';
 export * from './export.js';

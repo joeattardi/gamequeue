@@ -50,8 +50,7 @@ describe('share card images', () => {
     it('serves the profile card as a PNG without logging in', async () => {
         const { app, add, call } = await setup();
         const hades = await add(1, [PC.id]);
-        const slots = (await call('/slots')).slots;
-        await call(`/slots/${slots[0].id}/entry`, 'PUT', { entryId: hades.id });
+        await call(`/entries/${hades.id}/start`, 'POST', { platformId: PC.id });
 
         const res = await app.request('/api/og/profile/user_me.png');
         expect(res.status).toBe(200);

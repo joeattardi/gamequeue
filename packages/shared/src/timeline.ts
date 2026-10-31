@@ -41,7 +41,6 @@ export function timelineGroupOf(type: ActivityType): TimelineGroup {
         case 'started':
         case 'paused':
         case 'resumed':
-        case 'slotted':
             return 'played';
         default:
             return 'collected';

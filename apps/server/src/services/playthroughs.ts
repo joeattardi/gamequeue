@@ -2,8 +2,10 @@ import { and, desc, eq, isNull } from 'drizzle-orm';
 import {
     nextStatus,
     statusFromHistory,
+    statusLabel,
     type CloseInput,
     type EntryDto,
+    type EntryStatus,
     type LogPlaythroughInput,
     type PatchPlaythroughInput,
     type PlaythroughDto,
@@ -11,7 +13,7 @@ import {
     type StatusAction
 } from '@gamequeue/shared';
 import type { Db } from '../db/client.js';
-import { entries, entryPlatforms, platforms, playthroughs, slots } from '../db/schema.js';
+import { entries, entryPlatforms, platforms, playthroughs } from '../db/schema.js';
 import { HttpError } from '../errors.js';
 import { existingPlatformIds } from './games.js';
 import { getEntry } from './entries.js';
@@ -53,11 +55,6 @@ const openPlaythroughRow = (db: Db, entryId: number) =>
         .where(and(eq(playthroughs.entryId, entryId), isNull(playthroughs.outcome)))
         .get();
 
-/** A game that is no longer playing or paused doesn't belong in a slot. */
-export function vacateSlots(db: Db, entryId: number) {
-    db.update(slots).set({ entryId: null }).where(eq(slots.entryId, entryId)).run();
-}
-
 /** Recomputes the entry's status from its playthrough history. */
 export function syncStatus(db: Db, entryId: number) {
     const entry = db.select().from(entries).where(eq(entries.id, entryId)).get()!;
@@ -69,7 +66,6 @@ export function syncStatus(db: Db, entryId: number) {
             .where(eq(entries.id, entryId))
             .run();
     }
-    if (status !== 'playing' && status !== 'paused') vacateSlots(db, entryId);
 }
 
 /** A rated finish pre-fills the entry's own rating, but never overwrites one the user set. */
@@ -113,8 +109,8 @@ function resolvePlatform(
     return requested;
 }
 
-function notAllowed(status: string, action: StatusAction): never {
-    throw new HttpError(409, `Can't ${action} a game that is ${status}`);
+function notAllowed(status: EntryStatus, action: StatusAction): never {
+    throw new HttpError(409, `Can't ${action} a game that is ${statusLabel(status).toLowerCase()}`);
 }
 
 export function startPlaythrough(
@@ -198,7 +194,6 @@ export function closePlaythrough(
             .where(eq(entries.id, entryId))
             .run();
         prefillEntryRating(t, entryId, input.rating);
-        vacateSlots(t, entryId);
         recordActivity(t, userId, {
             type: to as 'finished' | 'abandoned',
             gameId: entry.gameId,
@@ -265,7 +260,7 @@ export function patchPlaythrough(
 ): EntryDto {
     const current = requirePlaythrough(db, userId, id);
     const isOpen = current.outcome === null;
-    // Closing an open playthrough goes through finish/abandon so status and slots stay consistent
+    // Closing an open playthrough goes through finish/abandon so the status stays consistent
     if (isOpen && (patch.outcome !== undefined || (patch.endedOn ?? null) !== null)) {
         throw new HttpError(409, 'Finish or abandon the game to close this playthrough');
     }

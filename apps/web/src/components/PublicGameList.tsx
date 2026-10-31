@@ -1,3 +1,4 @@
+import { statusLabel } from '@gamequeue/shared';
 import type { EntryStatus, GameDto } from '@gamequeue/shared';
 import type { CSSProperties } from 'react';
 import { Link } from 'react-router';
@@ -112,7 +113,9 @@ export function PublicGameList({
 function Details({ item }: { item: PublicListItem }) {
     return (
         <div>
-            {item.status && <span className={`badge badge--${item.status}`}>{item.status}</span>}
+            {item.status && (
+                <span className={`badge badge--${item.status}`}>{statusLabel(item.status)}</span>
+            )}
             {item.rating != null && <StarDisplay value={item.rating} />}
             {item.caption && <span className="muted">{item.caption}</span>}
         </div>

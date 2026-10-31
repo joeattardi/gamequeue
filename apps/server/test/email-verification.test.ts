@@ -47,7 +47,7 @@ describe('registering with verification on', () => {
         const walled = await app.request('/api/entries', { headers });
         expect(walled.status).toBe(403);
         expect(await walled.json()).toMatchObject({ code: 'email_unverified' });
-        for (const path of ['/api/slots', '/api/lists', '/api/stats', '/api/account'])
+        for (const path of ['/api/lists', '/api/stats', '/api/account'])
             expect((await app.request(path, { headers })).status).toBe(403);
         expect((await app.request('/api/igdb/search?q=zelda', { headers })).status).toBe(403);
     });

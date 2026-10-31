@@ -21,7 +21,6 @@ import {
     lists,
     platforms,
     playthroughs,
-    slots,
     tags,
     themes,
     wishlistItems
@@ -193,12 +192,6 @@ export function buildExport(db: Db, userId: number, now = new Date()): ExportFil
             const igdbId = igdbIdOfEntry.get(entryId);
             return igdbId === undefined ? [] : [igdbId];
         });
-    const slotRows = db
-        .select()
-        .from(slots)
-        .where(eq(slots.userId, userId))
-        .orderBy(asc(slots.position))
-        .all();
     const listRows = db
         .select()
         .from(lists)
@@ -221,11 +214,6 @@ export function buildExport(db: Db, userId: number, now = new Date()): ExportFil
         version: EXPORT_VERSION,
         exportedAt: now.toISOString(),
         games: gameEntries,
-        slots: slotRows.map((s) => ({
-            name: s.name,
-            position: s.position,
-            igdbId: s.entryId === null ? null : (igdbIdOfEntry.get(s.entryId) ?? null)
-        })),
         lists: listRows
             .filter((l) => l.kind === 'list')
             .map((l) => ({

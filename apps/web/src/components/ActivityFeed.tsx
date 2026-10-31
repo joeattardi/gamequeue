@@ -10,7 +10,6 @@ import {
     CircleCheck,
     Gift,
     Heart,
-    ListChecks,
     ListOrdered,
     ListPlus,
     Pause,
@@ -35,7 +34,6 @@ const ICONS: Record<ActivityType, ReactNode> = {
     rated: <Star />,
     favorited: <Heart />,
     queued: <ListOrdered />,
-    slotted: <ListChecks />,
     wishlisted: <Gift />,
     list: <ListPlus />,
     smartlist: <SlidersHorizontal />
@@ -71,12 +69,6 @@ function sentence(e: ActivityEventDto, name: ReactNode): ReactNode {
             return <>Made {name} a favorite</>;
         case 'queued':
             return <>Queued {name}</>;
-        case 'slotted':
-            return (
-                <>
-                    Moved {name} to the {e.subject?.name} slot
-                </>
-            );
         case 'wishlisted':
             return <>Wishlisted {name}</>;
         case 'list':
@@ -97,7 +89,6 @@ function ActivityRow({
 }) {
     const path = SUBJECT_PATH[event.type];
     const label = event.game?.name ?? event.subject?.name ?? '';
-    // Slot events name the slot in the sentence, not as a link
     const name =
         path && event.subject?.id != null ? (
             <Link to={`/u/${username}/${path}/${event.subject.id}`}>

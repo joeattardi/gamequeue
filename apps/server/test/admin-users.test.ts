@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm';
 import { describe, expect, it } from 'vitest';
-import { sessions, slots, users } from '../src/db/schema.js';
+import { sessions, users } from '../src/db/schema.js';
 import { cookieFrom, json, makeApp, register } from './helpers.js';
 
 const PW = 'correct horse battery';
@@ -50,7 +50,7 @@ describe('admin user management', () => {
         expect(body.users[0]).toMatchObject({ gameCount: 0, role: 'gamer' });
     });
 
-    it('creates a user who can log in, with default slots, even when signups are off', async () => {
+    it('creates a user who can log in, even when signups are off', async () => {
         const { app, db, admin, call } = await setup();
         const res = await call(admin, '/users', 'POST', {
             username: 'Bob',
@@ -61,7 +61,6 @@ describe('admin user management', () => {
         expect(res.status).toBe(201);
         const { user } = await res.json();
         expect(user).toMatchObject({ username: 'bob', email: 'bob@example.com', role: 'admin' });
-        expect(db.select().from(slots).where(eq(slots.userId, user.id)).all()).toHaveLength(3);
         const login = await app.request('/api/auth/login', json({ username: 'bob', password: PW }));
         expect(login.status).toBe(200);
     });

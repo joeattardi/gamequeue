@@ -17,7 +17,8 @@ import {
     type ProfileListPageDto,
     type ProfileView,
     type ProfileWishlistDto,
-    type PublicEntryDto
+    type PublicEntryDto,
+    MAX_PAGE_SIZE
 } from '@gamequeue/shared';
 import type { Db } from '../db/client.js';
 import {
@@ -38,7 +39,6 @@ import { loadGames } from './games.js';
 import { getList, listLists } from './lists.js';
 import { getRecap } from './recap.js';
 import { getStats } from './stats.js';
-import { listSlots } from './slots.js';
 import { getSmartList, listSmartLists } from './smart-lists.js';
 import { findWishlist, wishlistItemsOf } from './wishlist.js';
 
@@ -101,10 +101,10 @@ export function getProfile(db: Db, username: string, founderUserId?: number): Pr
         bio: user.bio,
         socialLinks: socialLinksOf(user),
         joinedAt: user.createdAt,
-        slots: listSlots(db, user.id).map((s) => ({
-            name: s.name,
-            entry: s.entry ? toPublic(s.entry) : null
-        })),
+        playing: pageEntries(db, user.id, entryQuerySchema.parse({ status: 'playing' }), {
+            limit: MAX_PAGE_SIZE,
+            offset: 0
+        }).entries.map(toPublic),
         summary: { total: statuses.length, queued, wishlisted, favorites, byStatus },
         lists: listLists(db, user.id).map((l) => ({
             id: l.id,

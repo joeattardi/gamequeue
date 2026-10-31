@@ -138,5 +138,3 @@ export interface ApiError {
     error: string;
     details?: unknown;
 }
-
-export const DEFAULT_SLOT_NAMES = ['Main', 'Secondary', 'Palate cleanser'] as const;

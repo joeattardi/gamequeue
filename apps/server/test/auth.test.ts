@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { hashPassword, verifyPassword } from '../src/auth/password.js';
 import { FailureLimiter } from '../src/auth/rate-limit.js';
 import { createSession, hashToken, resolveSession, SESSION_TTL_MS } from '../src/auth/sessions.js';
-import { sessions, slots, users } from '../src/db/schema.js';
+import { sessions, users } from '../src/db/schema.js';
 import { cookieFrom, json, makeApp, register } from './helpers.js';
 
 describe('password hashing', () => {
@@ -17,7 +17,7 @@ describe('password hashing', () => {
 });
 
 describe('register', () => {
-    it('creates a user, default slots and a session cookie', async () => {
+    it('creates a user and a session cookie', async () => {
         const { app, db } = makeApp();
         const res = await register(app, 'Me@Example.com');
         expect(res.status).toBe(201);
@@ -27,13 +27,6 @@ describe('register', () => {
         const cookie = res.headers.get('set-cookie')!;
         expect(cookie).toMatch(/HttpOnly/i);
         expect(cookie).toMatch(/SameSite=Lax/i);
-        expect(
-            db
-                .select()
-                .from(slots)
-                .all()
-                .map((s) => s.name)
-        ).toEqual(['Main', 'Secondary', 'Palate cleanser']);
     });
 
     it('returns 403 when signups are disabled', async () => {

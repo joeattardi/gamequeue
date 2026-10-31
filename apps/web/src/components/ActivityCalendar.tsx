@@ -66,8 +66,6 @@ const POPUP_EVENTS = 8;
 function eventLine(e: ActivityEventDto): string {
     const name = e.game?.name ?? e.subject?.name ?? '';
     switch (e.type) {
-        case 'slotted':
-            return `Moved ${name} to the ${e.subject?.name} slot`;
         case 'rated':
             return `Rated ${name} ${e.detail}/${RATING_MAX}`;
         case 'added':

@@ -1,5 +1,5 @@
 import { and, asc, eq, inArray, max } from 'drizzle-orm';
-import { MAX_SLOTS, type ExportEntry, type ExportFile, type ImportReport } from '@gamequeue/shared';
+import { type ExportEntry, type ExportFile, type ImportReport } from '@gamequeue/shared';
 import type { Db } from '../db/client.js';
 import {
     entries,
@@ -10,7 +10,6 @@ import {
     listItems,
     lists,
     playthroughs,
-    slots,
     smartLists,
     tags,
     wishlistItems
@@ -113,11 +112,11 @@ const lower = (s: string) => s.toLowerCase();
 /**
  * Merges an export file into the user's data. Nothing of the user's is deleted or overwritten:
  * existing values win, empty ones are filled in, and collections are unioned. Matching is by IGDB id
- * (games), name (lists, slots) or identical dates/platform/outcome (playthroughs), so importing the
+ * (games), name (lists) or identical dates/platform/outcome (playthroughs), so importing the
  * same file twice changes nothing.
  *
  * Games and platforms come from `catalog` (see `resolveImportCatalog`): a game the server couldn't
- * find on IGDB is skipped with a note, and so is everything of it (list items, slots, wishlist); an unknown platform is dropped.
+ * find on IGDB is skipped with a note, and so is everything of it (list items, wishlist); an unknown platform is dropped.
  *
  * Everything runs in one transaction. A dry run executes the real import and then rolls back, so its
  * report is exactly what committing would do.
@@ -137,7 +136,6 @@ export function importData(
         queue: { added: 0 },
         wishlist: { added: 0 },
         smartLists: { created: 0 },
-        slots: { created: 0, filled: 0 },
         notes: [],
         moreNotes: 0
     };
@@ -188,7 +186,6 @@ function merge(
 ) {
     const now = Date.now();
     const entryIdByGame = new Map<number, number>();
-    const nameByGame = new Map(file.games.map((g) => [g.igdbId, g.game.name]));
 
     const existing = new Map(
         db
@@ -227,7 +224,6 @@ function merge(
 
     mergeLists(db, userId, file, entryIdByGame, report);
     mergeSmartLists(db, userId, file, report);
-    mergeSlots(db, userId, file, entryIdByGame, nameByGame, report, note);
     mergeWishlist(db, userId, file, catalog, report, note, now);
 }
 
@@ -534,77 +530,6 @@ function mergeSmartLists(db: Db, userId: number, file: ExportFile, report: Impor
             .run();
         have.add(lower(sl.name));
         report.smartLists.created++;
-    }
-}
-
-function mergeSlots(
-    db: Db,
-    userId: number,
-    file: ExportFile,
-    entryIdByGame: Map<number, number>,
-    nameByGame: Map<number, string>,
-    report: ImportReport,
-    note: (m: string) => void
-) {
-    const mine = db
-        .select()
-        .from(slots)
-        .where(eq(slots.userId, userId))
-        .orderBy(asc(slots.position))
-        .all();
-    const matched = new Set<number>();
-    let count = mine.length;
-    let top = mine.reduce((m, s) => Math.max(m, s.position), -1);
-
-    for (const fs of [...file.slots].sort((a, b) => a.position - b.position)) {
-        // Slots are matched by name; a missing one is created (up to the limit)
-        let slot = mine.find((s) => !matched.has(s.id) && lower(s.name) === lower(fs.name));
-        if (!slot) {
-            if (count >= MAX_SLOTS) {
-                note(`Skipped the slot "${fs.name}": you already have ${MAX_SLOTS} slots`);
-                continue;
-            }
-            slot = db
-                .insert(slots)
-                .values({ userId, name: fs.name, position: ++top })
-                .returning()
-                .get();
-            count++;
-            report.slots.created++;
-        }
-        matched.add(slot.id);
-        if (fs.igdbId === null) continue;
-
-        // Only ever fill an empty slot with a game that's genuinely in progress and not slotted elsewhere
-        const game = nameByGame.get(fs.igdbId)!;
-        const entryId = entryIdByGame.get(fs.igdbId);
-        if (entryId === undefined) continue; // skipped, and noted, with the game
-        const row = db.select().from(slots).where(eq(slots.id, slot.id)).get()!;
-        if (row.entryId !== null) {
-            if (row.entryId !== entryId)
-                note(`${slot.name} is occupied, so ${game} wasn't put in it`);
-            continue;
-        }
-        const entry = db
-            .select({ status: entries.status })
-            .from(entries)
-            .where(eq(entries.id, entryId))
-            .get()!;
-        if (entry.status !== 'playing' && entry.status !== 'paused') {
-            note(`${game} isn't in progress here, so it wasn't put in ${slot.name}`);
-            continue;
-        }
-        const elsewhere = db
-            .select({ name: slots.name })
-            .from(slots)
-            .where(and(eq(slots.userId, userId), eq(slots.entryId, entryId)))
-            .get();
-        if (elsewhere) {
-            note(`${game} is already in ${elsewhere.name}, so it wasn't put in ${slot.name}`);
-            continue;
-        }
-        db.update(slots).set({ entryId }).where(eq(slots.id, slot.id)).run();
-        report.slots.filled++;
     }
 }
 

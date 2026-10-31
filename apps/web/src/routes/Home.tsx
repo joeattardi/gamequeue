@@ -1,31 +1,31 @@
-import type { SlotDto } from '@gamequeue/shared';
-import { useState } from 'react';
-import { AssignDialog } from '../components/AssignDialog';
-import { ManageSlotsDialog } from '../components/ManageSlotsDialog';
-import { SlotSkeletons } from '../components/HomeSkeletons';
+import { Link } from 'react-router';
+import { PlayingSkeletons } from '../components/HomeSkeletons';
+import { PlayingCard } from '../components/PlayingCard';
 import { ReleasingSoon } from '../components/ReleasingSoon';
 import { UpNext } from '../components/UpNext';
-import { SlotBay } from '../components/SlotBay';
-import { useSlots } from '../api/slots';
+import { useEntries } from '../api/collection';
 import { useStats } from '../api/stats';
 import { useWishlistCount } from '../api/wishlist';
 import { Welcome } from '../components/Welcome';
 import { DismissiblePreviewNotice } from '../components/PreviewNotice';
 import { LogoMark } from '../components/Logo';
-import { Gamepad2, SlidersHorizontal } from 'lucide-react';
+import { Dices, Gamepad2, Pause } from 'lucide-react';
 import { useFirstName } from '../api/auth';
 import { greeting, usePageTitle } from '../lib';
+import { MAX_PAGE_SIZE } from '@gamequeue/shared';
+
+const PLAYING = new URLSearchParams({ status: 'playing', sort: 'added', dir: 'desc' });
+const PAUSED = new URLSearchParams({ status: 'paused', sort: 'added', dir: 'desc' });
 
 export function Home() {
     usePageTitle('Now playing');
-    const slots = useSlots();
+    const playing = useEntries(PLAYING, MAX_PAGE_SIZE);
+    const paused = useEntries(PAUSED, MAX_PAGE_SIZE);
     const firstName = useFirstName();
-    const [assigning, setAssigning] = useState<SlotDto | null>(null);
-    const [managing, setManaging] = useState(false);
     const stats = useStats();
     const wishlisted = useWishlistCount();
 
-    // Nothing owned (so nothing queued, listed or slotted either) and nothing wishlisted
+    // Nothing owned (so nothing queued or listed either) and nothing wishlisted
     if (stats.data?.overview.total === 0 && wishlisted.data === 0)
         return (
             <>
@@ -37,7 +37,9 @@ export function Home() {
     const overview = stats.data?.overview;
     const summary = overview
         ? `${overview.byStatus.playing} playing · ${overview.byStatus.paused} paused · ${overview.backlogCount} in the backlog`
-        : '\u00a0';
+        : ' ';
+    const playingNow = playing.data?.entries ?? [];
+    const pausedNow = paused.data?.entries ?? [];
 
     return (
         <div className="home">
@@ -54,39 +56,52 @@ export function Home() {
                     <div>
                         <h2 id="playing-h">
                             <Gamepad2 aria-hidden="true" />
-                            Now playing
+                            Playing
                         </h2>
-                        <p className="muted">What's in each slot right now.</p>
+                        <p className="muted">Every game you have in progress.</p>
                     </div>
-                    <button className="btn" onClick={() => setManaging(true)}>
-                        <SlidersHorizontal />
-                        Edit slots
-                    </button>
+                    <Link className="btn" to="/pick">
+                        <Dices />
+                        Random pick
+                    </Link>
                 </div>
-                {slots.isError ? (
+                {playing.isError ? (
                     <p className="form-error" role="alert">
-                        Couldn't load your slots.
+                        Couldn't load what you are playing.
                     </p>
-                ) : slots.isPending ? (
-                    <SlotSkeletons />
+                ) : playing.isPending ? (
+                    <PlayingSkeletons />
+                ) : playingNow.length === 0 ? (
+                    <p className="muted">
+                        Nothing in play right now. Start a game from your{' '}
+                        <Link to="/queue">queue</Link>, your <Link to="/backlog">backlog</Link> or a{' '}
+                        <Link to="/pick">random pick</Link>.
+                    </p>
                 ) : (
-                    <ul className="bays" aria-busy={slots.isFetching}>
-                        {slots.data?.map((slot) => (
-                            <SlotBay key={slot.id} slot={slot} onChoose={setAssigning} />
+                    <ul className="play-grid" aria-busy={playing.isFetching}>
+                        {playingNow.map((e) => (
+                            <PlayingCard key={e.id} entry={e} />
                         ))}
                     </ul>
                 )}
-                {/* Re-read the slot from fresh data so the dialog never shows a stale occupant */}
-                <AssignDialog
-                    slot={
-                        assigning ? (slots.data?.find((s) => s.id === assigning.id) ?? null) : null
-                    }
-                    onClose={() => setAssigning(null)}
-                />
             </section>
+            {pausedNow.length > 0 && (
+                <section aria-labelledby="paused-h" className="home-section">
+                    <div className="page-head">
+                        <h2 id="paused-h">
+                            <Pause aria-hidden="true" />
+                            Paused
+                        </h2>
+                    </div>
+                    <ul className="play-grid play-grid--compact" aria-busy={paused.isFetching}>
+                        {pausedNow.map((e) => (
+                            <PlayingCard key={e.id} entry={e} compact />
+                        ))}
+                    </ul>
+                </section>
+            )}
             <UpNext />
             <ReleasingSoon />
-            <ManageSlotsDialog open={managing} onClose={() => setManaging(false)} />
         </div>
     );
 }

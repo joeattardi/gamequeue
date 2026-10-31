@@ -1,3 +1,4 @@
+import { statusLabel } from '@gamequeue/shared';
 import { ArrowLeft, ExternalLink, Heart } from 'lucide-react';
 import { Link, useParams } from 'react-router';
 import { ApiRequestError } from '../api/client';
@@ -97,7 +98,9 @@ function ProfileGame({ data }: { data: NonNullable<ReturnType<typeof useProfileG
                     {copy && <p className="muted">{copy}</p>}
                     {entry && (
                         <div className="game-actions">
-                            <span className={`badge badge--${entry.status}`}>{entry.status}</span>
+                            <span className={`badge badge--${entry.status}`}>
+                                {statusLabel(entry.status)}
+                            </span>
                             {entry.rating !== null && <StarDisplay value={entry.rating} />}
                             {entry.favorite && (
                                 <span className="badge">

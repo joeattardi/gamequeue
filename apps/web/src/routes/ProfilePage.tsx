@@ -1,4 +1,5 @@
 import {
+    statusLabel,
     RATING_MAX,
     type EntryStatus,
     type ProfileView,
@@ -57,7 +58,7 @@ function GameGrid({ username, entries }: { username: string; entries: PublicEntr
                         <strong>{e.game.name}</strong>
                     </Link>
                     <div>
-                        <span className={`badge badge--${e.status}`}>{e.status}</span>
+                        <span className={`badge badge--${e.status}`}>{statusLabel(e.status)}</span>
                         {e.rating !== null && (
                             <span className="muted">
                                 {' '}
@@ -398,9 +399,7 @@ export function ProfilePage() {
                                     <h2 id="p-playing">Currently playing</h2>
                                     <Games
                                         username={profile.data.username}
-                                        entries={profile.data.slots.flatMap((s) =>
-                                            s.entry ? [s.entry] : []
-                                        )}
+                                        entries={profile.data.playing}
                                     />
                                 </section>
 

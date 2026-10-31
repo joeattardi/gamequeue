@@ -188,9 +188,11 @@ describe('evaluateSmartList', () => {
 describe('describing rules', () => {
     const name = (id: number) => (id === 130 ? 'Switch' : 'PC');
     it('writes each rule in words', () => {
-        expect(describeRule({ field: 'status', anyOf: ['unplayed'] })).toBe('Status is unplayed');
+        expect(describeRule({ field: 'status', anyOf: ['unplayed'] })).toBe(
+            'Status is not started'
+        );
         expect(describeRule({ field: 'status', anyOf: ['unplayed', 'paused'] })).toBe(
-            'Status is unplayed or paused'
+            'Status is not started or paused'
         );
         expect(describeRule({ field: 'platform', anyOf: [130, 6, 1] }, name)).toBe(
             'Platform is Switch, PC or PC'

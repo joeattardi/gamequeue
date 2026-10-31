@@ -237,7 +237,7 @@ function Breakdown({ title, rows, hue }: { title: string; rows: BreakdownRow[]; 
                         <li
                             key={r.name}
                             style={{ '--bar': hue, '--i': i } as CSSProperties}
-                            title={`${r.name}: ${plural(r.total, 'game')}, ${r.finished} finished, ${r.unplayed} unplayed`}
+                            title={`${r.name}: ${plural(r.total, 'game')}, ${r.finished} finished, ${r.unplayed} not started`}
                         >
                             <span className="sv-hbar__name">{r.name}</span>
                             <span className="sv-hbar__track" aria-hidden="true">

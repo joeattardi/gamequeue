@@ -15,7 +15,12 @@ import {
     verticalListSortingStrategy
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { MAX_LIST_DESCRIPTION, type EntryDto } from '@gamequeue/shared';
+import {
+    MAX_LIST_DESCRIPTION,
+    availableActions,
+    statusLabel,
+    type EntryDto
+} from '@gamequeue/shared';
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import { useEntries } from '../api/collection';
@@ -29,6 +34,7 @@ import {
     useMoveInList
 } from '../api/lists';
 import { useQueue } from '../api/queue';
+import { StartPlayingButton } from '../components/StartPlayingButton';
 import { CountBadge } from '../components/CountBadge';
 import { useConfirm } from '../components/Confirm';
 import { Cover } from '../components/Cover';
@@ -382,10 +388,15 @@ function Row({
                     />
                 </span>
                 {entry.status !== 'unplayed' && (
-                    <span className={`badge badge--${entry.status}`}>{entry.status}</span>
+                    <span className={`badge badge--${entry.status}`}>
+                        {statusLabel(entry.status)}
+                    </span>
                 )}
             </div>
             <div className="row-item__actions">
+                {isQueue && availableActions(entry.status).includes('start') && (
+                    <StartPlayingButton entry={entry} className="btn btn--small btn--primary" />
+                )}
                 <button
                     className="btn btn--ghost"
                     disabled={index === 0}

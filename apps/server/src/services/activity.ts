@@ -90,8 +90,7 @@ export function forgetGame(db: Db, userId: number, gameId: number) {
                     'abandoned',
                     'rated',
                     'favorited',
-                    'queued',
-                    'slotted'
+                    'queued'
                 ])
             )
         )

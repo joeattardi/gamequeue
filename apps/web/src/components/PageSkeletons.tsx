@@ -153,22 +153,6 @@ export function CheckSkeletons({ count = 3, label }: { count?: number; label: st
     );
 }
 
-/** Placeholder rows for the slot editor dialog. */
-export function SlotEditSkeletons({ count = 2 }: { count?: number }) {
-    return (
-        <ul className="slot-edit" role="status" aria-label="Loading slots">
-            {Array.from({ length: count }, (_, i) => (
-                <li key={i} className="slot-edit__row" aria-hidden="true">
-                    <span className="skeleton skeleton--select skeleton--slot-name" />
-                    <span className="skeleton skeleton--action" />
-                    <span className="skeleton skeleton--action" />
-                    <span className="skeleton skeleton--action" />
-                </li>
-            ))}
-        </ul>
-    );
-}
-
 /** Placeholder playthrough rows on the game page. */
 export function HistorySkeletons({ count = 2 }: { count?: number }) {
     return (

@@ -14,7 +14,7 @@ For the exhaustive reference (every route, column and edge case), see `ARCHITECT
 6. [Accounts, login and sessions](#6-accounts-login-and-sessions)
 7. [Talking to IGDB](#7-talking-to-igdb)
 8. [The collection: games and their status](#8-the-collection-games-and-their-status)
-9. [Slots: what you're playing right now](#9-slots-what-youre-playing-right-now)
+9. [Playing: what you're playing right now](#9-playing-what-youre-playing-right-now)
 10. [Organizing games: lists, queue, smart lists, wishlist](#10-organizing-games-lists-queue-smart-lists-wishlist)
 11. [Random pick](#11-random-pick)
 12. [Stats and Save File](#12-stats-and-save-file)
@@ -33,7 +33,7 @@ For the exhaustive reference (every route, column and edge case), see `ARCHITECT
 
 ## 1. The big picture
 
-GameQueue is a personal video game collection manager that also helps answer "what should I play next?". You add games you own, track your playthroughs, put games in "slots" for what you're playing now, plan an "up next" queue, and get stats and a yearly recap.
+GameQueue is a personal video game collection manager that also helps answer "what should I play next?". You add games you own, track your playthroughs, see everything you're playing on the home page, plan an "up next" queue, and get stats and a yearly recap.
 
 Technically it's a classic three-part web app, plus one outside service:
 
@@ -162,29 +162,29 @@ A good rule of thumb: if a piece of logic doesn't need the database, it probably
 
 ## 4. The life of a request
 
-Let's follow one click all the way through: putting a game into a slot.
+Let's follow one click all the way through: starting a game.
 
 ```mermaid
 sequenceDiagram
     actor You
     participant Page as React page
-    participant Hook as Query hook<br/>(api/slots.ts)
+    participant Hook as Query hook<br/>(api/collection.ts)
     participant MW as Server middleware<br/>(app.ts)
-    participant Route as Route<br/>(routes/slots.ts)
-    participant Svc as Service<br/>(services/slots.ts)
+    participant Route as Route<br/>(routes/playthroughs.ts)
+    participant Svc as Service<br/>(services/playthroughs.ts)
     participant DB as SQLite
 
-    You->>Page: Click "Assign"
-    Page->>Hook: useAssignSlot().mutate(...)
-    Hook->>MW: PUT /api/slots/2/entry {entryId: 7}
+    You->>Page: Click "Start playing"
+    Page->>Hook: useEntryAction(7).mutate({action: 'start'})
+    Hook->>MW: POST /api/entries/7/start {date, platformId}
     MW->>MW: CSRF + Origin + JSON checks
-    MW->>Route: matched by /api/slots prefix
+    MW->>Route: matched by /api/entries prefix
     Route->>Route: requireAuth: who is this?
     Route->>Route: validate body with shared schema
-    Route->>Svc: assignToSlot(db, userId, 2, input)
-    Svc->>DB: transaction: move game, start playthrough, dequeue
+    Route->>Svc: startPlaythrough(db, userId, 7, input)
+    Svc->>DB: transaction: open playthrough, set playing, dequeue
     DB-->>Svc: ok
-    Svc-->>Route: updated slots
+    Svc-->>Route: updated entry
     Route-->>Hook: 200 JSON
     Hook->>Hook: update cache, mark related data stale
     Hook-->>Page: re-render with new data
@@ -192,16 +192,16 @@ sequenceDiagram
 
 Step by step:
 
-1. **The page calls a hook.** Pages never call `fetch` directly. Each area has hooks in `apps/web/src/api/` (for example `useSlots`, `useAssignSlot`). They all go through one small `api()` function in `client.ts` that sends JSON and turns error responses into exceptions.
+1. **The page calls a hook.** Pages never call `fetch` directly. Each area has hooks in `apps/web/src/api/` (for example `useEntries`, `useEntryAction`). They all go through one small `api()` function in `client.ts` that sends JSON and turns error responses into exceptions.
 2. **Safety checks.** Every `/api` request passes through middleware in `app.ts`. Changes (POST/PUT/PATCH/DELETE) must come from an allowed website origin and send JSON. This blocks cross-site request forgery: another website can't trick your browser into changing your data.
-3. **Routing.** The URL prefix picks a router (`/api/slots` → `routes/slots.ts`).
+3. **Routing.** The URL prefix picks a router (`/api/entries` → `routes/playthroughs.ts`).
 4. **Authentication.** `requireAuth` reads the session cookie and works out which user is asking. No valid session means 401.
 5. **Validation.** The route checks the body against a shared Zod schema. Bad input is a 400 with details about which field was wrong.
 6. **The service does the work.** Routes are thin; the rules live in services. Every query is filtered by the user's id, so one user can never touch another's data.
 7. **Errors.** A service that needs to say "no" throws an `HttpError` (for example 404 not found, 409 conflict). A central handler turns it into `{ error: "..." }` JSON. Anything unexpected becomes a 500 and is recorded in the error log (section 16).
 8. **The browser refreshes.** After a change, the hook tells TanStack Query which cached data is now stale, and any page showing it refetches.
 
-**Transactions.** When one action touches several tables, the service wraps it in a database transaction so it either fully happens or doesn't happen at all. Services can call other services inside a transaction (assigning to a slot reuses "start playthrough"), and a thrown error rolls the whole thing back.
+**Transactions.** When one action touches several tables, the service wraps it in a database transaction so it either fully happens or doesn't happen at all. Services can call other services inside a transaction (starting a game also takes it off the queue), and a thrown error rolls the whole thing back.
 
 ---
 
@@ -227,7 +227,6 @@ Everything that belongs to a user carries a `user_id` (directly, or through an e
 erDiagram
     users ||--o{ sessions : "logs in with"
     users ||--o{ entries : "owns"
-    users ||--o{ slots : "has"
     users ||--o{ lists : "has"
     users ||--o{ smart_lists : "has"
     users ||--o{ wishlists : "has"
@@ -239,16 +238,15 @@ erDiagram
     entries ||--o{ entry_platforms : "owned on"
     entries ||--o{ entry_tags : "tagged"
     tags ||--o{ entry_tags : ""
-    slots |o--o| entries : "holds one"
     lists ||--o{ list_items : "contains"
     list_items }o--|| entries : "points to"
     wishlists ||--o{ wishlist_items : "contains"
     wishlist_items }o--|| games : "points to"
 ```
 
-The key idea is the **entry**: one row meaning "this user owns this game". Your status, rating and notes live on the entry (a game can have many notes, each private or shared on your profile). Lists, slots and playthroughs all hang off entries.
+The key idea is the **entry**: one row meaning "this user owns this game". Your status, rating and notes live on the entry (a game can have many notes, each private or shared on your profile). Lists and playthroughs all hang off entries.
 
-The **wishlist is the exception**: wishlist items point straight at the shared `games` table, not at an entry, because you don't own those games yet. That way nothing that works on your collection (backlog, stats, pick, slots) has to worry about unowned games.
+The **wishlist is the exception**: wishlist items point straight at the shared `games` table, not at an entry, because you don't own those games yet. That way nothing that works on your collection (backlog, stats, pick) has to worry about unowned games.
 
 Things that are **not stored** but computed when needed:
 
@@ -409,35 +407,13 @@ Code: `services/entries.ts` (collection), `services/playthroughs.ts` (status cha
 
 ---
 
-## 9. Slots: what you're playing right now
+## 9. Playing: what you're playing right now
 
-Slots are named "currently playing" spaces, like "Main", "Secondary" and "Palate cleanser" (the defaults every new user gets; up to 10). Each holds at most one game. They show on the home page.
+There is no limit and nothing to set up. Every game whose status is `playing` shows on the home page under **Playing**, glowing, with quick Pause, Finished and Abandon buttons. Paused games sit in a smaller **Paused** row underneath. The public profile's "Currently playing" lists the same playing games.
 
-The rules keep slots and status from ever disagreeing:
+**Start playing** is the one way in, whether you click it on the game page, on a queue row, on the random pick result or choose "Playing" when adding a game. It is the plain start action from section 8: open a playthrough, set the status to `playing` and take the game off the queue, all in one transaction. A game owned on several platforms asks which one you're playing it on (a small select in place, no dialog). Finishing or abandoning a game removes it from both rows, and the UI calls the stored status `unplayed` "Not Started" (the "Backlog" view keeps its name).
 
-```mermaid
-flowchart TD
-    A["Put a game in a slot"] --> B{"Slot already taken?"}
-    B -- "yes, not confirmed" --> C["409: ask the user"]
-    B -- "yes, confirmed" --> D["Old game is paused<br/>(its playthrough stays open)"]
-    B -- no --> E
-    D --> E["New game moves in"]
-    E --> F{"New game's status?"}
-    F -- paused --> G["resume"]
-    F -- "unplayed / finished / abandoned" --> H["start a playthrough<br/>and take it off the queue"]
-    F -- playing --> I["no change"]
-```
-
-And going the other way:
-
-- **Finishing or abandoning** a game empties its slot.
-- **Clearing or deleting a slot** pauses its game (it never just drops it).
-- **Deleting a game** empties its slot automatically (the database sets it to null).
-- **Pausing** a game keeps it in its slot.
-
-So a game in a slot is always `playing` or `paused`. The whole assignment runs in one transaction.
-
-Code: `services/slots.ts`, `components/SlotBay.tsx`.
+Code: `services/playthroughs.ts`, `components/PlayingCard.tsx`, `components/StartPlayingButton.tsx`, `routes/Home.tsx`.
 
 ---
 
@@ -476,7 +452,7 @@ Plain named lists with an optional description. Items are addressed by the entry
 
 Your single "up next" plan. It's stored as a list with a special `kind`, so it reuses all the list code (ordering, export, random pick), but it can't be renamed or deleted, and it doesn't appear among your regular lists. It's created the first time you need it.
 
-**Starting a game takes it off the queue.** Nothing ever fills a slot automatically from the queue; that's always your choice.
+**Starting a game takes it off the queue.** Nothing ever starts a game from the queue automatically; that's always your choice.
 
 ### Smart lists
 
@@ -581,7 +557,7 @@ You can download your whole collection as one JSON file and import it again, her
 
 - **The file is readable on its own, but import trusts IGDB, not the file.** Each game carries a snapshot of its IGDB metadata so the file makes sense by itself, but import never stores it: the shared game cache is used by every user, so games come from the mirror or IGDB (100 per request), and games IGDB doesn't know are skipped and reported. Limits: 10,000 games per file, 5,000 new games looked up per run (import again for the rest), 10 imports a day.
 - **The file is versioned** (`format: gamequeue-export`, `version: 1`). Changing the format means bumping the version and keeping a reader for older files.
-- **Import merges; it never replaces.** Games match by IGDB id, lists and slots by name. Your existing values win, empty fields get filled in, and nothing is ever removed. Importing the same file twice changes nothing.
+- **Import merges; it never replaces.** Games match by IGDB id, lists by name. Your existing values win, empty fields get filled in, and nothing is ever removed. Importing the same file twice changes nothing.
 - **Import is a dry run by default.** The server performs the real merge inside a transaction, records what happened, then rolls it back. You see an exact report first, and only `?commit=true` keeps the changes.
 
 ```mermaid
@@ -655,8 +631,8 @@ flowchart TB
     APP -- "signed out" --> PUBLIC["Login, register,<br/>public profile pages"]
     APP -- "signed in" --> SHELL["Shell<br/>sidebar + page area"]
     SHELL --> PAGES["Pages in routes/<br/>Home, Collection, Lists, Pick, Stats, ..."]
-    PAGES --> COMP["components/<br/>GameCard, SlotBay, dialogs, skeletons, ..."]
-    PAGES --> HOOKS["api/ hooks<br/>useEntries, useSlots, ..."]
+    PAGES --> COMP["components/<br/>GameCard, PlayingCard, dialogs, skeletons, ..."]
+    PAGES --> HOOKS["api/ hooks<br/>useEntries, useEntryAction, ..."]
     HOOKS --> CLIENT["api/client.ts<br/>fetch wrapper"]
 ```
 
@@ -664,8 +640,8 @@ flowchart TB
 
 TanStack Query is a cache of server data in the browser. Two kinds of hooks:
 
-- **Queries** read data (`useSlots()`, `useEntries(filters)`). Each has a key like `['slots']`. Data is cached by key, so moving between pages is instant, and a query is refetched when it's marked stale.
-- **Mutations** change data (`useAssignSlot()`). When one succeeds, it invalidates the keys it might have affected, and every page showing that data refetches.
+- **Queries** read data (`useEntries(filters)`). Each has a key like `['entries']`. Data is cached by key, so moving between pages is instant, and a query is refetched when it's marked stale.
+- **Mutations** change data (`useEntryAction()`). When one succeeds, it invalidates the keys it might have affected, and every page showing that data refetches.
 
 Long lists use an "infinite query" with a "Load more" button that fetches the next page.
 
@@ -764,7 +740,6 @@ Helpers in `apps/server/test/helpers.ts`: `makeApp`, `register` (create a user a
 | **Game**         | IGDB's information about a title, cached and shared between users.                           |
 | **Playthrough**  | One time you played a game, from start to finish (or abandon, or still open).                |
 | **Backlog**      | Your games with status `unplayed`. Computed, not stored.                                     |
-| **Slot**         | A named "currently playing" space holding one game.                                          |
 | **Queue**        | Your ordered "up next" plan. A special list.                                                 |
 | **Smart list**   | Saved rules; the games that match are worked out on every read.                              |
 | **DTO**          | The shape of data the API sends back (for example `EntryDto`). Defined in `packages/shared`. |

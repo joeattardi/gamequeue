@@ -3,7 +3,6 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
 import { ApiRequestError } from '../api/client';
 import { useGameDetail } from '../api/collection';
-import { needsPlatform, useSlots } from '../api/slots';
 import { useAddToWishlist } from '../api/wishlist';
 import { AddGameDialog } from './AddGameDialog';
 import { formatMinutes, yearOf } from '../lib';
@@ -11,7 +10,7 @@ import { MetaLine } from './MetaLine';
 import { PlatformTags } from './PlatformIcon';
 import { Cover } from './Cover';
 import { LogoMark } from './Logo';
-import { useAssign } from './useAssign';
+import { StartPlayingButton } from './StartPlayingButton';
 import { ArrowRight, Dices, Gift, Library, RefreshCw, SlidersHorizontal } from 'lucide-react';
 
 const ROLL_MS = 2200;
@@ -111,11 +110,7 @@ export function PickResult({
     againLabel?: string;
 }) {
     const { game } = entry;
-    const slots = useSlots();
-    const { assignTo, pending, error } = useAssign();
-    const [platformId, setPlatformId] = useState('');
-    const [placedIn, setPlacedIn] = useState<string>();
-    const platformNeeded = needsPlatform(entry);
+    const [started, setStarted] = useState(false);
 
     return (
         <article className="pick-result panel">
@@ -141,49 +136,15 @@ export function PickResult({
                 {entry.status === 'paused' && <span className="badge badge--paused">paused</span>}
                 {game.summary && <p className="summary summary--clamp">{game.summary}</p>}
 
-                {placedIn ? (
+                {started ? (
                     <p role="status">
-                        <strong>Now playing in {placedIn}.</strong>{' '}
-                        <Link to="/">See your slots</Link>
+                        <strong>Now playing.</strong> <Link to="/">See what you are playing</Link>
                     </p>
                 ) : (
                     <>
-                        {platformNeeded && (
-                            <label className="field">
-                                <span>Playing it on</span>
-                                <select
-                                    value={platformId}
-                                    onChange={(e) => setPlatformId(e.target.value)}
-                                >
-                                    <option value="">Choose a platform…</option>
-                                    {entry.platforms.map((p) => (
-                                        <option key={p.id} value={p.id}>
-                                            {p.name}
-                                        </option>
-                                    ))}
-                                </select>
-                            </label>
-                        )}
                         <div className="row">
-                            {slots.data?.map((slot, i) => (
-                                <button
-                                    key={slot.id}
-                                    className={i === 0 ? 'btn btn--primary' : 'btn'}
-                                    disabled={pending || (platformNeeded && !platformId)}
-                                    onClick={() =>
-                                        assignTo(slot, entry, {
-                                            platformId: platformId ? Number(platformId) : undefined,
-                                            onDone: () => setPlacedIn(slot.name)
-                                        })
-                                    }
-                                >
-                                    Make this my {slot.name}
-                                </button>
-                            ))}
+                            <StartPlayingButton entry={entry} onStarted={() => setStarted(true)} />
                         </div>
-                        <p className="form-error" role="alert">
-                            {error}
-                        </p>
                         <div className="row">
                             <button className="btn" onClick={onReroll}>
                                 <RefreshCw />
@@ -223,7 +184,7 @@ export function PickResultSkeleton() {
 
 /**
  * The winner when it isn't in the collection: the game itself, with ways to add it (collection
- * or wishlist) instead of the slot buttons, which need an entry.
+ * or wishlist) instead of Start playing, which needs an entry.
  */
 export function UnownedPickResult({
     note,

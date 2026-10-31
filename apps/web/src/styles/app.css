@@ -352,33 +352,6 @@ a:is(:hover, :focus-visible) > .logo .logo__word {
     font-weight: 600;
 }
 
-.slots-preview {
-    list-style: none;
-    padding: 0;
-    margin: 24px 0 0;
-    display: grid;
-    gap: 14px;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-}
-.slot-bay {
-    display: grid;
-    gap: 4px;
-    padding: 18px;
-    min-height: 170px;
-    align-content: space-between;
-    border: 1px dashed var(--line);
-    border-radius: var(--radius);
-    background: var(--surface-2);
-}
-.slot-bay__name {
-    font-family: var(--font-display);
-    font-weight: 700;
-    font-size: 1.15rem;
-}
-.slot-bay__empty {
-    color: var(--ink-muted);
-}
-
 @media (prefers-reduced-motion: reduce) {
     .btn,
     .cover {
@@ -1461,9 +1434,6 @@ a.game-row:hover {
     height: 44px;
     border-radius: var(--radius-sm);
 }
-.skeleton--slot-name {
-    flex: 1;
-}
 .skeleton--check {
     width: 18px;
     height: 18px;
@@ -1877,19 +1847,15 @@ a.game-row:hover {
     height: 56px;
     border-radius: 50%;
 }
-.skeleton--bay-name {
-    width: 72px;
-    height: 0.8rem;
-}
-.skeleton--bay-cover {
+.skeleton--play-cover {
     width: 100%;
     aspect-ratio: 3 / 4;
     border-radius: 6px;
 }
-.skeleton--bay-title {
+.skeleton--play-title {
     height: 1.25rem;
 }
-.skeleton--bay-meta {
+.skeleton--play-meta {
     width: 55%;
 }
 .skeleton--btn {
@@ -1918,13 +1884,13 @@ a.game-row:hover {
     width: 14px;
     height: 0.75rem;
 }
-.bay--skeleton {
+.play-card--skeleton {
     animation: skeleton-in 0.35s ease-out both;
 }
-.bays > .bay--skeleton:nth-child(2) {
+.play-grid > .play-card--skeleton:nth-child(2) {
     animation-delay: 60ms;
 }
-.bays > .bay--skeleton:nth-child(3) {
+.play-grid > .play-card--skeleton:nth-child(3) {
     animation-delay: 120ms;
 }
 @keyframes skeleton-in {
@@ -1943,7 +1909,7 @@ a.game-row:hover {
 }
 @media (prefers-reduced-motion: reduce) {
     .skeleton,
-    .bay--skeleton,
+    .play-card--skeleton,
     .card--skeleton,
     .row-item--skeleton {
         animation: none;
@@ -2213,8 +2179,8 @@ a.game-row:hover {
     min-width: 10.5rem;
 }
 
-/* ---- M3: slots, lists, pick ---- */
-.bays {
+/* ---- Playing, lists, pick ---- */
+.play-grid {
     list-style: none;
     margin: 0;
     padding: 0;
@@ -2222,7 +2188,7 @@ a.game-row:hover {
     gap: 16px;
     grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
 }
-.bay {
+.play-card {
     display: flex;
     flex-direction: column;
     gap: 14px;
@@ -2231,31 +2197,18 @@ a.game-row:hover {
     border: 1px solid var(--line);
     border-radius: var(--radius);
 }
-.bay--empty {
-    border-style: dashed;
-    background: var(--surface-2);
-    justify-content: space-between;
-    min-height: 200px;
-}
-.bay__head {
+.play-card__head {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 12px;
 }
-.bay__name {
-    margin: 0;
-    font-size: 0.85rem;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: var(--ink-muted);
-}
 /* The game being played right now: a glowing edge that breathes, and a pulsing play icon */
-.bay--live {
+.play-card--live {
     border-color: color-mix(in oklab, var(--accent) 55%, var(--line));
-    animation: bay-glow 3.2s ease-in-out infinite;
+    animation: play-glow 3.2s ease-in-out infinite;
 }
-@keyframes bay-glow {
+@keyframes play-glow {
     0%,
     100% {
         box-shadow: 0 0 0 0 color-mix(in oklab, var(--accent) 0%, transparent);
@@ -2264,15 +2217,15 @@ a.game-row:hover {
         box-shadow: 0 0 22px -2px color-mix(in oklab, var(--accent) 38%, transparent);
     }
 }
-.bay__live {
+.play-card__live {
     flex: none;
     width: 14px;
     height: 14px;
     color: var(--accent);
     fill: currentColor;
-    animation: bay-beat 1.6s ease-in-out infinite;
+    animation: play-beat 1.6s ease-in-out infinite;
 }
-@keyframes bay-beat {
+@keyframes play-beat {
     0%,
     100% {
         transform: scale(1);
@@ -2285,59 +2238,67 @@ a.game-row:hover {
     }
 }
 @media (prefers-reduced-motion: reduce) {
-    .bay--live {
+    .play-card--live {
         animation: none;
         box-shadow: 0 0 14px -4px color-mix(in oklab, var(--accent) 38%, transparent);
     }
-    .bay__live {
+    .play-card__live {
         animation: none;
         opacity: 1;
     }
 }
-.bay__game {
+.play-card__game {
     display: grid;
     grid-template-columns: 120px 1fr;
     gap: 16px;
     align-items: start;
 }
-.bay__cover {
+.play-card__cover {
     display: block;
 }
-.bay__title {
+.play-card__title {
     font: 700 1.25rem/1.2 var(--font-display);
     color: var(--ink);
     text-decoration: none;
     overflow-wrap: anywhere;
 }
-.bay__title:hover {
+.play-card__title:hover {
     text-decoration: underline;
 }
-.bay__meta {
+.play-card__meta {
     margin: 6px 0 0;
 }
-.bay__foot {
-    margin-top: auto;
-    border-top: 1px solid var(--line);
-    padding-top: 10px;
+/* Paused games: the same card, smaller, in a denser grid below the playing ones */
+.play-grid--compact {
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+    gap: 12px;
+}
+.play-card--compact {
+    padding: 12px;
+    gap: 10px;
+}
+.play-card--compact .play-card__game {
+    grid-template-columns: 64px 1fr;
+    gap: 12px;
+}
+.play-card--compact .play-card__title {
+    font-size: 1rem;
+}
+.start-playing {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+}
+.start-playing__choose {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 6px;
 }
 @media (max-width: 420px) {
-    .bay__game {
+    .play-card__game {
         grid-template-columns: 96px 1fr;
     }
-}
-
-.slot-edit {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    display: grid;
-    gap: 8px;
-}
-.slot-edit__row {
-    display: flex;
-    gap: 8px;
-    align-items: end;
-    flex-wrap: wrap;
 }
 
 .list-cards {
@@ -6210,7 +6171,7 @@ fieldset.stars:disabled .stars__star {
     justify-content: center;
 }
 
-/* Hero mock-up: abstract slots and queue, drawn with CSS */
+/* Hero mock-up: abstract playing cards, drawn with CSS */
 .landing__mock {
     display: grid;
     gap: 14px;
@@ -6220,12 +6181,12 @@ fieldset.stars:disabled .stars__star {
     background: var(--surface);
     box-shadow: var(--shadow);
 }
-.mock__slots {
+.mock__row {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 12px;
 }
-.mock__slot {
+.mock__card {
     display: grid;
     gap: 8px;
     padding: 10px;

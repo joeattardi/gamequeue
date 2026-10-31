@@ -1,3 +1,4 @@
+import { statusLabel } from '@gamequeue/shared';
 import type { SeriesDto, SeriesMemberDto } from '@gamequeue/shared';
 import { useState } from 'react';
 import { Link, useParams } from 'react-router';
@@ -70,7 +71,7 @@ function SeriesView({ series }: { series: SeriesDto }) {
                         }}
                     >
                         <ListPlus />
-                        Queue my unplayed games{queueable > 0 && ` (${queueable})`}
+                        Queue my Not Started games{queueable > 0 && ` (${queueable})`}
                     </button>
                 </div>
             </div>
@@ -126,7 +127,7 @@ function SeriesRow({ member: m }: { member: SeriesMemberDto }) {
                             <span
                                 className={`badge${m.entry.status === 'unplayed' ? ' badge--quiet' : ` badge--${m.entry.status}`}`}
                             >
-                                {m.entry.status}
+                                {statusLabel(m.entry.status)}
                             </span>
                             {m.entry.queued && <span className="badge">queued</span>}
                         </>

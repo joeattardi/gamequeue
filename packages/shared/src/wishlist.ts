@@ -2,7 +2,7 @@ import { z } from 'zod';
 import type { GameDto, PlatformDto } from './collection.js';
 import { moveItemSchema } from './pagination.js';
 
-/** A game the user wants but doesn't own: it has no status, playthroughs or slot. */
+/** A game the user wants but doesn't own: it has no status or playthroughs. */
 export interface WishlistItemDto {
     igdbId: number;
     game: GameDto;

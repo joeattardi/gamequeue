@@ -1,6 +1,5 @@
 import { and, count, eq, ne } from 'drizzle-orm';
 import {
-    DEFAULT_SLOT_NAMES,
     type AdminCreateUserInput,
     type AdminUpdateUserInput,
     type AdminUserDto
@@ -8,7 +7,7 @@ import {
 import { hashPassword } from '../auth/password.js';
 import { hashToken } from '../auth/sessions.js';
 import type { Db } from '../db/client.js';
-import { entries, sessions, slots, users } from '../db/schema.js';
+import { entries, sessions, users } from '../db/schema.js';
 import { HttpError } from '../errors.js';
 import { voidPasswordResets } from './password-reset.js';
 import { getUserDto } from './users.js';
@@ -83,11 +82,6 @@ export async function createUser(db: Db, input: AdminCreateUserInput): Promise<A
                 })
                 .returning({ id: users.id })
                 .get();
-            tx.insert(slots)
-                .values(
-                    DEFAULT_SLOT_NAMES.map((name, position) => ({ userId: u.id, name, position }))
-                )
-                .run();
             return u.id;
         })
     );

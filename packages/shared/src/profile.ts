@@ -3,7 +3,7 @@ import type { EntryDto, NoteDto, EntryStatus, GameDto } from './collection.js';
 import type { SocialLinks } from './social.js';
 import type { ActivityEventDto } from './activity.js';
 
-/** The part of an entry that is safe to show to anyone: no notes, no list/slot internals. */
+/** The part of an entry that is safe to show to anyone: no notes, no list internals. */
 export type PublicEntryDto = Pick<
     EntryDto,
     | 'id'
@@ -47,7 +47,8 @@ export interface ProfileDto {
     socialLinks: SocialLinks;
     /** Account creation time, ms since epoch */
     joinedAt: number;
-    slots: { name: string; entry: PublicEntryDto | null }[];
+    /** Every game being played right now (status `playing`) */
+    playing: PublicEntryDto[];
     summary: {
         total: number;
         queued: number;

@@ -129,7 +129,7 @@ export function PickCriteriaPage() {
                             <SelectSkeleton label="Loading your lists" />
                         ) : (
                             <select value={source} onChange={(e) => setSource(e.target.value)}>
-                                <option value="backlog">Backlog (unplayed games)</option>
+                                <option value="backlog">Backlog (Not Started games)</option>
                                 {queue.head && (
                                     <option value={`list:${queue.head.id}`}>Queue</option>
                                 )}

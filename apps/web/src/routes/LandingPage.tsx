@@ -24,8 +24,8 @@ import { usePageTitle } from '../lib';
 const FEATURES = [
     {
         icon: Gamepad2,
-        title: 'Slots',
-        text: 'Keep a handful of games in play at once. Put one in a slot to start it, finish it to free the slot.'
+        title: 'Now playing',
+        text: 'Everything you are playing, in one place. Start a game, pause it, finish it, and it all lands in your history.'
     },
     {
         icon: ListOrdered,
@@ -35,7 +35,7 @@ const FEATURES = [
     {
         icon: Dices,
         title: 'Random pick',
-        text: 'Torn between forty unplayed games? Filter by platform, genre or time to beat and let fate choose.'
+        text: 'Torn between forty games you have not started? Filter by platform, genre or time to beat and let fate choose.'
     },
     {
         icon: ListChecks,
@@ -83,7 +83,7 @@ const STEPS = [
     {
         icon: Gamepad2,
         title: 'Play and keep track',
-        text: 'Start a game from a slot. Finishing it lands in your history, stats and yearly Save File.'
+        text: 'Start a game when you are ready. Finishing it lands in your history, stats and yearly Save File.'
     }
 ];
 
@@ -148,11 +148,11 @@ export function LandingPage() {
                     </div>
 
                     <div className="landing__mock" aria-hidden="true">
-                        <div className="mock__slots">
+                        <div className="mock__row">
                             {MOCK_STATES.map((state, i) => {
                                 const g = showcase.data?.[i];
                                 return (
-                                    <div className="mock__slot" key={i}>
+                                    <div className="mock__card" key={i}>
                                         {showcase.isPending ? (
                                             <>
                                                 <span className="skeleton mock__cover" />

@@ -22,21 +22,16 @@ async function richCollection(s: Api) {
     const knight = await add(3);
     const wilds = await add(4);
 
-    // Hades: finished once, now being replayed on PS5 and sitting in Main
+    // Hades: finished once, now being replayed on PS5
     await call(`/entries/${hades.id}/start`, 'POST', { platformId: PC.id, date: '2025-01-01' });
     await call(`/entries/${hades.id}/finish`, 'POST', { date: '2025-02-01', rating: 4 });
     await call(`/entries/${hades.id}/start`, 'POST', { platformId: PS5.id, date: '2025-06-01' });
-    const slotList = (await call('/slots')).slots as { id: number; name: string }[];
-    await call(`/slots/${slotList[0]!.id}/entry`, 'PUT', { entryId: hades.id });
 
     // Celeste: an old playthrough with unknown dates
     await call(`/entries/${celeste.id}/playthroughs`, 'POST', { outcome: 'abandoned' });
 
-    // Hollow Knight: paused, in Secondary
-    await call(`/slots/${slotList[1]!.id}/entry`, 'PUT', {
-        entryId: knight.id,
-        date: '2025-03-01'
-    });
+    // Hollow Knight: paused
+    await call(`/entries/${knight.id}/start`, 'POST', { platformId: PC.id, date: '2025-03-01' });
     await call(`/entries/${knight.id}/pause`, 'POST');
 
     // Outer Wilds: unplayed but personalised
@@ -44,7 +39,6 @@ async function richCollection(s: Api) {
     await call(`/entries/${wilds.id}/notes`, 'POST', { body: 'Spoiler-free please' });
     await call(`/entries/${wilds.id}/notes`, 'POST', { body: 'Great opener', public: true });
 
-    await call('/slots', 'POST', { name: 'Couch co-op' });
     const queue = (await call('/lists', 'POST', { name: 'Up next' })).list.id;
     const cozy = (await call('/lists', 'POST', { name: 'Cozy' })).list.id;
     for (const e of [knight, hades, wilds])
@@ -88,12 +82,7 @@ describe('export', () => {
             },
             { outcome: null, startedOn: '2025-06-01', endedOn: null, platform: { id: PS5.id } }
         ]);
-        expect(file.slots.map((x) => [x.name, x.igdbId])).toEqual([
-            ['Main', 1],
-            ['Secondary', 3],
-            ['Palate cleanser', null],
-            ['Couch co-op', null]
-        ]);
+        expect(file).not.toHaveProperty('slots');
         expect(file.lists).toEqual([
             { name: 'Up next', description: '', games: [3, 1, 4] },
             { name: 'Cozy', description: '', games: [2] }
@@ -123,7 +112,6 @@ describe('export', () => {
         )) as unknown as ExportFile;
         expect(theirs.games).toEqual([]);
         expect(theirs.lists).toEqual([]);
-        expect(theirs.slots.map((x) => x.igdbId)).toEqual([null, null, null]);
     });
 
     it('requires authentication', async () => {
@@ -154,7 +142,6 @@ describe('import into an empty account (a restore)', () => {
             games: { added: 4, updated: 0, unchanged: 0 },
             playthroughs: { added: 4, duplicates: 0, skipped: 0 },
             lists: { created: 2, itemsAdded: 4 },
-            slots: { created: 1, filled: 2 },
             notes: []
         });
         expect(stable(await exportOf(b))).toEqual(stable(file));
@@ -163,13 +150,12 @@ describe('import into an empty account (a restore)', () => {
         const entries = (await b.call('/entries?sort=title')).entries as {
             game: { name: string };
             status: string;
-            slotId: number | null;
         }[];
-        expect(entries.map((e) => [e.game.name, e.status, e.slotId !== null])).toEqual([
-            ['Celeste', 'abandoned', false],
-            ['Hades', 'playing', true],
-            ['Hollow Knight', 'paused', true],
-            ['Outer Wilds', 'unplayed', false]
+        expect(entries.map((e) => [e.game.name, e.status])).toEqual([
+            ['Celeste', 'abandoned'],
+            ['Hades', 'playing'],
+            ['Hollow Knight', 'paused'],
+            ['Outer Wilds', 'unplayed']
         ]);
         expect((await b.call('/entries?view=backlog')).entries).toHaveLength(1);
     });
@@ -218,8 +204,7 @@ describe('import into an empty account (a restore)', () => {
         expect(again.report).toMatchObject({
             games: { added: 0, updated: 0, unchanged: 4 },
             playthroughs: { added: 0, duplicates: 4, skipped: 0 },
-            lists: { created: 0, itemsAdded: 0 },
-            slots: { created: 0, filled: 0 }
+            lists: { created: 0, itemsAdded: 0 }
         });
         expect(stable(await exportOf(b))).toEqual(before);
     });
@@ -325,38 +310,6 @@ describe('merging into existing data', () => {
         }[];
         // your Outer Wilds stays first; Hollow Knight and Hades follow in the file's order
         expect(merged.map((e) => e.game.name)).toEqual(['Outer Wilds', 'Hollow Knight', 'Hades']);
-    });
-
-    it('never disturbs an occupied slot or takes a game that is in progress elsewhere', async () => {
-        const { file, b } = await scenario();
-        const slots = (await b.call('/slots')).slots as { id: number; name: string }[];
-        // Main is already taken by a different game in this account
-        const knight = await b.add(3);
-        await b.call(`/slots/${slots[0]!.id}/entry`, 'PUT', {
-            entryId: knight.id,
-            date: '2025-05-01'
-        });
-        const res = await importFile(b, file, true);
-
-        const after = (await b.call('/slots')).slots as {
-            name: string;
-            entry: { game: { name: string } } | null;
-        }[];
-        expect(after[0]).toMatchObject({
-            name: 'Main',
-            entry: { game: { name: 'Hollow Knight' } }
-        });
-        expect(
-            res.report.notes.some(
-                (n: string) => n.includes('Main is occupied') && n.includes('Hades')
-            )
-        ).toBe(true);
-        // The file puts Knight in Secondary, but here it's already in Main
-        expect(
-            res.report.notes.some(
-                (n: string) => n.includes('Hollow Knight') && n.includes('already in Main')
-            )
-        ).toBe(true);
     });
 
     it('does not overwrite cached game or platform data', async () => {
@@ -521,7 +474,6 @@ describe('validation', () => {
         const s = await setupApi();
         const file = await validFile();
         file.games.push(JSON.parse(JSON.stringify(file.games[0]!)));
-        file.slots[0]!.igdbId = 424242;
         file.lists[0]!.games.push(777);
         file.games[0]!.playthroughs.push({
             platform: null,
@@ -533,12 +485,7 @@ describe('validation', () => {
         const res = await importFile(s, file, false);
         expect(res.status).toBe(400);
         expect(paths(res)).toEqual(
-            expect.arrayContaining([
-                'games.4.igdbId',
-                'slots.0.igdbId',
-                'lists.0.games.3',
-                'games.0.playthroughs'
-            ])
+            expect.arrayContaining(['games.4.igdbId', 'lists.0.games.3', 'games.0.playthroughs'])
         );
     });
 
@@ -550,29 +497,15 @@ describe('validation', () => {
             igdbId: i + 1,
             rating: 99
         }));
-        file.slots = [];
         file.lists = [];
         const res = await importFile(s, file, false);
         expect(res.status).toBe(400);
         expect(res.details).toHaveLength(50);
         expect(res.totalIssues).toBeGreaterThanOrEqual(80);
     });
-
-    it('stops at the slot limit gracefully instead of failing', async () => {
-        const a = await setupApi();
-        for (let i = 0; i < 7; i++) await a.call('/slots', 'POST', { name: `Extra ${i}` });
-        const file = await exportOf(a); // 10 slots
-        const b = await setupApi();
-        await b.call('/slots', 'POST', { name: 'Only mine' });
-        const res = await importFile(b, file, true);
-        expect(res.status).toBe(200);
-        expect(res.report.slots.created).toBe(6); // 4 slots already exist, so 6 more fit
-        expect(res.report.notes.join('\n')).toMatch(/already have 10 slots/);
-        expect(((await b.call('/slots')).slots as unknown[]).length).toBe(10);
-    });
 });
 
-describe('grids and tier lists (removed features) in an old export', () => {
+describe('grids, tier lists and slots (removed features) in an old export', () => {
     const game = {
         name: 'Hades',
         slug: 'hades',
@@ -586,6 +519,10 @@ describe('grids and tier lists (removed features) in an old export', () => {
         igdbRating: null
     };
     const legacy = {
+        slots: [
+            { name: 'Main', position: 0, igdbId: 1 },
+            { name: 'Secondary', position: 1, igdbId: null }
+        ],
         grids: [
             {
                 title: 'Best of',
@@ -612,9 +549,11 @@ describe('grids and tier lists (removed features) in an old export', () => {
         const b = await setupApi();
         const res = await importFile(b, file, true);
         expect(res.status).toBe(200);
+        expect(res.report).not.toHaveProperty('slots');
         expect(res.report).not.toHaveProperty('grids');
         expect(res.report).not.toHaveProperty('tierLists');
         const out = (await exportOf(b)) as Record<string, unknown>;
+        expect(out).not.toHaveProperty('slots');
         expect(out).not.toHaveProperty('grids');
         expect(out).not.toHaveProperty('tierLists');
         expect(stable(await exportOf(b))).toEqual(stable(await exportOf(a)));
@@ -685,7 +624,6 @@ describe('import limits', () => {
                 exportedAt: '2026-01-01',
                 games: [],
                 lists: [],
-                slots: [],
                 queue: Array.from({ length: MAX_IMPORT_GAMES + 1 }, (_, i) => i + 1)
             },
             false

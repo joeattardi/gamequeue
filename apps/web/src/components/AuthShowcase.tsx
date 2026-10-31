@@ -3,7 +3,7 @@ import controller1600 from '../assets/controller-1600.webp';
 import { Dices, Gamepad2, ListOrdered } from 'lucide-react';
 
 const POINTS = [
-    { icon: Gamepad2, text: 'Slots for the few games you are really playing' },
+    { icon: Gamepad2, text: 'Every game you are playing, in one place' },
     { icon: ListOrdered, text: 'A queue that remembers what is up next' },
     { icon: Dices, text: 'Random pick for when you cannot decide' }
 ];

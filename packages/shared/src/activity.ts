@@ -11,7 +11,6 @@ export const ACTIVITY_TYPES = [
     'rated',
     'favorited',
     'queued',
-    'slotted',
     'wishlisted',
     'list',
     'smartlist'
@@ -25,7 +24,7 @@ export interface ActivityEventDto {
     at: number;
     /** The game the event is about; null for lists */
     game: { id: number; name: string; coverImageId: string | null } | null;
-    /** List or smart list for the `list`/`smartlist` types; the slot name for `slotted` */
+    /** List or smart list for the `list`/`smartlist` types */
     subject: { id: number | null; name: string } | null;
     /** `rated`: the stars given */
     detail: number | null;
@@ -53,7 +52,6 @@ export const ACTIVITY_VERBS: Record<ActivityType, string> = {
     rated: 'Rated',
     favorited: 'Favorited',
     queued: 'Queued',
-    slotted: 'Moved to a slot',
     wishlisted: 'Wishlisted',
     list: 'Created list',
     smartlist: 'Created smart list'

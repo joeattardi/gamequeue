@@ -47,7 +47,6 @@ import {
     genres,
     platforms,
     playthroughs,
-    slots,
     tags,
     themes
 } from '../db/schema.js';
@@ -141,14 +140,18 @@ export async function addEntry(
                     .all()
             ].map((r) => r.name.toLowerCase());
         setTags(t, userId, row.id, input.tags ?? fromIgdb());
-        // Pre-existing history: one playthrough that matches the status (never slotted or queued)
-        if (input.status === 'paused' || input.status === 'abandoned') {
+        // Pre-existing history: one playthrough that matches the status (never queued)
+        if (
+            input.status === 'playing' ||
+            input.status === 'paused' ||
+            input.status === 'abandoned'
+        ) {
             t.insert(playthroughs)
                 .values({
                     userId,
                     entryId: row.id,
                     platformId: platformIds.length === 1 ? platformIds[0]! : null,
-                    startedOn: input.status === 'paused' ? (input.date ?? utcToday()) : null,
+                    startedOn: input.status === 'abandoned' ? null : (input.date ?? utcToday()),
                     endedOn: null,
                     outcome: input.status === 'abandoned' ? 'abandoned' : null
                 })
@@ -157,6 +160,8 @@ export async function addEntry(
         // Owning it ends the wish
         dropFromWishlists(t, userId, input.igdbId);
         recordActivity(t, userId, { type: 'added', gameId: input.igdbId });
+        if (input.status === 'playing')
+            recordActivity(t, userId, { type: 'started', gameId: input.igdbId });
         return row.id;
     });
     return getEntry(db, userId, id)!;
@@ -436,55 +441,6 @@ export function pageEntries(
     return { entries: hydrate(db, userId, ids), total };
 }
 
-/**
- * Games to put in a slot: the queue first (in order), then playing, paused and unplayed, each by
- * title. Finished and abandoned games are only offered if they're queued.
- */
-export function pageSlotCandidates(
-    db: Db,
-    userId: number,
-    opts: { q?: string; excludeEntryId?: number },
-    page: PageQuery
-): EntriesPageDto {
-    const queue = db
-        .select({ id: lists.id })
-        .from(lists)
-        .where(and(eq(lists.userId, userId), eq(lists.kind, 'queue')))
-        .get();
-    const queuedAt = sql<
-        number | null
-    >`(select ${listItems.position} from ${listItems} where ${listItems.listId} = ${queue?.id ?? 0} and ${listItems.entryId} = ${entries.id})`;
-    const where = and(
-        eq(entries.userId, userId),
-        or(isNotNull(queuedAt), inArray(entries.status, ['playing', 'paused', 'unplayed'])),
-        opts.excludeEntryId ? ne(entries.id, opts.excludeEntryId) : undefined,
-        opts.q ? sql`instr(lower(${games.name}), lower(${opts.q})) > 0` : undefined
-    );
-    const total = db
-        .select({ n: count() })
-        .from(entries)
-        .innerJoin(games, eq(games.id, entries.gameId))
-        .where(where)
-        .get()!.n;
-    const ids = db
-        .select({ id: entries.id })
-        .from(entries)
-        .innerJoin(games, eq(games.id, entries.gameId))
-        .where(where)
-        .orderBy(
-            sql`${queuedAt} IS NULL`,
-            asc(queuedAt),
-            sql`case ${entries.status} when 'playing' then 0 when 'paused' then 1 else 2 end`,
-            asc(sql`lower(${games.name})`),
-            asc(entries.id)
-        )
-        .limit(page.limit)
-        .offset(page.offset)
-        .all()
-        .map((r) => r.id);
-    return { entries: hydrate(db, userId, ids), total };
-}
-
 export function getEntry(db: Db, userId: number, id: number): EntryDto | undefined {
     return hydrate(db, userId, [id])[0];
 }
@@ -503,7 +459,6 @@ export function hydrate(db: Db, userId: number, ids: number[]): EntryDto[] {
     const owned = new Map<number, PlatformDto[]>();
     const tagMap = new Map<number, string[]>();
     const history = new Map<number, PlaythroughDto[]>();
-    const slotOf = new Map<number, number>();
     const listsOf = new Map<number, { id: number; name: string }[]>();
     const queued = new Set<number>();
     const noteMap = new Map<number, NoteDto[]>();
@@ -537,13 +492,6 @@ export function hydrate(db: Db, userId: number, ids: number[]): EntryDto[] {
             (history.get(r.p.entryId) ?? history.set(r.p.entryId, []).get(r.p.entryId)!).push(
                 toDto(r.p, r.platform)
             );
-        }
-        for (const r of db
-            .select({ entryId: slots.entryId, id: slots.id })
-            .from(slots)
-            .where(and(eq(slots.userId, userId), inArray(slots.entryId, chunk)))
-            .all()) {
-            slotOf.set(r.entryId!, r.id);
         }
         for (const r of db
             .select({
@@ -608,7 +556,6 @@ export function hydrate(db: Db, userId: number, ids: number[]): EntryDto[] {
                 ttbMinutes: minutes(g.ttbNormallySeconds),
                 addedAt: e.addedAt,
                 updatedAt: e.updatedAt,
-                slotId: slotOf.get(e.id) ?? null,
                 lists: listsOf.get(e.id) ?? [],
                 queued: queued.has(e.id),
                 playthroughCount: history.get(e.id)?.length ?? 0,
