@@ -8,7 +8,6 @@ import { openDb } from './db/client.js';
 import { createIgdbClient } from './igdb/client.js';
 import { createMirrorIgdbClient } from './mirror/client.js';
 import { createCloudflareClient } from './cloudflare/client.js';
-import { createItadClient } from './itad/client.js';
 import { recordIgdbAttempt, pruneIgdbHistory } from './services/igdb-history.js';
 import { endRun, HEARTBEAT_MS, heartbeat, pruneRuns, startRun } from './services/server-runs.js';
 import { createErrorAlerter } from './services/error-alerts.js';
@@ -65,9 +64,6 @@ if (!config.emailVerification)
         'RESEND_API_KEY / MAIL_FROM not set: new accounts are not asked to verify their email.'
     );
 const runId = startRun(db, config.version);
-const itad = config.itadApiKey
-    ? createItadClient({ apiKey: config.itadApiKey, country: config.itadCountry })
-    : undefined;
 const cloudflare =
     config.cloudflareApiToken && config.cloudflareZoneId
         ? createCloudflareClient({
@@ -75,7 +71,7 @@ const cloudflare =
               zoneId: config.cloudflareZoneId
           })
         : undefined;
-const app = createApp({ db, config, igdb, itad, cloudflare });
+const app = createApp({ db, config, igdb, cloudflare });
 
 // Production: serve the built web app from the same process/port, with SPA fallback.
 const webDist = resolve(process.env.WEB_DIST ?? '../web/dist');

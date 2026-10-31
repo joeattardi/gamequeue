@@ -37,13 +37,13 @@ Checked against the code on 2026-10-27. Re-check anything that has changed since
 - Account: username, email, password hash (argon2id), role, optional first and last name, bio, social
   links (Steam, Xbox, PlayStation, Discord), uploaded avatar (BLOB) or preset icon.
 - Collection and activity: games, statuses, ratings, playthroughs and dates, private and public notes,
-  lists, queue, wishlist, grids, tier lists, favorites, the activity feed.
+  lists, queue, wishlist, favorites, the activity feed.
 - Sessions: a hashed token plus expiry (30 days, sliding). No IP address or user agent is stored there.
 - Error log (`error_events`): message, route, stack, JSON context. No IP column, but check that
   `context` never holds an email or username (see section 4). Pruned at 30 days / 5,000 rows.
 - Email send counts per day (daily cap), one-time verification and reset tokens.
 
-**What's public.** Profile, lists, stats, Save File, grids, tier lists, activity feed and public
+**What's public.** Profile, lists, stats, Save File, activity feed and public
 notes are public. Real name is private unless the profile checkbox is on. Search-engine indexing is
 opt-in and off by default. Social links are public once set.
 
@@ -57,7 +57,6 @@ opt-in and off by default. Social links are public once set.
 | Off-machine backup (rclone `offsite`) | Whole database, if configured                 | Optional in `backup.sh`; retention there is not set by the script |
 | healthchecks.io                       | Pings only, no user data                      | Verify nothing user-related is in the ping URLs                   |
 | IGDB / Twitch                         | Search text and game IDs, never user identity | Attribution in `/credits`                                         |
-| IsThereAnyDeal                        | Game IDs                                      | Optional, `ITAD_API_KEY`                                          |
 
 **Cookies.** One httpOnly session cookie (`gq_session`) plus `localStorage` for theme, layout and
 the dismissed preview notice. No analytics, and fonts are self-hosted (`@fontsource`), so no
@@ -73,7 +72,7 @@ verification, signup toggle, per-IP rate limits, preview notices.
       deleted data lives in backups, security summary, contact address, minimum age, "last updated"
       date. Every sentence must match section 1 and the findings below.
 - [ ] **Terms of service** at `/terms`: acceptable use, rules for public content (bios, notes,
-      usernames, avatars, grids, tier lists), right to remove content or accounts, provided "as is"
+      usernames, avatars), right to remove content or accounts, provided "as is"
       during preview with no guarantee of uptime or data retention, who runs it, changes to the
       terms, governing law.
 - [ ] **Footer links** to both (next to Credits in `Footer`), and a "by signing up you agree to the
@@ -82,7 +81,7 @@ verification, signup toggle, per-IP rate limits, preview notices.
       one if avoidable. Publish it in the policy, the terms and the footer. A postal address is not
       needed for this site; it would become relevant only if you start sending marketing email or
       taking payments, or if a lawyer says your situation needs an imprint.
-- [ ] **Credits page**: confirm IGDB, ITAD, game-icons.net (CC BY 3.0) and fonts attribution is
+- [ ] **Credits page**: confirm IGDB, game-icons.net (CC BY 3.0) and fonts attribution is
       complete.
 - [ ] **Update `ARCHITECTURE.md`** for the new pages (and `README`/`OVERVIEW` if the shape changes).
 
@@ -143,7 +142,6 @@ Answer each one and record it under Findings.
 
 - [ ] IGDB / Twitch API terms: is your use allowed, including the locally stored mirror (the
       partner data dumps), attribution and caching? Keep a copy of the terms you agreed to.
-- [ ] IsThereAnyDeal API terms, if prices stay on.
 - [ ] game-icons.net (CC BY 3.0) credit is in place and links to the author.
 - [ ] Cover art and screenshots from IGDB: check the image-use terms for a public site.
 
@@ -168,8 +166,8 @@ Answer each one and record it under Findings.
 
 **Product behavior**
 
-- [ ] Delete an account on a test user and confirm everything is gone (avatar, notes, grids, tier
-      lists, activity, sessions), including from the public profile and share-card caches.
+- [ ] Delete an account on a test user and confirm everything is gone (avatar, notes, lists,
+      activity, sessions), including from the public profile and share-card caches.
 - [ ] Export a test account and check the file has everything the policy says it does.
 - [ ] Confirm private notes and real names never appear on public pages, in share cards, in the
       feed or in CSV/JSON exports other than the owner's own.
@@ -209,7 +207,6 @@ Fill these in as you go. The policy is written from this section.
 - Cloudflare and proxy log retention:
 - Resend region, retention, DPA link:
 - IGDB terms reviewed on (date) and the key limits:
-- ITAD terms reviewed on (date):
 - Minimum age:
 - Governing law and operator name:
 - Contact and abuse email:

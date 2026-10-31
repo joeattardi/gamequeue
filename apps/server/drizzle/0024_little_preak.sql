@@ -1,1 +1,0 @@
-ALTER TABLE `users` ADD `search_indexable` integer DEFAULT false NOT NULL;

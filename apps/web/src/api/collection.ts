@@ -13,7 +13,6 @@ import type {
     FacetCountsDto,
     FacetsDto,
     GameDetailDto,
-    GameOffersResponse,
     SimilarGameDto,
     PatchEntryInput,
     PatchNoteInput,
@@ -115,15 +114,6 @@ export const useSimilarGames = (igdbId: number) =>
         queryKey: ['similar-games', igdbId],
         queryFn: async () =>
             (await api<{ games: SimilarGameDto[] }>(`/igdb/games/${igdbId}/similar`)).games,
-        staleTime: 30 * 60_000,
-        retry: false
-    });
-
-/** Every shop's price for a game; separate from the detail so ITAD never delays the page. */
-export const useGameOffers = (igdbId: number) =>
-    useQuery({
-        queryKey: ['game-offers', igdbId],
-        queryFn: () => api<GameOffersResponse>(`/igdb/games/${igdbId}/prices`),
         staleTime: 30 * 60_000,
         retry: false
     });

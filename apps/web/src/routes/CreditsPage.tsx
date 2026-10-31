@@ -34,15 +34,6 @@ export function CreditsPage() {
                     </p>
                 </section>
 
-                <section aria-labelledby="credits-itad">
-                    <h2 id="credits-itad">Prices</h2>
-                    <p>
-                        Wishlist and game page prices come from{' '}
-                        <External href="https://isthereanydeal.com/">IsThereAnyDeal</External>, when
-                        the server has an API key for it.
-                    </p>
-                </section>
-
                 <section aria-labelledby="credits-icons">
                     <h2 id="credits-icons">Profile icons</h2>
                     <p>

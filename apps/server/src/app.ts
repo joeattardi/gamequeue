@@ -24,14 +24,11 @@ import { statsRoutes } from './routes/stats.js';
 import { showcaseRoutes } from './routes/showcase.js';
 import { seriesRoutes } from './routes/series.js';
 import { slotRoutes } from './routes/slots.js';
-import { gridRoutes } from './routes/grids.js';
-import { tierListRoutes } from './routes/tier-lists.js';
 import { wishlistRoutes } from './routes/wishlist.js';
 import { entryActionRoutes, playthroughRoutes } from './routes/playthroughs.js';
 import { HttpError } from './errors.js';
 import type { IgdbClient } from './igdb/types.js';
 import type { CloudflareClient } from './cloudflare/types.js';
-import type { ItadClient } from './itad/types.js';
 import type { AuthVars } from './auth/middleware.js';
 import { reportError } from './services/error-log.js';
 import { limitMailer } from './services/mail-budget.js';
@@ -44,8 +41,6 @@ export interface AppDeps {
     config: Config;
     /** Undefined when IGDB credentials aren't configured; IGDB-backed routes then return 503 */
     igdb?: IgdbClient;
-    /** Undefined when ITAD_API_KEY isn't set; wishlist prices are then simply absent */
-    itad?: ItadClient;
     /** Undefined without CLOUDFLARE_API_TOKEN and CLOUDFLARE_ZONE_ID; the admin Traffic page then says it isn't set up */
     cloudflare?: CloudflareClient;
     /** Owner alerts; defaults to Resend email when configured. Overridable for tests */
@@ -162,8 +157,6 @@ export function createApp(deps: AppDeps) {
     app.route('/api/smart-lists', smartListRoutes(deps));
     app.route('/api/queue', queueRoutes(deps));
     app.route('/api/wishlist', wishlistRoutes(deps));
-    app.route('/api/grids', gridRoutes(deps));
-    app.route('/api/tier-lists', tierListRoutes(deps));
     app.route('/api/series', seriesRoutes(deps));
     app.route('/api/stats', statsRoutes(deps));
     app.route('/api/recap', recapRoutes(deps));

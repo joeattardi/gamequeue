@@ -33,7 +33,7 @@ function dayLabel(at: number, now: number): string {
     });
 }
 
-/** Only things done to a game can be folded together; creating a grid or moving a slot stays single. */
+/** Only things done to a game can be folded together; creating a list or moving a slot stays single. */
 const foldable = (e: ActivityEventDto) => e.game !== null && e.type !== 'slotted';
 
 /**

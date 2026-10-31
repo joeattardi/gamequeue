@@ -1,7 +1,5 @@
 import type { AvatarIconChoice } from './avatar-icons.js';
 import type { EntryDto, NoteDto, EntryStatus, GameDto } from './collection.js';
-import type { GridSummaryDto } from './grids.js';
-import type { TierListSummaryDto } from './tiers.js';
 import type { SocialLinks } from './social.js';
 import type { ActivityEventDto } from './activity.js';
 
@@ -61,8 +59,6 @@ export interface ProfileDto {
     lists: ProfileListTileDto[];
     /** Smart lists as they match right now, with their rules in words */
     smartLists: ProfileListTileDto[];
-    grids: GridSummaryDto[];
-    tierLists: TierListSummaryDto[];
     /** Latest finishes with a known date, newest first (a short highlight row) */
     recentlyFinished: PublicEntryDto[];
     /** Favorites, best rated first (a short highlight row) */

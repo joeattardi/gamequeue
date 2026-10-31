@@ -45,7 +45,7 @@ const FEATURES = [
     {
         icon: Gift,
         title: 'Wishlist',
-        text: 'Track games you want, see when they release, and spot the best current price at well-known shops.'
+        text: 'Track games you want and see when they release.'
     },
     {
         icon: Layers,

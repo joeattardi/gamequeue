@@ -9,7 +9,6 @@ import {
     ChevronDown,
     CircleCheck,
     Gift,
-    Grid3x3,
     Heart,
     ListChecks,
     ListOrdered,
@@ -17,7 +16,6 @@ import {
     Pause,
     Play,
     Plus,
-    Rows3,
     SlidersHorizontal,
     Star
 } from 'lucide-react';
@@ -39,16 +37,12 @@ const ICONS: Record<ActivityType, ReactNode> = {
     queued: <ListOrdered />,
     slotted: <ListChecks />,
     wishlisted: <Gift />,
-    grid: <Grid3x3 />,
-    tier: <Rows3 />,
     list: <ListPlus />,
     smartlist: <SlidersHorizontal />
 };
 
 /** Where an event's subject lives on the public profile; none for the ones without a page of their own. */
 const SUBJECT_PATH: Partial<Record<ActivityType, string>> = {
-    grid: 'grids',
-    tier: 'tiers',
     list: 'lists',
     smartlist: 'smart-lists'
 };
@@ -85,10 +79,6 @@ function sentence(e: ActivityEventDto, name: ReactNode): ReactNode {
             );
         case 'wishlisted':
             return <>Wishlisted {name}</>;
-        case 'grid':
-            return <>Created the grid {name}</>;
-        case 'tier':
-            return <>Created the tier list {name}</>;
         case 'list':
             return <>Created the list {name}</>;
         case 'smartlist':

@@ -2,24 +2,6 @@ import { z } from 'zod';
 import type { GameDto, PlatformDto } from './collection.js';
 import { moveItemSchema } from './pagination.js';
 
-/** The best current price of a game, from IsThereAnyDeal. Amounts are minor units (cents). */
-export interface GamePriceDto {
-    currency: string;
-    /** Cheapest current price across the shops */
-    amount: number;
-    /** That shop's regular price; equals `amount` when nothing is discounted */
-    regular: number;
-    /** Percent off, 0 when not on sale */
-    cut: number;
-    shop: string;
-    /** ITAD link that forwards to the shop's page for the game */
-    url: string;
-    /** Lowest price ever recorded, if ITAD has one */
-    historyLow: number | null;
-    /** When ITAD was last asked (ms since epoch) */
-    checkedAt: number;
-}
-
 /** A game the user wants but doesn't own: it has no status, playthroughs or slot. */
 export interface WishlistItemDto {
     igdbId: number;
@@ -28,8 +10,6 @@ export interface WishlistItemDto {
     platform: PlatformDto | null;
     note: string;
     addedAt: number;
-    /** Null when prices are off, the game wasn't found at ITAD, or no shop sells it */
-    price: GamePriceDto | null;
 }
 
 export interface WishlistDto {
@@ -83,29 +63,3 @@ export const releasingSoonQuerySchema = z.object({
         .regex(/^\d{4}-\d{2}-\d{2}$/)
         .optional()
 });
-
-/** One shop's offer for a game. Amounts are minor units (cents). */
-export interface PriceDealDto {
-    shop: string;
-    amount: number;
-    regular: number;
-    cut: number;
-    url: string;
-    /** Operating systems the offer covers, e.g. Windows, Mac, Linux */
-    platforms: string[];
-    drm: string[];
-}
-
-/** Every current offer for a game, cheapest first. */
-export interface GameOffersDto {
-    currency: string;
-    historyLow: number | null;
-    deals: PriceDealDto[];
-}
-
-/** `GET /igdb/games/:igdbId/prices`: `enabled` is false when the server has no ITAD key. */
-export interface GameOffersResponse {
-    enabled: boolean;
-    /** Null when ITAD doesn't know the game or no shop sells it */
-    offers: GameOffersDto | null;
-}

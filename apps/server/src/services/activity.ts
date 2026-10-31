@@ -61,7 +61,7 @@ export function recordActivity(db: Db, userId: number, ev: ActivityInput) {
         .run();
 }
 
-/** Drops the events about something that no longer exists (a deleted grid, list, game…). */
+/** Drops the events about something that no longer exists (a deleted list, game…). */
 export function forgetSubject(db: Db, userId: number, types: ActivityType[], subjectId: number) {
     db.delete(activityEvents)
         .where(

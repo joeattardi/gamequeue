@@ -24,7 +24,7 @@ function setup(failSend = false) {
         if (failSend) throw new Error('Resend is down');
         sent.push(m);
     };
-    const made = makeApp({}, undefined, undefined, undefined, mailer);
+    const made = makeApp({}, undefined, undefined, mailer);
     const tokenOf = (mail: Mail | undefined) => /token=([\w-]+)/.exec(mail?.text ?? '')?.[1] ?? '';
     return { ...made, sent, tokenOf, mailer };
 }
@@ -103,7 +103,7 @@ describe('forgot password', () => {
 
     it("answers without waiting for the email provider, so timing doesn't reveal accounts", async () => {
         const never = () => new Promise<void>(() => {});
-        const { app } = makeApp({}, undefined, undefined, undefined, never);
+        const { app } = makeApp({}, undefined, undefined, never);
         await register(app, 'a@example.com');
         const res = await Promise.race([
             post(app, '/auth/forgot-password', { email: 'a@example.com' }),

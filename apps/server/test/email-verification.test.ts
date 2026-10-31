@@ -15,7 +15,7 @@ import { cookieFrom, json, makeApp, register } from './helpers.js';
 function setup() {
     const sent: Mail[] = [];
     const mailer = async (m: Mail) => void sent.push(m);
-    const made = makeApp({ emailVerification: true }, undefined, undefined, undefined, mailer);
+    const made = makeApp({ emailVerification: true }, undefined, undefined, mailer);
     const tokenOf = (mail: Mail | undefined) => /token=([\w-]+)/.exec(mail?.text ?? '')?.[1] ?? '';
     return { ...made, sent, tokenOf };
 }
@@ -62,15 +62,9 @@ describe('registering with verification on', () => {
 
     it('still succeeds when the email cannot be sent, and records the failure', async () => {
         vi.spyOn(console, 'error').mockImplementation(() => {});
-        const { app, db } = makeApp(
-            { emailVerification: true },
-            undefined,
-            undefined,
-            undefined,
-            async () => {
-                throw new Error('Resend answered 500');
-            }
-        );
+        const { app, db } = makeApp({ emailVerification: true }, undefined, undefined, async () => {
+            throw new Error('Resend answered 500');
+        });
         expect((await register(app)).status).toBe(201);
         expect(db.select().from(errorEvents).get()?.kind).toBe('email_failed');
     });
@@ -92,7 +86,6 @@ describe('confirming the address', () => {
         const { app } = (() => {
             const m = makeApp(
                 { emailVerification: true },
-                undefined,
                 undefined,
                 undefined,
                 async (x) => void sent.push(x)
@@ -172,15 +165,9 @@ describe('resending', () => {
     it('reports a delivery failure to the user', async () => {
         vi.spyOn(console, 'error').mockImplementation(() => {});
         let fail = false;
-        const { app, db } = makeApp(
-            { emailVerification: true },
-            undefined,
-            undefined,
-            undefined,
-            async () => {
-                if (fail) throw new Error('down');
-            }
-        );
+        const { app, db } = makeApp({ emailVerification: true }, undefined, undefined, async () => {
+            if (fail) throw new Error('down');
+        });
         const cookie = cookieFrom(await register(app));
         db.update(emailVerifications).set({ createdAt: 0 }).run();
         fail = true;

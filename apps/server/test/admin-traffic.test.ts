@@ -167,7 +167,7 @@ describe('Cloudflare client', () => {
 
 describe('GET /api/admin/traffic', () => {
     function setup(cloudflare?: CloudflareClient) {
-        const { app, db } = makeApp({}, undefined, undefined, cloudflare);
+        const { app, db } = makeApp({}, undefined, cloudflare);
         const root = db
             .insert(users)
             .values({

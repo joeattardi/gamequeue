@@ -48,11 +48,7 @@ describe('activity feed', () => {
         await call('/queue/items', 'POST', { entryId: hades.id });
         await call('/wishlist/items', 'POST', { igdbId: 2 });
         await call('/lists', 'POST', { name: 'Roguelikes' });
-        await call('/grids', 'POST', { title: 'Top 9', cols: 3, rows: 3 });
-        await call('/tier-lists', 'POST', { title: 'Platformers' });
         expect(await lines()).toEqual([
-            'tier:Platformers',
-            'grid:Top 9',
             'list:Roguelikes',
             'wishlisted:Celeste',
             'queued:Hades',
@@ -83,13 +79,11 @@ describe('activity feed', () => {
         expect((await feed()).total).toBe(3);
     });
 
-    it('forgets deleted games, grids and lists', async () => {
+    it('forgets deleted games and lists', async () => {
         const { add, call, lines } = await setup();
         const hades = await add(1);
         const list = (await call('/lists', 'POST', { name: 'Temp' })).list;
-        const grid = (await call('/grids', 'POST', { title: 'Temp grid', cols: 3, rows: 3 })).grid;
         await call(`/lists/${list.id}`, 'DELETE');
-        await call(`/grids/${grid.id}`, 'DELETE');
         expect(await lines()).toEqual(['added:Hades']);
         await call(`/entries/${hades.id}`, 'DELETE');
         expect(await lines()).toEqual([]);
@@ -123,7 +117,7 @@ describe('activity feed', () => {
         expect((await feed()).total).toBe(1);
         for (let i = 0; i < 4; i++)
             db.insert(activityEvents)
-                .values({ userId: 1, type: 'grid', subjectId: 100 + i, subjectName: `G${i}` })
+                .values({ userId: 1, type: 'list', subjectId: 100 + i, subjectName: `G${i}` })
                 .run();
         const page = (
             await (await app.request(`/api/profiles/${USER}/activity?limit=2&offset=1`)).json()

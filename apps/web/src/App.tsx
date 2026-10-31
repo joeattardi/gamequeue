@@ -16,12 +16,6 @@ import { AccountPage } from './routes/AccountPage';
 import { CollectionPage } from './routes/CollectionPage';
 import { DataPage } from './routes/DataPage';
 import { EntryPage } from './routes/EntryPage';
-import { TierListPage } from './routes/TierListPage';
-import { TierListsPage } from './routes/TierListsPage';
-import { ProfileTierListPage } from './routes/ProfileTierListPage';
-import { GridPage } from './routes/GridPage';
-import { GridsPage } from './routes/GridsPage';
-import { ProfileGridPage } from './routes/ProfileGridPage';
 import { GameDetailPage } from './routes/GameDetailPage';
 import { SeriesPage } from './routes/SeriesPage';
 import { SearchPage } from './routes/SearchPage';
@@ -88,8 +82,6 @@ function AppRoutes() {
                     path="/u/:username/smart-lists/:id"
                     element={<ProfileListPage kind="smart-lists" />}
                 />
-                <Route path="/u/:username/grids/:id" element={<ProfileGridPage />} />
-                <Route path="/u/:username/tiers/:id" element={<ProfileTierListPage />} />
                 <Route path="/u/:username/stats" element={<ProfileStatsPage />} />
                 <Route path="/u/:username/activity" element={<ProfileActivityPage />} />
                 <Route path="/u/:username/games/:igdbId" element={<ProfileGamePage />} />
@@ -125,8 +117,6 @@ function AppRoutes() {
                 path="/u/:username/smart-lists/:id"
                 element={<ProfileListPage kind="smart-lists" />}
             />
-            <Route path="/u/:username/grids/:id" element={<ProfileGridPage />} />
-            <Route path="/u/:username/tiers/:id" element={<ProfileTierListPage />} />
             <Route path="/u/:username/stats" element={<ProfileStatsPage />} />
             <Route path="/u/:username/activity" element={<ProfileActivityPage />} />
             <Route path="/u/:username/games/:igdbId" element={<ProfileGamePage />} />
@@ -144,10 +134,6 @@ function AppRoutes() {
                 <Route path="queue" element={<QueuePage />} />
                 <Route path="wishlist" element={<WishlistPage />} />
                 <Route path="discover" element={<DiscoverPage />} />
-                <Route path="grids" element={<GridsPage />} />
-                <Route path="grids/:id" element={<GridPage />} />
-                <Route path="tiers" element={<TierListsPage />} />
-                <Route path="tiers/:id" element={<TierListPage />} />
                 <Route path="series/:id" element={<SeriesPage />} />
                 <Route path="lists" element={<ListsPage />} />
                 <Route path="lists/:id" element={<ListPage />} />

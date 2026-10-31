@@ -16,16 +16,11 @@ import {
     loadGames,
     requireIgdb
 } from '../services/games.js';
-import { gameOffers, offersCache } from '../services/prices.js';
 import { similarGames } from '../services/similar.js';
 
-export function igdbRoutes(
-    { db, config, igdb, itad }: AppDeps,
-    similar: TtlCache<IgdbSearchHit[]>
-) {
+export function igdbRoutes({ db, config, igdb }: AppDeps, similar: TtlCache<IgdbSearchHit[]>) {
     const r = new Hono<{ Variables: AuthVars }>();
     const cache = new TtlCache<IgdbSearchHit[]>();
-    const offers = offersCache();
     r.use('*', requireAuth(db, config));
 
     r.get('/search', async (c) => {
@@ -87,16 +82,7 @@ export function igdbRoutes(
         return c.json({ results });
     });
 
-    // Every shop's current price for a cached game (the detail page loads this separately, so a
-    // slow or failing ITAD never holds up the page)
-    r.get('/games/:igdbId/prices', async (c) => {
-        const igdbId = Number(c.req.param('igdbId'));
-        if (!Number.isInteger(igdbId) || igdbId <= 0) throw new HttpError(400, 'Invalid game id');
-        await ensureGame(db, igdb, igdbId);
-        return c.json(await gameOffers(db, itad, offers, igdbId));
-    });
-
-    // IGDB's "similar games" for a game, loaded separately like prices so the page never waits on it
+    // IGDB's "similar games" for a game, loaded separately so the page never waits on it
     r.get('/games/:igdbId/similar', async (c) => {
         const igdbId = parseId(c.req.param('igdbId'));
         return c.json({ games: await similarGames(db, igdb, similar, c.get('user').id, igdbId) });

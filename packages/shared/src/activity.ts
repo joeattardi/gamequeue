@@ -13,8 +13,6 @@ export const ACTIVITY_TYPES = [
     'queued',
     'slotted',
     'wishlisted',
-    'grid',
-    'tier',
     'list',
     'smartlist'
 ] as const;
@@ -25,9 +23,9 @@ export interface ActivityEventDto {
     type: ActivityType;
     /** ms since epoch */
     at: number;
-    /** The game the event is about; null for grids, tier lists and lists */
+    /** The game the event is about; null for lists */
     game: { id: number; name: string; coverImageId: string | null } | null;
-    /** Grid, tier list, list or smart list for the `grid`/`tier`/`list`/`smartlist` types; the slot name for `slotted` */
+    /** List or smart list for the `list`/`smartlist` types; the slot name for `slotted` */
     subject: { id: number | null; name: string } | null;
     /** `rated`: the stars given */
     detail: number | null;
@@ -57,8 +55,6 @@ export const ACTIVITY_VERBS: Record<ActivityType, string> = {
     queued: 'Queued',
     slotted: 'Moved to a slot',
     wishlisted: 'Wishlisted',
-    grid: 'Created grid',
-    tier: 'Created tier list',
     list: 'Created list',
     smartlist: 'Created smart list'
 };

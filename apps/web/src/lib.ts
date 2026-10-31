@@ -135,16 +135,5 @@ export const releaseText = (game: Pick<GameDto, 'releaseDate' | 'releasePrecisio
 export const releaseBadgeText = (game: Pick<GameDto, 'releaseDate' | 'releasePrecision'>) =>
     releaseBadge(game.releaseDate, game.releasePrecision, todayLocal());
 
-/** Minor units (cents) as money in the user's locale, e.g. 1249 USD -> "$12.49". */
-export const formatPrice = (minor: number, currency: string) => {
-    try {
-        return new Intl.NumberFormat(undefined, { style: 'currency', currency }).format(
-            minor / 100
-        );
-    } catch {
-        return `${(minor / 100).toFixed(2)} ${currency}`;
-    }
-};
-
 /** December and January: when the year-in-review is promoted in the navigation. */
 export const isRecapSeason = (now = new Date()) => now.getMonth() === 11 || now.getMonth() === 0;

@@ -1,12 +1,5 @@
 import { and, asc, eq, inArray, max } from 'drizzle-orm';
-import {
-    MAX_GRIDS,
-    MAX_TIER_LISTS,
-    MAX_SLOTS,
-    type ExportEntry,
-    type ExportFile,
-    type ImportReport
-} from '@gamequeue/shared';
+import { MAX_SLOTS, type ExportEntry, type ExportFile, type ImportReport } from '@gamequeue/shared';
 import type { Db } from '../db/client.js';
 import {
     entries,
@@ -14,17 +7,12 @@ import {
     entryPlatforms,
     entryTags,
     games,
-    gridCells,
-    grids,
     listItems,
     lists,
     playthroughs,
     slots,
     smartLists,
     tags,
-    tierItems,
-    tierLists,
-    tiers,
     wishlistItems
 } from '../db/schema.js';
 import { HttpError } from '../errors.js';
@@ -57,9 +45,6 @@ function fileGameIds(file: ExportFile): number[] {
     const ids = new Set<number>();
     for (const g of file.games) ids.add(g.igdbId);
     for (const w of file.wishlist) ids.add(w.igdbId);
-    for (const g of file.grids) for (const c of g.cells) if (c.game) ids.add(c.game.igdbId);
-    for (const l of file.tierLists)
-        for (const it of [...l.tiers.flatMap((t) => t.games), ...l.unranked]) ids.add(it.igdbId);
     return [...ids];
 }
 
@@ -132,8 +117,7 @@ const lower = (s: string) => s.toLowerCase();
  * same file twice changes nothing.
  *
  * Games and platforms come from `catalog` (see `resolveImportCatalog`): a game the server couldn't
- * find on IGDB is skipped with a note, and so is everything of it (list items, slots, wishlist, grid
- * cells, tier items); an unknown platform is dropped.
+ * find on IGDB is skipped with a note, and so is everything of it (list items, slots, wishlist); an unknown platform is dropped.
  *
  * Everything runs in one transaction. A dry run executes the real import and then rolls back, so its
  * report is exactly what committing would do.
@@ -153,8 +137,6 @@ export function importData(
         queue: { added: 0 },
         wishlist: { added: 0 },
         smartLists: { created: 0 },
-        grids: { created: 0, skipped: 0 },
-        tierLists: { created: 0, skipped: 0 },
         slots: { created: 0, filled: 0 },
         notes: [],
         moreNotes: 0
@@ -179,7 +161,7 @@ export function importData(
 
 /**
  * Whether the game is in the catalog; notes it when not (deferred games are covered by one note).
- * `what` names where the file had it, e.g. "the grid Best of".
+ * `what` names where the file had it, e.g. "the wishlist".
  */
 function knownGame(
     catalog: ImportCatalog,
@@ -247,147 +229,6 @@ function merge(
     mergeSmartLists(db, userId, file, report);
     mergeSlots(db, userId, file, entryIdByGame, nameByGame, report, note);
     mergeWishlist(db, userId, file, catalog, report, note, now);
-    mergeGrids(db, userId, file, catalog, report, note);
-    mergeTierLists(db, userId, file, catalog, report, note);
-}
-
-/**
- * Creates the file's grids you don't have. Matching is by title (case-insensitive); a grid you
- * already have under that title is left exactly as it is, so importing twice changes nothing.
- */
-function mergeGrids(
-    db: Db,
-    userId: number,
-    file: ExportFile,
-    catalog: ImportCatalog,
-    report: ImportReport,
-    note: (m: string) => void
-) {
-    if (file.grids.length === 0) return;
-    const titles = new Set(
-        db
-            .select({ title: grids.title })
-            .from(grids)
-            .where(eq(grids.userId, userId))
-            .all()
-            .map((r) => lower(r.title))
-    );
-    for (const g of file.grids) {
-        if (titles.has(lower(g.title))) {
-            report.grids.skipped++;
-            note(
-                `Grid "${g.title}": you already have one with that title, so it was kept as it is`
-            );
-            continue;
-        }
-        if (titles.size >= MAX_GRIDS) {
-            report.grids.skipped++;
-            note(`Grid "${g.title}" wasn't added: you can have up to ${MAX_GRIDS} grids`);
-            continue;
-        }
-        const row = db
-            .insert(grids)
-            .values({
-                userId,
-                title: g.title,
-                description: g.description,
-                cols: g.cols,
-                rows: g.rows
-            })
-            .returning({ id: grids.id })
-            .get();
-        // A cell whose game isn't on IGDB keeps its label
-        const where = `the grid "${g.title}"`;
-        if (g.cells.length > 0)
-            db.insert(gridCells)
-                .values(
-                    g.cells.map((c) => ({
-                        gridId: row.id,
-                        position: c.position,
-                        label: c.label,
-                        gameId:
-                            c.game &&
-                            knownGame(catalog, c.game.igdbId, c.game.game.name, note, where)
-                                ? c.game.igdbId
-                                : null
-                    }))
-                )
-                .run();
-        titles.add(lower(g.title));
-        report.grids.created++;
-    }
-}
-
-/** Like `mergeGrids`: tier lists are matched by title, and one you already have is left alone. */
-function mergeTierLists(
-    db: Db,
-    userId: number,
-    file: ExportFile,
-    catalog: ImportCatalog,
-    report: ImportReport,
-    note: (m: string) => void
-) {
-    if (file.tierLists.length === 0) return;
-    const titles = new Set(
-        db
-            .select({ title: tierLists.title })
-            .from(tierLists)
-            .where(eq(tierLists.userId, userId))
-            .all()
-            .map((r) => lower(r.title))
-    );
-    for (const l of file.tierLists) {
-        if (titles.has(lower(l.title))) {
-            report.tierLists.skipped++;
-            note(
-                `Tier list "${l.title}": you already have one with that title, so it was kept as it is`
-            );
-            continue;
-        }
-        if (titles.size >= MAX_TIER_LISTS) {
-            report.tierLists.skipped++;
-            note(
-                `Tier list "${l.title}" wasn't added: you can have up to ${MAX_TIER_LISTS} tier lists`
-            );
-            continue;
-        }
-        const row = db
-            .insert(tierLists)
-            .values({ userId, title: l.title, description: l.description })
-            .returning({ id: tierLists.id })
-            .get();
-        const where = `the tier list "${l.title}"`;
-        const place = (
-            tierId: number | null,
-            placed: { igdbId: number; game: { name: string } }[]
-        ) => {
-            const items = placed.filter((it) =>
-                knownGame(catalog, it.igdbId, it.game.name, note, where)
-            );
-            if (items.length > 0)
-                db.insert(tierItems)
-                    .values(
-                        items.map((it, position) => ({
-                            tierListId: row.id,
-                            gameId: it.igdbId,
-                            tierId,
-                            position
-                        }))
-                    )
-                    .run();
-        };
-        l.tiers.forEach((t, position) => {
-            const tier = db
-                .insert(tiers)
-                .values({ tierListId: row.id, position, name: t.name, color: t.color })
-                .returning({ id: tiers.id })
-                .get();
-            place(tier.id, t.games);
-        });
-        place(null, l.unranked);
-        titles.add(lower(l.title));
-        report.tierLists.created++;
-    }
 }
 
 /** Returns the entry id. */

@@ -4,13 +4,11 @@ import { loadConfig, type Config } from '../src/config.js';
 import { openDb } from '../src/db/client.js';
 import type { CloudflareClient } from '../src/cloudflare/types.js';
 import type { Mailer } from '../src/services/mailer.js';
-import type { ItadClient } from '../src/itad/types.js';
 import type { GameRecord, IgdbClient } from '../src/igdb/types.js';
 
 export function makeApp(
     overrides: Partial<Config> = {},
     igdb?: IgdbClient,
-    itad?: ItadClient,
     cloudflare?: CloudflareClient,
     mailer?: Mailer
 ) {
@@ -25,7 +23,6 @@ export function makeApp(
         config,
         limiters,
         igdb,
-        itad,
         cloudflare,
         mailer,
         requestLimits: false

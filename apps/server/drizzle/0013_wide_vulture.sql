@@ -1,1 +1,0 @@
-ALTER TABLE `games` ADD `screenshots` text;

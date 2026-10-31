@@ -53,7 +53,6 @@ describe('daily email limit', () => {
             { emailVerification: true, mailDailyLimit: 2 },
             undefined,
             undefined,
-            undefined,
             async (m) => void sent.push(m)
         );
         for (const n of [1, 2, 3])

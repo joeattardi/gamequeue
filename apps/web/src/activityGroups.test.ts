@@ -56,12 +56,12 @@ describe('groupActivity', () => {
         expect(days[1]!.items.map((i) => i.kind)).toEqual(['burst']);
     });
 
-    it('never folds grids, lists or slot moves', () => {
+    it('never folds lists or slot moves', () => {
         const days = groupActivity(
             [
-                ev('grid', local(24, 14), false),
-                ev('grid', local(24, 13), false),
-                ev('grid', local(24, 12), false)
+                ev('list', local(24, 14), false),
+                ev('list', local(24, 13), false),
+                ev('list', local(24, 12), false)
             ],
             now
         );

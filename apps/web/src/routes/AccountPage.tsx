@@ -182,8 +182,8 @@ function ActivityForm({ me }: { me: UserDto }) {
         <form onSubmit={submit} className="name-form">
             <p>
                 Your public profile can show what you do: games you add, start, finish or abandon,
-                ratings, wishlist and queue additions, and the grids, tier lists and lists you
-                create. Notes are only shown if you mark them public.
+                ratings, wishlist and queue additions, and the lists you create. Notes are only
+                shown if you mark them public.
             </p>
             <label className="check">
                 <input
@@ -245,8 +245,8 @@ function SearchIndexingForm({ me }: { me: UserDto }) {
                 Allow search engines to index my public profile
             </label>
             <p className="muted">
-                This covers your profile and its sub-pages: wishlist, stats, lists, grids, tier
-                lists and Save File. Search engines can take days or weeks to pick up a change.
+                This covers your profile and its sub-pages: wishlist, stats, lists and Save File.
+                Search engines can take days or weeks to pick up a change.
             </p>
             <div>
                 <button className="btn btn--primary" disabled={update.isPending}>

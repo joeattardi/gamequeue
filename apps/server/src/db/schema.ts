@@ -208,27 +208,6 @@ export const games = sqliteTable('games', {
     fetchedAt: integer('fetched_at').notNull()
 });
 
-/**
- * Cached IsThereAnyDeal prices, one row per game for the server's configured country. Shared like
- * `games`. `itadId` is null when ITAD doesn't know the game (matched by title, so it can miss);
- * the amounts are null when no shop sells it.
- */
-export const gamePrices = sqliteTable('game_prices', {
-    gameId: integer('game_id')
-        .primaryKey()
-        .references(() => games.id, { onDelete: 'cascade' }),
-    itadId: text('itad_id'),
-    currency: text('currency'),
-    amount: integer('amount'), // minor units
-    regular: integer('regular'),
-    cut: integer('cut'),
-    shop: text('shop'),
-    url: text('url'),
-    historyLow: integer('history_low'),
-    country: text('country').notNull(), // prices are for this country's shops and currency
-    checkedAt: integer('checked_at').notNull()
-});
-
 /** IGDB series ("collections"). Shared cache, like games. */
 export const series = sqliteTable('series', {
     id: integer('id').primaryKey(), // IGDB collection id
@@ -489,103 +468,6 @@ export const wishlistItems = sqliteTable(
     ]
 );
 
-// ---------------------------------------------------------------------------
-// Grids: a shareable cols x rows board of games, each cell with a label ("Best soundtrack").
-// Public by design (the grid itself holds nothing private). Only non-empty cells are stored.
-// ---------------------------------------------------------------------------
-
-export const grids = sqliteTable(
-    'grids',
-    {
-        id: integer('id').primaryKey({ autoIncrement: true }),
-        userId: integer('user_id')
-            .notNull()
-            .references(() => users.id, { onDelete: 'cascade' }),
-        title: text('title').notNull(),
-        description: text('description').notNull().default(''),
-        cols: integer('cols').notNull(),
-        rows: integer('rows').notNull(),
-        createdAt: integer('created_at').notNull().default(now),
-        updatedAt: integer('updated_at').notNull().default(now)
-    },
-    (t) => [index('grids_user_idx').on(t.userId)]
-);
-
-export const gridCells = sqliteTable(
-    'grid_cells',
-    {
-        gridId: integer('grid_id')
-            .notNull()
-            .references(() => grids.id, { onDelete: 'cascade' }),
-        // Row-major: row * cols + col
-        position: integer('position').notNull(),
-        label: text('label').notNull().default(''),
-        // Points at the shared cache; `ensureGame` runs when a game is placed
-        gameId: integer('game_id').references(() => games.id)
-    },
-    (t) => [
-        primaryKey({ columns: [t.gridId, t.position] }),
-        index('grid_cells_game_idx').on(t.gameId)
-    ]
-);
-
-// ---------------------------------------------------------------------------
-// Tier lists: games ranked into named, coloured tiers (S, A, B...), like tiermaker. Public by design.
-// A game is in a tier list at most once: in one tier, or `tier_id` null = the unranked pool.
-// ---------------------------------------------------------------------------
-
-export const tierLists = sqliteTable(
-    'tier_lists',
-    {
-        id: integer('id').primaryKey({ autoIncrement: true }),
-        userId: integer('user_id')
-            .notNull()
-            .references(() => users.id, { onDelete: 'cascade' }),
-        title: text('title').notNull(),
-        description: text('description').notNull().default(''),
-        createdAt: integer('created_at').notNull().default(now),
-        updatedAt: integer('updated_at').notNull().default(now)
-    },
-    (t) => [index('tier_lists_user_idx').on(t.userId)]
-);
-
-export const tiers = sqliteTable(
-    'tiers',
-    {
-        id: integer('id').primaryKey({ autoIncrement: true }),
-        tierListId: integer('tier_list_id')
-            .notNull()
-            .references(() => tierLists.id, { onDelete: 'cascade' }),
-        // 0-based, top to bottom; rewritten wholesale on reorder
-        position: integer('position').notNull(),
-        name: text('name').notNull(),
-        // A key of TIER_COLORS
-        color: text('color').notNull().default('gray')
-    },
-    (t) => [index('tiers_list_idx').on(t.tierListId)]
-);
-
-export const tierItems = sqliteTable(
-    'tier_items',
-    {
-        tierListId: integer('tier_list_id')
-            .notNull()
-            .references(() => tierLists.id, { onDelete: 'cascade' }),
-        gameId: integer('game_id')
-            .notNull()
-            .references(() => games.id),
-        // Null = unranked. Deleting a tier returns its games to the pool
-        tierId: integer('tier_id').references(() => tiers.id, { onDelete: 'set null' }),
-        // 0-based within its tier (or the pool); rewritten when items move
-        position: integer('position').notNull()
-    },
-    (t) => [
-        primaryKey({ columns: [t.tierListId, t.gameId] }),
-        index('tier_items_game_idx').on(t.gameId),
-        index('tier_items_tier_idx').on(t.tierId)
-    ]
-);
-
 // Games the user told Discover not to suggest again. Keyed by IGDB id with no games FK: a suggestion
 // is usually a game we have never cached.
 export const dismissedGames = sqliteTable(
@@ -654,7 +536,7 @@ export const activityEvents = sqliteTable(
         at: integer('at').notNull().default(now),
         // IGDB game id; the shared cache is never pruned, so no cascade is needed
         gameId: integer('game_id').references(() => games.id),
-        // Grid / tier list / list id (so deleting one can take its events along) or a slot name
+        // List / smart list id (so deleting one can take its events along) or a slot name
         subjectId: integer('subject_id'),
         subjectName: text('subject_name'),
         detail: integer('detail')

@@ -572,168 +572,71 @@ describe('validation', () => {
     });
 });
 
-describe('grids and tier lists in the export', () => {
-    /** One grid and one tier list over games that are not in the collection at all. */
-    async function social(s: Api) {
-        const grid = (await s.call('/grids', 'POST', { title: 'Best of', cols: 3, rows: 2 })).grid;
-        await s.call(`/grids/${grid.id}/cells/0`, 'PUT', { label: 'Best soundtrack', igdbId: 2 });
-        await s.call(`/grids/${grid.id}/cells/4`, 'PUT', { label: 'Just a label' });
-        await s.call(`/grids/${grid.id}/cells/5`, 'PUT', { igdbId: 3 });
-        const tl = (await s.call('/tier-lists', 'POST', { title: 'Ranked', description: 'D' }))
-            .tierList;
-        const [S, A] = [tl.tiers[0].id, tl.tiers[1].id];
-        await s.call(`/tier-lists/${tl.id}/tiers/${A}`, 'PATCH', { name: 'Great', color: 'pink' });
-        for (const [g, tier] of [
-            [1, S],
-            [2, S],
-            [3, A]
-        ] as const)
-            await s.call(`/tier-lists/${tl.id}/items`, 'POST', { igdbId: g, tierId: tier });
-        await s.call(`/tier-lists/${tl.id}/items`, 'POST', { igdbId: 4 });
-        // put game 2 before game 1 in S
-        await s.call(`/tier-lists/${tl.id}/items/move`, 'PUT', {
-            igdbId: 2,
-            tierId: S,
-            toIndex: 0
-        });
-        return { grid, tl };
-    }
+describe('grids and tier lists (removed features) in an old export', () => {
+    const game = {
+        name: 'Hades',
+        slug: 'hades',
+        summary: null,
+        releaseDate: null,
+        coverImageId: null,
+        platforms: [],
+        genres: [],
+        themes: [],
+        ttbMinutes: null,
+        igdbRating: null
+    };
+    const legacy = {
+        grids: [
+            {
+                title: 'Best of',
+                description: '',
+                cols: 3,
+                rows: 2,
+                cells: [{ position: 0, label: 'A', game: { igdbId: 2, game } }]
+            }
+        ],
+        tierLists: [
+            {
+                title: 'Ranked',
+                description: '',
+                tiers: [{ name: 'S', color: 'red', games: [{ igdbId: 3, game }] }],
+                unranked: []
+            }
+        ]
+    };
 
-    it('exports them, with the games they use', async () => {
-        const s = await setupApi();
-        await social(s);
-        const file = await exportOf(s);
-        expect(file.games).toEqual([]); // none of these games is in the collection
-        expect(file.grids).toHaveLength(1);
-        expect(file.grids[0]).toMatchObject({ title: 'Best of', cols: 3, rows: 2 });
-        expect(
-            file.grids[0]!.cells.map((c) => [c.position, c.label, c.game?.game.name ?? null])
-        ).toEqual([
-            [0, 'Best soundtrack', 'Celeste'],
-            [4, 'Just a label', null],
-            [5, '', 'Hollow Knight']
-        ]);
-        expect(file.grids[0]!.cells[0]!.game!.game.genres.length).toBeGreaterThan(0);
-        const tl = file.tierLists[0]!;
-        expect(tl).toMatchObject({ title: 'Ranked', description: 'D' });
-        expect(tl.tiers.map((t) => [t.name, t.color, t.games.map((g) => g.game.name)])).toEqual([
-            ['S', 'red', ['Celeste', 'Hades']],
-            ['Great', 'pink', ['Hollow Knight']],
-            ['B', 'yellow', []],
-            ['C', 'green', []],
-            ['D', 'blue', []],
-            ['F', 'purple', []]
-        ]);
-        expect(tl.unranked.map((g) => g.game.name)).toEqual(['Outer Wilds']);
-    });
-
-    it('restores them exactly on a fresh install, and keeps the games cached', async () => {
-        const a = await setupApi();
-        await social(a);
-        const file = await exportOf(a);
-        const b = await setupApi();
-        const res = await importFile(b, file, true);
-        expect(res.status).toBe(200);
-        expect(res.report).toMatchObject({
-            grids: { created: 1, skipped: 0 },
-            tierLists: { created: 1, skipped: 0 },
-            notes: []
-        });
-        expect(stable(await exportOf(b))).toEqual(stable(file));
-        const grid = (await b.call('/grids')).grids[0];
-        expect(grid).toMatchObject({ title: 'Best of', filled: 2, covers: ['co2', 'co3'] });
-    });
-
-    it('is idempotent, keeps a grid or tier list you already have by title, and a dry run writes nothing', async () => {
-        const a = await setupApi();
-        await social(a);
-        const file = await exportOf(a);
-        const b = await setupApi();
-
-        const preview = await importFile(b, file, false);
-        expect(preview.report).toMatchObject({
-            dryRun: true,
-            grids: { created: 1 },
-            tierLists: { created: 1 }
-        });
-        expect((await b.call('/grids')).grids).toEqual([]);
-        expect((await b.call('/tier-lists')).tierLists).toEqual([]);
-
-        await importFile(b, file, true);
-        const before = stable(await exportOf(b));
-        // edit the copy; a second import must not overwrite or duplicate it
-        const g = (await b.call('/grids')).grids[0];
-        await b.call(`/grids/${g.id}`, 'PATCH', { title: 'best OF' });
-        const again = await importFile(b, file, true);
-        expect(again.report).toMatchObject({
-            grids: { created: 0, skipped: 1 },
-            tierLists: { created: 0, skipped: 1 }
-        });
-        expect(
-            again.report.notes.some(
-                (n: string) => n.includes('Best of') && n.includes('already have')
-            )
-        ).toBe(true);
-        expect((await b.call('/grids')).grids).toHaveLength(1);
-        expect(stable(await exportOf(b)).tierLists).toEqual(before.tierLists);
-    });
-
-    it('still reads files from before grids and tier lists existed', async () => {
+    it('accepts a file that still has them, ignores them, and exports none', async () => {
         const a = await setupApi();
         await richCollection(a);
-        const file = (await exportOf(a)) as Record<string, unknown>;
-        delete file.grids;
-        delete file.tierLists;
+        const file = { ...(await exportOf(a)), ...legacy };
         const b = await setupApi();
         const res = await importFile(b, file, true);
         expect(res.status).toBe(200);
-        expect(res.report).toMatchObject({
-            grids: { created: 0, skipped: 0 },
-            tierLists: { created: 0, skipped: 0 }
-        });
+        expect(res.report).not.toHaveProperty('grids');
+        expect(res.report).not.toHaveProperty('tierLists');
+        const out = (await exportOf(b)) as Record<string, unknown>;
+        expect(out).not.toHaveProperty('grids');
+        expect(out).not.toHaveProperty('tierLists');
+        expect(stable(await exportOf(b))).toEqual(stable(await exportOf(a)));
     });
+});
 
-    it('rejects malformed grids and tier lists, pointing at the problem', async () => {
-        const a = await setupApi();
-        await social(a);
-        const file = await exportOf(a);
-        file.grids[0]!.cells[1]!.position = 6; // outside 3x2
-        file.grids[0]!.cells[2]!.position = 0; // twice
-        file.tierLists[0]!.tiers[1]!.games.push(file.tierLists[0]!.tiers[0]!.games[0]!);
-        const b = await setupApi();
-        const res = await importFile(b, file, true);
-        expect(res.status).toBe(400);
-        const where = (res.details as { path: string }[]).map((d) => d.path);
-        expect(where).toEqual(
-            expect.arrayContaining([
-                'grids.0.cells.1.position',
-                'grids.0.cells.2.position',
-                'tierLists.0.tiers'
-            ])
-        );
-        expect((await b.call('/grids')).grids).toEqual([]);
-        // a colour that isn't in the palette
-        const clean = await exportOf(a);
-        clean.tierLists[0]!.tiers[0]!.color = 'mauve' as never;
-        const bad = await importFile(b, clean, true);
-        expect(bad.status).toBe(400);
-        expect((bad.details as { path: string }[]).map((d) => d.path)).toContain(
-            'tierLists.0.tiers.0.color'
-        );
-    });
-
-    it('does not export another user’s grids or tier lists', async () => {
+describe('removed endpoints', () => {
+    it('are gone: grids, tier lists, prices and their share cards', async () => {
         const s = await setupApi();
-        await social(s);
-        const other = await s.secondUser();
-        const theirs = (await s.call(
-            '/data/export',
-            'GET',
-            undefined,
-            other
-        )) as unknown as ExportFile;
-        expect(theirs.grids).toEqual([]);
-        expect(theirs.tierLists).toEqual([]);
+        for (const path of [
+            '/grids',
+            '/tier-lists',
+            '/igdb/games/1/prices',
+            '/profiles/user_me/grids/1',
+            '/profiles/user_me/tier-lists/1',
+            '/og/grid/user_me/1.png',
+            '/og/tiers/user_me/1.png'
+        ])
+            expect(
+                (await s.app.request(`/api${path}`, { headers: { cookie: s.cookie } })).status,
+                path
+            ).toBe(404);
     });
 });
 

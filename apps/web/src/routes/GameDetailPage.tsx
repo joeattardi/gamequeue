@@ -5,7 +5,6 @@ import { ApiRequestError } from '../api/client';
 import { useGameDetail } from '../api/collection';
 import { useAddToWishlist, useRemoveFromWishlist } from '../api/wishlist';
 import { AddGameDialog } from '../components/AddGameDialog';
-import { GameOffers } from '../components/GameOffers';
 import { Cover } from '../components/Cover';
 import { SimilarGames } from '../components/SimilarGames';
 import { Screenshots } from '../components/Screenshots';
@@ -127,8 +126,6 @@ function GameDetail({ detail }: { detail: GameDetailDto }) {
                             {error}
                         </p>
                     </section>
-
-                    <GameOffers igdbId={game.id} />
 
                     <TimeToBeat ttb={game.ttb} />
 

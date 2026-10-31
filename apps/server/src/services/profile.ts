@@ -35,8 +35,6 @@ import { avatarIconOf, avatarVersion } from './avatars.js';
 import { profileBadge, socialLinksOf } from './users.js';
 import { hydrate, listEntries, pageEntries } from './entries.js';
 import { loadGames } from './games.js';
-import { listGrids } from './grids.js';
-import { listTierLists } from './tier-lists.js';
 import { getList, listLists } from './lists.js';
 import { getRecap } from './recap.js';
 import { getStats } from './stats.js';
@@ -120,8 +118,6 @@ export function getProfile(db: Db, username: string, founderUserId?: number): Pr
             total: l.count,
             covers: l.covers
         })),
-        grids: listGrids(db, user.id),
-        tierLists: listTierLists(db, user.id),
         recentlyFinished: getFinishedGames(db, user, { limit: 200, offset: 0 })
             .entries.filter((e) => e.lastFinishedOn !== null)
             .slice(0, HIGHLIGHT_ROW),

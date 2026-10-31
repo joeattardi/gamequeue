@@ -10,8 +10,6 @@ const SITE_MAP = [
     ['/lists', 'Lists'],
     ['/wishlist', 'Wishlist'],
     ['/discover', 'Discover'],
-    ['/grids', 'Grids'],
-    ['/tiers', 'Tier lists'],
     ['/stats', 'Stats'],
     ['/recap', 'Save File'],
     ['/data', 'Data'],

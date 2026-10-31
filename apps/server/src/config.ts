@@ -13,10 +13,6 @@ export interface Config {
     trustProxy: boolean;
     igdbClientId?: string;
     igdbClientSecret?: string;
-    /** IsThereAnyDeal API key; wishlist prices are off without it */
-    itadApiKey?: string;
-    /** Two-letter country whose shops and currency ITAD prices use */
-    itadCountry: string;
     /** Cloudflare API token (Analytics: Read) and the site's zone id; the admin Traffic page is off without both */
     cloudflareApiToken?: string;
     cloudflareZoneId?: string;
@@ -66,8 +62,6 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
         trustProxy: (env.TRUST_PROXY ?? 'false').toLowerCase() === 'true',
         igdbClientId: env.IGDB_CLIENT_ID || undefined,
         igdbClientSecret: env.IGDB_CLIENT_SECRET || undefined,
-        itadApiKey: env.ITAD_API_KEY || undefined,
-        itadCountry: (env.ITAD_COUNTRY || 'US').toUpperCase(),
         cloudflareApiToken: env.CLOUDFLARE_API_TOKEN || undefined,
         cloudflareZoneId: env.CLOUDFLARE_ZONE_ID || undefined,
         cloudflareAnalyticsUrl: env.CLOUDFLARE_ANALYTICS_URL || undefined,
