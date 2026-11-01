@@ -25,6 +25,7 @@ import {
     updateSearchIndexing,
     updateSocialLinks
 } from '../services/users.js';
+import { imageFilesOf, removeUnreferencedFiles } from '../services/screenshots.js';
 
 export function accountRoutes({
     db,
@@ -113,6 +114,7 @@ export function accountRoutes({
             c.header('Retry-After', String(wait));
             return c.json({ error: 'Too many attempts. Try again later.' }, 429);
         }
+        const files = imageFilesOf(db, { userId });
         if (!(await deleteAccount(db, userId, input.password))) {
             limiters.loginByAccount.fail(key);
             throw new HttpError(400, 'Invalid input', {
@@ -120,6 +122,7 @@ export function accountRoutes({
             });
         }
         limiters.loginByAccount.reset(key);
+        removeUnreferencedFiles(db, config, files);
         clearSessionCookie(c, config);
         return c.json({ ok: true });
     });

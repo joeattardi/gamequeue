@@ -8,6 +8,8 @@ import {
 import type { AppDeps } from '../app.js';
 import { requireAuth, type AuthVars } from '../auth/middleware.js';
 import { parseId, validate } from '../http.js';
+import { addJournalRoutes } from './journal.js';
+import { imageFilesOf, removeUnreferencedFiles } from '../services/screenshots.js';
 import {
     closePlaythrough,
     deletePlaythrough,
@@ -54,9 +56,11 @@ export function entryActionRoutes({ db, config }: AppDeps) {
 }
 
 /** Mounted at /api/playthroughs (edit/delete one record) */
-export function playthroughRoutes({ db, config }: AppDeps) {
+export function playthroughRoutes(deps: AppDeps) {
+    const { db, config } = deps;
     const r = new Hono<{ Variables: AuthVars }>();
     r.use('*', requireAuth(db, config));
+    addJournalRoutes(r, deps);
 
     r.patch('/:id', async (c) =>
         c.json({
@@ -68,8 +72,12 @@ export function playthroughRoutes({ db, config }: AppDeps) {
             )
         })
     );
-    r.delete('/:id', (c) =>
-        c.json({ entry: deletePlaythrough(db, c.get('user').id, parseId(c.req.param('id'))) })
-    );
+    r.delete('/:id', (c) => {
+        const id = parseId(c.req.param('id'));
+        const files = imageFilesOf(db, { playthroughId: id });
+        const entry = deletePlaythrough(db, c.get('user').id, id);
+        removeUnreferencedFiles(db, config, files);
+        return c.json({ entry });
+    });
     return r;
 }

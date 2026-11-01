@@ -173,6 +173,24 @@ export function HistorySkeletons({ count = 2 }: { count?: number }) {
     );
 }
 
+/** Placeholder posts while a journal loads (the owner's editor and the public page). */
+export function JournalSkeletons({ count = 2 }: { count?: number }) {
+    return (
+        <ul className="journal__posts" role="status" aria-label="Loading journal">
+            {Array.from({ length: count }, (_, i) => (
+                <li key={i} className="journal__post" aria-hidden="true">
+                    <span className="skeleton skeleton--badge" />
+                    <span
+                        className="skeleton skeleton--line"
+                        style={{ width: `${90 - i * 20}%` }}
+                    />
+                    <span className="skeleton skeleton--line" style={{ width: '60%' }} />
+                </li>
+            ))}
+        </ul>
+    );
+}
+
 /** The smart list editor while an existing list loads: name, a couple of rules and the preview. */
 export function EditorSkeleton() {
     return (

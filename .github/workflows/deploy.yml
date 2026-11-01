@@ -29,8 +29,23 @@ jobs:
             - run: npm run typecheck
             - run: npm test
 
+    # The same arm64 image the Pi runs, built (not published) on every push and PR, so a native
+    # dependency such as sharp that does not build for arm64 fails here and not at deploy time
+    image:
+        runs-on: ubuntu-24.04-arm
+        steps:
+            - uses: actions/checkout@v4
+            - uses: docker/setup-buildx-action@v3
+            - uses: docker/build-push-action@v6
+              with:
+                  context: .
+                  platforms: linux/arm64
+                  push: false
+                  cache-from: type=gha
+                  cache-to: type=gha,mode=max
+
     publish:
-        needs: check
+        needs: [check, image]
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         runs-on: ubuntu-24.04-arm
         permissions:

@@ -70,12 +70,31 @@ NAME="\"$(basename "$FILE.gz")\""
 SIZE=$(wc -c <"$FILE.gz" | tr -d ' ')
 find "$OUT" -name 'gamequeue-*.db.gz' -mtime +14 -delete
 
+# Journal screenshots: files named by their content hash never change, so a copy that skips files
+# already there is a complete incremental backup. Nothing is ever deleted from the copy.
+SHOTS="$DIR/data/screenshots"
+if [ -d "$SHOTS" ]; then
+    FAILED_CMD="copy of data/screenshots"
+    mkdir -p "$OUT/screenshots"
+    # (`cp -n` reports an error for every file it skips on newer systems, hence the loop)
+    for f in "$SHOTS"/*.webp; do
+        [ -e "$f" ] || continue
+        [ -e "$OUT/screenshots/$(basename "$f")" ] || cp "$f" "$OUT/screenshots/"
+    done
+fi
+
 if command -v rclone >/dev/null && rclone listremotes | grep -q '^offsite:'; then
     if rclone copy "$FILE.gz" offsite:gamequeue-backups/; then
         OFFSITE="uploaded"
     else
         OFFSITE="failed"
         FAILED_CMD="upload to the offsite remote"
+        exit 1
+    fi
+    # `copy`, not `sync`: a file deleted by mistake stays in the backup
+    if [ -d "$SHOTS" ] && ! rclone copy "$SHOTS" offsite:gamequeue-backups/screenshots/; then
+        OFFSITE="failed"
+        FAILED_CMD="upload of the screenshots to the offsite remote"
         exit 1
     fi
 fi

@@ -1,8 +1,12 @@
+import { dirname, join } from 'node:path';
+
 export interface Config {
     port: number;
     databasePath: string;
     /** The IGDB mirror file, rebuilt from IGDB's data dumps by `npm run igdb:mirror` (see IGDB_MIRROR.md) */
     igdbMirrorPath: string;
+    /** Folder for journal screenshots (re-encoded WebP files named by content hash) */
+    screenshotsPath: string;
     signupsEnabled: boolean;
     allowedOrigins: string[];
     /** Public address of the site, no trailing slash; share cards and link previews need absolute URLs */
@@ -48,6 +52,9 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
         port: Number(env.PORT ?? 3000),
         databasePath: env.DATABASE_PATH ?? './data/gamequeue.db',
         igdbMirrorPath: env.IGDB_MIRROR_PATH ?? './data/igdb.db',
+        screenshotsPath:
+            env.SCREENSHOTS_PATH ??
+            join(dirname(env.DATABASE_PATH ?? './data/gamequeue.db'), 'screenshots'),
         // Default OFF if unset would lock the owner out of first signup; default on, documented in .env.example
         signupsEnabled: (env.SIGNUPS_ENABLED ?? 'true').toLowerCase() === 'true',
         allowedOrigins,

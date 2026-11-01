@@ -2,6 +2,7 @@ import { HistorySkeletons } from './PageSkeletons';
 import {
     statusLabel,
     availableActions,
+    MAX_FINAL_THOUGHTS,
     RATING_MAX,
     type EntryDto,
     type PlaythroughDto
@@ -17,6 +18,7 @@ import {
 import { ApiRequestError } from '../api/client';
 import { useConfirm } from './Confirm';
 import { StarRating } from './StarRating';
+import { useModalDialog } from './useModalDialog';
 import {
     daysBetween,
     formatDate,
@@ -26,7 +28,9 @@ import {
     platformLabel,
     todayLocal
 } from '../lib';
+import { Journal } from './Journal';
 import { MetaLine } from './MetaLine';
+import { NotebookPen } from 'lucide-react';
 import { celebrate, pop } from './motion';
 import { PlatformTags } from './PlatformIcon';
 
@@ -207,9 +211,10 @@ export function StatusPanel({
             </div>
 
             {mode && (
-                <CloseForm
+                <CloseFlow
                     key={mode}
                     mode={mode}
+                    playthrough={entry.openPlaythrough}
                     pending={act.isPending}
                     onSubmit={(body) =>
                         run({ action: mode, body }, () => {
@@ -288,7 +293,137 @@ function StartForm({
     );
 }
 
-export function CloseForm({
+type CloseBody = {
+    date: string;
+    rating: number | null;
+    playtimeMinutes: number | null;
+    finalThoughts?: string;
+};
+
+/** Finishing opens the finish dialog (time, rating, final thoughts); abandoning stays a small inline form. */
+export function CloseFlow({
+    mode,
+    playthrough,
+    pending,
+    onSubmit,
+    onCancel
+}: {
+    mode: 'finish' | 'abandon';
+    playthrough: PlaythroughDto | null;
+    pending: boolean;
+    onSubmit: (body: CloseBody) => void;
+    onCancel: () => void;
+}) {
+    return mode === 'finish' ? (
+        <FinishDialog
+            loggedMinutes={playthrough?.loggedMinutes ?? 0}
+            pending={pending}
+            onSubmit={onSubmit}
+            onCancel={onCancel}
+        />
+    ) : (
+        <CloseForm mode={mode} pending={pending} onSubmit={onSubmit} onCancel={onCancel} />
+    );
+}
+
+/**
+ * One dialog to finish a game: when, the total time (pre-filled from the hours logged in the
+ * journal, and editable), a rating and final thoughts, which show on the journal.
+ */
+function FinishDialog({
+    loggedMinutes,
+    pending,
+    onSubmit,
+    onCancel
+}: {
+    loggedMinutes: number;
+    pending: boolean;
+    onSubmit: (body: CloseBody) => void;
+    onCancel: () => void;
+}) {
+    const ref = useModalDialog(true);
+    const [date, setDate] = useState(todayLocal());
+    const [hours, setHours] = useState(loggedMinutes > 0 ? minutesToHours(loggedMinutes) : '');
+    const [rating, setRating] = useState<number | null>(null);
+    const [thoughts, setThoughts] = useState('');
+    function submit(e: FormEvent) {
+        e.preventDefault();
+        onSubmit({
+            date,
+            rating,
+            playtimeMinutes: hoursToMinutes(hours),
+            finalThoughts: thoughts
+        });
+    }
+    return (
+        <dialog
+            ref={ref}
+            className="dialog dialog--fixed"
+            aria-labelledby="finish-h"
+            onClose={onCancel}
+            onClick={(e) => e.target === ref.current && onCancel()}
+        >
+            <form className="dialog__body stack" onSubmit={submit}>
+                <h2 id="finish-h">Finished!</h2>
+                <label className="field">
+                    <span>Finished on</span>
+                    <input
+                        type="date"
+                        value={date}
+                        max={todayLocal()}
+                        onChange={(e) => setDate(e.target.value)}
+                        required
+                    />
+                </label>
+                <label className="field">
+                    <span>Total play time (hours)</span>
+                    <input
+                        type="number"
+                        inputMode="decimal"
+                        min="0.1"
+                        step="any"
+                        value={hours}
+                        onChange={(e) => setHours(e.target.value)}
+                        placeholder="optional"
+                        data-autofocus
+                        autoFocus
+                    />
+                    {loggedMinutes > 0 && (
+                        <small className="muted">
+                            {formatMinutes(loggedMinutes)} logged in your journal. Change it if the
+                            total is different.
+                        </small>
+                    )}
+                </label>
+                <StarRating
+                    value={rating}
+                    onChange={setRating}
+                    label="Rating for this playthrough"
+                />
+                <label className="field">
+                    <span>Final thoughts (optional)</span>
+                    <textarea
+                        rows={4}
+                        maxLength={MAX_FINAL_THOUGHTS}
+                        value={thoughts}
+                        onChange={(e) => setThoughts(e.target.value)}
+                        placeholder="How was it? These show at the end of your journal."
+                    />
+                </label>
+                <div className="row">
+                    <button className="btn btn--primary" type="submit" disabled={pending}>
+                        Mark finished
+                    </button>
+                    <button className="btn btn--ghost" type="button" onClick={onCancel}>
+                        Cancel
+                    </button>
+                </div>
+            </form>
+        </dialog>
+    );
+}
+
+function CloseForm({
     mode,
     pending,
     onSubmit,
@@ -296,11 +431,7 @@ export function CloseForm({
 }: {
     mode: 'finish' | 'abandon';
     pending: boolean;
-    onSubmit: (body: {
-        date: string;
-        rating: number | null;
-        playtimeMinutes: number | null;
-    }) => void;
+    onSubmit: (body: CloseBody) => void;
     onCancel: () => void;
 }) {
     const [date, setDate] = useState(todayLocal());
@@ -334,6 +465,16 @@ export function CloseForm({
     );
 }
 
+/** The journal of the playthrough in progress, right under the status. */
+export function JournalPanel({ playthrough }: { playthrough: PlaythroughDto }) {
+    return (
+        <section aria-labelledby="journal-h" className="panel stack">
+            <h2 id="journal-h">Journal</h2>
+            <Journal p={playthrough} />
+        </section>
+    );
+}
+
 /** Every playthrough of this game, with edit/delete and a way to log past ones. */
 export function HistoryPanel({ entry }: { entry: EntryDto }) {
     const history = usePlaythroughs(entry.id);
@@ -361,6 +502,7 @@ export function HistoryPanel({ entry }: { entry: EntryDto }) {
 
 function HistoryRow({ p, entry }: { p: PlaythroughDto; entry: EntryDto }) {
     const [editing, setEditing] = useState(false);
+    const [journal, setJournal] = useState(false);
     const del = useDeletePlaythrough();
     const confirm = useConfirm();
     const days = daysBetween(p.startedOn, p.endedOn);
@@ -392,6 +534,15 @@ function HistoryRow({ p, entry }: { p: PlaythroughDto; entry: EntryDto }) {
                 </span>
             </div>
             <div className="row">
+                {p.outcome !== null && (
+                    <button
+                        className="btn btn--ghost"
+                        onClick={() => setJournal((v) => !v)}
+                        aria-expanded={journal}
+                    >
+                        <NotebookPen aria-hidden="true" /> Journal
+                    </button>
+                )}
                 <button className="btn btn--ghost" onClick={() => setEditing(true)}>
                     Edit
                 </button>
@@ -411,6 +562,11 @@ function HistoryRow({ p, entry }: { p: PlaythroughDto; entry: EntryDto }) {
                     Delete
                 </button>
             </div>
+            {journal && (
+                <div className="history__journal">
+                    <Journal p={p} />
+                </div>
+            )}
         </li>
     );
 }

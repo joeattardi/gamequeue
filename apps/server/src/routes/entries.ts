@@ -24,6 +24,7 @@ import {
     patchNote
 } from '../services/entries.js';
 import { ensureScreenshots } from '../services/games.js';
+import { imageFilesOf, removeUnreferencedFiles } from '../services/screenshots.js';
 
 const FACET_KEYS = ['status', 'platform', 'genre', 'series', 'tag'];
 
@@ -114,8 +115,10 @@ export function entryRoutes({ db, config, igdb }: AppDeps) {
     );
 
     r.delete('/:id', (c) => {
-        if (!deleteEntry(db, c.get('user').id, parseId(c.req.param('id'))))
-            throw new HttpError(404, 'Entry not found');
+        const id = parseId(c.req.param('id'));
+        const files = imageFilesOf(db, { entryId: id });
+        if (!deleteEntry(db, c.get('user').id, id)) throw new HttpError(404, 'Entry not found');
+        removeUnreferencedFiles(db, config, files);
         return c.json({ ok: true });
     });
 

@@ -3,7 +3,8 @@ import type { platforms, playthroughs } from '../db/schema.js';
 
 export function toDto(
     p: typeof playthroughs.$inferSelect,
-    platform: typeof platforms.$inferSelect | null
+    platform: typeof platforms.$inferSelect | null,
+    loggedMinutes = 0
 ): PlaythroughDto {
     return {
         id: p.id,
@@ -15,6 +16,10 @@ export function toDto(
         endedOn: p.endedOn,
         outcome: p.outcome,
         rating: p.rating,
-        playtimeMinutes: p.playtimeMinutes
+        playtimeMinutes: p.playtimeMinutes,
+        finalThoughts: p.finalThoughts,
+        visibility: p.visibility,
+        shareSlug: p.shareSlug,
+        loggedMinutes
     };
 }

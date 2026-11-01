@@ -7,7 +7,7 @@ import { PlatformTags } from './PlatformIcon';
 import { Cover } from './Cover';
 import { celebrate } from './motion';
 import { useEntryLink } from '../pageTransitions';
-import { CloseForm } from './PlaythroughPanels';
+import { CloseFlow } from './PlaythroughPanels';
 import { Ban, Check, Pause, Play } from 'lucide-react';
 
 /**
@@ -97,9 +97,10 @@ export function PlayingCard({ entry, compact = false }: { entry: EntryDto; compa
                 </div>
             </div>
             {closing && (
-                <CloseForm
+                <CloseFlow
                     key={closing}
                     mode={closing}
+                    playthrough={entry.openPlaythrough}
                     pending={act.isPending}
                     onSubmit={(body) =>
                         act.mutate(

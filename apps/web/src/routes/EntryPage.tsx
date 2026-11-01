@@ -13,7 +13,7 @@ import { NotesPanel } from '../components/NotesPanel';
 import { ListsPanel } from '../components/ListsPanel';
 import { SeriesLinks } from '../components/SeriesLinks';
 import { ScoreGauge } from '../components/ScoreGauge';
-import { HistoryPanel, StatusPanel } from '../components/PlaythroughPanels';
+import { HistoryPanel, JournalPanel, StatusPanel } from '../components/PlaythroughPanels';
 import { EntrySkeleton, SelectSkeleton } from '../components/PageSkeletons';
 import { PlatformTag } from '../components/PlatformIcon';
 import { yearOf, usePageTitle } from '../lib';
@@ -96,6 +96,7 @@ function EntryDetail({ entry }: { entry: EntryDto }) {
                     {game.summary && <p className="summary">{game.summary}</p>}
 
                     <StatusPanel entry={entry} finishRequest={finishRequest} />
+                    {entry.openPlaythrough && <JournalPanel playthrough={entry.openPlaythrough} />}
                     <HistoryPanel entry={entry} />
 
                     <TimeToBeat ttb={game.ttb} />

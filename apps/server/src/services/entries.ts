@@ -55,6 +55,7 @@ import type { IgdbClient } from '../igdb/types.js';
 import { ensureGame, existingPlatformIds, loadGames } from './games.js';
 import { toDto } from './playthrough-dto.js';
 import { forgetGame, recordActivity } from './activity.js';
+import { loggedMinutesFor } from './journal.js';
 import { dequeue, dropFromWishlist } from './lists.js';
 
 const dedupeTags = (names: string[]) => {
@@ -487,14 +488,19 @@ export function hydrate(db: Db, userId: number, ids: number[]): EntryDto[] {
             .all()) {
             (owned.get(r.entryId) ?? owned.set(r.entryId, []).get(r.entryId)!).push(r.p);
         }
-        for (const r of db
+        const plays = db
             .select({ p: playthroughs, platform: platforms })
             .from(playthroughs)
             .leftJoin(platforms, eq(platforms.id, playthroughs.platformId))
             .where(inArray(playthroughs.entryId, chunk))
-            .all()) {
+            .all();
+        const logged = loggedMinutesFor(
+            db,
+            plays.map((r) => r.p.id)
+        );
+        for (const r of plays) {
             (history.get(r.p.entryId) ?? history.set(r.p.entryId, []).get(r.p.entryId)!).push(
-                toDto(r.p, r.platform)
+                toDto(r.p, r.platform, logged.get(r.p.id))
             );
         }
         // Lists hold games, not entries: an entry is on a list when its game is, for the same user

@@ -1,7 +1,6 @@
 import { screenshotUrl } from '@gamequeue/shared';
-import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { useState } from 'react';
-import { useModalDialog } from './useModalDialog';
+import { Lightbox } from './ImageLightbox';
 
 const SHOWN = 3;
 
@@ -25,79 +24,13 @@ export function Screenshots({ imageIds, name }: { imageIds: string[]; name: stri
                 ))}
             </ul>
             <Lightbox
-                imageIds={imageIds}
-                name={name}
+                urls={imageIds.map((id) => screenshotUrl(id, '1080p'))}
+                label={`${name} screenshots`}
+                alt={(i) => `${name} screenshot ${i + 1} of ${imageIds.length}`}
                 index={open}
                 onIndex={setOpen}
                 onClose={() => setOpen(null)}
             />
         </>
-    );
-}
-
-function Lightbox({
-    imageIds,
-    name,
-    index,
-    onIndex,
-    onClose
-}: {
-    imageIds: string[];
-    name: string;
-    index: number | null;
-    onIndex: (i: number) => void;
-    onClose: () => void;
-}) {
-    const ref = useModalDialog(index !== null);
-    const count = imageIds.length;
-    const step = (by: number) => index !== null && onIndex((index + by + count) % count);
-    return (
-        <dialog
-            ref={ref}
-            className="dialog dialog--shots"
-            aria-label={`${name} screenshots`}
-            onClose={onClose}
-            onClick={(e) => e.target === ref.current && onClose()}
-            onKeyDown={(e) => {
-                if (e.key === 'ArrowLeft') step(-1);
-                if (e.key === 'ArrowRight') step(1);
-            }}
-        >
-            {index !== null && (
-                <div className="shots__view">
-                    <img
-                        src={screenshotUrl(imageIds[index]!, '1080p')}
-                        alt={`${name} screenshot ${index + 1} of ${count}`}
-                    />
-                    <button
-                        className="btn btn--ghost shots__close"
-                        onClick={onClose}
-                        aria-label="Close"
-                        data-autofocus
-                        autoFocus
-                    >
-                        <X />
-                    </button>
-                    {count > 1 && (
-                        <>
-                            <button
-                                className="btn btn--ghost shots__nav shots__nav--prev"
-                                onClick={() => step(-1)}
-                                aria-label="Previous screenshot"
-                            >
-                                <ChevronLeft />
-                            </button>
-                            <button
-                                className="btn btn--ghost shots__nav shots__nav--next"
-                                onClick={() => step(1)}
-                                aria-label="Next screenshot"
-                            >
-                                <ChevronRight />
-                            </button>
-                        </>
-                    )}
-                </div>
-            )}
-        </dialog>
     );
 }

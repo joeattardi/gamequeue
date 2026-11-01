@@ -18,6 +18,7 @@ import { createNotifier } from './services/notify.js';
 import { backfillSeries } from './services/games.js';
 import { MIRROR_SYNC_CHECK_MS, syncFromMirrorIfNew } from './services/mirror-sync.js';
 import { reportMirrorRunFailure } from './services/mirror-status.js';
+import { cleanupScreenshots } from './services/screenshots.js';
 import { mountWeb } from './web.js';
 
 const config = loadConfig();
@@ -101,6 +102,7 @@ purgeExpiredResets(db);
 pruneErrors(db);
 pruneIgdbHistory(db);
 pruneRuns(db);
+cleanupScreenshots(db, config);
 // Games cached before series were stored learn theirs in the background
 void backfillSeries(db, igdb);
 // Cached games take the mirror's metadata whenever a newly built mirror appears
@@ -118,6 +120,8 @@ setInterval(() => {
     pruneIgdbHistory(db);
     pruneRuns(db);
 }, 6 * 3600_000).unref();
+// Orphaned screenshot files and rows, once a day
+setInterval(() => cleanupScreenshots(db, config), 24 * 3600_000).unref();
 
 serve({ fetch: app.fetch, port: config.port }, (info) => {
     console.log(`GameQueue listening on http://localhost:${info.port}`);

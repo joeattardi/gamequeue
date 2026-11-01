@@ -28,3 +28,4 @@ export * from './admin-traffic.js';
 export * from './showcase.js';
 export * from './activity.js';
 export * from './timeline.js';
+export * from './journal.js';

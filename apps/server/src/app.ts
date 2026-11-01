@@ -10,6 +10,8 @@ import { requestLimits, type RequestLimitOverrides } from './auth/request-limits
 import { adminRoutes } from './routes/admin.js';
 import { accountRoutes } from './routes/account.js';
 import { avatarRoutes } from './routes/avatar.js';
+import { IMAGE_UPLOAD_PATH, journalRoutes, postRoutes } from './routes/journal.js';
+import { IMAGE_UPLOAD_TYPES, MAX_UPLOAD_BYTES } from '@gamequeue/shared';
 import { authRoutes } from './routes/auth.js';
 import { dataRoutes } from './routes/data.js';
 import { profileRoutes } from './routes/profile.js';
@@ -101,7 +103,18 @@ export function createApp(deps: AppDeps) {
         maxSize: MAX_JSON_BODY_BYTES,
         onError: (c) => c.json({ error: 'Request body too large' }, 413)
     });
-    app.use('/api/*', (c, next) => (OWN_BODY_LIMIT.has(c.req.path) ? next() : capped(c, next)));
+    // A screenshot upload is the raw file, up to 8 MB (it is re-encoded and shrunk afterwards)
+    const upload = bodyLimit({
+        maxSize: MAX_UPLOAD_BYTES,
+        onError: (c) => c.json({ error: 'That image is larger than 8 MB' }, 413)
+    });
+    app.use('/api/*', (c, next) =>
+        IMAGE_UPLOAD_PATH.test(c.req.path)
+            ? upload(c, next)
+            : OWN_BODY_LIMIT.has(c.req.path)
+              ? next()
+              : capped(c, next)
+    );
 
     app.use('/api/*', csrf({ origin: (origin, c) => sameOrAllowed(origin, c.req.url) }));
 
@@ -112,9 +125,14 @@ export function createApp(deps: AppDeps) {
             const origin = c.req.header('origin');
             if (origin && !sameOrAllowed(origin, c.req.url))
                 return c.json({ error: 'Forbidden origin' }, 403);
-            const type = c.req.header('content-type');
-            // No content-type means no body; anything else must be JSON.
-            if (type && !type.toLowerCase().startsWith('application/json')) {
+            const type = c.req.header('content-type')?.toLowerCase();
+            // No content-type means no body; anything else must be JSON. The one exception is the
+            // screenshot upload, which sends an image: not a type a form can submit, so it still
+            // needs a CORS preflight, and the Origin check above applies to it as well.
+            const image =
+                IMAGE_UPLOAD_PATH.test(c.req.path) &&
+                IMAGE_UPLOAD_TYPES.some((t) => type?.startsWith(t));
+            if (type && !image && !type.startsWith('application/json')) {
                 return c.json({ error: 'Content-Type must be application/json' }, 415);
             }
         }
@@ -144,6 +162,8 @@ export function createApp(deps: AppDeps) {
     app.route('/api/account', accountRoutes({ ...deps, limiters, mailer }));
     app.route('/api/admin', adminRoutes({ ...deps, mailer }));
     app.route('/api/avatar', avatarRoutes(deps));
+    app.route('/api/posts', postRoutes(deps));
+    app.route('/api/journals', journalRoutes(deps));
     // IGDB's similar-game lists are shared by the game pages and Discover
     const similar = similarCache();
     app.route('/api/igdb', igdbRoutes(deps, similar));

@@ -15,6 +15,7 @@ For the exhaustive reference (every route, column and edge case), see `ARCHITECT
 7. [Talking to IGDB](#7-talking-to-igdb)
 8. [The collection: games and their status](#8-the-collection-games-and-their-status)
 9. [Playing: what you're playing right now](#9-playing-what-youre-playing-right-now)
+   9b. [Journals](#9b-journals)
 10. [Organizing games: lists, queue, smart lists, wishlist](#10-organizing-games-lists-queue-smart-lists-wishlist)
 11. [Random pick](#11-random-pick)
 12. [Stats and Save File](#12-stats-and-save-file)
@@ -414,6 +415,22 @@ Code: `services/playthroughs.ts`, `components/PlayingCard.tsx`, `components/Star
 
 ---
 
+## 9b. Journals
+
+Every playthrough can keep a journal: short notes, hours played and screenshots, shown oldest first between a "Started" and a "Finished" marker taken from the playthrough's own dates. Only you can write to it. You choose who can read it: private (the default), unlisted (anyone with the link, `/p/<random token>`) or public (the same, and listed on your profile). Setting it back to private deletes the token, so the link and its picture URLs stop working immediately.
+
+```mermaid
+flowchart LR
+    U["Upload (raw file)"] --> C["Check type and size,<br/>fix rotation, shrink to 1920 px,<br/>strip metadata, re-encode WebP"]
+    C --> H["Name by content hash,<br/>write to data/screenshots"]
+    H --> R["post_images row"]
+    R --> J["Journal page /p/slug"]
+```
+
+Pictures live on disk, not in the database, and total storage has an admin-set cap (default 1 GiB). Deleting a post, playthrough, game or account removes the files too, and a daily job sweeps up anything left behind. Finishing a game opens one dialog for the date, total time (pre-filled from the hours you logged), rating and final thoughts.
+
+Code: `services/journal.ts`, `services/screenshots.ts`, `routes/journal.ts`, `components/Journal.tsx`, `routes/JournalPage.tsx`.
+
 ## 10. Organizing games: lists, queue, smart lists, wishlist
 
 There are four ways to group games. They look similar on screen but work differently underneath.
@@ -670,7 +687,8 @@ A few things happen on timers, not in response to a click. All run inside the sa
 | Release date refresh                       | When you open your wishlist, at most daily per game | Unreleased games' dates change                            |
 | Mirror sync                                | Startup, then every 10 minutes (only if a new dump) | Refresh every cached game from the local IGDB mirror      |
 | Mirror failure check                       | Same 10-minute tick                                 | Record a failed daily mirror run in the error log         |
-| Screenshots                                | When you open a game that never had them fetched    | Older cache rows predate screenshots                      |
+| Screenshots (IGDB)                         | When you open a game that never had them fetched    | Older cache rows predate screenshots                      |
+| Journal screenshot clean-up                | Startup, then daily                                 | Remove orphan files, dangling rows and empty posts        |
 
 The daily mirror rebuild is the one job that does _not_ run in this process: cron on the host runs it in its own container (section 7), so an import (about a minute on a laptop, under three on a Pi) never slows the web server.
 

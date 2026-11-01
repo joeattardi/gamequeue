@@ -15,6 +15,8 @@ COPY . .
 RUN npm run build
 # Production-only dependencies for the server (shared is inlined by tsup)
 RUN rm -rf node_modules && npm ci --omit=dev --workspace @gamequeue/server --include-workspace-root=false
+# Fail the build if the image library (sharp, prebuilt libvips for this CPU) can't load or encode WebP
+RUN cd apps/server && node -e "require('sharp')({create:{width:2,height:2,channels:3,background:'#fff'}}).webp().toBuffer().then(b=>{if(!b.length)process.exit(1)})"
 
 FROM base AS runtime
 # Shown on the admin Server page and recorded with each start; CI passes the commit SHA

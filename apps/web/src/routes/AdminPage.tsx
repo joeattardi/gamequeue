@@ -16,6 +16,7 @@ import {
     DatabaseBackup,
     DatabaseZap,
     Gamepad2,
+    Images,
     Server,
     ShieldCheck,
     SlidersHorizontal,
@@ -35,6 +36,8 @@ import {
     useUpdateAdminSettings
 } from '../api/admin';
 import { AdminTile } from '../components/AdminTile';
+import { StorageMeter } from '../components/StorageMeter';
+import { useScreenshotStorage } from '../api/journal';
 import { BackupSkeleton, CheckSkeletons } from '../components/PageSkeletons';
 import { diskIsLow, formatBytes, formatDuration, timeAgo, usePageTitle } from '../lib';
 
@@ -169,6 +172,35 @@ function DatabaseTile() {
             to="/admin/database"
             linkLabel="Details and cleanup"
         />
+    );
+}
+
+function ScreenshotsTile() {
+    const q = useScreenshotStorage();
+    const d = q.data;
+    return (
+        <AdminTile
+            id="shots-heading"
+            icon={<Images aria-hidden="true" />}
+            title="Screenshots"
+            state={state(q)}
+            stats={
+                d
+                    ? [
+                          { label: 'Used', value: formatBytes(d.usedBytes) },
+                          { label: 'Limit', value: formatBytes(d.capBytes) },
+                          {
+                              label: 'Disk free',
+                              value: d.freeDiskBytes === null ? '—' : formatBytes(d.freeDiskBytes)
+                          }
+                      ]
+                    : []
+            }
+            to="/admin/screenshots"
+            linkLabel="Storage and limit"
+        >
+            {d && <StorageMeter used={d.usedBytes} cap={d.capBytes} />}
+        </AdminTile>
     );
 }
 
@@ -440,6 +472,7 @@ export function AdminPage() {
             <div className="admin-tiles">
                 <UsersTile />
                 <DatabaseTile />
+                <ScreenshotsTile />
                 <IgdbTile />
                 <TrafficTile />
                 <MirrorTile />

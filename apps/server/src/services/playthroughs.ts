@@ -19,6 +19,7 @@ import { existingPlatformIds } from './games.js';
 import { getEntry } from './entries.js';
 import { recordActivity } from './activity.js';
 import { dequeue } from './lists.js';
+import { loggedMinutesFor } from './journal.js';
 import { toDto } from './playthrough-dto.js';
 
 const DAY_MS = 24 * 3600 * 1000;
@@ -185,7 +186,8 @@ export function closePlaythrough(
                 outcome: to as 'finished' | 'abandoned',
                 endedOn,
                 rating: input.rating ?? null,
-                playtimeMinutes: input.playtimeMinutes ?? null
+                playtimeMinutes: input.playtimeMinutes ?? null,
+                finalThoughts: input.finalThoughts ?? ''
             })
             .where(eq(playthroughs.id, open.id))
             .run();
@@ -279,7 +281,8 @@ export function patchPlaythrough(
                 outcome: next.outcome,
                 platformId: next.platformId,
                 rating: next.rating,
-                playtimeMinutes: next.playtimeMinutes
+                playtimeMinutes: next.playtimeMinutes,
+                finalThoughts: next.finalThoughts
             })
             .where(eq(playthroughs.id, id))
             .run();
@@ -301,7 +304,7 @@ export function deletePlaythrough(db: Db, userId: number, id: number): EntryDto 
 /** Newest first: open playthrough on top, then by end date (unknown dates last). */
 export function listPlaythroughs(db: Db, userId: number, entryId: number): PlaythroughDto[] {
     requireEntry(db, userId, entryId);
-    return db
+    const rows = db
         .select({ p: playthroughs, platform: platforms })
         .from(playthroughs)
         .leftJoin(platforms, eq(platforms.id, playthroughs.platformId))
@@ -312,6 +315,10 @@ export function listPlaythroughs(db: Db, userId: number, entryId: number): Playt
             desc(playthroughs.startedOn),
             desc(playthroughs.id)
         )
-        .all()
-        .map(({ p, platform }) => toDto(p, platform));
+        .all();
+    const logged = loggedMinutesFor(
+        db,
+        rows.map((r) => r.p.id)
+    );
+    return rows.map(({ p, platform }) => toDto(p, platform, logged.get(p.id)));
 }

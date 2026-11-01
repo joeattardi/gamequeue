@@ -24,6 +24,7 @@ import {
 } from '../services/profile.js';
 import { getAvatarByUsername } from '../services/avatars.js';
 import { parseRecapYear } from '../services/recap.js';
+import { profileJournals } from '../services/journal.js';
 
 /** Public: deliberately has no requireAuth. */
 export function profileRoutes({ db, config }: AppDeps) {
@@ -47,6 +48,9 @@ export function profileRoutes({ db, config }: AppDeps) {
                 validate(pageQuerySchema, c.req.query())
             )
         })
+    );
+    r.get('/:username/journals', (c) =>
+        c.json({ journals: profileJournals(db, parseUsername(c.req.param('username'))) })
     );
     r.get('/:username/activity', (c) =>
         c.json({

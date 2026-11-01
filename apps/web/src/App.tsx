@@ -6,6 +6,7 @@ import { AdminPage } from './routes/AdminPage';
 import { AdminErrorsPage } from './routes/AdminErrorsPage';
 import { AdminIgdbPage } from './routes/AdminIgdbPage';
 import { AdminMirrorPage } from './routes/AdminMirrorPage';
+import { AdminScreenshotsPage } from './routes/AdminScreenshotsPage';
 import { AdminServerPage } from './routes/AdminServerPage';
 import { AdminDatabasePage } from './routes/AdminDatabasePage';
 import { AdminTrafficPage } from './routes/AdminTrafficPage';
@@ -20,6 +21,7 @@ import { GameDetailPage } from './routes/GameDetailPage';
 import { SeriesPage } from './routes/SeriesPage';
 import { SearchPage } from './routes/SearchPage';
 import { Home } from './routes/Home';
+import { JournalPage } from './routes/JournalPage';
 import { LandingPage } from './routes/LandingPage';
 import { NotFoundPage } from './routes/NotFoundPage';
 import { ListPage, QueuePage } from './routes/ListPage';
@@ -75,6 +77,7 @@ function AppRoutes() {
                 <Route path="/forgot-password" element={<ForgotPasswordPage />} />
                 <Route path="/reset-password" element={<ResetPasswordPage />} />
                 <Route path="/credits" element={<CreditsPage />} />
+                <Route path="/p/:slug" element={<JournalPage />} />
                 <Route path="/u/:username" element={<ProfilePage />} />
                 <Route path="/u/:username/wishlist" element={<ProfileWishlistPage />} />
                 <Route path="/u/:username/lists/:id" element={<ProfileListPage kind="lists" />} />
@@ -110,6 +113,7 @@ function AppRoutes() {
             <Route path="/login" element={<Navigate to="/" replace />} />
             <Route path="/register" element={<Navigate to="/" replace />} />
             <Route path="/credits" element={<CreditsPage />} />
+            <Route path="/p/:slug" element={<JournalPage />} />
             <Route path="/u/:username" element={<ProfilePage />} />
             <Route path="/u/:username/wishlist" element={<ProfileWishlistPage />} />
             <Route path="/u/:username/lists/:id" element={<ProfileListPage kind="lists" />} />
@@ -155,6 +159,7 @@ function AppRoutes() {
                         <Route path="admin/errors" element={<AdminErrorsPage />} />
                         <Route path="admin/igdb" element={<AdminIgdbPage />} />
                         <Route path="admin/mirror" element={<AdminMirrorPage />} />
+                        <Route path="admin/screenshots" element={<AdminScreenshotsPage />} />
                         <Route path="admin/server" element={<AdminServerPage />} />
                         <Route path="admin/traffic" element={<AdminTrafficPage />} />
                         <Route path="admin/users" element={<AdminUsersPage />} />

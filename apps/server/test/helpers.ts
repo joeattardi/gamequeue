@@ -1,3 +1,6 @@
+import { mkdtempSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { createApp } from '../src/app.js';
 import { FailureLimiter } from '../src/auth/rate-limit.js';
 import { loadConfig, type Config } from '../src/config.js';
@@ -13,7 +16,11 @@ export function makeApp(
     mailer?: Mailer
 ) {
     const db = openDb(':memory:');
-    const config = { ...loadConfig({}), ...overrides };
+    // Screenshots go to a throw-away folder, never into ./data
+    const config = {
+        ...loadConfig({ SCREENSHOTS_PATH: mkdtempSync(join(tmpdir(), 'gq-shots-')) }),
+        ...overrides
+    };
     const limiters = {
         loginByAccount: new FailureLimiter(5, 60_000),
         loginByIp: new FailureLimiter(30, 60_000)

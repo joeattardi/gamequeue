@@ -4,6 +4,7 @@ import type { Config } from './config.js';
 import type { Db } from './db/client.js';
 import { users } from './db/schema.js';
 import { pageMeta, type PageMeta } from './og/meta.js';
+import { journalExists } from './services/journal.js';
 
 /** How the SPA shell is served for one path. */
 export interface PageSeo {
@@ -15,6 +16,7 @@ export interface PageSeo {
 }
 
 const PROFILE_AREA = /^\/u\/([^/]+)(?:\/|$)/;
+const JOURNAL_PAGE = /^\/p\/([^/]+)\/?$/;
 
 /**
  * What `robots.txt` says. Only the API is off limits (the share-card images stay open so link previews
@@ -33,6 +35,29 @@ function landingMeta(config: Config): PageMeta {
 }
 
 /**
+ * A shared journal: never indexed, a real 404 unless the link is live, and a text-only preview with
+ * a generic title (a journal's notes, and the free text a user wrote, never go into link previews).
+ */
+function journalSeo(db: Db, config: Config, rawSlug: string, path: string): PageSeo {
+    let slug: string;
+    try {
+        slug = decodeURIComponent(rawSlug);
+    } catch {
+        return { status: 404, noindex: true, meta: null };
+    }
+    if (!journalExists(db, slug)) return { status: 404, noindex: true, meta: null };
+    return {
+        status: 200,
+        noindex: true,
+        meta: {
+            title: 'A playthrough journal | GameQueue',
+            description: 'Notes, screenshots and hours from a game played on GameQueue.',
+            url: `${config.publicUrl}${path.replace(/\/$/, '')}`
+        }
+    };
+}
+
+/**
  * Indexing rules for a path:
  * - the landing page is indexable;
  * - a profile area (`/u/:username/...`) is indexable only when its owner ticked "Allow search engines" on
@@ -43,6 +68,8 @@ function landingMeta(config: Config): PageMeta {
  */
 export function pageSeo(db: Db, config: Config, path: string): PageSeo {
     if (path === '/') return { status: 200, noindex: false, meta: landingMeta(config) };
+    const journal = JOURNAL_PAGE.exec(path);
+    if (journal) return journalSeo(db, config, journal[1]!, path);
     const area = PROFILE_AREA.exec(path);
     if (!area) return { status: 200, noindex: true, meta: null };
 

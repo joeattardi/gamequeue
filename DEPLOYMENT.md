@@ -32,7 +32,7 @@ Files in the repo that make this work:
 | `.dockerignore`                | Keeps `node_modules`, `dist`, databases and `.env` out of the build context                                                         |
 | `.github/workflows/deploy.yml` | On every push/PR: format check, typecheck, tests. On `main`: builds the arm64 image and pushes it to `ghcr.io/joeattardi/gamequeue` |
 | `scripts/update.sh`            | Run by cron on the Pi: pulls the repo and image, and if either changed, backs up, restarts and rolls back on failure                |
-| `scripts/backup.sh`            | Safe snapshot of the live SQLite file, 14-day retention, optional off-machine copy                                                  |
+| `scripts/backup.sh`            | Safe snapshot of the live SQLite file, 14-day retention, copy of `data/screenshots`, optional off-machine copy                      |
 | `scripts/resources.sh`         | Run by cron every 5 minutes: checks disk, memory, Pi temperature and power, and pings healthchecks.io                               |
 | `scripts/mirror.sh`            | Run by cron once a day: rebuilds the local copy of IGDB's data from its data dump (see IGDB mirror), and pings healthchecks.io      |
 
@@ -468,6 +468,16 @@ gunzip -c backups/gamequeue-YYYY-MM-DD-HHMMSS.db.gz > data/gamequeue.db
 sudo chown 1000:1000 data/gamequeue.db
 docker compose start gamequeue
 ```
+
+**Screenshots.** Journal pictures live in `~/gamequeue/data/screenshots/` (set `SCREENSHOTS_PATH` to move it), as WebP files named by their content hash. `backup.sh` copies new files to `~/gamequeue/backups/screenshots/` (never deleting anything there) and, if an `offsite` remote exists, `rclone copy`s the folder to `offsite:gamequeue-backups/screenshots/`. To restore them after restoring the database:
+
+```sh
+mkdir -p data/screenshots
+cp -R backups/screenshots/. data/screenshots/
+sudo chown -R 1000:1000 data/screenshots
+```
+
+Files the database doesn't know about are harmless (the daily clean-up removes them), and a database row whose file is missing is removed by that same job, so restoring a newer database with an older screenshot copy loses only the pictures that were never copied. The size limit and free disk space are on **Admin > Screenshots**.
 
 Try a restore on a scratch machine once, so the first time is not during an emergency.
 

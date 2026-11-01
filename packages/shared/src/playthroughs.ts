@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { ratingSchema, type PlatformDto } from './collection.js';
 import { isValidIsoDate } from './status.js';
+import type { Visibility } from './journal.js';
 
 export interface PlaythroughDto {
     id: number;
@@ -14,12 +15,22 @@ export interface PlaythroughDto {
     rating: number | null;
     /** Total time played, in minutes; null when not recorded */
     playtimeMinutes: number | null;
+    /** Reflections written when finishing; shown on the journal */
+    finalThoughts: string;
+    /** Who can read this playthrough's journal */
+    visibility: Visibility;
+    /** The journal's link token (`/p/:slug`); null while private */
+    shareSlug: string | null;
+    /** Sum of the hours posts in the journal; what the finish dialog pre-fills the total with */
+    loggedMinutes: number;
 }
 
 export const isoDateSchema = z.string().refine(isValidIsoDate, 'Use a valid date (YYYY-MM-DD)');
 const platformIdSchema = z.number().int().positive();
 export const MAX_PLAYTIME_MINUTES = 600_000;
 export const playtimeSchema = z.number().int().min(1).max(MAX_PLAYTIME_MINUTES);
+export const MAX_FINAL_THOUGHTS = 4000;
+export const finalThoughtsSchema = z.string().trim().max(MAX_FINAL_THOUGHTS);
 
 export const startSchema = z.object({
     platformId: platformIdSchema.optional(),
@@ -31,7 +42,8 @@ export const startSchema = z.object({
 export const closeSchema = z.object({
     date: isoDateSchema.optional(),
     rating: ratingSchema.nullable().optional(),
-    playtimeMinutes: playtimeSchema.nullable().optional()
+    playtimeMinutes: playtimeSchema.nullable().optional(),
+    finalThoughts: finalThoughtsSchema.optional()
 });
 
 export const logPlaythroughSchema = z.object({
@@ -50,7 +62,8 @@ export const patchPlaythroughSchema = z
         startedOn: isoDateSchema.nullable(),
         endedOn: isoDateSchema.nullable(),
         rating: ratingSchema.nullable(),
-        playtimeMinutes: playtimeSchema.nullable()
+        playtimeMinutes: playtimeSchema.nullable(),
+        finalThoughts: finalThoughtsSchema
     })
     .partial()
     .refine((v) => Object.keys(v).length > 0, 'Nothing to update');

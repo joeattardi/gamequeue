@@ -367,15 +367,66 @@ export const playthroughs = sqliteTable(
         outcome: text('outcome', { enum: ['finished', 'abandoned'] }),
         rating: integer('rating'), // 1-5 stars
         // Total time played, entered by the user (usually when finishing); null = not recorded
-        playtimeMinutes: integer('playtime_minutes')
+        playtimeMinutes: integer('playtime_minutes'),
+        // The journal: reflections written on finishing, and who may read it. The share slug is a
+        // random 128-bit token, set while the journal is unlisted or public and null while private.
+        finalThoughts: text('final_thoughts').notNull().default(''),
+        visibility: text('visibility', { enum: ['private', 'unlisted', 'public'] })
+            .notNull()
+            .default('private'),
+        shareSlug: text('share_slug')
     },
     (t) => [
         index('playthroughs_entry_idx').on(t.entryId),
+        uniqueIndex('playthroughs_share_slug_idx').on(t.shareSlug),
         index('playthroughs_user_ended_idx').on(t.userId, t.endedOn),
         // At most one open playthrough per entry
         uniqueIndex('playthroughs_one_open_idx')
             .on(t.entryId)
             .where(sql`${t.outcome} IS NULL`)
+    ]
+);
+
+// A playthrough's journal: notes, screenshots and logged hours, oldest first when read.
+export const playthroughPosts = sqliteTable(
+    'playthrough_posts',
+    {
+        id: integer('id').primaryKey({ autoIncrement: true }),
+        playthroughId: integer('playthrough_id')
+            .notNull()
+            .references(() => playthroughs.id, { onDelete: 'cascade' }),
+        userId: integer('user_id')
+            .notNull()
+            .references(() => users.id, { onDelete: 'cascade' }),
+        kind: text('kind', { enum: ['note', 'screenshot', 'hours'] }).notNull(),
+        // Note text, screenshot caption, or a remark on logged hours
+        body: text('body').notNull().default(''),
+        // Hours posts only
+        minutes: integer('minutes'),
+        spoiler: integer('spoiler', { mode: 'boolean' }).notNull().default(false),
+        createdAt: integer('created_at').notNull().default(now)
+    },
+    (t) => [index('playthrough_posts_playthrough_idx').on(t.playthroughId, t.createdAt)]
+);
+
+// Screenshots of a post. The file lives on disk under the screenshots folder, named by its
+// content hash (`fileName`); two posts uploading the same picture share one file.
+export const postImages = sqliteTable(
+    'post_images',
+    {
+        id: integer('id').primaryKey({ autoIncrement: true }),
+        postId: integer('post_id')
+            .notNull()
+            .references(() => playthroughPosts.id, { onDelete: 'cascade' }),
+        fileName: text('file_name').notNull(),
+        width: integer('width').notNull(),
+        height: integer('height').notNull(),
+        bytes: integer('bytes').notNull(),
+        createdAt: integer('created_at').notNull().default(now)
+    },
+    (t) => [
+        index('post_images_post_idx').on(t.postId),
+        index('post_images_file_idx').on(t.fileName)
     ]
 );
 

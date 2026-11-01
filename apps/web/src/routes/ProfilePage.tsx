@@ -32,6 +32,7 @@ import { groupActivity, limitDays } from '../activityGroups';
 import { ActivityCalendar } from '../components/ActivityCalendar';
 import { ActivityDays } from '../components/ActivityFeed';
 import { HighlightRow } from '../components/HighlightRow';
+import { useProfileJournals } from '../api/journal';
 import { ProfileBadge } from '../components/ProfileBadge';
 import { Avatar } from '../components/Avatar';
 import { CountUp } from '../components/CountUp';
@@ -228,6 +229,34 @@ function ProfileLists({ profile }: { profile: ProfileDto }) {
                         covers={l.covers}
                         smart={l.smart}
                     />
+                ))}
+            </ul>
+        </section>
+    );
+}
+
+/** The playthrough journals this person made public; absent when there are none. */
+function ProfileJournals({ username }: { username: string }) {
+    const q = useProfileJournals(username);
+    if (!q.data || q.data.length === 0) return null;
+    return (
+        <section aria-labelledby="p-journals">
+            <h2 id="p-journals">Journals</h2>
+            <ul className="journal-cards">
+                {q.data.map((j) => (
+                    <li key={j.slug}>
+                        <Link className="journal-card" to={`/p/${j.slug}`}>
+                            <Cover imageId={j.game.coverImageId} name={j.game.name} size="720p" />
+                            <span className="journal-card__text">
+                                <strong>{j.game.name}</strong>
+                                <span className="muted">
+                                    {j.outcome ?? 'in progress'}
+                                    {j.posts > 0 &&
+                                        ` · ${j.posts} ${j.posts === 1 ? 'post' : 'posts'}`}
+                                </span>
+                            </span>
+                        </Link>
+                    </li>
                 ))}
             </ul>
         </section>
@@ -434,6 +463,7 @@ export function ProfilePage() {
                                 <ProfileActivity profile={profile.data} />
 
                                 <ProfileLists profile={profile.data} />
+                                <ProfileJournals username={profile.data.username} />
                             </div>
                         </div>
                     </>

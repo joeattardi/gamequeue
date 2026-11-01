@@ -6,7 +6,8 @@ import {
     ERROR_KINDS,
     type ErrorKind,
     type IgdbStatusDto,
-    adminUpdateUserSchema
+    adminUpdateUserSchema,
+    setScreenshotCapSchema
 } from '@gamequeue/shared';
 import { getCookie } from 'hono/cookie';
 import { SESSION_COOKIE } from '../auth/sessions.js';
@@ -31,17 +32,37 @@ import { clearErrors, listErrors } from '../services/error-log.js';
 import { readBackupReport } from '../services/backup-status.js';
 import { getMirrorStatus } from '../services/mirror-status.js';
 import { getTraffic, trafficCache } from '../services/traffic.js';
+import {
+    cleanupScreenshots,
+    screenshotStorage,
+    setScreenshotCap
+} from '../services/screenshots.js';
 import type { AppDeps } from '../app.js';
 import { markVerified, sendVerification } from '../services/email-verification.js';
 import { sendPasswordChangedNotice } from '../services/password-reset.js';
 import { requireAdmin, requireAuth, type AuthVars } from '../auth/middleware.js';
+import { imageFilesOf, removeUnreferencedFiles } from '../services/screenshots.js';
 
 /** Admin-only API. Every route here is behind `requireAuth` + `requireAdmin`. */
+
 export function adminRoutes({ db, config, igdb, cloudflare, mailer }: AppDeps) {
     const r = new Hono<{ Variables: AuthVars }>();
     r.use('*', requireAuth(db, config), requireAdmin);
     // Cheap check that the caller may use the admin area at all
     r.get('/', (c) => c.json({ ok: true }));
+    // Journal screenshots: space used against the cap, free disk, and the cap itself
+    r.get('/screenshots', (c) => c.json(screenshotStorage(db, config)));
+    r.put('/screenshots/cap', async (c) => {
+        setScreenshotCap(
+            db,
+            validate(setScreenshotCapSchema, await c.req.json().catch(() => undefined)).capBytes
+        );
+        return c.json(screenshotStorage(db, config));
+    });
+    r.post('/screenshots/cleanup', (c) => {
+        const result = cleanupScreenshots(db, config);
+        return c.json({ result, storage: screenshotStorage(db, config) });
+    });
     // What the nightly backup script last reported (see scripts/backup.sh)
     r.get('/backup', (c) => c.json(readBackupReport(config)));
 
@@ -158,7 +179,10 @@ export function adminRoutes({ db, config, igdb, cloudflare, mailer }: AppDeps) {
         return c.json({ ok: true });
     });
     r.delete('/users/:id', (c) => {
-        deleteUser(db, parseId(c.req.param('id')), c.get('user').id);
+        const id = parseId(c.req.param('id'));
+        const files = imageFilesOf(db, { userId: id });
+        deleteUser(db, id, c.get('user').id);
+        removeUnreferencedFiles(db, config, files);
         return c.json({ ok: true });
     });
     return r;
