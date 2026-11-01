@@ -8,15 +8,14 @@ import {
     listItems,
     lists,
     series,
-    seriesMembers,
-    wishlistItems,
-    wishlists
+    seriesMembers
 } from '../db/schema.js';
 import { HttpError } from '../errors.js';
 import type { IgdbClient, SeriesRecord } from '../igdb/types.js';
 import { reportError } from './error-log.js';
 import { callIgdb, requireIgdb } from './games.js';
 import { addToList, ensureQueue } from './lists.js';
+import { wishlistedIds } from './wishlist.js';
 
 /** New sequels get announced, so a series' member list is re-read from IGDB after a week. */
 export const SERIES_REFRESH_MS = 7 * 24 * 60 * 60 * 1000;
@@ -111,17 +110,7 @@ export async function getSeries(
               .where(and(eq(entries.userId, userId), inArray(entries.gameId, ids)))
               .all()
         : [];
-    const wished = new Set(
-        ids.length
-            ? db
-                  .select({ gameId: wishlistItems.gameId })
-                  .from(wishlistItems)
-                  .innerJoin(wishlists, eq(wishlists.id, wishlistItems.wishlistId))
-                  .where(and(eq(wishlists.userId, userId), inArray(wishlistItems.gameId, ids)))
-                  .all()
-                  .map((w) => w.gameId)
-            : []
-    );
+    const wished = wishlistedIds(db, userId, ids);
     const heldIds = new Set([...owned.map((o) => o.gameId), ...wished]);
     for (const { g } of known)
         if (heldIds.has(g.id) && !byGame.has(g.id))

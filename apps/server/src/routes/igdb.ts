@@ -3,7 +3,7 @@ import { Hono } from 'hono';
 import { searchQuerySchema, type GameDetailDto, type SearchResultDto } from '@gamequeue/shared';
 import type { AppDeps } from '../app.js';
 import { requireAuth, type AuthVars } from '../auth/middleware.js';
-import { entries, wishlistItems, wishlists } from '../db/schema.js';
+import { entries } from '../db/schema.js';
 import { parseId, validate } from '../http.js';
 import { TtlCache } from '../igdb/search-cache.js';
 import type { IgdbSearchHit } from '../igdb/types.js';
@@ -17,6 +17,7 @@ import {
     requireIgdb
 } from '../services/games.js';
 import { similarGames } from '../services/similar.js';
+import { wishlistedIds } from '../services/wishlist.js';
 
 export function igdbRoutes({ db, config, igdb }: AppDeps, similar: TtlCache<IgdbSearchHit[]>) {
     const r = new Hono<{ Variables: AuthVars }>();
@@ -50,24 +51,10 @@ export function igdbRoutes({ db, config, igdb }: AppDeps, similar: TtlCache<Igdb
                       .map((e) => [e.gameId, e.id])
               )
             : new Map<number, number>();
-        const wished = new Set(
-            hits.length
-                ? db
-                      .select({ gameId: wishlistItems.gameId })
-                      .from(wishlistItems)
-                      .innerJoin(wishlists, eq(wishlists.id, wishlistItems.wishlistId))
-                      .where(
-                          and(
-                              eq(wishlists.userId, c.get('user').id),
-                              inArray(
-                                  wishlistItems.gameId,
-                                  hits.map((h) => h.id)
-                              )
-                          )
-                      )
-                      .all()
-                      .map((r) => r.gameId)
-                : []
+        const wished = wishlistedIds(
+            db,
+            c.get('user').id,
+            hits.map((h) => h.id)
         );
         const results: SearchResultDto[] = hits.map((h) => ({
             igdbId: h.id,
@@ -101,16 +88,11 @@ export function igdbRoutes({ db, config, igdb }: AppDeps, similar: TtlCache<Igdb
             .from(entries)
             .where(and(eq(entries.userId, userId), eq(entries.gameId, igdbId)))
             .get();
-        const wished = db
-            .select({ gameId: wishlistItems.gameId })
-            .from(wishlistItems)
-            .innerJoin(wishlists, eq(wishlists.id, wishlistItems.wishlistId))
-            .where(and(eq(wishlists.userId, userId), eq(wishlistItems.gameId, igdbId)))
-            .get();
+        const wished = wishlistedIds(db, userId, [igdbId]).has(igdbId);
         const detail: GameDetailDto = {
             game,
             entryId: entry?.id ?? null,
-            wishlisted: wished !== undefined
+            wishlisted: wished
         };
         return c.json(detail);
     });

@@ -22,10 +22,9 @@ import {
     platforms,
     playthroughs,
     tags,
-    themes,
-    wishlistItems
+    themes
 } from '../db/schema.js';
-import { findWishlist } from './wishlist.js';
+import { findWishlist } from './lists.js';
 import { listSmartListRows } from './smart-lists.js';
 
 const group = <K, V>(rows: { key: K; value: V }[]) => {
@@ -49,19 +48,19 @@ export function buildExport(db: Db, userId: number, now = new Date()): ExportFil
     const wishlist = findWishlist(db, userId);
     const wished = wishlist
         ? db
-              .select({ item: wishlistItems, g: games, platform: platforms })
-              .from(wishlistItems)
-              .innerJoin(games, eq(games.id, wishlistItems.gameId))
-              .leftJoin(platforms, eq(platforms.id, wishlistItems.platformId))
-              .where(eq(wishlistItems.wishlistId, wishlist.id))
-              .orderBy(asc(wishlistItems.position))
+              .select({ item: listItems, g: games, platform: platforms })
+              .from(listItems)
+              .innerJoin(games, eq(games.id, listItems.gameId))
+              .leftJoin(platforms, eq(platforms.id, listItems.platformId))
+              .where(eq(listItems.listId, wishlist.id))
+              .orderBy(asc(listItems.position))
               .all()
         : [];
     // Game metadata is snapshotted for everything in the file: owned games and wishlisted ones.
     // A subquery rather than an id list, so there is nothing to chunk.
     const wantedGames = sql`(select game_id from entries where user_id = ${userId}
-        union select wi.game_id from wishlist_items wi
-            join wishlists w on w.id = wi.wishlist_id where w.user_id = ${userId})`;
+        union select li.game_id from list_items li
+            join lists l on l.id = li.list_id where l.user_id = ${userId})`;
 
     const gamePlats = group(
         db

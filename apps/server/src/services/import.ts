@@ -11,16 +11,14 @@ import {
     lists,
     playthroughs,
     smartLists,
-    tags,
-    wishlistItems
+    tags
 } from '../db/schema.js';
 import { HttpError } from '../errors.js';
 import type { IgdbClient } from '../igdb/types.js';
 import { callIgdb, existingPlatformIds, saveGame, upsertPlatforms } from './games.js';
 import { setTags } from './entries.js';
-import { ensureQueue } from './lists.js';
+import { dropFromWishlist, ensureQueue, ensureWishlist } from './lists.js';
 import { syncStatus } from './playthroughs.js';
-import { dropFromWishlists, ensureWishlist } from './wishlist.js';
 
 const MAX_NOTES = 50;
 /**
@@ -263,7 +261,7 @@ function mergeGame(
             .run();
         setTags(db, userId, entryId, g.tags);
         // Owning it ends the wish
-        dropFromWishlists(db, userId, g.igdbId);
+        dropFromWishlist(db, userId, g.igdbId);
         report.games.added++;
     } else {
         entryId = existing.id;
@@ -555,16 +553,16 @@ function mergeWishlist(
     const present = new Map(
         db
             .select()
-            .from(wishlistItems)
-            .where(eq(wishlistItems.wishlistId, wishlistId))
+            .from(listItems)
+            .where(eq(listItems.listId, wishlistId))
             .all()
             .map((r) => [r.gameId, r])
     );
     let position =
         (db
-            .select({ n: max(wishlistItems.position) })
-            .from(wishlistItems)
-            .where(eq(wishlistItems.wishlistId, wishlistId))
+            .select({ n: max(listItems.position) })
+            .from(listItems)
+            .where(eq(listItems.listId, wishlistId))
             .get()!.n ?? -1) + 1;
 
     for (const w of file.wishlist) {
@@ -578,24 +576,19 @@ function mergeWishlist(
 
         const have = present.get(w.igdbId);
         if (have) {
-            const set: Partial<typeof wishlistItems.$inferInsert> = {};
+            const set: Partial<typeof listItems.$inferInsert> = {};
             if (have.platformId === null && platformId !== null) set.platformId = platformId;
             if (have.note === '' && w.note !== '') set.note = w.note;
             if (Object.keys(set).length > 0)
-                db.update(wishlistItems)
+                db.update(listItems)
                     .set(set)
-                    .where(
-                        and(
-                            eq(wishlistItems.wishlistId, wishlistId),
-                            eq(wishlistItems.gameId, w.igdbId)
-                        )
-                    )
+                    .where(and(eq(listItems.listId, wishlistId), eq(listItems.gameId, w.igdbId)))
                     .run();
             continue;
         }
-        db.insert(wishlistItems)
+        db.insert(listItems)
             .values({
-                wishlistId,
+                listId: wishlistId,
                 gameId: w.igdbId,
                 position: position++,
                 platformId,

@@ -229,7 +229,6 @@ erDiagram
     users ||--o{ entries : "owns"
     users ||--o{ lists : "has"
     users ||--o{ smart_lists : "has"
-    users ||--o{ wishlists : "has"
     users ||--o| avatars : "may upload"
     users ||--o{ tags : "creates"
 
@@ -240,13 +239,11 @@ erDiagram
     tags ||--o{ entry_tags : ""
     lists ||--o{ list_items : "contains"
     list_items }o--|| games : "points to"
-    wishlists ||--o{ wishlist_items : "contains"
-    wishlist_items }o--|| games : "points to"
 ```
 
 The key idea is the **entry**: one row meaning "this user owns this game". Your status, rating and notes live on the entry (a game can have many notes, each private or shared on your profile). Lists and playthroughs all hang off entries.
 
-The **wishlist is the exception**: wishlist items point straight at the shared `games` table, not at an entry, because you don't own those games yet. That way nothing that works on your collection (backlog, stats, pick) has to worry about unowned games.
+Lists point at the shared `games` table too, not at an entry, so they can hold games you don't own yet. That includes the **wishlist**, which is just a list with a special `kind`; nothing that works on your collection (backlog, stats, pick) has to worry about unowned games.
 
 Things that are **not stored** but computed when needed:
 
@@ -421,12 +418,12 @@ Code: `services/playthroughs.ts`, `components/PlayingCard.tsx`, `components/Star
 
 There are four ways to group games. They look similar on screen but work differently underneath.
 
-| Feature        | What it holds                  | Order                 | Stored as                             |
-| -------------- | ------------------------------ | --------------------- | ------------------------------------- |
-| **List**       | Any games, owned or not        | Manual (drag to sort) | `lists` + `list_items`                |
-| **Queue**      | Games you own                  | Manual                | A special `lists` row, `kind = queue` |
-| **Smart list** | Games you own that match rules | Sorted by a field     | Only the rules, in `smart_lists`      |
-| **Wishlist**   | Games you _don't_ own          | Manual                | `wishlists` + `wishlist_items`        |
+| Feature        | What it holds                  | Order                 | Stored as                                |
+| -------------- | ------------------------------ | --------------------- | ---------------------------------------- |
+| **List**       | Any games, owned or not        | Manual (drag to sort) | `lists` + `list_items`                   |
+| **Queue**      | Games you own                  | Manual                | A special `lists` row, `kind = queue`    |
+| **Smart list** | Games you own that match rules | Sorted by a field     | Only the rules, in `smart_lists`         |
+| **Wishlist**   | Games you _don't_ own          | Manual                | A special `lists` row, `kind = wishlist` |
 
 ```mermaid
 flowchart LR

@@ -14,7 +14,7 @@ import { HttpError } from '../errors.js';
 import type { IgdbClient } from '../igdb/types.js';
 import { forgetSubject, recordActivity } from './activity.js';
 import { hydrate } from './entries.js';
-import { ensureGame, loadGames } from './games.js';
+import { ensureGame, existingPlatformIds, loadGames } from './games.js';
 import { moveInOrder } from './order.js';
 
 function requireList(db: Db, userId: number, id: number) {
@@ -27,25 +27,30 @@ function requireList(db: Db, userId: number, id: number) {
     return list;
 }
 
-/** The user's queue, created the first time it's needed. */
-export function ensureQueue(db: Db, userId: number) {
-    const find = () =>
-        db
-            .select()
-            .from(lists)
-            .where(and(eq(lists.userId, userId), eq(lists.kind, 'queue')))
-            .get();
+type SpecialKind = 'queue' | 'wishlist';
+
+/** The user's one list of a special kind, if they have it yet. Read-only: nothing is created. */
+export const findSpecialList = (db: Db, userId: number, kind: SpecialKind) =>
+    db
+        .select()
+        .from(lists)
+        .where(and(eq(lists.userId, userId), eq(lists.kind, kind)))
+        .get();
+
+/** The user's queue or wishlist, created the first time it's needed. */
+function ensureSpecialList(db: Db, userId: number, kind: SpecialKind, name: string) {
     return (
-        find() ??
-        db
-            .insert(lists)
-            .values({ userId, name: 'Queue', kind: 'queue' })
-            .onConflictDoNothing()
-            .returning()
-            .get() ??
-        find()!
+        findSpecialList(db, userId, kind) ??
+        db.insert(lists).values({ userId, name, kind }).onConflictDoNothing().returning().get() ??
+        findSpecialList(db, userId, kind)!
     );
 }
+
+export const ensureQueue = (db: Db, userId: number) =>
+    ensureSpecialList(db, userId, 'queue', 'Queue');
+export const ensureWishlist = (db: Db, userId: number) =>
+    ensureSpecialList(db, userId, 'wishlist', 'Wishlist');
+export const findWishlist = (db: Db, userId: number) => findSpecialList(db, userId, 'wishlist');
 
 export function getQueue(db: Db, userId: number, page?: PageQuery): ListDetailDto {
     return getList(db, userId, ensureQueue(db, userId).id, page);
@@ -53,6 +58,7 @@ export function getQueue(db: Db, userId: number, page?: PageQuery): ListDetailDt
 
 function assertPlainList(list: { kind: string }, action: string) {
     if (list.kind === 'queue') throw new HttpError(400, `The queue can't be ${action}`);
+    if (list.kind === 'wishlist') throw new HttpError(400, `The wishlist can't be ${action}`);
 }
 
 /** How many covers a list tile shows. */
@@ -176,16 +182,47 @@ const owns = (db: Db, userId: number, gameId: number) =>
         .where(and(eq(entries.userId, userId), eq(entries.gameId, gameId)))
         .get();
 
+/** The wishlist's per-game extras: the platform the user means to buy it on, and a private note. */
+export interface ListItemExtras {
+    platformId?: number | null;
+    note?: string;
+}
+
+/** Throws the error that keeps `kind` from taking this game: queue = owned only, wishlist = unowned only. */
+function assertAccepts(db: Db, userId: number, kind: string, igdbId: number) {
+    if (kind === 'queue' && !owns(db, userId, igdbId))
+        throw new HttpError(400, 'Only games in your collection can go on the queue');
+    if (kind === 'wishlist') {
+        const owned = db
+            .select({ id: entries.id })
+            .from(entries)
+            .where(and(eq(entries.userId, userId), eq(entries.gameId, igdbId)))
+            .get();
+        if (owned)
+            throw new HttpError(409, 'That game is already in your collection', {
+                entryId: owned.id
+            });
+    }
+}
+
 /**
  * Adds a game to the end, owned or not (the game must already be in the shared cache). Adding
- * something already in the list is a no-op. The queue takes collection games only.
+ * something already in the list is a no-op. The queue takes collection games only and the
+ * wishlist takes games you don't own.
  */
-export function addToList(db: Db, userId: number, listId: number, igdbId: number): ListDetailDto {
+export function addToList(
+    db: Db,
+    userId: number,
+    listId: number,
+    igdbId: number,
+    extras: ListItemExtras = {}
+): ListDetailDto {
     const list = requireList(db, userId, listId);
-    if (list.kind === 'queue' && !owns(db, userId, igdbId))
-        throw new HttpError(400, 'Only games in your collection can go on the queue');
+    assertAccepts(db, userId, list.kind, igdbId);
     if (!db.select({ id: games.id }).from(games).where(eq(games.id, igdbId)).get())
         throw new HttpError(404, 'Game not found');
+    if (extras.platformId && !existingPlatformIds(db, [extras.platformId]).has(extras.platformId))
+        throw new HttpError(400, `Unknown platform id: ${extras.platformId}`);
     const top = db
         .select({ n: max(listItems.position) })
         .from(listItems)
@@ -194,35 +231,45 @@ export function addToList(db: Db, userId: number, listId: number, igdbId: number
     db.transaction((tx) => {
         const added = tx
             .insert(listItems)
-            .values({ listId, gameId: igdbId, position: (top ?? -1) + 1 })
+            .values({
+                listId,
+                gameId: igdbId,
+                position: (top ?? -1) + 1,
+                platformId: extras.platformId ?? null,
+                note: extras.note ?? ''
+            })
             .onConflictDoNothing()
             .run();
-        if (added.changes > 0 && list.kind === 'queue')
-            recordActivity(tx as unknown as Db, userId, { type: 'queued', gameId: igdbId });
+        if (added.changes > 0 && list.kind !== 'list')
+            recordActivity(tx as unknown as Db, userId, {
+                type: list.kind === 'queue' ? 'queued' : 'wishlisted',
+                gameId: igdbId
+            });
     });
     return getList(db, userId, listId, FIRST_PAGE);
 }
 
-/** `addToList` for a game that may not be cached yet: fetches it from IGDB first (never for a refused queue add). */
+/** `addToList` for a game that may not be cached yet: fetches it from IGDB first (never for a refused add). */
 export async function addGameToList(
     db: Db,
     igdb: IgdbClient | undefined,
     userId: number,
     listId: number,
-    igdbId: number
+    igdbId: number,
+    extras: ListItemExtras = {}
 ): Promise<ListDetailDto> {
-    const list = requireList(db, userId, listId);
-    if (list.kind === 'queue' && !owns(db, userId, igdbId))
-        throw new HttpError(400, 'Only games in your collection can go on the queue');
+    assertAccepts(db, userId, requireList(db, userId, listId).kind, igdbId);
     await ensureGame(db, igdb, igdbId);
-    return addToList(db, userId, listId, igdbId);
+    return addToList(db, userId, listId, igdbId, extras);
 }
 
 /** Deletes one item and closes the gap so positions stay 0..n-1. */
-function removeItem(db: Db, listId: number, gameId: number) {
-    db.delete(listItems)
+export function removeItem(db: Db, listId: number, gameId: number) {
+    const removed = db
+        .delete(listItems)
         .where(and(eq(listItems.listId, listId), eq(listItems.gameId, gameId)))
         .run();
+    if (removed.changes === 0) return;
     const rest = db
         .select({ gameId: listItems.gameId })
         .from(listItems)
@@ -246,6 +293,12 @@ export function dequeue(db: Db, userId: number, gameId: number) {
         .where(and(eq(lists.userId, userId), eq(lists.kind, 'queue')))
         .get();
     if (queue) removeItem(db, queue.id, gameId);
+}
+
+/** Owning a game ends the wish: called when a game joins the collection. */
+export function dropFromWishlist(db: Db, userId: number, gameId: number) {
+    const wishlist = findWishlist(db, userId);
+    if (wishlist) removeItem(db, wishlist.id, gameId);
 }
 
 export function removeFromList(

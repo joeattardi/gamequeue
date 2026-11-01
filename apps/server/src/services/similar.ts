@@ -1,7 +1,8 @@
 import { and, eq, inArray } from 'drizzle-orm';
 import type { SimilarGameDto } from '@gamequeue/shared';
 import type { Db } from '../db/client.js';
-import { entries, wishlistItems, wishlists } from '../db/schema.js';
+import { entries } from '../db/schema.js';
+import { wishlistedIds } from './wishlist.js';
 import { TtlCache } from '../igdb/search-cache.js';
 import type { IgdbClient, IgdbSearchHit } from '../igdb/types.js';
 import { callIgdb, requireIgdb } from './games.js';
@@ -52,15 +53,7 @@ export async function similarGames(
             .all()
             .map((e) => [e.gameId, e.id])
     );
-    const wished = new Set(
-        db
-            .select({ gameId: wishlistItems.gameId })
-            .from(wishlistItems)
-            .innerJoin(wishlists, eq(wishlists.id, wishlistItems.wishlistId))
-            .where(and(eq(wishlists.userId, userId), inArray(wishlistItems.gameId, ids)))
-            .all()
-            .map((r) => r.gameId)
-    );
+    const wished = wishlistedIds(db, userId, ids);
     return top.map((h) => ({
         igdbId: h.id,
         name: h.name,

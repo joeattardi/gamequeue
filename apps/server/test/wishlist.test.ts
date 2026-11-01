@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { ExportFile } from '@gamequeue/shared';
-import { wishlists } from '../src/db/schema.js';
+import { eq } from 'drizzle-orm';
+import { lists } from '../src/db/schema.js';
 import { PC, PS5, setupApi } from './api.js';
 
 async function setup() {
@@ -40,6 +41,24 @@ describe('wishlist', () => {
         const res = await wish(1);
         expect(res.status).toBe(409);
         expect(res.entryId).toBe(e.id);
+    });
+
+    it('is a list underneath, so the list routes keep its rules', async () => {
+        const { call, wish, wishlist, add } = await setup();
+        await wish(1);
+        const id = (await wishlist()).id;
+        // it shows up through the generic route, but can't be renamed or deleted
+        expect((await call(`/lists/${id}`)).list).toMatchObject({ kind: 'wishlist', total: 1 });
+        expect((await call(`/lists/${id}`, 'PATCH', { name: 'x' })).status).toBe(400);
+        expect((await call(`/lists/${id}`, 'DELETE')).status).toBe(400);
+        // a game you own can't be put on it that way either
+        const hollow = await add(3, [6]);
+        const res = await call(`/lists/${id}/items`, 'POST', { igdbId: hollow.game.id });
+        expect(res).toMatchObject({ status: 409, entryId: hollow.id });
+        // and the wishlist route sees what the list route changes
+        await call(`/lists/${id}/items`, 'POST', { igdbId: 2 });
+        await call(`/lists/${id}/move`, 'PUT', { igdbId: 2, toIndex: 0 });
+        expect((await wishlist()).items.map((i: any) => i.game.name)).toEqual(['Celeste', 'Hades']);
     });
 
     it('stores a target platform and a note, and edits them', async () => {
@@ -106,7 +125,7 @@ describe('wishlist on the public profile', () => {
         const { app, db, wish } = await setup();
         const empty = await (await app.request('/api/profiles/user_me/wishlist')).json();
         expect(empty.wishlist).toEqual({ username: 'user_me', items: [], total: 0 });
-        expect(db.select().from(wishlists).all()).toEqual([]);
+        expect(db.select().from(lists).where(eq(lists.kind, 'wishlist')).all()).toEqual([]);
 
         await wish(2, { platformId: PC.id, note: 'secret' });
         await wish(1);

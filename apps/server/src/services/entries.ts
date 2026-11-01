@@ -55,8 +55,7 @@ import type { IgdbClient } from '../igdb/types.js';
 import { ensureGame, existingPlatformIds, loadGames } from './games.js';
 import { toDto } from './playthrough-dto.js';
 import { forgetGame, recordActivity } from './activity.js';
-import { dequeue } from './lists.js';
-import { dropFromWishlists } from './wishlist.js';
+import { dequeue, dropFromWishlist } from './lists.js';
 
 const dedupeTags = (names: string[]) => {
     const seen = new Map<string, string>();
@@ -159,7 +158,7 @@ export async function addEntry(
                 .run();
         }
         // Owning it ends the wish
-        dropFromWishlists(t, userId, input.igdbId);
+        dropFromWishlist(t, userId, input.igdbId);
         recordActivity(t, userId, { type: 'added', gameId: input.igdbId });
         if (input.status === 'playing')
             recordActivity(t, userId, { type: 'started', gameId: input.igdbId });

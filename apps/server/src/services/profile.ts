@@ -22,15 +22,7 @@ import {
     MAX_PAGE_SIZE
 } from '@gamequeue/shared';
 import type { Db } from '../db/client.js';
-import {
-    entries,
-    listItems,
-    lists,
-    playthroughs,
-    users,
-    wishlistItems,
-    wishlists
-} from '../db/schema.js';
+import { entries, listItems, lists, playthroughs, users } from '../db/schema.js';
 import { HttpError } from '../errors.js';
 import { getTimeline, pageActivity } from './activity.js';
 import { avatarIconOf, avatarVersion } from './avatars.js';
@@ -41,7 +33,7 @@ import { getList, listLists } from './lists.js';
 import { getRecap } from './recap.js';
 import { getStats } from './stats.js';
 import { getSmartList, listSmartLists } from './smart-lists.js';
-import { findWishlist, wishlistItemsOf } from './wishlist.js';
+import { findWishlist, wishlistedIds, wishlistItemsOf } from './wishlist.js';
 
 const toPublic = toPublicEntry;
 
@@ -86,11 +78,8 @@ export function getProfile(db: Db, username: string, founderUserId?: number): Pr
 
     const wl = findWishlist(db, user.id);
     const wishlisted = wl
-        ? (db
-              .select({ n: count() })
-              .from(wishlistItems)
-              .where(eq(wishlistItems.wishlistId, wl.id))
-              .get()?.n ?? 0)
+        ? (db.select({ n: count() }).from(listItems).where(eq(listItems.listId, wl.id)).get()?.n ??
+          0)
         : 0;
 
     return {
@@ -369,18 +358,13 @@ export function getProfileGame(db: Db, username: string, igdbId: number): Profil
         .from(entries)
         .where(and(eq(entries.userId, user.id), eq(entries.gameId, igdbId)))
         .get();
-    const wished = db
-        .select({ gameId: wishlistItems.gameId })
-        .from(wishlistItems)
-        .innerJoin(wishlists, eq(wishlists.id, wishlistItems.wishlistId))
-        .where(and(eq(wishlists.userId, user.id), eq(wishlistItems.gameId, igdbId)))
-        .get();
+    const wished = wishlistedIds(db, user.id, [igdbId]).has(igdbId);
     const entry = owned ? hydrate(db, user.id, [owned.id])[0] : undefined;
     return {
         username: user.username,
         game,
         entry: entry ? toPublic(entry) : null,
-        wishlisted: wished !== undefined,
+        wishlisted: wished,
         notes: (entry?.notes ?? [])
             .filter((n) => n.public)
             .map((n) => ({ id: n.id, body: n.body, createdAt: n.createdAt }))

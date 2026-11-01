@@ -1,11 +1,12 @@
 import { and, desc, eq, gte, or } from 'drizzle-orm';
 import type { DiscoverDto, DiscoverPickDto, SimilarGameDto } from '@gamequeue/shared';
 import type { Db } from '../db/client.js';
-import { dismissedGames, entries, games, wishlistItems, wishlists } from '../db/schema.js';
+import { dismissedGames, entries, games } from '../db/schema.js';
 import type { TtlCache } from '../igdb/search-cache.js';
 import type { IgdbClient, IgdbSearchHit } from '../igdb/types.js';
 import { reportError } from './error-log.js';
 import { similarHits } from './similar.js';
+import { wishlistedIds } from './wishlist.js';
 
 /** Games to draw suggestions from; each costs one (cached) IGDB lookup */
 export const MAX_SEEDS = 20;
@@ -66,13 +67,7 @@ export async function discover(
             .where(eq(entries.userId, userId))
             .all()
             .map((e) => e.id),
-        ...db
-            .select({ id: wishlistItems.gameId })
-            .from(wishlistItems)
-            .innerJoin(wishlists, eq(wishlists.id, wishlistItems.wishlistId))
-            .where(eq(wishlists.userId, userId))
-            .all()
-            .map((w) => w.id),
+        ...wishlistedIds(db, userId),
         ...db
             .select({ id: dismissedGames.gameId })
             .from(dismissedGames)

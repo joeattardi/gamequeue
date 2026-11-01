@@ -20,7 +20,7 @@ export interface ListItemDto {
 export interface ListDetailDto {
     id: number;
     name: string;
-    kind: 'list' | 'queue';
+    kind: 'list' | 'queue' | 'wishlist';
     /** What the owner wrote about the list; empty if nothing (always empty for the queue) */
     description: string;
     /** One page, in list order */

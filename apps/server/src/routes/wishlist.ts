@@ -10,23 +10,24 @@ import {
 import type { AppDeps } from '../app.js';
 import { requireAuth, type AuthVars } from '../auth/middleware.js';
 import { parseId, validate } from '../http.js';
+import { moveInList, reorderList } from '../services/lists.js';
 import {
     addToWishlist,
     ensureWishlist,
     getWishlist,
-    moveInWishlist,
     releasingSoon,
     patchWishlistItem,
     refreshWishlistReleases,
-    removeFromWishlist,
-    reorderWishlist
+    removeFromWishlist
 } from '../services/wishlist.js';
 
 const body = (c: { req: { json(): Promise<unknown> } }) => c.req.json().catch(() => undefined);
 
 /**
- * The user's wishlist. There is one today; the services all take a wishlist id, so supporting
- * several later means adding `/api/wishlists/:id/...` routes over the same functions.
+ * The user's wishlist: a thin wrapper over their `wishlist`-kind list. The list routes
+ * (`/api/lists/:id/...`) work on it too; these add what only a wishlist has (target platform, note,
+ * release dates) and keep the wishlist's own response shape, so the web app needs no list id.
+ * Several wishlists later would mean `/api/wishlists/:id/...` routes over the same services.
  */
 export function wishlistRoutes({ db, config, igdb }: AppDeps) {
     const r = new Hono<{ Variables: AuthVars }>();
@@ -35,10 +36,9 @@ export function wishlistRoutes({ db, config, igdb }: AppDeps) {
     const wishlistId = (c: { get(k: 'user'): { id: number } }) => ensureWishlist(db, uid(c)).id;
 
     r.get('/', async (c) => {
-        const id = wishlistId(c);
         const page = validate(pageQuerySchema, c.req.query());
-        await refreshWishlistReleases(db, igdb, id);
-        return c.json({ wishlist: getWishlist(db, uid(c), id, page) });
+        await refreshWishlistReleases(db, igdb, wishlistId(c));
+        return c.json({ wishlist: getWishlist(db, uid(c), page) });
     });
     // Home page: unreleased wishlisted games with an exact release day coming up
     r.get('/releasing-soon', (c) => {
@@ -58,7 +58,6 @@ export function wishlistRoutes({ db, config, igdb }: AppDeps) {
                 db,
                 igdb,
                 uid(c),
-                wishlistId(c),
                 validate(addWishlistItemSchema, await body(c))
             )
         })
@@ -68,30 +67,27 @@ export function wishlistRoutes({ db, config, igdb }: AppDeps) {
             wishlist: patchWishlistItem(
                 db,
                 uid(c),
-                wishlistId(c),
                 parseId(c.req.param('igdbId')),
                 validate(patchWishlistItemSchema, await body(c))
             )
         })
     );
     r.delete('/items/:igdbId', (c) =>
-        c.json({
-            wishlist: removeFromWishlist(db, uid(c), wishlistId(c), parseId(c.req.param('igdbId')))
-        })
+        c.json({ wishlist: removeFromWishlist(db, uid(c), parseId(c.req.param('igdbId'))) })
     );
     r.put('/move', async (c) => {
         const { igdbId, toIndex } = validate(moveWishlistItemSchema, await body(c));
-        return c.json({ wishlist: moveInWishlist(db, uid(c), wishlistId(c), igdbId, toIndex) });
+        moveInList(db, uid(c), wishlistId(c), igdbId, toIndex);
+        return c.json({ wishlist: getWishlist(db, uid(c)) });
     });
-    r.put('/order', async (c) =>
-        c.json({
-            wishlist: reorderWishlist(
-                db,
-                uid(c),
-                wishlistId(c),
-                validate(reorderWishlistSchema, await body(c)).igdbIds
-            )
-        })
-    );
+    r.put('/order', async (c) => {
+        reorderList(
+            db,
+            uid(c),
+            wishlistId(c),
+            validate(reorderWishlistSchema, await body(c)).igdbIds
+        );
+        return c.json({ wishlist: getWishlist(db, uid(c)) });
+    });
     return r;
 }

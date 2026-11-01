@@ -388,8 +388,9 @@ export const lists = sqliteTable(
             .references(() => users.id, { onDelete: 'cascade' }),
         name: text('name').notNull(),
         description: text('description').notNull().default(''),
-        // 'queue' is the user's one "up next" list; it's created on first use
-        kind: text('kind', { enum: ['list', 'queue'] })
+        // 'queue' is the user's one "up next" list and 'wishlist' their one wishlist; both are
+        // created on first use
+        kind: text('kind', { enum: ['list', 'queue', 'wishlist'] })
             .notNull()
             .default('list'),
         createdAt: integer('created_at').notNull().default(now)
@@ -398,51 +399,10 @@ export const lists = sqliteTable(
         index('lists_user_idx').on(t.userId),
         uniqueIndex('lists_one_queue_idx')
             .on(t.userId)
-            .where(sql`${t.kind} = 'queue'`)
-    ]
-);
-
-// ---------------------------------------------------------------------------
-// Wishlist: games the user wants but doesn't own. Separate from entries on purpose, so nothing
-// about the collection (backlog, stats, pick) has to know about unowned games.
-// ---------------------------------------------------------------------------
-
-// A user's first wishlist (lowest id) is "the" wishlist today; `ensureWishlist` creates it lazily.
-// There is deliberately no unique index per user, so more wishlists are a UI/API change only.
-export const wishlists = sqliteTable(
-    'wishlists',
-    {
-        id: integer('id').primaryKey({ autoIncrement: true }),
-        userId: integer('user_id')
-            .notNull()
-            .references(() => users.id, { onDelete: 'cascade' }),
-        name: text('name').notNull(),
-        createdAt: integer('created_at').notNull().default(now)
-    },
-    (t) => [index('wishlists_user_idx').on(t.userId)]
-);
-
-export const wishlistItems = sqliteTable(
-    'wishlist_items',
-    {
-        wishlistId: integer('wishlist_id')
-            .notNull()
-            .references(() => wishlists.id, { onDelete: 'cascade' }),
-        gameId: integer('game_id')
-            .notNull()
-            .references(() => games.id),
-        // 0-based order within the wishlist; rewritten wholesale on reorder
-        position: integer('position').notNull(),
-        // The platform the user intends to buy it on
-        platformId: integer('platform_id').references(() => platforms.id, {
-            onDelete: 'set null'
-        }),
-        note: text('note').notNull().default(''),
-        addedAt: integer('added_at').notNull().default(now)
-    },
-    (t) => [
-        primaryKey({ columns: [t.wishlistId, t.gameId] }),
-        index('wishlist_items_game_idx').on(t.gameId)
+            .where(sql`${t.kind} = 'queue'`),
+        uniqueIndex('lists_one_wishlist_idx')
+            .on(t.userId)
+            .where(sql`${t.kind} = 'wishlist'`)
     ]
 );
 
