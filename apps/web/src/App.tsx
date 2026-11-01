@@ -19,6 +19,7 @@ import { CollectionPage } from './routes/CollectionPage';
 import { DataPage } from './routes/DataPage';
 import { EntryPage } from './routes/EntryPage';
 import { GameDetailPage } from './routes/GameDetailPage';
+import { GameChatPage } from './routes/GameChatPage';
 import { SeriesPage } from './routes/SeriesPage';
 import { SearchPage } from './routes/SearchPage';
 import { Home } from './routes/Home';
@@ -135,6 +136,7 @@ function AppRoutes() {
                 <Route path="backlog" element={<CollectionPage view="backlog" />} />
                 <Route path="search" element={<SearchPage />} />
                 <Route path="games/:id" element={<EntryPage />} />
+                <Route path="games/:id/chat" element={<GameChatPage />} />
                 <Route path="games/igdb/:igdbId" element={<GameDetailPage />} />
                 <Route path="queue" element={<QueuePage />} />
                 <Route path="wishlist" element={<WishlistPage />} />

@@ -434,7 +434,7 @@ Code: `services/journal.ts`, `services/screenshots.ts`, `routes/journal.ts`, `co
 
 ## 9c. The AI game helper
 
-An optional chat box on the game page, for questions like "how do I get past this boss?" It shows only when the server has an Anthropic API key **and** an admin has switched AI on for your account.
+An optional chat about a game, on its own page (`/games/:id/chat`, opened from "Ask about this game" on the game page), for questions like "how do I get past this boss?" It shows only when the server has an Anthropic API key **and** an admin has switched AI on for your account.
 
 ```mermaid
 flowchart LR
@@ -447,7 +447,7 @@ flowchart LR
 
 The server stores nothing of the conversation, only a usage row so the admin can see the month's spend against a budget (default $5); at 100% new calls are refused. "Summarize to notes" turns the chat into a draft you edit and then save as a private note, a public note or a journal post.
 
-Code: `ai/provider.ts`, `services/ai.ts`, `services/ai-usage.ts`, `routes/ai.ts`, `components/GameHelper.tsx`.
+Code: `ai/provider.ts`, `services/ai.ts`, `services/ai-usage.ts`, `routes/ai.ts`, `components/GameChat.tsx`, `routes/GameChatPage.tsx`.
 
 ## 10. Organizing games: lists, queue, smart lists, wishlist
 

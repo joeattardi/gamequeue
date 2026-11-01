@@ -4,8 +4,9 @@ import {
     type AiMessage,
     type EntryDto
 } from '@gamequeue/shared';
-import { Bot, NotebookPen, Send, Sparkles, Trash2 } from 'lucide-react';
-import { useState, type FormEvent } from 'react';
+import { Bot, Info, NotebookPen, Send, Sparkles, Trash2 } from 'lucide-react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { Link } from 'react-router';
 import Markdown from 'react-markdown';
 import { useAiChat, useAiStatus, useAiSummarize } from '../api/ai';
 import { ApiRequestError } from '../api/client';
@@ -43,30 +44,53 @@ function Reply({ text }: { text: string }) {
 }
 
 /**
- * A chat about this game. Only shown when the server has an AI key, an admin switched AI on for
- * this account and the month's budget isn't spent. The conversation lives in this component only:
- * the server keeps nothing but a usage record.
+ * The way into the chat on the game page. Only shown when the server has an AI key, an admin
+ * switched AI on for this account and the month's budget isn't spent.
  */
-export function GameHelper({ entry }: { entry: EntryDto }) {
+export function AskAboutGame({ entry }: { entry: EntryDto }) {
     const status = useAiStatus();
-    // No placeholder while this loads: most accounts never see the panel, so a skeleton would flash and vanish
+    // No placeholder while this loads: most accounts never see it, so a skeleton would flash and vanish
     if (!status.data?.available) return null;
-    return <HelperPanel entry={entry} />;
+    return (
+        <Link className="btn ask-link" to={`/games/${entry.id}/chat`}>
+            <Bot aria-hidden="true" /> Ask about this game
+        </Link>
+    );
 }
 
-function HelperPanel({ entry }: { entry: EntryDto }) {
+/**
+ * A chat about one game, on its own page (`/games/:id/chat`). The conversation lives in this
+ * component only: the server keeps nothing but a usage record, and leaving the page ends it.
+ */
+export function GameChat({ entry }: { entry: EntryDto }) {
     const chat = useAiChat();
     const [messages, setMessages] = useState<AiMessage[]>([]);
     const [input, setInput] = useState('');
     const [includeNotes, setIncludeNotes] = useState(true);
     const [error, setError] = useState<string>();
     const full = messages.length >= AI_MAX_MESSAGES - 1;
+    const end = useRef<HTMLDivElement>(null);
+    // Follow the answer as it grows, unless the reader has scrolled up to look at something
+    const following = useRef(true);
+    useEffect(() => {
+        // Following while the end of the conversation is on screen (or just below it)
+        const onScroll = () => {
+            const top = end.current?.getBoundingClientRect().top ?? 0;
+            following.current = top <= window.innerHeight + 80;
+        };
+        window.addEventListener('scroll', onScroll, { passive: true });
+        return () => window.removeEventListener('scroll', onScroll);
+    }, []);
+    useEffect(() => {
+        if (following.current) end.current?.scrollIntoView({ block: 'end' });
+    }, [messages, chat.isPending]);
 
     async function send(e: FormEvent) {
         e.preventDefault();
         const text = input.trim();
         if (!text || chat.isPending) return;
         const next: AiMessage[] = [...messages, { role: 'user', content: text }];
+        following.current = true;
         setMessages(next);
         setInput('');
         setError(undefined);
@@ -90,26 +114,28 @@ function HelperPanel({ entry }: { entry: EntryDto }) {
     }
 
     return (
-        <section aria-labelledby="helper-h" className="panel stack helper">
-            <h2 id="helper-h">
-                <Bot aria-hidden="true" /> Ask about this game
-            </h2>
-            <p className="muted helper__disclosure">
-                Your questions are sent to Anthropic's Claude together with this game's details from
-                IGDB, your latest journal posts for the playthrough in progress
-                {includeNotes ? ', and your notes on this game' : ''}. Answers avoid spoilers past
-                what you've written down. GameQueue doesn't keep the conversation: it is gone when
-                you leave this page.
-            </p>
-            <label className="check">
-                <input
-                    type="checkbox"
-                    checked={includeNotes}
-                    onChange={(e) => setIncludeNotes(e.target.checked)}
-                />
-                Include my notes on this game
-            </label>
-            {messages.length > 0 && (
+        <div className="chat">
+            <details className="chat__about disclosure">
+                <summary>
+                    <Info aria-hidden="true" /> What is sent to the AI
+                </summary>
+                <p className="muted">
+                    Your questions go to Anthropic's Claude together with this game's details from
+                    IGDB, your latest journal posts for the playthrough in progress
+                    {includeNotes ? ', and your notes on this game' : ''}. Answers avoid spoilers
+                    past what you've written down. GameQueue doesn't keep the conversation: it ends
+                    when you leave this page, so use "Summarize to notes" to keep the useful parts.
+                </p>
+            </details>
+            {messages.length === 0 ? (
+                <div className="chat__empty">
+                    <Bot aria-hidden="true" />
+                    <p>
+                        Ask anything about <strong>{entry.game.name}</strong>: where to go next, a
+                        tough fight, whether a side quest is worth it.
+                    </p>
+                </div>
+            ) : (
                 <ol className="helper__log" aria-live="polite" aria-busy={chat.isPending}>
                     {messages.map((m, i) => (
                         <li key={i} className={`helper__msg helper__msg--${m.role}`}>
@@ -131,41 +157,6 @@ function HelperPanel({ entry }: { entry: EntryDto }) {
                     )}
                 </ol>
             )}
-            {full ? (
-                <p className="muted">
-                    This conversation is as long as it can get. Summarize it, or start a new one.
-                </p>
-            ) : (
-                <form className="helper__form" onSubmit={send}>
-                    <label className="sr-only" htmlFor="helper-input">
-                        Your question
-                    </label>
-                    <textarea
-                        id="helper-input"
-                        rows={2}
-                        maxLength={AI_MAX_MESSAGE_CHARS}
-                        value={input}
-                        onChange={(e) => setInput(e.target.value)}
-                        onKeyDown={(e) => {
-                            if (e.key === 'Enter' && !e.shiftKey) {
-                                e.preventDefault();
-                                e.currentTarget.form?.requestSubmit();
-                            }
-                        }}
-                        placeholder="Stuck somewhere? Wondering if a side quest is worth it?"
-                    />
-                    <button
-                        className="btn btn--primary"
-                        type="submit"
-                        disabled={chat.isPending || !input.trim()}
-                    >
-                        <Send aria-hidden="true" /> Ask
-                    </button>
-                </form>
-            )}
-            <p className="form-error" role="alert">
-                {error}
-            </p>
             {messages.length >= 2 && !chat.isPending && (
                 <div className="row">
                     <Summarize entry={entry} messages={messages} includeNotes={includeNotes} />
@@ -181,7 +172,55 @@ function HelperPanel({ entry }: { entry: EntryDto }) {
                     </button>
                 </div>
             )}
-        </section>
+            <div ref={end} className="chat__end" />
+            <div className="chat__composer">
+                <p className="form-error" role="alert">
+                    {error}
+                </p>
+                {full ? (
+                    <p className="muted">
+                        This conversation is as long as it can get. Summarize it, or start a new
+                        one.
+                    </p>
+                ) : (
+                    <form className="helper__form" onSubmit={send}>
+                        <label className="sr-only" htmlFor="helper-input">
+                            Your question
+                        </label>
+                        <textarea
+                            id="helper-input"
+                            rows={2}
+                            maxLength={AI_MAX_MESSAGE_CHARS}
+                            value={input}
+                            onChange={(e) => setInput(e.target.value)}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' && !e.shiftKey) {
+                                    e.preventDefault();
+                                    e.currentTarget.form?.requestSubmit();
+                                }
+                            }}
+                            placeholder="Ask about this game"
+                            autoFocus
+                        />
+                        <button
+                            className="btn btn--primary"
+                            type="submit"
+                            disabled={chat.isPending || !input.trim()}
+                        >
+                            <Send aria-hidden="true" /> Ask
+                        </button>
+                    </form>
+                )}
+                <label className="check chat__notes">
+                    <input
+                        type="checkbox"
+                        checked={includeNotes}
+                        onChange={(e) => setIncludeNotes(e.target.checked)}
+                    />
+                    Include my notes on this game
+                </label>
+            </div>
+        </div>
     );
 }
 
