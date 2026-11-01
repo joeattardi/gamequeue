@@ -2,7 +2,10 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
     AdminAiDto,
     AiChatInput,
+    AiChatDto,
+    AiChatSummaryDto,
     AiDraftDto,
+    AiReplyDto,
     AiStatusDto,
     AiSummarizeInput
 } from '@gamequeue/shared';
@@ -20,7 +23,10 @@ export const useAiStatus = () =>
  * promise resolves with the whole answer (which wins over the pieces). Refusals before the answer
  * starts come back as an ordinary error response.
  */
-export async function streamChat(input: AiChatInput, onDelta: (text: string) => void) {
+export async function streamChat(
+    input: AiChatInput,
+    onDelta: (text: string) => void
+): Promise<AiReplyDto> {
     const res = await fetch('/api/ai/chat/stream', {
         method: 'POST',
         credentials: 'same-origin',
@@ -49,9 +55,14 @@ export async function streamChat(input: AiChatInput, onDelta: (text: string) => 
                 .map((l) => l.replace(/^data: ?/, ''))
                 .join('\n');
             if (!raw) continue;
-            const data = JSON.parse(raw) as { text?: string; reply?: string; error?: string };
+            const data = JSON.parse(raw) as {
+                text?: string;
+                reply?: string;
+                chatId?: number;
+                error?: string;
+            };
             if (event === 'delta' && data.text) onDelta(data.text);
-            if (event === 'done') return data.reply ?? '';
+            if (event === 'done') return { reply: data.reply ?? '', chatId: data.chatId ?? 0 };
             if (event === 'error')
                 throw new ApiRequestError(data.error ?? 'The AI didn’t answer.', 502);
         }
@@ -65,7 +76,36 @@ export function useAiChat() {
     return useMutation({
         mutationFn: (v: { input: AiChatInput; onDelta: (text: string) => void }) =>
             streamChat(v.input, v.onDelta),
-        onSettled: () => qc.invalidateQueries({ queryKey: ['ai', 'status'] })
+        onSettled: () =>
+            Promise.all([
+                qc.invalidateQueries({ queryKey: ['ai', 'status'] }),
+                qc.invalidateQueries({ queryKey: ['ai', 'chats'] })
+            ])
+    });
+}
+
+/** The saved chats about one game, most recently used first. */
+export const useAiChats = (entryId: number) =>
+    useQuery({
+        queryKey: ['ai', 'chats', entryId],
+        queryFn: async () =>
+            (await api<{ chats: AiChatSummaryDto[] }>(`/ai/chats?entryId=${entryId}`)).chats
+    });
+
+/** One saved chat in full; `null` means none (a new conversation). */
+export const useAiChatDetail = (chatId: number | null) =>
+    useQuery({
+        queryKey: ['ai', 'chat', chatId],
+        queryFn: async () => (await api<{ chat: AiChatDto }>(`/ai/chats/${chatId}`)).chat,
+        enabled: chatId !== null,
+        staleTime: Infinity
+    });
+
+export function useDeleteAiChat() {
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: (chatId: number) => api(`/ai/chats/${chatId}`, { method: 'DELETE' }),
+        onSuccess: () => qc.invalidateQueries({ queryKey: ['ai', 'chats'] })
     });
 }
 

@@ -1,14 +1,25 @@
 import {
     AI_MAX_MESSAGE_CHARS,
     AI_MAX_MESSAGES,
+    type AiChatDto,
+    type AiChatSummaryDto,
     type AiMessage,
     type EntryDto
 } from '@gamequeue/shared';
-import { Bot, Info, NotebookPen, Send, Sparkles, Trash2 } from 'lucide-react';
+import { Bot, Info, NotebookPen, Plus, Send, Sparkles, Trash2 } from 'lucide-react';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Link } from 'react-router';
 import Markdown from 'react-markdown';
-import { useAiChat, useAiStatus, useAiSummarize } from '../api/ai';
+import {
+    useAiChat,
+    useAiChatDetail,
+    useAiChats,
+    useAiStatus,
+    useAiSummarize,
+    useDeleteAiChat
+} from '../api/ai';
+import { useQueryClient } from '@tanstack/react-query';
+import { useConfirm } from './Confirm';
 import { ApiRequestError } from '../api/client';
 import { useNoteMutations } from '../api/collection';
 import { usePostMutations } from '../api/journal';
@@ -59,12 +70,46 @@ export function AskAboutGame({ entry }: { entry: EntryDto }) {
 }
 
 /**
- * A chat about one game, on its own page (`/games/:id/chat`). The conversation lives in this
- * component only: the server keeps nothing but a usage record, and leaving the page ends it.
+ * A chat about one game, on its own page (`/games/:id/chat`). Chats are saved on the server after
+ * each answer, so the latest one reopens here; earlier ones can be picked or deleted.
  */
 export function GameChat({ entry }: { entry: EntryDto }) {
+    const chats = useAiChats(entry.id);
+    if (chats.isPending) return <ChatSkeleton />;
+    if (chats.isError) return <p role="alert">Couldn't load your chats.</p>;
+    return <ChatSession entry={entry} chats={chats.data} />;
+}
+
+function ChatSkeleton() {
+    return (
+        <div className="chat" role="status" aria-label="Loading your chat">
+            <ol className="helper__log" aria-hidden="true">
+                <li className="helper__msg helper__msg--user">
+                    <span className="skeleton skeleton--line" style={{ width: 160 }} />
+                </li>
+                <li className="helper__msg helper__msg--assistant">
+                    <span className="skeleton skeleton--line" style={{ width: '90%' }} />
+                    <span className="skeleton skeleton--line" style={{ width: '70%' }} />
+                </li>
+            </ol>
+        </div>
+    );
+}
+
+const chatLabel = (c: AiChatSummaryDto) =>
+    `${c.title} (${new Date(c.usedAt).toLocaleDateString(undefined, { dateStyle: 'medium' })})`;
+
+function ChatSession({ entry, chats }: { entry: EntryDto; chats: AiChatSummaryDto[] }) {
     const chat = useAiChat();
-    const [messages, setMessages] = useState<AiMessage[]>([]);
+    const remove = useDeleteAiChat();
+    const confirm = useConfirm();
+    const qc = useQueryClient();
+    // The most recently used chat reopens; null is a new, unsaved conversation
+    const [chatId, setChatId] = useState<number | null>(chats[0]?.id ?? null);
+    const saved = useAiChatDetail(chatId);
+    const [draft, setDraft] = useState<AiMessage[] | null>(null);
+    const messages = draft ?? (chatId === null ? [] : (saved.data?.messages ?? []));
+    const loadingChat = chatId !== null && saved.isPending && draft === null;
     const [input, setInput] = useState('');
     const [includeNotes, setIncludeNotes] = useState(true);
     const [error, setError] = useState<string>();
@@ -85,32 +130,73 @@ export function GameChat({ entry }: { entry: EntryDto }) {
         if (following.current) end.current?.scrollIntoView({ block: 'end' });
     }, [messages, chat.isPending]);
 
+    function open(id: number | null) {
+        setChatId(id);
+        setDraft(null);
+        setError(undefined);
+        following.current = true;
+    }
+
     async function send(e: FormEvent) {
         e.preventDefault();
         const text = input.trim();
         if (!text || chat.isPending) return;
         const next: AiMessage[] = [...messages, { role: 'user', content: text }];
         following.current = true;
-        setMessages(next);
+        setDraft(next);
         setInput('');
         setError(undefined);
         try {
             // The answer grows in place as its pieces arrive; the whole answer replaces it at the end
             let partial = '';
-            const reply = await chat.mutateAsync({
-                input: { entryId: entry.id, includeNotes, messages: next },
+            const done = await chat.mutateAsync({
+                input: {
+                    entryId: entry.id,
+                    chatId: chatId ?? undefined,
+                    includeNotes,
+                    message: text
+                },
                 onDelta: (piece) => {
                     partial += piece;
-                    setMessages([...next, { role: 'assistant', content: partial }]);
+                    setDraft([...next, { role: 'assistant', content: partial }]);
                 }
             });
-            setMessages([...next, { role: 'assistant', content: reply }]);
+            const final: AiMessage[] = [...next, { role: 'assistant', content: done.reply }];
+            // The server saved the turn; keep the cached copy in step instead of fetching it again
+            qc.setQueryData(['ai', 'chat', done.chatId], (old: AiChatDto | undefined) => ({
+                ...(old ?? {
+                    id: done.chatId,
+                    entryId: entry.id,
+                    title: text,
+                    createdAt: Date.now()
+                }),
+                messages: final,
+                messageCount: final.length,
+                usedAt: Date.now()
+            }));
+            setChatId(done.chatId);
+            setDraft(null);
         } catch (err) {
             // Put the question back so it isn't lost
-            setMessages(messages);
+            setDraft(null);
             setInput(text);
             setError(errorText(err));
         }
+    }
+
+    async function deleteCurrent() {
+        if (chatId === null) return;
+        if (
+            !(await confirm({
+                title: 'Delete this chat?',
+                message: 'The conversation is removed for good. Notes you saved from it stay.',
+                confirmLabel: 'Delete chat',
+                tone: 'danger'
+            }))
+        )
+            return;
+        await remove.mutateAsync(chatId);
+        open(chats.find((c) => c.id !== chatId)?.id ?? null);
     }
 
     return (
@@ -127,7 +213,26 @@ export function GameChat({ entry }: { entry: EntryDto }) {
                     when you leave this page, so use "Summarize to notes" to keep the useful parts.
                 </p>
             </details>
-            {messages.length === 0 ? (
+            {chats.length > 0 && (
+                <label className="field chat__pick">
+                    <span>Chat</span>
+                    <select
+                        value={chatId ?? ''}
+                        onChange={(e) => open(e.target.value ? Number(e.target.value) : null)}
+                        disabled={chat.isPending}
+                    >
+                        {chatId === null && <option value="">New conversation</option>}
+                        {chats.map((c) => (
+                            <option key={c.id} value={c.id}>
+                                {chatLabel(c)}
+                            </option>
+                        ))}
+                    </select>
+                </label>
+            )}
+            {loadingChat ? (
+                <ChatSkeleton />
+            ) : messages.length === 0 ? (
                 <div className="chat__empty">
                     <Bot aria-hidden="true" />
                     <p>
@@ -159,16 +264,19 @@ export function GameChat({ entry }: { entry: EntryDto }) {
             )}
             {messages.length >= 2 && !chat.isPending && (
                 <div className="row">
-                    <Summarize entry={entry} messages={messages} includeNotes={includeNotes} />
+                    {chatId !== null && (
+                        <Summarize entry={entry} chatId={chatId} includeNotes={includeNotes} />
+                    )}
+                    <button type="button" className="btn btn--ghost" onClick={() => open(null)}>
+                        <Plus aria-hidden="true" /> New conversation
+                    </button>
                     <button
                         type="button"
-                        className="btn btn--ghost"
-                        onClick={() => {
-                            setMessages([]);
-                            setError(undefined);
-                        }}
+                        className="btn btn--ghost btn--danger"
+                        onClick={deleteCurrent}
+                        disabled={remove.isPending}
                     >
-                        <Trash2 aria-hidden="true" /> New conversation
+                        <Trash2 aria-hidden="true" /> Delete chat
                     </button>
                 </div>
             )}
@@ -227,11 +335,11 @@ export function GameChat({ entry }: { entry: EntryDto }) {
 /** Asks for the main points, lets the user edit them, and saves only where they choose. */
 function Summarize({
     entry,
-    messages,
+    chatId,
     includeNotes
 }: {
     entry: EntryDto;
-    messages: AiMessage[];
+    chatId: number;
     includeNotes: boolean;
 }) {
     const summarize = useAiSummarize();
@@ -247,7 +355,7 @@ function Summarize({
         setError(undefined);
         setSaved(undefined);
         try {
-            const res = await summarize.mutateAsync({ entryId: entry.id, includeNotes, messages });
+            const res = await summarize.mutateAsync({ chatId, includeNotes });
             setDraft(res.draft);
         } catch (err) {
             setError(errorText(err));

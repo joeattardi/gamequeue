@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { aiUsage, errorEvents, users } from '../src/db/schema.js';
 import { HitLimiter } from '../src/auth/rate-limit.js';
 import { NO_SPOILERS } from '../src/services/ai.js';
+import { pruneChats } from '../src/services/ai-chats.js';
 import { costMicros, PRICES_PER_MTOK } from '../src/services/ai-usage.js';
 import { CATALOG } from './api.js';
 import { cookieFrom, fakeAi, fakeIgdb, makeApp, register, PC } from './helpers.js';
@@ -42,7 +43,7 @@ async function setup(
     const ask = (content: string, extra: Record<string, unknown> = {}) =>
         call('/ai/chat', 'POST', {
             entryId: hades.id,
-            messages: [{ role: 'user', content }],
+            message: content,
             ...extra
         });
     const admin = async () => {
@@ -102,7 +103,7 @@ describe('AI availability', () => {
 });
 
 describe('game helper', () => {
-    it('answers and records one usage row with no conversation text', async () => {
+    it('answers, records one usage row and keeps the text only in the saved chat', async () => {
         const { ask, db, ai } = await setup();
         const res = await ask('How do I beat the second boss?');
         expect(res).toMatchObject({ status: 200, reply: 'Try the left door.' });
@@ -116,10 +117,10 @@ describe('game helper', () => {
             outputTokens: 200,
             costMicros: 1000 * 2 + 200 * 10
         });
-        // nothing of the conversation is in the database
-        const tables = db.all<{ name: string }>(
-            sql`select name from sqlite_master where type = 'table'`
-        );
+        // the conversation is kept only in the user's saved chat, nowhere else (usage, error log, ...)
+        const tables = db
+            .all<{ name: string }>(sql`select name from sqlite_master where type = 'table'`)
+            .filter((t) => t.name !== 'ai_chats');
         const dump = JSON.stringify(
             tables.map((t) => db.all(sql.raw(`select * from "${t.name}"`)))
         );
@@ -163,14 +164,9 @@ describe('game helper', () => {
 
         await call('/ai/chat', 'POST', {
             entryId: hades.id,
-            messages: [{ role: 'user', content: 'hi' }]
+            message: 'hi'
         });
-        await call(
-            '/ai/chat',
-            'POST',
-            { entryId: theirs.id, messages: [{ role: 'user', content: 'hi' }] },
-            other
-        );
+        await call('/ai/chat', 'POST', { entryId: theirs.id, message: 'hi' }, other);
         expect(ai!.requests[0]!.system).not.toMatch(/OTHER-(JOURNAL|NOTE)/);
         expect(ai!.requests[1]!.system).not.toContain('MY-PRIVATE-NOTE');
         expect(ai!.requests[1]!.system).not.toContain('Beat the first boss MEG');
@@ -178,7 +174,7 @@ describe('game helper', () => {
         // asking about someone else's entry is a 404 and costs nothing
         const stolen = await call('/ai/chat', 'POST', {
             entryId: theirs.id,
-            messages: [{ role: 'user', content: 'hi' }]
+            message: 'hi'
         });
         expect(stolen.status).toBe(404);
         expect(ai!.requests).toHaveLength(2);
@@ -186,22 +182,23 @@ describe('game helper', () => {
 
     it('enforces the turn and size caps on the server', async () => {
         const { call, hades, ai } = await setup();
-        const chat = (messages: unknown) =>
-            call('/ai/chat', 'POST', { entryId: hades.id, messages });
-        const turns = (n: number) =>
-            Array.from({ length: n }, (_, i) => ({
-                role: i % 2 === 0 ? 'user' : 'assistant',
-                content: 'x'
-            }));
-        expect((await chat(turns(21))).status).toBe(400);
-        expect((await chat(turns(19))).status).toBe(200);
-        expect((await chat([{ role: 'user', content: 'y'.repeat(4001) }])).status).toBe(400);
-        const big = turns(7).map((m) => ({ ...m, content: 'z'.repeat(3999) }));
-        expect((await chat(big)).status).toBe(400); // 27,993 characters in all
-        expect((await chat([{ role: 'assistant', content: 'hi' }])).status).toBe(400);
-        expect((await chat(turns(2))).status).toBe(400); // must end with the user
-        expect((await chat([])).status).toBe(400);
-        expect(ai!.requests).toHaveLength(1);
+        const turn = (message: string, chatId?: number) =>
+            call('/ai/chat', 'POST', { entryId: hades.id, chatId, message });
+        expect((await turn('y'.repeat(4001))).status).toBe(400);
+        expect((await turn('   ')).status).toBe(400);
+        // 10 questions and 10 answers fill a chat; the 11th question is refused
+        const first = await turn('q1');
+        for (let i = 2; i <= 10; i++) expect((await turn(`q${i}`, first.chatId)).status).toBe(200);
+        const full = await turn('q11', first.chatId);
+        expect(full.status).toBe(400);
+        expect(full.error).toMatch(/as long as it can get/);
+        expect(ai!.requests).toHaveLength(10);
+        expect(ai!.requests[9]!.messages).toHaveLength(19);
+        // and the characters in a chat are capped too
+        const big = await turn('z'.repeat(3999));
+        for (let i = 0; i < 4; i++)
+            expect((await turn('z'.repeat(3999), big.chatId)).status).toBe(200);
+        expect((await turn('z'.repeat(3999), big.chatId)).status).toBe(400); // 5 questions of 3,999 plus answers: the 6th would pass 24,000
     });
 
     it('limits calls per user', async () => {
@@ -221,6 +218,138 @@ describe('game helper', () => {
         expect(events.map((e) => e.kind)).toEqual(['ai_failed']);
         expect(JSON.stringify(events)).not.toContain('SECRET-QUESTION');
         expect(db.select().from(aiUsage).all()).toEqual([]);
+    });
+});
+
+describe('saved chats', () => {
+    it('saves each finished turn and continues the same chat', async () => {
+        const { call, ask, hades, ai } = await setup();
+        const first = await ask('Where is the first boss?');
+        expect(first.chatId).toBeGreaterThan(0);
+        const second = await call('/ai/chat', 'POST', {
+            entryId: hades.id,
+            chatId: first.chatId,
+            message: 'And after that?'
+        });
+        expect(second.chatId).toBe(first.chatId);
+        // the model saw the saved history, not anything the browser claimed
+        expect(ai!.requests[1]!.messages.map((m) => m.content)).toEqual([
+            'Where is the first boss?',
+            'Try the left door.',
+            'And after that?'
+        ]);
+        const list = (await call(`/ai/chats?entryId=${hades.id}`)).chats;
+        expect(list).toMatchObject([
+            { id: first.chatId, title: 'Where is the first boss?', messageCount: 4 }
+        ]);
+        const chat = (await call(`/ai/chats/${first.chatId}`)).chat;
+        expect(chat.messages.map((m: any) => m.role)).toEqual([
+            'user',
+            'assistant',
+            'user',
+            'assistant'
+        ]);
+    });
+
+    it('saves nothing when the answer fails', async () => {
+        const { call, ask, hades } = await setup({ ai: fakeAi({ fail: true }) });
+        expect((await ask('lost?')).status).toBe(502);
+        expect((await call(`/ai/chats?entryId=${hades.id}`)).chats).toEqual([]);
+    });
+
+    it("keeps chats private: another user's chat is a 404 to read, continue, summarize or delete", async () => {
+        const { app, call, ask, db } = await setup();
+        const { chatId } = await ask('mine');
+        const other = cookieFrom(await register(app, 'two@example.com', undefined, 'two'));
+        db.update(users).set({ aiEnabled: true }).where(eq(users.username, 'two')).run();
+        const theirs = (await call('/entries', 'POST', { igdbId: 1, platformIds: [PC.id] }, other))
+            .entry;
+        expect((await call(`/ai/chats/${chatId}`, 'GET', undefined, other)).status).toBe(404);
+        expect((await call(`/ai/chats/${chatId}`, 'DELETE', undefined, other)).status).toBe(404);
+        expect((await call('/ai/summarize', 'POST', { chatId }, other)).status).toBe(404);
+        const hijack = await call(
+            '/ai/chat',
+            'POST',
+            { entryId: theirs.id, chatId, message: 'x' },
+            other
+        );
+        expect(hijack.status).toBe(404);
+        expect(
+            (await call(`/ai/chats?entryId=${theirs.id}`, 'GET', undefined, other)).chats
+        ).toEqual([]);
+        expect((await call(`/ai/chats/${chatId}`)).status).toBe(200);
+    });
+
+    it('refuses to continue a chat under another game', async () => {
+        const { call, ask } = await setup();
+        const { chatId } = await ask('about Hades');
+        const celeste = (await call('/entries', 'POST', { igdbId: 2, platformIds: [PC.id] })).entry;
+        const res = await call('/ai/chat', 'POST', { entryId: celeste.id, chatId, message: 'x' });
+        expect(res.status).toBe(400);
+    });
+
+    it('keeps 5 chats per game and 50 per user, dropping the least recently used', async () => {
+        const { db, call, hades, ask } = await setup();
+        const ids: number[] = [];
+        for (let i = 1; i <= 6; i++) ids.push((await ask(`question ${i}`)).chatId);
+        const left = (await call(`/ai/chats?entryId=${hades.id}`)).chats.map((c: any) => c.id);
+        expect(left).toHaveLength(5);
+        expect(left).not.toContain(ids[0]);
+
+        // 50 per user across games: fill with chats on other entries straight in the table
+        const { aiChats } = await import('../src/db/schema.js');
+        const me = db.select().from(users).where(eq(users.username, 'mine')).get()!;
+        const others: number[] = [];
+        for (const igdbId of [2, 3, 4])
+            others.push(
+                (await call('/entries', 'POST', { igdbId, platformIds: [PC.id] })).entry.id
+            );
+        for (let i = 0; i < 50; i++) {
+            const e = { id: others[i % 3]! };
+            db.insert(aiChats)
+                .values({
+                    userId: me.id,
+                    entryId: e.id,
+                    title: `t${i}`,
+                    messages: '[]',
+                    usedAt: Date.now() - 1000 + i
+                })
+                .run();
+        }
+        await ask('the newest');
+        const all = db.select().from(aiChats).where(eq(aiChats.userId, me.id)).all();
+        expect(all).toHaveLength(50);
+        expect(all.some((c) => c.title === 'the newest')).toBe(true);
+    });
+
+    it('drops chats unused for 90 days, and opening one keeps it', async () => {
+        const { db, ask, call } = await setup();
+        const { aiChats } = await import('../src/db/schema.js');
+        const old = (await ask('old one')).chatId;
+        const read = (await ask('read lately')).chatId;
+        const longAgo = Date.now() - 91 * 86_400_000;
+        db.update(aiChats).set({ usedAt: longAgo }).run();
+        await call(`/ai/chats/${read}`); // opening it counts as using it
+        expect(pruneChats(db)).toBe(1);
+        expect(
+            db
+                .select()
+                .from(aiChats)
+                .all()
+                .map((c) => c.id)
+        ).toEqual([read]);
+        expect(old).toBeGreaterThan(0);
+    });
+
+    it('deletes chats with the game, the account, or on request', async () => {
+        const { db, ask, call, hades } = await setup();
+        const { aiChats } = await import('../src/db/schema.js');
+        const one = (await ask('one')).chatId;
+        await ask('two');
+        expect((await call(`/ai/chats/${one}`, 'DELETE')).status).toBe(200);
+        expect(db.select().from(aiChats).all()).toHaveLength(1);
+        await call(`/entries/${hades.id}`, 'DELETE');
+        expect(db.select().from(aiChats).all()).toEqual([]);
     });
 });
 
@@ -248,7 +377,7 @@ describe('streamed answers', () => {
         });
         const res = await stream(app, cookie, {
             entryId: hades.id,
-            messages: [{ role: 'user', content: 'Meg?' }]
+            message: 'Meg?'
         });
         expect(res.status).toBe(200);
         expect(res.headers.get('content-type')).toContain('text/event-stream');
@@ -256,7 +385,11 @@ describe('streamed answers', () => {
         const deltas = got.filter((e) => e.event === 'delta').map((e) => e.data.text);
         expect(deltas.length).toBeGreaterThan(1);
         expect(deltas.join('')).toBe('Dash through her lunge.');
-        expect(got.at(-1)).toEqual({ event: 'done', data: { reply: 'Dash through her lunge.' } });
+        expect(got.at(-1)).toMatchObject({
+            event: 'done',
+            data: { reply: 'Dash through her lunge.' }
+        });
+        expect(got.at(-1)!.data.chatId).toBeGreaterThan(0);
         expect(db.select().from(aiUsage).all()).toHaveLength(1);
         expect(ai!.requests[0]!.system).toContain(NO_SPOILERS);
     });
@@ -265,18 +398,18 @@ describe('streamed answers', () => {
         const off = await setup({ enabled: false });
         const res = await stream(off.app, off.cookie, {
             entryId: off.hades.id,
-            messages: [{ role: 'user', content: 'x' }]
+            message: 'x'
         });
         expect(res.status).toBe(403);
         expect((await res.json()).error).toMatch(/not switched on/);
         expect(
-            (await stream(off.app, off.cookie, { entryId: off.hades.id, messages: [] })).status
+            (await stream(off.app, off.cookie, { entryId: off.hades.id, message: '' })).status
         ).toBe(400);
 
         const broken = await setup({ ai: fakeAi({ fail: true }) });
         const failed = await stream(broken.app, broken.cookie, {
             entryId: broken.hades.id,
-            messages: [{ role: 'user', content: 'SECRET-QUESTION' }]
+            message: 'SECRET-QUESTION'
         });
         expect(failed.status).toBe(200);
         const got = await events(failed);
@@ -291,23 +424,22 @@ describe('streamed answers', () => {
 });
 
 describe('summarize to notes', () => {
-    const convo = [
-        { role: 'user', content: 'How do I beat MEG?' },
-        { role: 'assistant', content: 'Dash through her attacks.' }
-    ];
+    /** A saved chat with one question and its answer */
+    const savedChat = async (s: Awaited<ReturnType<typeof setup>>) =>
+        (await s.ask('How do I beat MEG?')).chatId as number;
 
     it('returns a draft without saving anything, recorded as a summary call', async () => {
-        const { call, hades, ai, db } = await setup({
-            ai: fakeAi({ reply: '- Dash through attacks' })
-        });
+        const s = await setup({ ai: fakeAi({ reply: 'Dash through her attacks.' }) });
+        const { call, hades, ai, db } = s;
+        const chatId = await savedChat(s);
         const before = (await call(`/entries/${hades.id}`)).entry.notes.length;
-        const res = await call('/ai/summarize', 'POST', { entryId: hades.id, messages: convo });
-        expect(res).toMatchObject({ status: 200, draft: '- Dash through attacks' });
-        expect(ai!.requests[0]!.messages[0]!.content).toContain('Player: How do I beat MEG?');
-        expect(ai!.requests[0]!.messages[0]!.content).toContain(
+        const res = await call('/ai/summarize', 'POST', { chatId });
+        expect(res).toMatchObject({ status: 200, draft: 'Dash through her attacks.' });
+        expect(ai!.requests[1]!.messages[0]!.content).toContain('Player: How do I beat MEG?');
+        expect(ai!.requests[1]!.messages[0]!.content).toContain(
             'Helper: Dash through her attacks.'
         );
-        expect(ai!.requests[0]!.system).toContain(NO_SPOILERS);
+        expect(ai!.requests[1]!.system).toContain(NO_SPOILERS);
         expect((await call(`/entries/${hades.id}`)).entry.notes).toHaveLength(before);
         expect(
             db
@@ -315,24 +447,15 @@ describe('summarize to notes', () => {
                 .from(aiUsage)
                 .all()
                 .map((r) => r.feature)
-        ).toEqual(['summary']);
-        // a conversation with no answer yet has nothing to summarize
-        expect(
-            (
-                await call('/ai/summarize', 'POST', {
-                    entryId: hades.id,
-                    messages: convo.slice(0, 1)
-                })
-            ).status
-        ).toBe(400);
+        ).toEqual(['helper', 'summary']);
+        // someone else's chat, or one that doesn't exist, is a 404
+        expect((await call('/ai/summarize', 'POST', { chatId: 9999 })).status).toBe(404);
     });
 
     it('saves the edited draft to each destination only when asked', async () => {
-        const { call, hades, pid, app } = await setup();
-        const { draft } = await call('/ai/summarize', 'POST', {
-            entryId: hades.id,
-            messages: convo
-        });
+        const s = await setup();
+        const { call, hades, pid, app } = s;
+        const { draft } = await call('/ai/summarize', 'POST', { chatId: await savedChat(s) });
         const edited = `${draft} (edited)`;
 
         const priv = await call(`/entries/${hades.id}/notes`, 'POST', {
@@ -384,15 +507,9 @@ describe('budget and cost', () => {
         });
         expect((await as('/ai/budget', 'PUT', { budgetUsd: 0.01 })).budgetUsd).toBe(0.01);
 
-        await ask('one'); // $0.004 = 40%
+        const { chatId } = await ask('one'); // $0.004 = 40%
         expect((await as('/ai')).warning).toBe(false);
-        await call('/ai/summarize', 'POST', {
-            entryId: hades.id,
-            messages: [
-                { role: 'user', content: 'q' },
-                { role: 'assistant', content: 'a' }
-            ]
-        }); // $0.008 = 80%
+        await call('/ai/summarize', 'POST', { chatId }); // $0.008 = 80%
         const card = await as('/ai');
         expect(card).toMatchObject({ warning: true, exhausted: false, spentUsd: 0.008 });
         expect(card.byFeature).toEqual([

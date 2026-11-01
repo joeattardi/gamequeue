@@ -24,40 +24,45 @@ export const aiMessageSchema = z.object({
 });
 export type AiMessage = z.infer<typeof aiMessageSchema>;
 
-/** A conversation as the client sends it each turn: it starts and ends with the user, and turns alternate. */
-export const aiConversationSchema = z
-    .array(aiMessageSchema)
-    .min(1)
-    .max(
-        AI_MAX_MESSAGES,
-        `A conversation holds at most ${AI_MAX_MESSAGES} messages; start a new one`
-    )
-    .refine((m) => m.reduce((n, x) => n + x.content.length, 0) <= AI_MAX_TOTAL_CHARS, {
-        message: 'This conversation is too long; start a new one'
-    })
-    .refine((m) => m.every((x, i) => x.role === (i % 2 === 0 ? 'user' : 'assistant')), {
-        message: 'Turns must alternate, starting with you'
-    });
-
+/**
+ * One helper turn. The server keeps the conversation (`ai_chats`): the client sends only the new
+ * question and which saved chat it continues (none starts a new one).
+ */
 export const aiChatSchema = z.object({
     entryId: z.number().int().positive(),
+    chatId: z.number().int().positive().optional(),
     /** Send the user's notes on this game along with the game data and journal */
     includeNotes: z.boolean().default(true),
-    messages: aiConversationSchema.refine((m) => m[m.length - 1]?.role === 'user', {
-        message: 'The last message must be yours'
-    })
+    message: z.string().trim().min(1).max(AI_MAX_MESSAGE_CHARS)
 });
 export type AiChatInput = z.infer<typeof aiChatSchema>;
 
-/** Summarize asks for the main points of a conversation that already has an answer in it. */
+/** Summarize asks for the main points of a saved chat that already has an answer in it. */
 export const aiSummarizeSchema = z.object({
-    entryId: z.number().int().positive(),
-    includeNotes: z.boolean().default(true),
-    messages: aiConversationSchema.refine((m) => m.length >= 2, {
-        message: 'There is nothing to summarize yet'
-    })
+    chatId: z.number().int().positive(),
+    includeNotes: z.boolean().default(true)
 });
 export type AiSummarizeInput = z.infer<typeof aiSummarizeSchema>;
+
+/** How many saved chats are kept per game and per user, and for how long after their last use */
+export const AI_CHATS_PER_GAME = 5;
+export const AI_CHATS_PER_USER = 50;
+export const AI_CHAT_RETENTION_DAYS = 90;
+
+export interface AiChatSummaryDto {
+    id: number;
+    entryId: number;
+    /** The first question, shortened */
+    title: string;
+    messageCount: number;
+    createdAt: number;
+    /** Last time it was opened or added to */
+    usedAt: number;
+}
+
+export interface AiChatDto extends AiChatSummaryDto {
+    messages: AiMessage[];
+}
 
 export interface AiStatusDto {
     /** The AI controls show only when this is true */
@@ -68,6 +73,8 @@ export interface AiStatusDto {
 
 export interface AiReplyDto {
     reply: string;
+    /** The saved chat the turn went into (new when the request had no `chatId`) */
+    chatId: number;
 }
 export interface AiDraftDto {
     draft: string;

@@ -6,7 +6,8 @@ import type { AiProvider } from '../ai/provider.js';
 import { HitLimiter } from '../auth/rate-limit.js';
 import { requireAuth, type AuthVars } from '../auth/middleware.js';
 import { HttpError } from '../errors.js';
-import { validate } from '../http.js';
+import { parseId, validate } from '../http.js';
+import { deleteChat, listChats, openChat } from '../services/ai-chats.js';
 import { aiStatus, chat, prepareChat, summarize } from '../services/ai.js';
 
 /** AI calls one user may make per hour, on top of the per-IP limit in request-limits.ts */
@@ -33,10 +34,20 @@ export function aiRoutes(deps: AppDeps, provider: AiProvider | null, perUser?: H
     };
 
     r.get('/status', (c) => c.json(aiStatus(db, provider, uid(c))));
+    // Saved chats: the list for one game, one chat in full, and deleting one. Reading them needs no
+    // AI call, so they work even when AI is switched off or the budget is spent.
+    r.get('/chats', (c) =>
+        c.json({ chats: listChats(db, uid(c), parseId(c.req.query('entryId') ?? '')) })
+    );
+    r.get('/chats/:id', (c) => c.json({ chat: openChat(db, uid(c), parseId(c.req.param('id'))) }));
+    r.delete('/chats/:id', (c) => {
+        deleteChat(db, uid(c), parseId(c.req.param('id')));
+        return c.json({ ok: true });
+    });
     r.post('/chat', async (c) => {
         const input = validate(aiChatSchema, await body(c));
         limit(c, uid(c));
-        return c.json({ reply: await chat(db, provider, uid(c), input) });
+        return c.json(await chat(db, provider, uid(c), input));
     });
     // The same turn, streamed as server-sent events: `delta` pieces of text as they arrive, then
     // `done` with the whole answer (which wins over the pieces), or `error`. Refusals that need no
@@ -53,8 +64,8 @@ export function aiRoutes(deps: AppDeps, provider: AiProvider | null, perUser?: H
             const send = (event: string, data: unknown) =>
                 (sent = sent.then(() => sse.writeSSE({ event, data: JSON.stringify(data) })));
             try {
-                const reply = await answer((text) => void send('delta', { text }));
-                await send('done', { reply });
+                const done = await answer((text) => void send('delta', { text }));
+                await send('done', done);
             } catch (err) {
                 await send('error', {
                     error:

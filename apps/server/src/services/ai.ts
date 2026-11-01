@@ -1,10 +1,13 @@
 import { and, desc, eq } from 'drizzle-orm';
-import type {
-    AiChatInput,
-    AiMessage,
-    AiStatusDto,
-    AiSummarizeInput,
-    EntryDto
+import {
+    AI_MAX_MESSAGES,
+    AI_MAX_TOTAL_CHARS,
+    type AiReplyDto,
+    type AiChatInput,
+    type AiMessage,
+    type AiStatusDto,
+    type AiSummarizeInput,
+    type EntryDto
 } from '@gamequeue/shared';
 import type { AiProvider } from '../ai/provider.js';
 import { AiProviderError } from '../ai/provider.js';
@@ -12,6 +15,7 @@ import type { Db } from '../db/client.js';
 import { playthroughPosts, users } from '../db/schema.js';
 import { HttpError } from '../errors.js';
 import { budgetSpent, recordUsage } from './ai-usage.js';
+import { chatHistory, openChat, saveTurn } from './ai-chats.js';
 import { getEntry } from './entries.js';
 import { reportError } from './error-log.js';
 
@@ -161,8 +165,9 @@ async function run(
 }
 
 /**
- * Everything that can refuse a chat turn (switched off, over budget, someone else's game), done
- * before anything is sent, so the route can still answer with a plain HTTP error. Returns the call.
+ * Everything that can refuse a chat turn (switched off, over budget, someone else's game or chat,
+ * a conversation already at its size limit), done before anything is sent, so the route can still
+ * answer with a plain HTTP error. Returns the call, which saves the turn once the answer is complete.
  */
 export function prepareChat(
     db: Db,
@@ -171,9 +176,36 @@ export function prepareChat(
     input: AiChatInput
 ) {
     const ai = requireAi(db, provider, userId);
+    const history = chatHistory(db, userId, input.entryId, input.chatId);
+    const messages: AiMessage[] = [...history, { role: 'user', content: input.message }];
+    // The answer is added too, so a chat with no room for one more question and answer is full
+    if (messages.length + 1 > AI_MAX_MESSAGES)
+        throw new HttpError(400, 'This chat is as long as it can get; start a new one');
+    if (messages.reduce((n, m) => n + m.content.length, 0) > AI_MAX_TOTAL_CHARS)
+        throw new HttpError(400, 'This chat is too long; start a new one');
     const system = buildSystemPrompt(db, userId, input.entryId, input.includeNotes, 'helper');
-    return (onText?: (delta: string) => void) =>
-        run(db, ai, userId, 'helper', system, input.messages, MAX_REPLY_TOKENS, onText);
+    return async (onText?: (delta: string) => void): Promise<AiReplyDto> => {
+        const reply = await run(
+            db,
+            ai,
+            userId,
+            'helper',
+            system,
+            messages,
+            MAX_REPLY_TOKENS,
+            onText
+        );
+        const chatId = saveTurn(
+            db,
+            userId,
+            input.entryId,
+            input.chatId,
+            history,
+            input.message,
+            reply
+        );
+        return { reply, chatId };
+    };
 }
 
 export async function chat(
@@ -185,7 +217,7 @@ export async function chat(
     return prepareChat(db, provider, userId, input)();
 }
 
-/** A draft note with the conversation's main points. Nothing is saved here: the user edits and saves it. */
+/** A draft note with a saved chat's main points. Nothing is saved here: the user edits and saves it. */
 export async function summarize(
     db: Db,
     provider: AiProvider | null,
@@ -193,8 +225,10 @@ export async function summarize(
     input: AiSummarizeInput
 ) {
     const ai = requireAi(db, provider, userId);
-    const system = buildSystemPrompt(db, userId, input.entryId, input.includeNotes, 'summary');
-    const transcript = input.messages
+    const chat = openChat(db, userId, input.chatId);
+    if (chat.messages.length < 2) throw new HttpError(400, 'There is nothing to summarize yet');
+    const system = buildSystemPrompt(db, userId, chat.entryId, input.includeNotes, 'summary');
+    const transcript = chat.messages
         .map((m) => `${m.role === 'user' ? 'Player' : 'Helper'}: ${m.content}`)
         .join('\n\n');
     return run(

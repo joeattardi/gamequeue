@@ -438,14 +438,15 @@ An optional chat about a game, on its own page (`/games/:id/chat`, opened from "
 
 ```mermaid
 flowchart LR
-    B["Browser keeps the conversation"] -->|"whole chat each turn"| S["Server builds the prompt:<br/>game data + latest journal posts<br/>(+ your notes if ticked)<br/>+ no-spoiler rule"]
+    B["Browser"] -->|"new question + chat id"| S["Server builds the prompt:<br/>game data + latest journal posts<br/>(+ your notes if ticked)<br/>+ no-spoiler rule"]
     S --> A["Anthropic API"]
     A --> S
     S -->|"reply"| B
-    S --> U["ai_usage row:<br/>tokens and estimated cost only"]
+    S --> C["ai_chats: the saved conversation"]
+    S --> U["ai_usage row:<br/>tokens and estimated cost"]
 ```
 
-The server stores nothing of the conversation, only a usage row so the admin can see the month's spend against a budget (default $5); at 100% new calls are refused. "Summarize to notes" turns the chat into a draft you edit and then save as a private note, a public note or a journal post.
+Chats are saved privately so hints survive leaving the page: up to 5 per game and 50 per user, removed after 90 days unused. Every call also writes a usage row (tokens and estimated cost) so the admin can see the month's spend against a budget (default $5); at 100% new calls are refused. "Summarize to notes" turns the chat into a draft you edit and then save as a private note, a public note or a journal post.
 
 Code: `ai/provider.ts`, `services/ai.ts`, `services/ai-usage.ts`, `routes/ai.ts`, `components/GameChat.tsx`, `routes/GameChatPage.tsx`.
 

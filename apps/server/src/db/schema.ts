@@ -79,6 +79,34 @@ export const settings = sqliteTable('settings', {
 });
 
 /**
+ * A saved game-helper conversation, so hints survive leaving the page. The messages are one JSON
+ * array (at most 20 messages and 24,000 characters, see `AI_MAX_*`), read and written whole.
+ * Kept per user and game, capped in number and dropped after 90 days unused (services/ai-chats.ts).
+ * Private: never on a public page, never logged, not in the export file.
+ */
+export const aiChats = sqliteTable(
+    'ai_chats',
+    {
+        id: integer('id').primaryKey({ autoIncrement: true }),
+        userId: integer('user_id')
+            .notNull()
+            .references(() => users.id, { onDelete: 'cascade' }),
+        entryId: integer('entry_id')
+            .notNull()
+            .references(() => entries.id, { onDelete: 'cascade' }),
+        title: text('title').notNull(),
+        messages: text('messages').notNull(),
+        createdAt: integer('created_at').notNull().default(now),
+        // Last time it was opened or added to; the 90-day clean-up and the limits go by this
+        usedAt: integer('used_at').notNull().default(now)
+    },
+    (t) => [
+        index('ai_chats_user_used_idx').on(t.userId, t.usedAt),
+        index('ai_chats_entry_idx').on(t.entryId)
+    ]
+);
+
+/**
  * One AI call, for the budget and the admin page. Only counts and the estimated cost: the
  * conversation itself is never stored.
  */

@@ -7923,3 +7923,7 @@ fieldset.stars:disabled .stars__star {
         scroll-margin-bottom: calc(150px + var(--tabbar-h) + env(safe-area-inset-bottom));
     }
 }
+.chat__pick select {
+    width: 100%;
+    min-width: 0;
+}

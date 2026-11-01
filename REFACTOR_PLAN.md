@@ -192,7 +192,7 @@ Eight milestones, in order. R1 to R3 simplify the app and are worth shipping eve
 - [ ] Turn and size caps are enforced server-side.
 - [ ] Summarize to notes produces an editable draft and saves only after the user chooses a destination. Each destination is tested.
 - [ ] The UI says plainly what is sent to the AI provider.
-- [ ] No conversation text is stored in the database or logs.
+- [ ] No conversation text is stored in the database or logs. _(Changed in R5b at Joe's request: game chats are now saved in `ai_chats`, capped and pruned; still never logged.)_
 - [ ] The API key never reaches the browser, logs or error events.
 
 ### R6: Picking
@@ -206,6 +206,7 @@ Eight milestones, in order. R1 to R3 simplify the app and are worth shipping eve
 - Result card: **Start playing** is the primary button. Add to queue is secondary.
 - Roll history: keep this session's earlier results in a strip under the card. Selecting one makes it the current result again.
 - Pick of three: a button next to Roll that draws three distinct games (add a `count` of 1 to 3 to the pick logic and API) and asks the user to choose one. Reuse `PickChoosePage` if it fits.
+- **Ask AI** top-level nav item (decided after R5b; shown only when AI is available): a page at `/chat` listing the games you have recent saved chats for (cover, title, last question, when last used), a box to start a chat about any collection game, and the pick-my-next-game chat below.
 - Pick-my-next-game chat, as a top-level page. The server sends the model: your last 15 Finished games with ratings and genres, the queue, and up to 150 Not Started games with genres, tags, time to beat and IGDB score (sampled when there are more). The model replies with a message plus suggestions that cite game ids from that list. The server drops any id not in the list. The UI shows each suggestion as a card with Start playing and Add to queue buttons. The chat never changes anything by itself. The AI budget, rate limits and "not configured" behavior from R5 apply.
 
 **Acceptance criteria**
