@@ -327,7 +327,7 @@ function CalendarBody({
     );
 }
 
-export function ActivityCalendarSkeleton() {
+function ActivityCalendarSkeleton() {
     return (
         <div className="cal__skeleton" role="status" aria-label="Loading calendar">
             <span className="skeleton cal__skeleton-grid" aria-hidden="true" />

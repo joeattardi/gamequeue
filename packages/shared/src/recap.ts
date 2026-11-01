@@ -10,10 +10,10 @@ export interface RecapPlaythrough {
     playtimeMinutes: number | null;
 }
 
-export type RecapArchetypeId =
+type RecapArchetypeId =
     'collector' | 'marathoner' | 'sprinter' | 'returner' | 'explorer' | 'finisher' | 'steady';
 
-export interface RecapRank {
+interface RecapRank {
     name: string;
     count: number;
 }
@@ -62,7 +62,7 @@ export interface RecapDto {
     archetype: { id: RecapArchetypeId; title: string; blurb: string } | null;
 }
 
-export const RECAP_TOP_N = 3;
+const RECAP_TOP_N = 3;
 const TOP_RATED = 5;
 
 /** A year the API accepts. */

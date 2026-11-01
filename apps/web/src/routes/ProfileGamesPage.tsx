@@ -11,7 +11,6 @@ import { ApiRequestError } from '../api/client';
 import { useProfileGames } from '../api/profile';
 import { PublicGameList, usePublicLayout } from '../components/PublicGameList';
 import { LayoutToggle } from '../components/LayoutToggle';
-import { Footer } from '../components/Footer';
 import { PublicHeader } from '../components/PublicHeader';
 import { usePageTitle } from '../lib';
 

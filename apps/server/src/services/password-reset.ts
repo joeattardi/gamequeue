@@ -11,14 +11,14 @@ import type { Mailer } from './mailer.js';
 export const RESET_TTL_MS = 3600_000;
 /** Minimum wait between two reset emails to the same account; asking sooner is silently ignored */
 export const RESET_COOLDOWN_MS = 60_000;
-export const RESETS_PER_HOUR = 5;
+const RESETS_PER_HOUR = 5;
 
 const hash = (token: string) => createHash('sha256').update(token).digest('hex');
 
 const escapeHtml = (s: string) =>
     s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
 
-export function passwordResetMail(username: string, link: string) {
+function passwordResetMail(username: string, link: string) {
     const text = `Hi ${username},
 
 Someone asked to reset the password of your GameQueue account (username: ${username}). Choose a new one here:
@@ -35,7 +35,7 @@ The link works once and expires in 1 hour. If this wasn't you, you can ignore th
 }
 
 /** How the password changed, as the notice words it. */
-export type PasswordChange = 'reset' | 'account' | 'admin';
+type PasswordChange = 'reset' | 'account' | 'admin';
 
 const CHANGED_HOW: Record<PasswordChange, string> = {
     reset: 'with a password reset link',
@@ -43,7 +43,7 @@ const CHANGED_HOW: Record<PasswordChange, string> = {
     admin: 'by a GameQueue administrator'
 };
 
-export function passwordChangedMail(username: string, how: PasswordChange, resetLink: string) {
+function passwordChangedMail(username: string, how: PasswordChange, resetLink: string) {
     const text = `Hi ${username},
 
 The password of your GameQueue account (username: ${username}) was just changed ${CHANGED_HOW[how]}.

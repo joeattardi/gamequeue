@@ -12,7 +12,7 @@ import { pickChat } from '../services/ai-pick.js';
 import { aiStatus, chat, prepareChat, summarize } from '../services/ai.js';
 
 /** AI calls one user may make per hour, on top of the per-IP limit in request-limits.ts */
-export const AI_CALLS_PER_USER_HOUR = 60;
+const AI_CALLS_PER_USER_HOUR = 60;
 
 const body = (c: { req: { json(): Promise<unknown> } }) => c.req.json().catch(() => undefined);
 

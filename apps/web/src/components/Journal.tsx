@@ -26,8 +26,8 @@ const VISIBILITY_LABELS: Record<Visibility, string> = {
     public: 'Public: anyone with the link, and on your profile'
 };
 
-export const journalUrl = (slug: string) => `${window.location.origin}/p/${slug}`;
-export const ownImageUrl = (id: number) => `/api/posts/images/${id}`;
+const journalUrl = (slug: string) => `${window.location.origin}/p/${slug}`;
+const ownImageUrl = (id: number) => `/api/posts/images/${id}`;
 
 /** Checks a picked file before it is sent, so the common mistakes are caught without a round trip. */
 function checkFile(file: File): string | null {

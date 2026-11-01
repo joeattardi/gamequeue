@@ -7,7 +7,7 @@ const DURATION_MS = 700;
 /** A whole value that is one number, optionally grouped or with decimals, and an optional unit. */
 const COUNT = /^(\d{1,3}(?:,\d{3})+|\d+)(\.\d+)?(\s?[A-Za-z%]+)?$/;
 
-export interface ParsedCount {
+interface ParsedCount {
     n: number;
     decimals: number;
     grouped: boolean;

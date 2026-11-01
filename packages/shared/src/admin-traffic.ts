@@ -27,7 +27,7 @@ export interface TrafficDto {
     analyticsUrl?: string | null;
 }
 
-export interface TrafficTotals {
+interface TrafficTotals {
     requests: number;
     pageViews: number;
     bytes: number;

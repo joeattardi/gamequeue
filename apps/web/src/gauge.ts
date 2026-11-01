@@ -38,7 +38,7 @@ export const formatScore = (value: number) =>
  */
 export const GAUGE_THRESHOLDS = { mixed: 50, favorable: 75 } as const;
 
-export type GaugeTier = 'unfavorable' | 'mixed' | 'favorable';
+type GaugeTier = 'unfavorable' | 'mixed' | 'favorable';
 
 export function gaugeTier(percent: number): GaugeTier {
     if (percent >= GAUGE_THRESHOLDS.favorable) return 'favorable';

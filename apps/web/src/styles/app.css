@@ -90,26 +90,6 @@ a {
     top: 0;
     z-index: 5;
 }
-.topbar__user {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    min-width: 0;
-}
-.topbar__username {
-    color: var(--ink-muted);
-    font-size: 0.9rem;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    max-width: 28vw;
-    text-decoration: none;
-}
-@media (max-width: 520px) {
-    .topbar__username {
-        display: none;
-    }
-}
 .page {
     padding: var(--gutter);
     max-width: 1100px;
@@ -1866,11 +1846,6 @@ a.game-row:hover {
 .skeleton--btn-wide {
     width: 104px;
 }
-.skeleton--btn-ghost {
-    width: 92px;
-    height: 32px;
-    opacity: 0.6;
-}
 .skeleton--card-cover {
     width: 100%;
     aspect-ratio: 3 / 4;
@@ -1879,10 +1854,6 @@ a.game-row:hover {
 }
 .card--skeleton {
     animation: skeleton-in 0.35s ease-out both;
-}
-.skeleton--tiny {
-    width: 14px;
-    height: 0.75rem;
 }
 .play-card--skeleton {
     animation: skeleton-in 0.35s ease-out both;
@@ -6213,10 +6184,6 @@ fieldset.stars:disabled .stars__star {
     width: 34%;
     height: auto;
 }
-.mock__title {
-    font: 700 0.85rem/1.25 var(--font-display);
-    overflow-wrap: anywhere;
-}
 .mock__label {
     font-size: 0.78rem;
     font-weight: 600;
@@ -7734,10 +7701,6 @@ fieldset.stars:disabled .stars__star {
 }
 
 /* ---- Game helper (AI) ---- */
-.helper__disclosure {
-    margin: 0;
-    font-size: 0.9rem;
-}
 .helper__log {
     list-style: none;
     margin: 0;

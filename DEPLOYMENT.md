@@ -43,7 +43,8 @@ On the Pi:
 ~/gamequeue/.env        settings and secrets (mode 600, never committed)
 ~/gamequeue/data/       gamequeue.db (+ -wal and -shm files); mounted into the container at /data
                         igdb.db (the IGDB mirror, rebuildable, not backed up) and mirror-status.json
-~/gamequeue/backups/    nightly and pre-update snapshots
+                        screenshots/ (journal pictures, WebP named by content hash; backed up)
+~/gamequeue/backups/    nightly and pre-update snapshots, and backups/screenshots/
 ```
 
 ## Configuration
@@ -55,6 +56,7 @@ Defined in `apps/server/src/config.ts`. In Docker, `compose.yaml` sets the fixed
 | `NODE_ENV`                             | `production` (set in the image; makes the session cookie `Secure` and serves the web app on one port)                                                                                                                                                  |
 | `PORT`                                 | `3000` (set in the image)                                                                                                                                                                                                                              |
 | `IGDB_MIRROR_PATH`                     | `/data/igdb.db` (set in the image): the local copy of IGDB's data built by `scripts/mirror.sh`; the app uses it when the file exists (see IGDB mirror)                                                                                                 |
+| `SCREENSHOTS_PATH`                     | Optional; journal screenshots go to `screenshots/` next to the database by default (`/data/screenshots` in Docker, so inside the mounted `./data`). The size limit is set on Admin > Screenshots (default 1 GiB)                                       |
 | `DATABASE_PATH`                        | `/data/gamequeue.db` (set in the image; `/data` is the mounted `./data` directory)                                                                                                                                                                     |
 | `TRUST_PROXY`                          | `true` (set in `compose.yaml`; the login rate limit then sees the client IP, see the caveat below)                                                                                                                                                     |
 | `ALLOWED_ORIGINS`                      | `https://gamequeue.app` in `.env` (must match the real URL; the CSRF check rejects any other `Origin`)                                                                                                                                                 |
@@ -482,6 +484,25 @@ sudo chown -R 1000:1000 data/screenshots
 Files the database doesn't know about are harmless (the daily clean-up removes them), and a database row whose file is missing is removed by that same job, so restoring a newer database with an older screenshot copy loses only the pictures that were never copied. The size limit and free disk space are on **Admin > Screenshots**.
 
 Try a restore on a scratch machine once, so the first time is not during an emergency.
+
+## AI features (optional)
+
+Set `ANTHROPIC_API_KEY` in `.env` (and optionally `AI_MODEL`, default `claude-sonnet-5-5`), then `docker compose up -d`. Nothing appears for anyone until an admin ticks **Can use the AI features** on a user's admin page (Admin > Users), admins included. Spend is capped by a monthly budget on **Admin > AI** (default $5, calendar month in UTC): the tile warns at 80% and new calls are refused at 100%. The key stays on the server. Saved game chats live in the database (`ai_chats`), so they are in the database backup; unused ones are deleted after 90 days.
+
+## Smoke test after a deploy
+
+A manual check, about ten minutes, after a release or a fresh database. Use a throw-away account on a scratch database first if you can, then repeat the key steps on production.
+
+- [ ] **Register:** sign up (confirm the email if email confirmation is on) and land on the empty home page.
+- [ ] **Add a game:** search for a game, add it on a platform, open its page; cover, summary and score show.
+- [ ] **Start:** Start playing; it appears on Home under Playing and leaves the queue if it was on it.
+- [ ] **Journal post with screenshot:** on the game page add a note, log some hours and a screenshot post with a JPEG or PNG; the picture shows, and Admin > Screenshots counts it.
+- [ ] **Finish:** Mark finished; the dialog pre-fills the logged hours; add a rating and final thoughts and save; the game moves to Finished.
+- [ ] **Share link:** set the journal to Unlisted, copy the link, open it in a private window (no login): the posts, picture and final thoughts show. Set it back to Private and reload: the page and the picture are gone (404).
+- [ ] **AI help (needs a key and the per-user switch):** open "Ask about this game", ask a question, see the answer stream in; reload and the chat is still there; Summarize to notes and save as a private note; Admin > AI shows the calls.
+- [ ] **Random pick:** Pick by criteria, then Re-roll and Pick 3; choose one and Add to queue from the result card.
+- [ ] **Wishlist:** add a game you don't own to the wishlist, then press "Got it": it moves into the collection and off the wishlist; the public `/u/<you>/wishlist` page shows no notes.
+- [ ] **Backups:** run `scripts/backup.sh` once and check `backups/` holds a new `.db.gz` and `backups/screenshots/` the picture.
 
 ## IGDB mirror
 

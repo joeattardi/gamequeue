@@ -156,7 +156,7 @@ Answer each one and record it under Findings.
 **Security**
 
 - [ ] Run the security review again (`/security-review`) against the current code, and read
-      `REVIEW.md` for anything still open.
+      `docs/archive/REVIEW.md` for anything still open.
 - [ ] Confirm production env: `NODE_ENV=production`, `ALLOWED_ORIGINS` / `PUBLIC_URL` correct,
       `TRUST_PROXY` set only behind your proxy, `SIGNUPS_ENABLED` as intended.
 - [ ] Confirm the first admin account has a strong, unique password and that there is only one

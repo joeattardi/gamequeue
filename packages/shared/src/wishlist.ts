@@ -22,7 +22,7 @@ export interface WishlistDto {
 }
 
 /** What anyone may see of a wishlist: no notes. */
-export type PublicWishlistItemDto = Pick<WishlistItemDto, 'igdbId' | 'game' | 'platform'>;
+type PublicWishlistItemDto = Pick<WishlistItemDto, 'igdbId' | 'game' | 'platform'>;
 
 export interface ProfileWishlistDto {
     username: string;

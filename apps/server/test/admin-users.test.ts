@@ -51,7 +51,7 @@ describe('admin user management', () => {
     });
 
     it('creates a user who can log in, even when signups are off', async () => {
-        const { app, db, admin, call } = await setup();
+        const { app, admin, call } = await setup();
         const res = await call(admin, '/users', 'POST', {
             username: 'Bob',
             email: 'Bob@Example.com',

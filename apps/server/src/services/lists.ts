@@ -98,7 +98,7 @@ const CHUNK = 500;
  * The items for these games, in the order given: the collection entry where the user owns the
  * game, just the cached game where they don't.
  */
-export function itemsFor(db: Db, userId: number, gameIds: number[]): ListItemDto[] {
+function itemsFor(db: Db, userId: number, gameIds: number[]): ListItemDto[] {
     const owned = new Map<number, EntryDto>();
     for (let i = 0; i < gameIds.length; i += CHUNK) {
         const chunk = gameIds.slice(i, i + CHUNK);
@@ -183,7 +183,7 @@ const owns = (db: Db, userId: number, gameId: number) =>
         .get();
 
 /** The wishlist's per-game extras: the platform the user means to buy it on, and a private note. */
-export interface ListItemExtras {
+interface ListItemExtras {
     platformId?: number | null;
     note?: string;
 }

@@ -1,5 +1,7 @@
 # Gamification: plan
 
+> **Archived.** Written before the 2026 refactor (REFACTOR_PLAN.md), so it may mention features that were removed since (game grids, tier lists, playing slots, IsThereAnyDeal prices) and code that has moved. Kept for the record; ARCHITECTURE.md and CLAUDE.md describe the app as it is.
+
 Status: **design only, nothing built.** Wait for the user to say when to start.
 
 The idea: reward using GameQueue with achievements, and maybe later XP and levels. This document records what was decided in the design discussion, so the milestone can be built without re-deriving it.

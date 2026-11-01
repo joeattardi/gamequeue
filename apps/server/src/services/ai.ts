@@ -21,7 +21,7 @@ import { getEntry } from './entries.js';
 import { reportError } from './error-log.js';
 
 /** How much of the journal goes into the prompt: the latest posts of the playthrough in progress */
-export const JOURNAL_POSTS_IN_PROMPT = 12;
+const JOURNAL_POSTS_IN_PROMPT = 12;
 const MAX_REPLY_TOKENS = 2048;
 const MAX_SUMMARY_TOKENS = 1024;
 
@@ -110,7 +110,7 @@ function notesSection(entry: EntryDto): string {
 }
 
 /** The system prompt for one game. Only this user's own data goes in. Exported for tests. */
-export function buildSystemPrompt(
+function buildSystemPrompt(
     db: Db,
     userId: number,
     entryId: number,

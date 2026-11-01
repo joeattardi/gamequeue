@@ -21,7 +21,7 @@ async function setup() {
 
 describe('public profile', () => {
     it('is readable without logging in and leaks no private data', async () => {
-        const { app, post, put, add } = await setup();
+        const { app, post, add } = await setup();
         const hades = await add(1);
         const celeste = await add(2);
         expect((await app.request('/api/stats')).status).toBe(401); // the rest of the API stays private

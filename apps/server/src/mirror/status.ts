@@ -14,7 +14,7 @@ export const mirrorStatusPath = (mirrorPath: string) =>
  */
 export const MIN_FREE_BYTES = 1024 ** 3;
 
-export type ReadRun = { run: MirrorRunDto | null; unreadable: boolean };
+type ReadRun = { run: MirrorRunDto | null; unreadable: boolean };
 
 /** The last report. A missing file means the job has never run; bad content is `unreadable`. */
 export function readMirrorRun(mirrorPath: string): ReadRun {

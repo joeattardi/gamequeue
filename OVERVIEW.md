@@ -218,7 +218,7 @@ The tables split cleanly into two halves.
 Information that comes from IGDB. It has no owner: if two users own the same game, it's stored once. Rows are keyed by IGDB's own ids.
 
 - `games`: name, summary, cover, release date, IGDB score, time to beat, screenshots.
-- `platforms`, `genres`, `themes`, plus join tables linking them to games.
+- `platforms`, `genres`, `themes`, plus the join tables `game_platforms`, `game_genres` and `game_themes`.
 - `series`, `game_series`, `series_members`: which games belong to which series.
 
 ### Per-user data
@@ -233,12 +233,17 @@ erDiagram
     users ||--o{ smart_lists : "has"
     users ||--o| avatars : "may upload"
     users ||--o{ tags : "creates"
+    users ||--o{ activity_events : "does"
+    users ||--o{ ai_chats : "asks"
 
     entries }o--|| games : "is a copy of"
+    entries ||--o{ entry_notes : "noted in"
     entries ||--o{ playthroughs : "played as"
     entries ||--o{ entry_platforms : "owned on"
     entries ||--o{ entry_tags : "tagged"
     tags ||--o{ entry_tags : ""
+    playthroughs ||--o{ playthrough_posts : "journal"
+    playthrough_posts ||--o{ post_images : "screenshots"
     lists ||--o{ list_items : "contains"
     list_items }o--|| games : "points to"
 ```
@@ -253,7 +258,9 @@ Things that are **not stored** but computed when needed:
 - **Smart lists**: only the rules are saved; the matching games are worked out on every read.
 - **Stats and recap**: calculated fresh from entries and playthroughs.
 
-There are also a handful of **operational tables** for the admin area: `error_events`, `igdb_daily`, `server_runs` and `settings` (section 16).
+Smaller per-user tables: `dismissed_games` (what Discover shouldn't suggest again) and the one-time links in `email_verifications` and `password_resets`.
+
+There are also a handful of **operational tables** for the admin area: `error_events`, `igdb_daily`, `server_runs`, `settings`, `mail_daily` (emails sent per day) and `ai_usage` (AI calls and their estimated cost) (section 16).
 
 ---
 
@@ -719,7 +726,7 @@ All of this is wired up in `apps/server/src/index.ts`, which is the best file to
 
 ## 19. Deployment and operations
 
-GameQueue runs in Docker on a Raspberry Pi at home, reachable on the internet through a Cloudflare Tunnel. (A move to a DigitalOcean Droplet is planned; see `CLOUD_MIGRATION.md`.)
+GameQueue runs in Docker on a Raspberry Pi at home, reachable on the internet through a Cloudflare Tunnel. (A move to a DigitalOcean Droplet is planned; see `docs/archive/CLOUD_MIGRATION.md`.)
 
 ```mermaid
 flowchart LR

@@ -22,7 +22,7 @@ const MAX_INPUT_PIXELS = 64_000_000;
 /** Stored names are `<sha256 hex>.webp`; anything else in the folder is not ours to touch */
 const STORED_NAME = /^[0-9a-f]{64}\.webp$/;
 
-export const screenshotCap = (db: Db): number => {
+const screenshotCap = (db: Db): number => {
     const saved = Number(read(db, CAP_KEY) ?? NaN);
     return Number.isFinite(saved) && saved >= 0 ? saved : DEFAULT_SCREENSHOT_CAP_BYTES;
 };
@@ -53,7 +53,7 @@ export function screenshotStorage(db: Db, config: Config): ScreenshotStorageDto 
     return { usedBytes: used, capBytes: screenshotCap(db), files, freeDiskBytes };
 }
 
-export interface StoredImage {
+interface StoredImage {
     fileName: string;
     width: number;
     height: number;
@@ -180,7 +180,7 @@ const ORPHAN_GRACE_MS = 3600_000;
 /** A screenshot post that never got a picture (the upload failed) is cleared after this */
 const EMPTY_POST_MS = 24 * 3600_000;
 
-export interface CleanupResult {
+interface CleanupResult {
     files: number;
     imageRows: number;
     emptyPosts: number;

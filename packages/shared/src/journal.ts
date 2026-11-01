@@ -2,13 +2,13 @@ import { z } from 'zod';
 import { playtimeSchema } from './playthroughs.js';
 
 /** What a journal post is: written text, screenshots with an optional caption, or hours played. */
-export const POST_KINDS = ['note', 'screenshot', 'hours'] as const;
-export type PostKind = (typeof POST_KINDS)[number];
+const POST_KINDS = ['note', 'screenshot', 'hours'] as const;
+type PostKind = (typeof POST_KINDS)[number];
 
 /** Who can read a playthrough's journal: only the owner, anyone with the link, or everyone (and on the profile). */
 export const VISIBILITIES = ['private', 'unlisted', 'public'] as const;
 export type Visibility = (typeof VISIBILITIES)[number];
-export const visibilitySchema = z.enum(VISIBILITIES);
+const visibilitySchema = z.enum(VISIBILITIES);
 
 export const MAX_POST_BODY = 4000;
 export const MAX_IMAGES_PER_POST = 6;

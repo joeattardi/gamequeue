@@ -16,7 +16,7 @@ import { SearchX, X } from 'lucide-react';
 
 type AddStatus = 'unplayed' | 'playing' | 'paused' | 'abandoned';
 
-export type AddGameMode = 'collection' | 'wishlist';
+type AddGameMode = 'collection' | 'wishlist';
 
 /**
  * Searches IGDB and adds a game. In `wishlist` mode a click wishlists the game and the dialog

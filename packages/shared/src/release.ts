@@ -5,7 +5,7 @@ import { z } from 'zod';
  * quarter or month it is a placeholder (the Witcher IV's "2028" is 2028-12-31), so the precision
  * says how much of the date to believe. `null` precision with a date means unknown: shown as a day.
  */
-export const RELEASE_PRECISIONS = ['day', 'month', 'quarter', 'year'] as const;
+const RELEASE_PRECISIONS = ['day', 'month', 'quarter', 'year'] as const;
 export type ReleasePrecision = (typeof RELEASE_PRECISIONS)[number];
 export const releasePrecisionSchema = z.enum(RELEASE_PRECISIONS);
 

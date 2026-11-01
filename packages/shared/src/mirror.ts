@@ -24,7 +24,7 @@ export const mirrorRunSchema = z.object({
 export type MirrorRunDto = z.infer<typeof mirrorRunSchema>;
 
 /** What the mirror file itself says. */
-export interface MirrorFileDto {
+interface MirrorFileDto {
     /** When the file was built (epoch ms) */
     builtAt: number | null;
     dump: string | null;

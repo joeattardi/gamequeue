@@ -18,7 +18,7 @@ describe('password hashing', () => {
 
 describe('register', () => {
     it('creates a user and a session cookie', async () => {
-        const { app, db } = makeApp();
+        const { app } = makeApp();
         const res = await register(app, 'Me@Example.com');
         expect(res.status).toBe(201);
         const { user } = await res.json();

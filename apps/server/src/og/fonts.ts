@@ -18,7 +18,7 @@ const FILES = [
     { name: 'Figtree', weight: 700, file: 'figtree/files/figtree-latin-700-normal.woff' }
 ] as const;
 
-export interface CardFont {
+interface CardFont {
     name: string;
     data: Buffer;
     weight: 500 | 600 | 700 | 800;

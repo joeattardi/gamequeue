@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useRef, useState, type ReactNod
 import { useModalDialog } from './useModalDialog';
 import { CircleQuestionMark, TriangleAlert } from 'lucide-react';
 
-export interface ConfirmOptions {
+interface ConfirmOptions {
     title: string;
     message?: ReactNode;
     confirmLabel?: string;

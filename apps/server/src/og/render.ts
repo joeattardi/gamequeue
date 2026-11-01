@@ -14,7 +14,7 @@ import { createCoverLoader, type CoverLoader } from './covers.js';
 import { loadFonts } from './fonts.js';
 import { LruCache } from './lru.js';
 
-export interface UploadedAvatar {
+interface UploadedAvatar {
     contentType: string;
     data: Buffer;
 }
@@ -33,7 +33,7 @@ export async function avatarDataUri(avatar: UploadedAvatar | null): Promise<stri
     }
 }
 
-export type CardRequest =
+type CardRequest =
     | { data: ProfileCardData; avatar: UploadedAvatar | null }
     | { data: RecapCardData; avatar: UploadedAvatar | null };
 

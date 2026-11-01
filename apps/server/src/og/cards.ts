@@ -54,12 +54,12 @@ export interface CardAssets {
     avatar: string | null;
 }
 
-export type Style = Record<string, string | number>;
-export interface El {
+type Style = Record<string, string | number>;
+interface El {
     type: string;
     props: Record<string, unknown> & { style?: Style; children?: unknown };
 }
-export type Child = El | string | false | null | undefined;
+type Child = El | string | false | null | undefined;
 
 /** `div`s are flex containers (satori wants an explicit display on anything with several children). */
 export function h(
@@ -72,12 +72,12 @@ export function h(
     return { type, props: { ...props, style, children } };
 }
 
-export const DISPLAY = 'Bricolage Grotesque';
+const DISPLAY = 'Bricolage Grotesque';
 export const BODY = 'Figtree';
-export const INK = '#f5f8ff';
-export const MUTED = 'rgba(205, 218, 245, 0.72)';
-export const GLASS = 'rgba(255, 255, 255, 0.07)';
-export const GLASS_LINE = 'rgba(255, 255, 255, 0.14)';
+const INK = '#f5f8ff';
+const MUTED = 'rgba(205, 218, 245, 0.72)';
+const GLASS = 'rgba(255, 255, 255, 0.07)';
+const GLASS_LINE = 'rgba(255, 255, 255, 0.14)';
 
 function icon(size: number, stroke: string, paths: string[], width = 2): El {
     return h(

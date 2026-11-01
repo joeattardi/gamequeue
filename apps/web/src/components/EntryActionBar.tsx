@@ -7,7 +7,7 @@ import { todayLocal } from '../lib';
 const STATUS_ID = 'status';
 
 /** Brings the Status panel (and its forms) into view. */
-export function scrollToStatus() {
+function scrollToStatus() {
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     document
         .getElementById(STATUS_ID)

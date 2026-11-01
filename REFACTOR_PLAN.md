@@ -269,3 +269,14 @@ Things only you can do, and a few choices I made for you that you can change.
 - [ ] **Live IGDB checks.** Claude Code can only verify against real IGDB if `apps/server/.env` has your credentials locally. Do not commit it.
 - [ ] **Confirm the defaults I picked:** paused games sit in a small row under Playing; screenshots are re-encoded to WebP at most 1920 px, 8 MB upload limit, 6 per post; journals send `noindex`; the monthly AI budget is a setting you choose in the Admin card.
 - [ ] **Rename later, separately.** The rename and domain are not part of this plan. When you choose a name, it is a small standalone milestone (UI text, logo, package scope, docs).
+
+## Later
+
+Ideas that came up during the refactor and were left out of scope. None is promised.
+
+- **Lint for dead code in CI.** R7 found unused exports, imports and CSS by hand (a dead-code tool such as knip couldn't be run here). Turning on `noUnusedLocals`/`noUnusedParameters` in the tsconfigs, and a knip run in CI, would keep it from building up again.
+- **Save the pick-my-next-game chat** like game chats, if it turns out people come back to it.
+- **Journals in the export file** (posts and screenshots), so a journal survives moving to another instance.
+- **Roll history keeps up with changes:** an earlier pick in the strip shows the game as it was when picked (for example "Add to queue" after it was queued); refreshing the snapshot on select would fix it.
+- **Share cards for journals:** link previews for `/p/:slug` are text-only today.
+- **A sitemap and static profile content** for search engines (the opt-in indexing only sets headers).

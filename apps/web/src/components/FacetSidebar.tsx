@@ -11,7 +11,6 @@ interface Option {
 }
 
 const COLLAPSED_LIMIT = 8;
-const cap = (s: string) => s[0]!.toUpperCase() + s.slice(1);
 
 /**
  * Faceted filters for the collection. Values within a facet are any-of, facets combine with AND;
@@ -192,7 +191,7 @@ function FacetGroup({
 }
 
 /** Placeholder with the sidebar's own classes, shown on the first load. */
-export function FacetSkeletons() {
+function FacetSkeletons() {
     return (
         <div role="status" aria-label="Loading filters">
             {[5, 6, 4].map((rows, g) => (

@@ -1,5 +1,7 @@
 # GameQueue: Cloud Migration Plan
 
+> **Archived.** Written before the 2026 refactor (REFACTOR_PLAN.md), so it may mention features that were removed since (game grids, tier lists, playing slots, IsThereAnyDeal prices) and code that has moved. Kept for the record; ARCHITECTURE.md and CLAUDE.md describe the app as it is.
+
 Moving GameQueue from the Raspberry Pi to a cloud VPS. Decisions are recorded one at a time, in order.
 
 ## 1. Hosting provider: DigitalOcean

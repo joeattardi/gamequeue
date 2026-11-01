@@ -4,7 +4,7 @@ import { backupStatusSchema, type BackupReportDto } from '@gamequeue/shared';
 import type { Config } from '../config.js';
 
 /** `scripts/backup.sh` writes its status here: next to the database, so it is in the mounted `/data`. */
-export const backupStatusPath = (config: Config) =>
+const backupStatusPath = (config: Config) =>
     join(dirname(config.databasePath), 'backup-status.json');
 
 /** Reads the status the backup script left behind. Missing file = never run; bad content = unreadable. */

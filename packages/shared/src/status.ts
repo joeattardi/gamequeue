@@ -1,7 +1,7 @@
 import type { EntryStatus } from './collection.js';
 
 /** What the UI calls each status. The stored value of `unplayed` stays as it is; people see "Not Started". */
-export const STATUS_LABELS: Record<EntryStatus, string> = {
+const STATUS_LABELS: Record<EntryStatus, string> = {
     unplayed: 'Not Started',
     playing: 'Playing',
     paused: 'Paused',

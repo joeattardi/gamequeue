@@ -11,7 +11,7 @@ import type { Mailer } from './mailer.js';
 export const VERIFICATION_TTL_MS = 24 * 3600_000;
 /** Minimum wait between two emails to the same account */
 export const RESEND_COOLDOWN_MS = 60_000;
-export const RESENDS_PER_HOUR = 5;
+const RESENDS_PER_HOUR = 5;
 /** Accounts that never confirm their email are deleted after this long */
 export const UNVERIFIED_TTL_MS = 7 * 24 * 3600_000;
 
@@ -20,7 +20,7 @@ const hash = (token: string) => createHash('sha256').update(token).digest('hex')
 const escapeHtml = (s: string) =>
     s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
 
-export function verificationMail(username: string, link: string) {
+function verificationMail(username: string, link: string) {
     const text = `Hi ${username},
 
 Confirm your email address to start using GameQueue:

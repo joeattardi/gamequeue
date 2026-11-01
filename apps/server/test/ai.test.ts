@@ -497,7 +497,7 @@ describe('budget and cost', () => {
 
     it('warns at 80%, refuses at 100%, and the admin card shows spend, split and recent calls', async () => {
         // each call: 1000 in + 200 out on Sonnet = $0.004
-        const { ask, admin, call, hades } = await setup();
+        const { ask, admin, call } = await setup();
         const as = await admin();
         expect(await as('/ai')).toMatchObject({
             configured: true,

@@ -6,7 +6,7 @@ import { useMe } from '../api/auth';
 const DISMISSED_KEY = 'gq.preview-notice.dismissed';
 
 /** What "preview" means, used by both notices. */
-export function PreviewDetail() {
+function PreviewDetail() {
     const me = useMe();
     return (
         <>

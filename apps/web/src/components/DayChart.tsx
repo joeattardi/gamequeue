@@ -1,12 +1,12 @@
 import { useState, type KeyboardEvent } from 'react';
 
-export interface DaySeries<T> {
+interface DaySeries<T> {
     key: keyof T & string;
     label: string;
 }
 
 /** A count drawn as a dot under a day's column (a restart, say) instead of as part of the stack. */
-export interface DayMarker<T> {
+interface DayMarker<T> {
     label: string;
     count: (d: T) => number;
 }

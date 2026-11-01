@@ -7,7 +7,7 @@ import { pageMeta, type PageMeta } from './og/meta.js';
 import { journalExists } from './services/journal.js';
 
 /** How the SPA shell is served for one path. */
-export interface PageSeo {
+interface PageSeo {
     status: 200 | 404;
     /** Send `X-Robots-Tag: noindex`; the page may still be crawled and shared */
     noindex: boolean;

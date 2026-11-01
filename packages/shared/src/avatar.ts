@@ -4,7 +4,7 @@ import { z } from 'zod';
 
 export const AVATAR_GRID = 5;
 
-export interface Identicon {
+interface Identicon {
     /** 0-359, drives the avatar colour. */
     hue: number;
     /** `cells[row][col]`, left-right mirrored, true = filled. */
@@ -51,7 +51,7 @@ export function generateIdenticon(username: string): Identicon {
 }
 
 /** Uploaded avatars: the web client crops to a square and re-encodes, the server validates and stores the bytes. */
-export const AVATAR_CONTENT_TYPES = ['image/webp', 'image/jpeg', 'image/png'] as const;
+const AVATAR_CONTENT_TYPES = ['image/webp', 'image/jpeg', 'image/png'] as const;
 export type AvatarContentType = (typeof AVATAR_CONTENT_TYPES)[number];
 /** Edge length of the square the client produces. */
 export const AVATAR_UPLOAD_SIZE = 256;

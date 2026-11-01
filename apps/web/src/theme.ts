@@ -2,12 +2,12 @@ import { useState } from 'react';
 
 export type Theme = 'system' | 'light' | 'dark';
 
-export const THEME_KEY = 'gq.theme';
+const THEME_KEY = 'gq.theme';
 
 export const THEMES: Theme[] = ['system', 'light', 'dark'];
 
 /** The saved choice; anything missing or unreadable means follow the system setting. */
-export function readTheme(): Theme {
+function readTheme(): Theme {
     try {
         const saved = localStorage.getItem(THEME_KEY);
         return saved === 'light' || saved === 'dark' ? saved : 'system';
@@ -24,7 +24,7 @@ const THEME_COLORS = { light: '#f3f6fb', dark: '#0d1320' };
  * two theme-color tags in index.html follow the system via their `media`; a chosen theme sets both
  * to its colour, and system puts each back.
  */
-export function applyTheme(theme: Theme) {
+function applyTheme(theme: Theme) {
     const root = document.documentElement;
     if (theme === 'system') root.removeAttribute('data-theme');
     else root.setAttribute('data-theme', theme);

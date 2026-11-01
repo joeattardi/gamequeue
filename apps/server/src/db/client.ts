@@ -10,7 +10,7 @@ export type Db = BetterSQLite3Database<typeof schema>;
 
 const here = dirname(fileURLToPath(import.meta.url));
 // src/db → ../../drizzle in dev/tests; dist/ → ../drizzle in the bundled build
-export const MIGRATIONS_DIR =
+const MIGRATIONS_DIR =
     process.env.MIGRATIONS_DIR ??
     resolve(here, here.endsWith('db') ? '../../drizzle' : '../drizzle');
 

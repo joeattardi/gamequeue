@@ -4,7 +4,7 @@ import { PermanentMirrorError } from './errors.js';
 
 const BASE = 'https://api.igdb.com/v4';
 
-export interface DumpInfo {
+interface DumpInfo {
     endpoint: string;
     fileName: string;
     /** Unix seconds */
@@ -18,7 +18,7 @@ export interface DumpSource {
     open(endpoint: string): Promise<Readable>;
 }
 
-export class DumpError extends Error {}
+class DumpError extends Error {}
 
 /** Waits before the 2nd and 3rd try of one request. */
 const REQUEST_RETRY_MS = [1000, 4000];

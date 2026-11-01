@@ -1,4 +1,4 @@
-import { useRef, useState, type ChangeEvent, type FormEvent } from 'react';
+import { useState, type FormEvent } from 'react';
 import {
     BIO_MAX,
     SOCIAL_LABELS,
@@ -526,7 +526,6 @@ function DeleteAccountForm({ username }: { username: string }) {
 
 export function AccountPage() {
     usePageTitle('Account');
-    const confirm = useConfirm();
     const me = useMe().data;
     const [avatarOpen, setAvatarOpen] = useState(false);
     if (!me) return null;

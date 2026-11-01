@@ -9,7 +9,7 @@ import { callIgdb, requireIgdb } from './games.js';
 
 /** Similar-game lists barely change, so one IGDB lookup per game per few hours is plenty. */
 const SIMILAR_TTL_MS = 6 * 3600_000;
-export const MAX_SIMILAR = 12;
+const MAX_SIMILAR = 12;
 
 export const similarCache = () => new TtlCache<IgdbSearchHit[]>(SIMILAR_TTL_MS, 200);
 

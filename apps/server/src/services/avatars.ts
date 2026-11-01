@@ -67,15 +67,6 @@ export function avatarIconOf(row: {
     return { icon: row.avatarIcon, color: row.avatarColor };
 }
 
-export function avatarIconOfUser(db: Db, userId: number): AvatarIconChoice | null {
-    const row = db
-        .select({ avatarIcon: users.avatarIcon, avatarColor: users.avatarColor })
-        .from(users)
-        .where(eq(users.id, userId))
-        .get();
-    return row ? avatarIconOf(row) : null;
-}
-
 /** Version (last change, ms) of a user's avatar, null when they use the generated one. */
 export function avatarVersion(db: Db, userId: number): number | null {
     return (

@@ -1,6 +1,6 @@
 import { ENTRY_SORTS } from '@gamequeue/shared';
 import { useEffect, useState } from 'react';
-import { Link, useSearchParams } from 'react-router';
+import { useSearchParams } from 'react-router';
 import { useFacetCounts, usePagedEntries } from '../api/collection';
 import { AddGameDialog } from '../components/AddGameDialog';
 import { FACET_KEYS, FacetSidebar, type FacetKey } from '../components/FacetSidebar';

@@ -97,10 +97,6 @@ export const deleteAccountSchema = z.object({
 });
 export type DeleteAccountInput = z.infer<typeof deleteAccountSchema>;
 
-export type VerifyEmailInput = z.infer<typeof verifyEmailSchema>;
-export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
-export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
-export type ChangeEmailInput = z.infer<typeof changeEmailSchema>;
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 

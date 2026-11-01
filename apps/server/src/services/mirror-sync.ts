@@ -16,7 +16,7 @@ export const MIRROR_SYNC_CHECK_MS = 10 * 60 * 1000;
 
 const yieldToEventLoop = () => new Promise<void>((resolve) => setImmediate(resolve));
 
-export interface SyncResult {
+interface SyncResult {
     games: number;
     series: number;
 }

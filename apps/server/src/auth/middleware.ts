@@ -15,7 +15,7 @@ export type AuthVars = {
     };
 };
 
-export function cookieOptions(config: Config, expiresAt: number) {
+function cookieOptions(config: Config, expiresAt: number) {
     return {
         httpOnly: true,
         sameSite: 'Lax' as const,

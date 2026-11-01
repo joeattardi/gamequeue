@@ -5,7 +5,7 @@ import { PermanentMirrorError } from './errors.js';
 import { runMirror } from './run.js';
 import { assertFreeSpace, MIN_FREE_BYTES, readMirrorRun, writeMirrorRun } from './status.js';
 
-export interface JobOptions {
+interface JobOptions {
     source: DumpSource;
     path: string;
     force?: boolean;
@@ -23,7 +23,7 @@ export interface JobOptions {
  * A build that fails for a transient reason (a dropped download, a stalled disk) is tried again
  * from scratch after these waits, so one bad moment doesn't cost a day; three tries in all.
  */
-export const BUILD_RETRY_MS = [60_000, 5 * 60_000];
+const BUILD_RETRY_MS = [60_000, 5 * 60_000];
 
 /**
  * One run of the daily job: brings the mirror up to date and writes `mirror-status.json` whatever

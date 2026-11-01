@@ -43,7 +43,7 @@ const sortOf = (row: Row): SmartSort =>
     (SMART_SORTS as readonly string[]).includes(row.sort) ? (row.sort as SmartSort) : 'title';
 
 /** Platform names for the rules in words; one query per call, not per rule. */
-export function platformNamer(db: Db, rules: SmartRule[]) {
+function platformNamer(db: Db, rules: SmartRule[]) {
     const ids = [...new Set(rules.flatMap((r) => (r.field === 'platform' ? r.anyOf : [])))];
     const names = new Map(
         ids.length
@@ -65,7 +65,7 @@ function matching(row: Row, all: EntryDto[], now: number): EntryDto[] {
 const allEntries = (db: Db, userId: number) => listEntries(db, userId, entryQuerySchema.parse({}));
 
 /** Every smart list with its games, computed from one load of the collection. */
-export function listSmartListDetails(
+function listSmartListDetails(
     db: Db,
     userId: number,
     now = Date.now(),

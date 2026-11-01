@@ -26,8 +26,7 @@ export const coverUrl = (imageId: string, size: CoverSize = 'cover_big') => imag
  * `screenshot_*` sizes are cropped to 16:9 (`screenshot_med` is 569x320); `720p` and `1080p` keep the
  * screenshot's own proportions, which is not always 16:9.
  */
-export type ScreenshotSize =
-    'screenshot_med' | 'screenshot_big' | 'screenshot_huge' | '720p' | '1080p';
+type ScreenshotSize = 'screenshot_med' | 'screenshot_big' | 'screenshot_huge' | '720p' | '1080p';
 
 export const screenshotUrl = (imageId: string, size: ScreenshotSize = 'screenshot_big') =>
     image(size, imageId);

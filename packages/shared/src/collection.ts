@@ -12,7 +12,6 @@ export const RATING_MAX = 5;
 export const ratingSchema = z.number().int().min(1).max(RATING_MAX);
 
 export const ENTRY_SORTS = ['title', 'added', 'release', 'rating', 'ttb'] as const;
-export type EntrySort = (typeof ENTRY_SORTS)[number];
 
 export interface PlatformDto {
     id: number;

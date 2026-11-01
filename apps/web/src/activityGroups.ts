@@ -14,7 +14,7 @@ export interface ActivityDay {
 }
 
 /** A run this long (or longer) of the same action collapses into one row. */
-export const MIN_BURST = 3;
+const MIN_BURST = 3;
 
 const dayKey = (at: number) => {
     const d = new Date(at);

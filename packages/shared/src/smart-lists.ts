@@ -170,11 +170,7 @@ const DAY_MS = 86_400_000;
 const daysSince = (ms: number, now: number) => Math.floor((now - ms) / DAY_MS);
 
 /** The value a number field takes for an entry; null when unknown. */
-export function numberFieldValue(
-    e: SmartEntry,
-    field: SmartNumberField,
-    now: number
-): number | null {
+function numberFieldValue(e: SmartEntry, field: SmartNumberField, now: number): number | null {
     switch (field) {
         case 'ttb':
             return e.ttbMinutes;
@@ -228,7 +224,7 @@ export function matchesRule(e: SmartEntry, rule: SmartRule, now: number): boolea
     }
 }
 
-export const matchesRules = (e: SmartEntry, rules: SmartRule[], now: number) =>
+const matchesRules = (e: SmartEntry, rules: SmartRule[], now: number) =>
     rules.every((r) => matchesRule(e, r, now));
 
 type Sortable = SmartEntry & { id: number; game: { name: string } };
@@ -255,7 +251,7 @@ const sortKey = (e: Sortable, sort: SmartSort): string | number | null => {
 };
 
 /** Sorts a copy. Missing values come last whichever way it sorts, then title, then id. */
-export function sortSmart<T extends Sortable>(entries: T[], sort: SmartSort, dir: SortDir): T[] {
+function sortSmart<T extends Sortable>(entries: T[], sort: SmartSort, dir: SortDir): T[] {
     const sign = dir === 'asc' ? 1 : -1;
     return [...entries].sort((a, b) => {
         const x = sortKey(a, sort);
@@ -347,7 +343,7 @@ export const describeRules = (rules: SmartRule[], platformName?: (id: number) =>
 // Presets
 // ---------------------------------------------------------------------------
 
-export interface SmartListPreset {
+interface SmartListPreset {
     key: string;
     name: string;
     blurb: string;

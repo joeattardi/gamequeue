@@ -10,7 +10,7 @@ import { StarDisplay } from './StarRating';
 type LoadMoreProps = Parameters<typeof LoadMore>[0];
 
 /** What this list shows of a game; a `PublicEntryDto` fits, and so does a wishlist item. */
-export interface PublicListItem {
+interface PublicListItem {
     id: number;
     game: GameDto;
     status?: EntryStatus;

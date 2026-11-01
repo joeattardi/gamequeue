@@ -26,9 +26,9 @@ const SERIES_LIMIT = 500;
  * The landing page's covers come from games at least this many people rated: recognisable ones, not
  * IGDB's long tail (about 3,400 of the 384,000 games in October 2026).
  */
-export const SHOWCASE_MIN_RATINGS = 50;
+const SHOWCASE_MIN_RATINGS = 50;
 /** IGDB's "Erotic" theme (`/v4/themes`); those covers are never shown to anonymous visitors. */
-export const EROTIC_THEME_ID = 42;
+const EROTIC_THEME_ID = 42;
 
 interface GameRow {
     id: number;

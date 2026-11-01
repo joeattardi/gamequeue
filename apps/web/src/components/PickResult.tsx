@@ -32,7 +32,7 @@ export function rollDelay(): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, reduced ? ROLL_MS_REDUCED : ROLL_MS));
 }
 
-export const ROLL_LINES = ['Shuffling your games…', 'Weighing the options…', 'Consulting fate…'];
+const ROLL_LINES = ['Shuffling your games…', 'Weighing the options…', 'Consulting fate…'];
 
 /** Fisher-Yates, so the covers don't flash by in the order the games were added. */
 export function shuffled<T>(xs: T[]): T[] {

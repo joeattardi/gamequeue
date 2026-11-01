@@ -9,12 +9,12 @@ import { similarHits } from './similar.js';
 import { wishlistedIds } from './wishlist.js';
 
 /** Games to draw suggestions from; each costs one (cached) IGDB lookup */
-export const MAX_SEEDS = 20;
-export const MAX_PICKS = 12;
-export const MAX_ROWS = 6;
-export const MAX_ROW_GAMES = 8;
+const MAX_SEEDS = 20;
+const MAX_PICKS = 12;
+const MAX_ROWS = 6;
+const MAX_ROW_GAMES = 8;
 /** Rating (1-5) from which a game counts as loved */
-export const LOVED_RATING = 4;
+const LOVED_RATING = 4;
 
 const toDto = (h: IgdbSearchHit): SimilarGameDto => ({
     igdbId: h.id,

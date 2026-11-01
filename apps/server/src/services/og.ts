@@ -17,7 +17,7 @@ import { getProfile, getProfileRecap } from './profile.js';
 const MAX_COVERS = 3;
 
 /** `host` is the site's host name, printed at the bottom of the profile card */
-export function profileCardData(profile: ProfileDto, host: string): ProfileCardData {
+function profileCardData(profile: ProfileDto, host: string): ProfileCardData {
     const covers = profile.playing.flatMap((e) => e.game.coverImageId ?? []);
     return {
         host,
@@ -37,7 +37,7 @@ const plural = (n: number, one: string, many: string) => (n === 1 ? one : many);
 /** IGDB names like "Role-playing (RPG)" read better without the abbreviation. */
 const tidyGenre = (name: string) => name.replace(/\s*\([^)]*\)\s*$/, '');
 
-export function recapCardData(
+function recapCardData(
     recap: RecapDto,
     user: { username: string; avatarVersion: number | null; avatarIcon: AvatarIconChoice | null },
     host: string

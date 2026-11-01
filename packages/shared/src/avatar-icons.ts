@@ -14,7 +14,7 @@ export const AVATAR_ICON_AUTHORS = {
 } as const;
 export type AvatarIconAuthor = keyof typeof AVATAR_ICON_AUTHORS;
 
-export interface AvatarIcon {
+interface AvatarIcon {
     key: string;
     label: string;
     author: AvatarIconAuthor;

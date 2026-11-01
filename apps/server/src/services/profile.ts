@@ -18,7 +18,6 @@ import {
     type ProfileListPageDto,
     type ProfileView,
     type ProfileWishlistDto,
-    type PublicEntryDto,
     MAX_PAGE_SIZE
 } from '@gamequeue/shared';
 import type { Db } from '../db/client.js';

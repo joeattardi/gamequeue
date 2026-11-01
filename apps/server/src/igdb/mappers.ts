@@ -83,7 +83,7 @@ export const mapSeriesRefs = (raw: Pick<RawGame, 'collections'>) =>
     (raw.collections ?? []).map((c) => ({ id: c.id, name: c.name }));
 
 /** Screenshots are a gallery, not a catalogue: keep the first few. */
-export const MAX_SCREENSHOTS = 6;
+const MAX_SCREENSHOTS = 6;
 
 export const mapScreenshots = (raw: Pick<RawGame, 'screenshots'>) =>
     (raw.screenshots ?? [])

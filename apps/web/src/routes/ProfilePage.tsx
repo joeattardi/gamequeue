@@ -40,7 +40,6 @@ import { Cover } from '../components/Cover';
 import { ListCard } from '../components/ListCard';
 import { SocialLinksList } from '../components/SocialLinks';
 import { ProfileSkeleton } from '../components/PageSkeletons';
-import { Footer } from '../components/Footer';
 import { PublicHeader } from '../components/PublicHeader';
 import { usePageTitle } from '../lib';
 

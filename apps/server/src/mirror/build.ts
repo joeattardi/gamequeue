@@ -12,7 +12,7 @@ import {
     STAGING_INDEX_DDL
 } from './schema.js';
 
-export interface BuildOptions {
+interface BuildOptions {
     source: DumpSource;
     /** The file to create (any existing file is replaced); a scratch `<outPath>.staging` sits beside it */
     outPath: string;

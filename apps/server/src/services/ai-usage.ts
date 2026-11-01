@@ -35,21 +35,21 @@ export function costMicros(model: string, inputTokens: number, outputTokens: num
 
 const BUDGET_KEY = 'ai_budget_usd';
 
-export function aiBudgetUsd(db: Db): number {
+function aiBudgetUsd(db: Db): number {
     const saved = Number(read(db, BUDGET_KEY) ?? NaN);
     return Number.isFinite(saved) && saved >= 0 ? saved : DEFAULT_AI_BUDGET_USD;
 }
 export const setAiBudgetUsd = (db: Db, usd: number) => write(db, BUDGET_KEY, String(usd));
 
 /** Start and end (ms) of the calendar month in UTC that holds `now`, and its `YYYY-MM` name. */
-export function monthRange(now = Date.now()) {
+function monthRange(now = Date.now()) {
     const d = new Date(now);
     const start = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1);
     const end = Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 1);
     return { start, end, month: new Date(start).toISOString().slice(0, 7) };
 }
 
-export function monthSpendMicros(db: Db, now = Date.now()): number {
+function monthSpendMicros(db: Db, now = Date.now()): number {
     const { start, end } = monthRange(now);
     return (
         db

@@ -4,7 +4,7 @@ import type { Db } from '../db/client.js';
 import { igdbDaily } from '../db/schema.js';
 
 const DAY_MS = 24 * 3600_000;
-export const IGDB_HISTORY_DAYS = 30;
+const IGDB_HISTORY_DAYS = 30;
 const KEEP_DAYS = 90;
 
 const dayOf = (ms: number) => new Date(ms).toISOString().slice(0, 10);

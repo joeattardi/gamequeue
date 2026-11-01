@@ -32,8 +32,7 @@ export interface Calendar {
 }
 
 const pad = (n: number) => String(n).padStart(2, '0');
-export const dayKeyOf = (d: Date) =>
-    `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const dayKeyOf = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 /** Midday, so adding days never lands on the wrong date across a DST change */
 const parse = (key: string) => new Date(`${key}T12:00:00`);
 const addDays = (d: Date, n: number) => {

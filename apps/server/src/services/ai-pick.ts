@@ -11,7 +11,7 @@ import { findSpecialList, getList } from './lists.js';
 import { requireAi, run } from './ai.js';
 
 /** What the model is told about: recent finishes for taste, then what could be played next */
-export const PICK_FINISHED = 15;
+const PICK_FINISHED = 15;
 export const PICK_BACKLOG = 150;
 const MAX_SUGGESTIONS = 5;
 const MAX_REPLY_TOKENS = 2048;

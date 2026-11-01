@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { ENTRY_STATUSES, type EntryDto, type EntryStatus } from './collection.js';
 
-export const pickFiltersSchema = z.object({
+const pickFiltersSchema = z.object({
     /** Owned on any of these platforms */
     platformIds: z.array(z.number().int().positive()).optional(),
     /** Has any of these tags (case-insensitive) */
@@ -13,7 +13,7 @@ export const pickFiltersSchema = z.object({
     /** Only games with one of these statuses; left out or empty means any status */
     statuses: z.array(z.enum(ENTRY_STATUSES)).optional()
 });
-export type PickFilters = z.infer<typeof pickFiltersSchema>;
+type PickFilters = z.infer<typeof pickFiltersSchema>;
 
 /** Most games one pick can draw ("pick of three") */
 export const PICK_MAX_COUNT = 3;
@@ -93,20 +93,20 @@ export function filterCandidates(all: PickCandidate[], f: PickFilters = {}): Pic
     });
 }
 
-export interface PickOptions {
+interface PickOptions {
     /** Returns a number in [0, 1); inject a seeded one in tests */
     rng?: () => number;
     /** Already shown, oldest first */
     excludeIds?: number[];
 }
 
-export interface PickOutcome {
+interface PickOutcome {
     id: number | null;
     candidateCount: number;
     wrapped: boolean;
 }
 
-export interface PickManyOutcome {
+interface PickManyOutcome {
     ids: number[];
     candidateCount: number;
     wrapped: boolean;

@@ -13,7 +13,7 @@ import { activityEvents, entries, games, playthroughs } from '../db/schema.js';
 /** Doing the same thing to the same subject again this soon updates the last event instead. */
 const REPEAT_WINDOW_MS = 60 * 60 * 1000;
 
-export interface ActivityInput {
+interface ActivityInput {
     type: ActivityType;
     gameId?: number;
     subjectId?: number;

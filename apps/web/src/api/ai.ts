@@ -26,7 +26,7 @@ export const useAiStatus = () =>
  * promise resolves with the whole answer (which wins over the pieces). Refusals before the answer
  * starts come back as an ordinary error response.
  */
-export async function streamChat(
+async function streamChat(
     input: AiChatInput,
     onDelta: (text: string) => void
 ): Promise<AiReplyDto> {

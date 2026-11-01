@@ -55,7 +55,7 @@ export interface Finish {
     playtimeMinutes: number | null;
 }
 
-export const STATS_TOP_N = 10;
+const STATS_TOP_N = 10;
 const TOP_RATED = 8;
 const RATING_STARS = [1, 2, 3, 4, 5];
 

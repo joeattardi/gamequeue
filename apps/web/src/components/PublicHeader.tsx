@@ -8,7 +8,7 @@ import { DevBadge } from './DevBadge';
  * Whose page this is, shown in the header once the page's own heading has scrolled away
  * (`shown`), so a long profile never loses its owner.
  */
-export interface HeaderIdentity {
+interface HeaderIdentity {
     username: string;
     realName: string | null;
     avatarUpdatedAt: number | null;

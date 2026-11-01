@@ -33,7 +33,7 @@ export const MAX_IMPORT_GAMES = 10_000;
  * Snapshot of the game's metadata. Import never stores it (games are looked up in the mirror or on
  * IGDB); only the name is used, in the import report.
  */
-export const exportGameSchema = z.object({
+const exportGameSchema = z.object({
     name: z.string().min(1).max(500),
     slug: z.string().max(500).nullable(),
     summary: z.string().max(20_000).nullable(),
@@ -57,7 +57,7 @@ export const exportGameSchema = z.object({
         .nullable()
 });
 
-export const exportPlaythroughSchema = z
+const exportPlaythroughSchema = z
     .object({
         platform: platformRef.nullable(),
         startedOn: isoDateSchema.nullable(),
@@ -81,13 +81,13 @@ export const exportPlaythroughSchema = z
         }
     });
 
-export const exportNoteSchema = z.object({
+const exportNoteSchema = z.object({
     body: z.string().min(1).max(MAX_NOTE_LENGTH),
     public: z.boolean(),
     createdAt: z.number().int().min(0)
 });
 
-export const exportEntrySchema = z
+const exportEntrySchema = z
     .object({
         igdbId: id,
         game: exportGameSchema,
@@ -116,7 +116,7 @@ export const exportEntrySchema = z
     });
 
 /** A wishlisted game carries its own metadata snapshot: it isn't in `games`, so nothing else has it. */
-export const exportWishlistItemSchema = z.object({
+const exportWishlistItemSchema = z.object({
     igdbId: id,
     game: exportGameSchema,
     /** The platform the user means to buy it on */
@@ -204,7 +204,6 @@ export const exportFileSchema = z
     });
 
 export type ExportFile = z.infer<typeof exportFileSchema>;
-export type ExportGame = z.infer<typeof exportGameSchema>;
 export type ExportEntry = z.infer<typeof exportEntrySchema>;
 export type ExportWishlistItem = z.infer<typeof exportWishlistItemSchema>;
 

@@ -1,5 +1,7 @@
 # Security review
 
+> **Archived.** Written before the 2026 refactor (REFACTOR_PLAN.md), so it may mention features that were removed since (game grids, tier lists, playing slots, IsThereAnyDeal prices) and code that has moved. Kept for the record; ARCHITECTURE.md and CLAUDE.md describe the app as it is.
+
 Date: 2026-10-25. Commit reviewed: `1e7ed69` (`main`).
 
 A read-only review: no code was changed. The only things run were `npm audit`, a throwaway in-memory test file (deleted afterwards) and a scratch script outside the repo. No requests were sent to IGDB, ITAD, Resend or Cloudflare.

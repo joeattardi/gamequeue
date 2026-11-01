@@ -25,7 +25,7 @@ interface RawResponse {
     errors?: { message: string }[] | null;
 }
 
-export interface CloudflareClientOptions {
+interface CloudflareClientOptions {
     /** An API token with Account Analytics: Read (or Zone Analytics: Read) on the zone */
     apiToken: string;
     zoneId: string;

@@ -19,7 +19,6 @@ import {
     MAX_LIST_DESCRIPTION,
     availableActions,
     statusLabel,
-    type EntryDto,
     type ListItemDto,
     type SearchResultDto
 } from '@gamequeue/shared';

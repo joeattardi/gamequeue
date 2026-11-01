@@ -4,7 +4,6 @@ import { ApiRequestError } from '../api/client';
 import { useProfileWishlist } from '../api/profile';
 import { PublicGameList, usePublicLayout } from '../components/PublicGameList';
 import { LayoutToggle } from '../components/LayoutToggle';
-import { Footer } from '../components/Footer';
 import { PublicHeader } from '../components/PublicHeader';
 import { platformLabel, releaseText, usePageTitle } from '../lib';
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { fakeGame } from './helpers.js';
-import { PC, setupApi } from './api.js';
+import { setupApi } from './api.js';
 
 /** Thirty games named "Game 01" … "Game 30", so title order is id order. */
 const CATALOG = Array.from({ length: 30 }, (_, i) =>

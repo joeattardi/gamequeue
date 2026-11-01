@@ -1,5 +1,7 @@
 # AI feature ideas for GameQueue
 
+> **Archived.** Written before the 2026 refactor (REFACTOR_PLAN.md), so it may mention features that were removed since (game grids, tier lists, playing slots, IsThereAnyDeal prices) and code that has moved. Kept for the record; ARCHITECTURE.md and CLAUDE.md describe the app as it is.
+
 GameQueue's core job is "what do I play next?". It holds a personal collection with statuses, playthroughs (with optional dates), 1-5 ratings, private notes, tags, IGDB metadata (genres, platforms, score, time to beat), a queue, slots, a wishlist, smart lists, stats and a yearly recap. That is a rich taste profile, and every decision on top of it is rule-based today (filters, smart-list rules, random pick). AI fits best where the answer is fuzzy or needs language: mood, taste, "something like X", and writing.
 
 The ideas below are **ordered from cheapest to most expensive** to run. "Cost" means the per-use model cost (tokens in and out, how often it runs) plus how much new code it needs. Each idea also has a **Local (Ollama on the Pi)** verdict.

@@ -207,7 +207,7 @@ export function ownImageFile(db: Db, userId: number, imageId: number): string {
 }
 
 /** A fresh link token: 128 random bits, URL-safe. */
-export const newSlug = () => randomBytes(16).toString('base64url');
+const newSlug = () => randomBytes(16).toString('base64url');
 
 /**
  * Sets who can read the journal. Going from private to shared mints the link; going back to private

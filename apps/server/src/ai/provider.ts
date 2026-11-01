@@ -9,7 +9,7 @@ export interface GenerateRequest {
     jsonSchema?: Record<string, unknown>;
 }
 
-export interface GenerateResult {
+interface GenerateResult {
     text: string;
     /** The model that answered (a fallback model when the configured one declined) */
     model: string;

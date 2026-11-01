@@ -27,10 +27,10 @@ export interface PlaythroughDto {
 
 export const isoDateSchema = z.string().refine(isValidIsoDate, 'Use a valid date (YYYY-MM-DD)');
 const platformIdSchema = z.number().int().positive();
-export const MAX_PLAYTIME_MINUTES = 600_000;
+const MAX_PLAYTIME_MINUTES = 600_000;
 export const playtimeSchema = z.number().int().min(1).max(MAX_PLAYTIME_MINUTES);
 export const MAX_FINAL_THOUGHTS = 4000;
-export const finalThoughtsSchema = z.string().trim().max(MAX_FINAL_THOUGHTS);
+const finalThoughtsSchema = z.string().trim().max(MAX_FINAL_THOUGHTS);
 
 export const startSchema = z.object({
     platformId: platformIdSchema.optional(),

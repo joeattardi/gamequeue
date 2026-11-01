@@ -25,10 +25,10 @@ const MAX_NOTES = 50;
  * Most games one import looks up (in the mirror or on IGDB) that the server hasn't cached yet. The
  * rest are left for the next run of the same file, which is safe since importing again only adds.
  */
-export const MAX_NEW_GAMES_PER_IMPORT = 5000;
+const MAX_NEW_GAMES_PER_IMPORT = 5000;
 
 /** What the server knows of the games and platforms a file mentions, worked out before the merge. */
-export interface ImportCatalog {
+interface ImportCatalog {
     /** Games in the shared cache: from IGDB or the mirror, never from the file */
     games: Set<number>;
     /** Platforms in the shared list */

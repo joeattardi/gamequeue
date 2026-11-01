@@ -24,9 +24,9 @@ export const MIRROR_ENDPOINTS = [
 /** A new mirror with fewer games than this is taken for a truncated dump and rejected. */
 export const MIN_GAMES = 100_000;
 /** ...as is one that lost more than this share of the current mirror's games. */
-export const MAX_SHRINK = 0.2;
+const MAX_SHRINK = 0.2;
 
-export interface MirrorInfo {
+interface MirrorInfo {
     schemaVersion: number;
     dump: string | null;
     /** Epoch seconds */
@@ -93,7 +93,7 @@ export function verifyMirror(path: string, opts: { minGames: number; previousGam
     }
 }
 
-export interface RunOptions {
+interface RunOptions {
     source: DumpSource;
     /** Where the live mirror lives; replaced atomically on success */
     path: string;
@@ -105,7 +105,7 @@ export interface RunOptions {
     log?: (message: string) => void;
 }
 
-export type RunResult =
+type RunResult =
     { status: 'current'; dump: string } | { status: 'built'; dump: string; stats: BuildStats };
 
 /** fsync a file (or, best effort, a directory so a rename is durable too). */

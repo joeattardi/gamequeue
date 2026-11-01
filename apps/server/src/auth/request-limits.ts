@@ -17,14 +17,14 @@ const MINUTE = 60_000;
  * tier that matches it. The general number is deliberately high: one page load fans out into many
  * requests, and several people can share an address.
  */
-export const GENERAL_TIER: Tier = {
+const GENERAL_TIER: Tier = {
     name: 'general',
     max: 300,
     windowMs: MINUTE,
     match: (_m, path) => path !== '/api/health'
 };
 
-export const SPECIFIC_TIERS: Tier[] = [
+const SPECIFIC_TIERS: Tier[] = [
     {
         name: 'signup',
         max: 10,

@@ -30,7 +30,7 @@ export const toPublicEntry = (e: EntryDto): PublicEntryDto => ({
 });
 
 /** A badge beside the name on a public profile: the site's founder, or an admin. */
-export const PROFILE_BADGES = ['founder', 'staff'] as const;
+const PROFILE_BADGES = ['founder', 'staff'] as const;
 export type ProfileBadge = (typeof PROFILE_BADGES)[number];
 
 export interface ProfileDto {
@@ -71,7 +71,7 @@ export interface ProfileDto {
     activity: { events: ActivityEventDto[]; total: number } | null;
 }
 
-export interface ProfileListTileDto {
+interface ProfileListTileDto {
     id: number;
     name: string;
     /** Games in it (for a smart list, matching right now) */
@@ -81,7 +81,7 @@ export interface ProfileListTileDto {
 }
 
 /** A game on a public list: `status` and `rating` are null when the owner doesn't have the game. */
-export interface PublicListItemDto {
+interface PublicListItemDto {
     igdbId: number;
     game: GameDto;
     status: EntryStatus | null;
