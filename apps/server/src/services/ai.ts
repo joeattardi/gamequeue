@@ -4,6 +4,7 @@ import {
     AI_MAX_TOTAL_CHARS,
     type AiReplyDto,
     type AiChatInput,
+    type AiFeature,
     type AiMessage,
     type AiStatusDto,
     type AiSummarizeInput,
@@ -36,7 +37,7 @@ export function aiStatus(db: Db, provider: AiProvider | null, userId: number): A
     return { available: true, reason: null };
 }
 
-function requireAi(db: Db, provider: AiProvider | null, userId: number): AiProvider {
+export function requireAi(db: Db, provider: AiProvider | null, userId: number): AiProvider {
     const status = aiStatus(db, provider, userId);
     if (status.reason === 'not_configured')
         throw new HttpError(503, 'The AI features are not configured on this server');
@@ -136,18 +137,19 @@ export function buildSystemPrompt(
     ].join('\n');
 }
 
-async function run(
+export async function run(
     db: Db,
     provider: AiProvider,
     userId: number,
-    feature: 'helper' | 'summary',
+    feature: AiFeature,
     system: string,
     messages: AiMessage[],
     maxTokens: number,
-    onText?: (delta: string) => void
+    onText?: (delta: string) => void,
+    jsonSchema?: Record<string, unknown>
 ) {
     try {
-        const res = await provider.generate({ system, messages, maxTokens }, onText);
+        const res = await provider.generate({ system, messages, maxTokens, jsonSchema }, onText);
         recordUsage(db, {
             userId,
             feature,

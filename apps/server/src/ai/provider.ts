@@ -5,6 +5,8 @@ export interface GenerateRequest {
     system: string;
     messages: AiMessage[];
     maxTokens: number;
+    /** A JSON schema the answer must follow (structured output); the text is then that JSON */
+    jsonSchema?: Record<string, unknown>;
 }
 
 export interface GenerateResult {
@@ -42,14 +44,19 @@ export function createAnthropicProvider(apiKey: string, model: string): AiProvid
     const client = new Anthropic({ apiKey, maxRetries: 2, timeout: 60_000 });
     return {
         model,
-        async generate({ system, messages, maxTokens }, onText) {
+        async generate({ system, messages, maxTokens, jsonSchema }, onText) {
             const params = {
                 model,
                 max_tokens: maxTokens,
                 system,
                 messages,
                 // A chat answer about a game needs little deliberation; this keeps cost and latency down
-                output_config: { effort: 'low' as const },
+                output_config: {
+                    effort: 'low' as const,
+                    ...(jsonSchema
+                        ? { format: { type: 'json_schema' as const, schema: jsonSchema } }
+                        : {})
+                },
                 // When the model declines on a safety classifier, the API retries on a suitable model
                 ...(FALLBACK_MODELS.has(model)
                     ? {

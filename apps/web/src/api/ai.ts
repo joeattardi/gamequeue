@@ -5,6 +5,9 @@ import type {
     AiChatDto,
     AiChatSummaryDto,
     AiDraftDto,
+    AiPickChatInput,
+    AiPickReplyDto,
+    AiRecentChatDto,
     AiReplyDto,
     AiStatusDto,
     AiSummarizeInput
@@ -100,6 +103,24 @@ export const useAiChatDetail = (chatId: number | null) =>
         enabled: chatId !== null,
         staleTime: Infinity
     });
+
+/** The most recently used saved chats across all games (the Ask AI page). */
+export const useRecentAiChats = (enabled = true) =>
+    useQuery({
+        queryKey: ['ai', 'chats', 'recent'],
+        queryFn: async () => (await api<{ chats: AiRecentChatDto[] }>('/ai/chats')).chats,
+        enabled
+    });
+
+/** One turn of the pick-my-next-game chat (not saved; the page keeps the conversation). */
+export function usePickChat() {
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: (input: AiPickChatInput) =>
+            api<AiPickReplyDto>('/ai/pick', { method: 'POST', body: input }),
+        onSettled: () => qc.invalidateQueries({ queryKey: ['ai', 'status'] })
+    });
+}
 
 export function useDeleteAiChat() {
     const qc = useQueryClient();

@@ -1,13 +1,14 @@
 import { Hono } from 'hono';
 import { streamSSE } from 'hono/streaming';
-import { aiChatSchema, aiSummarizeSchema } from '@gamequeue/shared';
+import { aiChatSchema, aiPickChatSchema, aiSummarizeSchema } from '@gamequeue/shared';
 import type { AppDeps } from '../app.js';
 import type { AiProvider } from '../ai/provider.js';
 import { HitLimiter } from '../auth/rate-limit.js';
 import { requireAuth, type AuthVars } from '../auth/middleware.js';
 import { HttpError } from '../errors.js';
 import { parseId, validate } from '../http.js';
-import { deleteChat, listChats, openChat } from '../services/ai-chats.js';
+import { deleteChat, listChats, openChat, recentChats } from '../services/ai-chats.js';
+import { pickChat } from '../services/ai-pick.js';
 import { aiStatus, chat, prepareChat, summarize } from '../services/ai.js';
 
 /** AI calls one user may make per hour, on top of the per-IP limit in request-limits.ts */
@@ -36,9 +37,13 @@ export function aiRoutes(deps: AppDeps, provider: AiProvider | null, perUser?: H
     r.get('/status', (c) => c.json(aiStatus(db, provider, uid(c))));
     // Saved chats: the list for one game, one chat in full, and deleting one. Reading them needs no
     // AI call, so they work even when AI is switched off or the budget is spent.
-    r.get('/chats', (c) =>
-        c.json({ chats: listChats(db, uid(c), parseId(c.req.query('entryId') ?? '')) })
-    );
+    // With `entryId`, that game's chats; without, the most recent ones across all games
+    r.get('/chats', (c) => {
+        const entryId = c.req.query('entryId');
+        return c.json({
+            chats: entryId ? listChats(db, uid(c), parseId(entryId)) : recentChats(db, uid(c))
+        });
+    });
     r.get('/chats/:id', (c) => c.json({ chat: openChat(db, uid(c), parseId(c.req.param('id'))) }));
     r.delete('/chats/:id', (c) => {
         deleteChat(db, uid(c), parseId(c.req.param('id')));
@@ -75,6 +80,12 @@ export function aiRoutes(deps: AppDeps, provider: AiProvider | null, perUser?: H
                 });
             }
         });
+    });
+    // Pick-my-next-game: suggestions from the user's own queue and backlog; nothing is saved or changed
+    r.post('/pick', async (c) => {
+        const input = validate(aiPickChatSchema, await body(c));
+        limit(c, uid(c));
+        return c.json(await pickChat(db, provider, uid(c), input));
     });
     r.post('/summarize', async (c) => {
         const input = validate(aiSummarizeSchema, await body(c));

@@ -1,10 +1,10 @@
 import {
     filterCandidates,
     ownedEntries,
-    pickRandom,
+    pickMany,
     toCandidate,
     type EntryDto,
-    type PickInput,
+    type PickRequest,
     type PickResultDto
 } from '@gamequeue/shared';
 import type { Db } from '../db/client.js';
@@ -12,11 +12,11 @@ import { listEntries } from './entries.js';
 import { getList } from './lists.js';
 import { getSmartList } from './smart-lists.js';
 
-/** Random pick from the backlog or a list. `rng` is injectable for tests. */
+/** Random pick (one game, or up to three to choose between) from a source. `rng` is injectable for tests. */
 export function pick(
     db: Db,
     userId: number,
-    input: PickInput,
+    input: PickRequest,
     rng: () => number = Math.random
 ): PickResultDto {
     let pool: EntryDto[];
@@ -38,9 +38,12 @@ export function pick(
     const poolStatuses: PickResultDto['poolStatuses'] = {};
     for (const e of pool) poolStatuses[e.status] = (poolStatuses[e.status] ?? 0) + 1;
     const candidates = filterCandidates(pool.map(toCandidate), input.filters);
-    const outcome = pickRandom(candidates, { rng, excludeIds: input.excludeEntryIds });
+    const outcome = pickMany(candidates, input.count, { rng, excludeIds: input.excludeEntryIds });
+    const byId = new Map(pool.map((e) => [e.id, e]));
+    const entries = outcome.ids.flatMap((id) => (byId.has(id) ? [byId.get(id)!] : []));
     return {
-        entry: pool.find((e) => e.id === outcome.id) ?? null,
+        entry: entries[0] ?? null,
+        entries,
         candidateCount: outcome.candidateCount,
         wrapped: outcome.wrapped,
         skippedUnowned,

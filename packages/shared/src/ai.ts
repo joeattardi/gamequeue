@@ -1,11 +1,13 @@
 import { z } from 'zod';
+import type { EntryDto } from './collection.js';
 
 /** What an AI call was for; the admin page splits the month's spend by these. */
-export const AI_FEATURES = ['helper', 'summary'] as const;
+export const AI_FEATURES = ['helper', 'summary', 'pick'] as const;
 export type AiFeature = (typeof AI_FEATURES)[number];
 export const AI_FEATURE_LABELS: Record<AiFeature, string> = {
     helper: 'Game helper',
-    summary: 'Summarize to notes'
+    summary: 'Summarize to notes',
+    pick: 'Help me pick'
 };
 
 /** Caps on what the client may send each turn; the server enforces them. */
@@ -62,6 +64,43 @@ export interface AiChatSummaryDto {
 
 export interface AiChatDto extends AiChatSummaryDto {
     messages: AiMessage[];
+}
+
+/** A pick-my-next-game conversation, sent whole each turn (it isn't saved): starts and ends with the user, turns alternate. */
+export const aiPickChatSchema = z.object({
+    messages: z
+        .array(aiMessageSchema)
+        .min(1)
+        .max(
+            AI_MAX_MESSAGES,
+            `A conversation holds at most ${AI_MAX_MESSAGES} messages; start a new one`
+        )
+        .refine((m) => m.reduce((n, x) => n + x.content.length, 0) <= AI_MAX_TOTAL_CHARS, {
+            message: 'This conversation is too long; start a new one'
+        })
+        .refine((m) => m.every((x, i) => x.role === (i % 2 === 0 ? 'user' : 'assistant')), {
+            message: 'Turns must alternate, starting with you'
+        })
+        .refine((m) => m[m.length - 1]?.role === 'user', {
+            message: 'The last message must be yours'
+        })
+});
+export type AiPickChatInput = z.infer<typeof aiPickChatSchema>;
+
+/** One game the picker suggests: always a game from the user's own queue or backlog. */
+export interface AiSuggestionDto {
+    entry: EntryDto;
+    reason: string;
+}
+
+export interface AiPickReplyDto {
+    message: string;
+    suggestions: AiSuggestionDto[];
+}
+
+/** A saved game chat on the Ask AI page, with the game it is about. */
+export interface AiRecentChatDto extends AiChatSummaryDto {
+    game: { id: number; name: string; coverImageId: string | null };
 }
 
 export interface AiStatusDto {

@@ -514,7 +514,8 @@ describe('budget and cost', () => {
         expect(card).toMatchObject({ warning: true, exhausted: false, spentUsd: 0.008 });
         expect(card.byFeature).toEqual([
             { feature: 'helper', calls: 1, costUsd: 0.004 },
-            { feature: 'summary', calls: 1, costUsd: 0.004 }
+            { feature: 'summary', calls: 1, costUsd: 0.004 },
+            { feature: 'pick', calls: 0, costUsd: 0 }
         ]);
         expect(card.recent).toHaveLength(2);
         expect(card.recent[0]).toMatchObject({

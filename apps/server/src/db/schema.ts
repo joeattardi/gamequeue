@@ -116,7 +116,7 @@ export const aiUsage = sqliteTable(
         id: integer('id').primaryKey({ autoIncrement: true }),
         // Kept when the user is deleted, so the month's spend stays right
         userId: integer('user_id').references(() => users.id, { onDelete: 'set null' }),
-        feature: text('feature', { enum: ['helper', 'summary'] }).notNull(),
+        feature: text('feature', { enum: ['helper', 'summary', 'pick'] }).notNull(),
         model: text('model').notNull(),
         inputTokens: integer('input_tokens').notNull(),
         outputTokens: integer('output_tokens').notNull(),

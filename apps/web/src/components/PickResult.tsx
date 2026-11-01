@@ -11,7 +11,17 @@ import { PlatformTags } from './PlatformIcon';
 import { Cover } from './Cover';
 import { LogoMark } from './Logo';
 import { StartPlayingButton } from './StartPlayingButton';
-import { ArrowRight, Dices, Gift, Library, RefreshCw, SlidersHorizontal } from 'lucide-react';
+import {
+    ArrowRight,
+    Dices,
+    Gift,
+    Layers3,
+    Library,
+    ListPlus,
+    RefreshCw,
+    SlidersHorizontal
+} from 'lucide-react';
+import { useAddToQueue } from '../api/queue';
 
 const ROLL_MS = 2200;
 const ROLL_MS_REDUCED = 600;
@@ -95,10 +105,45 @@ function LootCover({ imageId, name }: { imageId: string | null; name: string }) 
     );
 }
 
+/** Puts the picked game at the end of the queue; already queued games say so instead. */
+export function QueueButton({ entry }: { entry: EntryDto }) {
+    const add = useAddToQueue();
+    const [error, setError] = useState<string>();
+    if (entry.queued || add.isSuccess)
+        return (
+            <span className="badge" role="status">
+                <ListPlus aria-hidden="true" /> On your queue
+            </span>
+        );
+    return (
+        <>
+            <button
+                className="btn"
+                disabled={add.isPending}
+                onClick={() =>
+                    add.mutate(entry.game.id, {
+                        onError: (e) =>
+                            setError(e instanceof ApiRequestError ? e.message : "Couldn't add it.")
+                    })
+                }
+            >
+                <ListPlus aria-hidden="true" />
+                Add to queue
+            </button>
+            {error && (
+                <span className="form-error" role="alert">
+                    {error}
+                </span>
+            )}
+        </>
+    );
+}
+
 export function PickResult({
     note,
     entry,
     onReroll,
+    onPickThree,
     onPickAgain,
     againLabel = 'Pick again'
 }: {
@@ -106,6 +151,8 @@ export function PickResult({
     note: string;
     entry: EntryDto;
     onReroll: () => void;
+    /** Draws three to choose from instead; the button shows only when given */
+    onPickThree?: () => void;
     onPickAgain: () => void;
     againLabel?: string;
 }) {
@@ -144,12 +191,19 @@ export function PickResult({
                     <>
                         <div className="row">
                             <StartPlayingButton entry={entry} onStarted={() => setStarted(true)} />
+                            <QueueButton entry={entry} />
                         </div>
                         <div className="row">
                             <button className="btn" onClick={onReroll}>
                                 <RefreshCw />
                                 Re-roll
                             </button>
+                            {onPickThree && (
+                                <button className="btn" onClick={onPickThree}>
+                                    <Layers3 />
+                                    Pick 3
+                                </button>
+                            )}
                             <button className="btn" onClick={onPickAgain}>
                                 <SlidersHorizontal />
                                 {againLabel}
@@ -163,6 +217,71 @@ export function PickResult({
                 )}
             </div>
         </article>
+    );
+}
+
+/**
+ * A pick of three: the games side by side, each with its own button to take it. Choosing one
+ * makes it the result; nothing starts or changes until the user acts on that card.
+ */
+export function PickChoices({
+    note,
+    entries,
+    onChoose,
+    onReroll,
+    onPickAgain
+}: {
+    note: string;
+    entries: EntryDto[];
+    onChoose: (entry: EntryDto) => void;
+    onReroll: () => void;
+    onPickAgain: () => void;
+}) {
+    return (
+        <section className="pick-choices panel" aria-labelledby="pick-choices-h">
+            <div>
+                <p className="muted">{note}</p>
+                <h2 id="pick-choices-h">Which one?</h2>
+            </div>
+            <ul className="pick-choices__list">
+                {entries.map((entry) => (
+                    <li key={entry.id} className="pick-choice">
+                        <div className="pick-choice__cover">
+                            <Cover imageId={entry.game.coverImageId} name={entry.game.name} />
+                        </div>
+                        <div className="stack">
+                            <strong className="pick-choice__title">{entry.game.name}</strong>
+                            <span className="muted">
+                                <MetaLine
+                                    parts={[
+                                        yearOf(entry.game.releaseDate),
+                                        entry.ttbMinutes !== null
+                                            ? `~${formatMinutes(entry.ttbMinutes)}`
+                                            : null
+                                    ]}
+                                />
+                            </span>
+                            <button className="btn btn--primary" onClick={() => onChoose(entry)}>
+                                Choose this
+                            </button>
+                        </div>
+                    </li>
+                ))}
+            </ul>
+            {entries.length < 3 && (
+                <p className="muted">Only {entries.length} games match, so that's all there is.</p>
+            )}
+            <div className="row">
+                <button className="btn" onClick={onReroll}>
+                    <RefreshCw />
+                    Draw again
+                </button>
+                <button className="btn" onClick={onPickAgain}>
+                    <SlidersHorizontal />
+                    Pick again
+                </button>
+            </div>
+        </section>
     );
 }
 

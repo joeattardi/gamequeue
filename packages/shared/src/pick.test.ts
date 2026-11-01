@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { filterCandidates, pickRandom, seededRng, type PickCandidate } from './pick.js';
+import { filterCandidates, pickMany, pickRandom, seededRng, type PickCandidate } from './pick.js';
 
 const c = (id: number, extra: Partial<PickCandidate> = {}): PickCandidate => ({
     id,
@@ -118,5 +118,42 @@ describe('pickRandom', () => {
     it('defaults to Math.random', () => {
         const out = pickRandom(pool);
         expect([10, 20, 30, 40]).toContain(out.id);
+    });
+});
+
+describe('pickMany', () => {
+    const ids = (n: number) => Array.from({ length: n }, (_, i) => ({ id: i + 1 }));
+
+    it('draws distinct games, the same ones for the same seed', () => {
+        for (const seed of [1, 2, 3, 42]) {
+            const a = pickMany(ids(10), 3, { rng: seededRng(seed) });
+            expect(new Set(a.ids).size).toBe(3);
+            expect(a).toMatchObject({ candidateCount: 10, wrapped: false });
+            expect(pickMany(ids(10), 3, { rng: seededRng(seed) }).ids).toEqual(a.ids);
+        }
+    });
+
+    it('returns fewer when fewer exist, and none from nothing', () => {
+        expect(pickMany(ids(2), 3, { rng: seededRng(1) }).ids.sort()).toEqual([1, 2]);
+        expect(pickMany([], 3)).toEqual({ ids: [], candidateCount: 0, wrapped: false });
+    });
+
+    it('prefers games not shown yet, then wraps, keeping the latest pick for last', () => {
+        // 4 candidates, 3 already shown (3 most recently): the fresh one comes first, then 1 and 2
+        const out = pickMany(ids(4), 3, { rng: seededRng(7), excludeIds: [1, 2, 3] });
+        expect(out.ids[0]).toBe(4);
+        expect(out.ids.slice(1).sort()).toEqual([1, 2]);
+        expect(out.wrapped).toBe(true);
+        // with every game shown, the latest pick is only drawn when there is no other choice
+        const all = pickMany(ids(3), 3, { rng: seededRng(7), excludeIds: [1, 2, 3] });
+        expect(all.ids.at(-1)).toBe(3);
+        expect(new Set(all.ids).size).toBe(3);
+    });
+
+    it('draws one exactly as pickRandom does', () => {
+        for (const seed of [1, 5, 9])
+            expect(pickMany(ids(8), 1, { rng: seededRng(seed) }).ids[0]).toBe(
+                pickRandom(ids(8), { rng: seededRng(seed) }).id
+            );
     });
 });

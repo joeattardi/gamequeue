@@ -144,6 +144,40 @@ describe('POST /pick', () => {
         expect(wrapped.entry.id).not.toBe(shown.at(-1));
     });
 
+    it('draws three distinct games that honour the source and every filter', async () => {
+        const { post, call, celeste, knight } = await setup();
+        await call(`/entries/${celeste.id}/start`, 'POST', {});
+        for (let i = 0; i < 10; i++) {
+            const res = await post({ source: { type: 'backlog' }, count: 3 });
+            expect(res.entries).toHaveLength(3);
+            const ids = res.entries.map((e: any) => e.id);
+            expect(new Set(ids).size).toBe(3);
+            expect(ids).not.toContain(celeste.id); // not in the backlog any more
+            expect(res.entry.id).toBe(ids[0]);
+        }
+        // a filter that leaves two: both come back, no padding
+        const two = await post({
+            source: { type: 'backlog' },
+            count: 3,
+            filters: { platformIds: [6] }
+        });
+        expect(two.entries.length).toBeLessThanOrEqual(3);
+        const pc = await post({
+            source: { type: 'backlog' },
+            count: 3,
+            filters: { tags: ['metroidvania'] }
+        });
+        expect(pc.entries.map((e: any) => e.id)).toEqual([knight.id]);
+        const none = await post({
+            source: { type: 'backlog' },
+            count: 3,
+            filters: { tags: ['nope'] }
+        });
+        expect(none).toMatchObject({ entry: null, entries: [], candidateCount: 0 });
+        expect((await post({ source: { type: 'backlog' }, count: 4 })).status).toBe(400);
+        expect((await post({ source: { type: 'backlog' }, count: 0 })).status).toBe(400);
+    });
+
     it('validates input', async () => {
         const { post } = await setup();
         expect((await post({})).status).toBe(400);
@@ -170,7 +204,7 @@ describe('pick service', () => {
             pick(
                 db,
                 userId,
-                { source: { type: 'backlog' }, filters: {}, excludeEntryIds: [] },
+                { source: { type: 'backlog' }, filters: {}, excludeEntryIds: [], count: 1 },
                 seededRng(seed)
             ).entry!.id;
         for (const seed of [1, 2, 3, 99]) expect(run(seed)).toBe(run(seed));

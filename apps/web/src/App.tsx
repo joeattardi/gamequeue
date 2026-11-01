@@ -20,6 +20,7 @@ import { DataPage } from './routes/DataPage';
 import { EntryPage } from './routes/EntryPage';
 import { GameDetailPage } from './routes/GameDetailPage';
 import { GameChatPage } from './routes/GameChatPage';
+import { AskAiPage } from './routes/AskAiPage';
 import { SeriesPage } from './routes/SeriesPage';
 import { SearchPage } from './routes/SearchPage';
 import { Home } from './routes/Home';
@@ -147,6 +148,7 @@ function AppRoutes() {
                 <Route path="smart-lists/new" element={<SmartListEditPage />} />
                 <Route path="smart-lists/:id" element={<SmartListPage />} />
                 <Route path="smart-lists/:id/edit" element={<SmartListEditPage />} />
+                <Route path="chat" element={<AskAiPage />} />
                 <Route path="pick" element={<PickPage />} />
                 <Route path="pick/criteria" element={<PickCriteriaPage />} />
                 <Route path="pick/choose" element={<PickChoosePage />} />

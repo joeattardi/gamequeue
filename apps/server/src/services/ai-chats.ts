@@ -6,11 +6,12 @@ import {
     aiMessageSchema,
     type AiChatDto,
     type AiChatSummaryDto,
-    type AiMessage
+    type AiMessage,
+    type AiRecentChatDto
 } from '@gamequeue/shared';
 import { z } from 'zod';
 import type { Db } from '../db/client.js';
-import { aiChats } from '../db/schema.js';
+import { aiChats, entries, games } from '../db/schema.js';
 import { HttpError } from '../errors.js';
 
 const TITLE_CHARS = 80;
@@ -62,6 +63,25 @@ export function listChats(db: Db, userId: number, entryId: number): AiChatSummar
         .orderBy(desc(aiChats.usedAt), desc(aiChats.id))
         .all()
         .map((r) => toSummary(r, parse(r.messages)));
+}
+
+const RECENT_CHATS = 30;
+
+/** The user's most recently used chats across all games, with each game, for the Ask AI page. */
+export function recentChats(db: Db, userId: number): AiRecentChatDto[] {
+    return db
+        .select({ c: aiChats, g: games })
+        .from(aiChats)
+        .innerJoin(entries, eq(entries.id, aiChats.entryId))
+        .innerJoin(games, eq(games.id, entries.gameId))
+        .where(eq(aiChats.userId, userId))
+        .orderBy(desc(aiChats.usedAt), desc(aiChats.id))
+        .limit(RECENT_CHATS)
+        .all()
+        .map(({ c, g }) => ({
+            ...toSummary(c, parse(c.messages)),
+            game: { id: g.id, name: g.name, coverImageId: g.coverImageId }
+        }));
 }
 
 /** Opens a saved chat; opening counts as using it, so it isn't cleared while still read. */

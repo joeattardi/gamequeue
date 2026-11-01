@@ -509,7 +509,7 @@ Code: `services/lists.ts`, `services/smart-lists.ts`, `services/wishlist.ts`, `s
 
 ## 11. Random pick
 
-"I can't decide what to play" mode. There are two flavours on the `/pick` page.
+"I can't decide what to play" mode. There are two flavours on the `/pick` page. Pick by criteria can also draw three games to choose between, keeps a strip of this visit's earlier picks under the result, and makes Start playing the main button (Add to queue next to it). For help from the AI instead of dice, the **Ask AI** page (`/chat`) has a pick-my-next-game chat that suggests games from your queue and backlog.
 
 ```mermaid
 flowchart TD

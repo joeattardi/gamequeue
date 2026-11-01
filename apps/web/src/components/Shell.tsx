@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router';
 import { useLogout } from '../api/auth';
 import { useNavCounts } from '../api/counts';
+import { useAiStatus } from '../api/ai';
 import { isRecapSeason } from '../lib';
 import { ErrorBoundary } from './ErrorBoundary';
 import { ErrorPage } from './ErrorPage';
@@ -17,6 +18,7 @@ import {
     Bookmark,
     ChartColumn,
     Compass,
+    Bot,
     Dices,
     Gift,
     Inbox,
@@ -114,6 +116,9 @@ export function Shell({ user }: { user: UserDto }) {
     const narrow = useNarrow();
     const [collapsedPref, toggleCollapsed] = useCollapsed();
     const counts = useNavCounts();
+    // Ask AI shows for accounts with AI switched on (also while this month's budget is spent, for the saved chats)
+    const ai = useAiStatus();
+    const aiAvailable = ai.data?.available || ai.data?.reason === 'budget_spent';
     // Collapsing is a wide-screen thing: the drawer is always the full nav
     const collapsed = collapsedPref && !narrow;
     const [open, setOpen] = useState(false);
@@ -285,6 +290,14 @@ export function Shell({ user }: { user: UserDto }) {
                                 label="Pick"
                                 collapsed={collapsed}
                             />
+                            {aiAvailable && (
+                                <NavItem
+                                    to="/chat"
+                                    icon={<Bot />}
+                                    label="Ask AI"
+                                    collapsed={collapsed}
+                                />
+                            )}
                         </div>
                         <div className="nav__group" role="group" aria-labelledby="nav-library">
                             <h2 className="nav__label" id="nav-library">

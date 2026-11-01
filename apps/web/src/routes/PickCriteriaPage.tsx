@@ -1,7 +1,9 @@
 import { SelectSkeleton } from '../components/PageSkeletons';
 import {
     ENTRY_STATUSES,
+    PICK_MAX_COUNT,
     statusLabel,
+    type EntryDto,
     type EntryStatus,
     type PickInput,
     type PickResultDto
@@ -14,8 +16,9 @@ import { useSmartLists } from '../api/smartLists';
 import { useQueue } from '../api/queue';
 import { ApiRequestError } from '../api/client';
 import { Chips } from '../components/Chips';
-import { PickResult, Rolling, rollDelay } from '../components/PickResult';
-import { ChevronLeft, Dices } from 'lucide-react';
+import { PickChoices, PickResult, Rolling, rollDelay } from '../components/PickResult';
+import { Cover } from '../components/Cover';
+import { ChevronLeft, Dices, Layers3 } from 'lucide-react';
 import { usePageTitle } from '../lib';
 
 const MAX_TIMES = [
@@ -56,14 +59,33 @@ export function PickCriteriaPage() {
     const [statuses, setStatuses] = useState(new Set<EntryStatus>());
 
     const [seen, setSeen] = useState<number[]>([]);
-    const [result, setResult] = useState<PickResultDto>();
+    // This visit's results, oldest first; `current` is the one on the card
+    const [history, setHistory] = useState<Shown[]>([]);
+    const [current, setCurrent] = useState<number | null>(null);
+    // A pick of three waiting for the user to choose one
+    const [choices, setChoices] = useState<{ entries: EntryDto[]; note: string } | null>(null);
+    // The last answer when nothing matched, to explain why
+    const [empty, setEmpty] = useState<PickResultDto | null>(null);
     const [error, setError] = useState<string>();
     const [rolling, setRolling] = useState(false);
+    const shown = current === null ? null : history[current];
 
     // Options are shown until a game is picked; "Pick again" brings them back.
-    const showOptions = !rolling && !result?.entry;
+    const showOptions = !rolling && !shown && !choices;
 
-    function run(exclude: number[]) {
+    function pickAgain() {
+        setCurrent(null);
+        setChoices(null);
+        setEmpty(null);
+        setSeen([]);
+    }
+
+    function show(entry: EntryDto, note: string) {
+        setHistory((h) => [...h, { entry, note }]);
+        setCurrent(history.length);
+    }
+
+    function run(exclude: number[], count = 1) {
         setError(undefined);
         setRolling(true);
         const minimum = rollDelay();
@@ -82,20 +104,29 @@ export function PickCriteriaPage() {
                 ...(maxMinutes ? { maxTtbMinutes: maxMinutes } : {}),
                 statuses: [...statuses]
             },
-            excludeEntryIds: exclude
+            excludeEntryIds: exclude,
+            count
         };
         pick.mutate(input, {
             onSuccess: async (res) => {
                 await minimum;
                 setRolling(false);
-                setResult(res);
-                setSeen(
-                    res.entry
-                        ? res.wrapped
-                            ? [res.entry.id]
-                            : [...exclude, res.entry.id]
-                        : exclude
-                );
+                const ids = res.entries.map((e) => e.id);
+                setSeen(res.wrapped ? ids : [...exclude, ...ids]);
+                const note = matchNote(res);
+                if (res.entries.length === 0) {
+                    setEmpty(res);
+                    setChoices(null);
+                    setCurrent(null);
+                } else if (count > 1 && res.entries.length > 1) {
+                    setEmpty(null);
+                    setCurrent(null);
+                    setChoices({ entries: res.entries, note });
+                } else {
+                    setEmpty(null);
+                    setChoices(null);
+                    show(res.entries[0]!, note);
+                }
             },
             onError: (e) => {
                 setRolling(false);
@@ -201,7 +232,7 @@ export function PickCriteriaPage() {
                             Games with no time-to-beat data are left out when you set a length.
                         </p>
                     )}
-                    <div>
+                    <div className="row">
                         <button
                             className="btn btn--primary"
                             type="submit"
@@ -209,6 +240,15 @@ export function PickCriteriaPage() {
                         >
                             <Dices />
                             {pick.isPending ? 'Picking…' : 'Pick for me'}
+                        </button>
+                        <button
+                            className="btn"
+                            type="button"
+                            disabled={pick.isPending}
+                            onClick={() => run([], PICK_MAX_COUNT)}
+                        >
+                            <Layers3 />
+                            Pick {PICK_MAX_COUNT} to choose from
                         </button>
                     </div>
                 </form>
@@ -219,35 +259,52 @@ export function PickCriteriaPage() {
             </p>
             <div aria-live="polite">
                 {rolling && <Rolling />}
-                {!rolling &&
-                    result &&
-                    (result.entry ? (
-                        <PickResult
-                            key={result.entry.id}
-                            note={`${result.candidateCount} ${
-                                result.candidateCount === 1 ? 'game matches' : 'games match'
-                            }${result.wrapped ? ' · you’ve seen them all, so this starts over' : ''}${skippedNote(result.skippedUnowned)}`}
-                            entry={result.entry}
-                            onReroll={() => run(seen)}
-                            onPickAgain={() => {
-                                setResult(undefined);
-                                setSeen([]);
-                            }}
-                        />
-                    ) : (
-                        <div className="empty">
-                            <p>
-                                <strong>Nothing matches.</strong>
-                            </p>
-                            <p className="muted">
-                                {emptyReason(result.poolStatuses, statuses) ??
-                                    'Try loosening the filters or picking from a different source.'}
-                                {skippedNote(result.skippedUnowned) &&
-                                    ` ${skippedNote(result.skippedUnowned).replace(' · ', '')}.`}
-                            </p>
-                        </div>
-                    ))}
+                {!rolling && choices && (
+                    <PickChoices
+                        note={choices.note}
+                        entries={choices.entries}
+                        onChoose={(entry) => {
+                            setChoices(null);
+                            show(entry, `You chose it from ${choices.entries.length}`);
+                        }}
+                        onReroll={() => run(seen, PICK_MAX_COUNT)}
+                        onPickAgain={pickAgain}
+                    />
+                )}
+                {!rolling && shown && (
+                    <PickResult
+                        key={`${current}-${shown.entry.id}`}
+                        note={shown.note}
+                        entry={shown.entry}
+                        onReroll={() => run(seen)}
+                        onPickThree={() => run(seen, PICK_MAX_COUNT)}
+                        onPickAgain={pickAgain}
+                    />
+                )}
+                {!rolling && empty && !shown && !choices && (
+                    <div className="empty">
+                        <p>
+                            <strong>Nothing matches.</strong>
+                        </p>
+                        <p className="muted">
+                            {emptyReason(empty.poolStatuses, statuses) ??
+                                'Try loosening the filters or picking from a different source.'}
+                            {skippedNote(empty.skippedUnowned) &&
+                                ` ${skippedNote(empty.skippedUnowned).replace(' · ', '')}.`}
+                        </p>
+                    </div>
+                )}
             </div>
+            {history.length > 1 && (
+                <RollHistory
+                    items={history}
+                    current={current}
+                    onSelect={(i) => {
+                        setChoices(null);
+                        setCurrent(i);
+                    }}
+                />
+            )}
         </section>
     );
 }
@@ -266,4 +323,53 @@ function emptyReason(counts: PickResultDto['poolStatuses'], wanted: Set<EntrySta
     if (wanted.size === 0 || present.some(([s]) => wanted.has(s))) return null;
     const breakdown = present.map(([s, n]) => `${n} ${statusLabel(s).toLowerCase()}`).join(', ');
     return `${total === 1 ? '1 game is' : `${total} games are`} here, but none match the status you chose (${breakdown}).`;
+}
+
+interface Shown {
+    entry: EntryDto;
+    note: string;
+}
+
+/** "12 games match", plus whether the pool started over and what a list held that couldn't be picked. */
+const matchNote = (res: PickResultDto) =>
+    `${res.candidateCount} ${res.candidateCount === 1 ? 'game matches' : 'games match'}${
+        res.wrapped ? ' · you’ve seen them all, so this starts over' : ''
+    }${skippedNote(res.skippedUnowned)}`;
+
+/** This visit's earlier results; selecting one puts it back on the card. */
+function RollHistory({
+    items,
+    current,
+    onSelect
+}: {
+    items: Shown[];
+    current: number | null;
+    onSelect: (index: number) => void;
+}) {
+    return (
+        <section className="roll-history" aria-labelledby="roll-history-h">
+            <h2 id="roll-history-h" className="roll-history__title">
+                Earlier picks
+            </h2>
+            <ol className="roll-history__list">
+                {items.map((item, i) => (
+                    <li key={i}>
+                        <button
+                            type="button"
+                            className="roll-history__item"
+                            aria-current={i === current ? 'true' : undefined}
+                            onClick={() => onSelect(i)}
+                            title={item.entry.game.name}
+                        >
+                            <Cover
+                                imageId={item.entry.game.coverImageId}
+                                name={item.entry.game.name}
+                            />
+                            <span className="sr-only">{item.entry.game.name}</span>
+                        </button>
+                    </li>
+                ))}
+            </ol>
+        </section>
+    );
 }
