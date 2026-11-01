@@ -29,19 +29,21 @@ export function pick(
     } else if (input.source.type === 'smart') {
         pool = getSmartList(db, userId, input.source.smartListId).entries;
     } else {
-        pool = listEntries(db, userId, { view: 'backlog', sort: 'title' });
-        if (input.filters.includePaused) {
-            pool = pool.concat(
-                listEntries(db, userId, { view: 'all', status: ['paused'], sort: 'title' })
-            );
-        }
+        // 'backlog' is the derived Not Started view; 'collection' is every owned game
+        pool = listEntries(db, userId, {
+            view: input.source.type === 'backlog' ? 'backlog' : 'all',
+            sort: 'title'
+        });
     }
+    const poolStatuses: PickResultDto['poolStatuses'] = {};
+    for (const e of pool) poolStatuses[e.status] = (poolStatuses[e.status] ?? 0) + 1;
     const candidates = filterCandidates(pool.map(toCandidate), input.filters);
     const outcome = pickRandom(candidates, { rng, excludeIds: input.excludeEntryIds });
     return {
         entry: pool.find((e) => e.id === outcome.id) ?? null,
         candidateCount: outcome.candidateCount,
         wrapped: outcome.wrapped,
-        skippedUnowned
+        skippedUnowned,
+        poolStatuses
     };
 }

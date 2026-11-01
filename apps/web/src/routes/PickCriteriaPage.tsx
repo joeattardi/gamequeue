@@ -1,5 +1,11 @@
 import { SelectSkeleton } from '../components/PageSkeletons';
-import type { PickInput, PickResultDto } from '@gamequeue/shared';
+import {
+    ENTRY_STATUSES,
+    statusLabel,
+    type EntryStatus,
+    type PickInput,
+    type PickResultDto
+} from '@gamequeue/shared';
 import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { useFacets } from '../api/collection';
@@ -41,13 +47,13 @@ export function PickCriteriaPage() {
             ? `list:${params.get('list')}`
             : params.get('smart')
               ? `smart:${params.get('smart')}`
-              : 'backlog'
+              : 'collection'
     );
     const [platforms, setPlatforms] = useState(new Set<number>());
     const [genres, setGenres] = useState(new Set<string>());
     const [tags, setTags] = useState(new Set<string>());
     const [maxMinutes, setMaxMinutes] = useState(0);
-    const [includePaused, setIncludePaused] = useState(false);
+    const [statuses, setStatuses] = useState(new Set<EntryStatus>());
 
     const [seen, setSeen] = useState<number[]>([]);
     const [result, setResult] = useState<PickResultDto>();
@@ -66,13 +72,15 @@ export function PickCriteriaPage() {
                 ? { type: 'list', listId: Number(source.slice(5)) }
                 : source.startsWith('smart:')
                   ? { type: 'smart', smartListId: Number(source.slice(6)) }
-                  : { type: 'backlog' },
+                  : source === 'backlog'
+                    ? { type: 'backlog' }
+                    : { type: 'collection' },
             filters: {
                 platformIds: [...platforms],
                 genres: [...genres],
                 tags: [...tags],
                 ...(maxMinutes ? { maxTtbMinutes: maxMinutes } : {}),
-                includePaused
+                statuses: [...statuses]
             },
             excludeEntryIds: exclude
         };
@@ -109,7 +117,7 @@ export function PickCriteriaPage() {
                         Pick by criteria
                     </h1>
                     <p className="muted">
-                        Can't decide? Let fate choose from your backlog, queue, a list or a smart
+                        Can't decide? Let fate choose from your collection, queue, a list or a smart
                         list.
                     </p>
                 </div>
@@ -129,6 +137,7 @@ export function PickCriteriaPage() {
                             <SelectSkeleton label="Loading your lists" />
                         ) : (
                             <select value={source} onChange={(e) => setSource(e.target.value)}>
+                                <option value="collection">Whole collection</option>
                                 <option value="backlog">Backlog (Not Started games)</option>
                                 {queue.head && (
                                     <option value={`list:${queue.head.id}`}>Queue</option>
@@ -147,6 +156,12 @@ export function PickCriteriaPage() {
                         )}
                     </label>
 
+                    <Chips
+                        legend="Status"
+                        items={ENTRY_STATUSES.map((s) => ({ key: s, label: statusLabel(s) }))}
+                        selected={statuses}
+                        onToggle={(k) => setStatuses((s) => toggle(s, k as EntryStatus))}
+                    />
                     <Chips
                         legend="Platform"
                         items={facets.data?.platforms.map((p) => ({ key: p.id, label: p.name }))}
@@ -179,14 +194,6 @@ export function PickCriteriaPage() {
                                     </option>
                                 ))}
                             </select>
-                        </label>
-                        <label className="check">
-                            <input
-                                type="checkbox"
-                                checked={includePaused}
-                                onChange={(e) => setIncludePaused(e.target.checked)}
-                            />
-                            Include paused games
                         </label>
                     </div>
                     {maxMinutes > 0 && (
@@ -233,7 +240,8 @@ export function PickCriteriaPage() {
                                 <strong>Nothing matches.</strong>
                             </p>
                             <p className="muted">
-                                Try loosening the filters or picking from a different source.
+                                {emptyReason(result.poolStatuses, statuses) ??
+                                    'Try loosening the filters or picking from a different source.'}
                                 {skippedNote(result.skippedUnowned) &&
                                     ` ${skippedNote(result.skippedUnowned).replace(' · ', '')}.`}
                             </p>
@@ -249,3 +257,13 @@ const skippedNote = (n: number) =>
     n > 0
         ? ` · ${n} ${n === 1 ? 'game on the list isn’t' : 'games on the list aren’t'} in your collection, so ${n === 1 ? 'it was' : 'they were'} skipped`
         : '';
+
+/** Why a source with games in it still gave nothing: none of them has a status that was asked for. */
+function emptyReason(counts: PickResultDto['poolStatuses'], wanted: Set<EntryStatus>) {
+    const present = (Object.entries(counts) as [EntryStatus, number][]).filter(([, n]) => n > 0);
+    const total = present.reduce((sum, [, n]) => sum + n, 0);
+    if (total === 0) return 'There are no games from your collection here.';
+    if (wanted.size === 0 || present.some(([s]) => wanted.has(s))) return null;
+    const breakdown = present.map(([s, n]) => `${n} ${statusLabel(s).toLowerCase()}`).join(', ');
+    return `${total === 1 ? '1 game is' : `${total} games are`} here, but none match the status you chose (${breakdown}).`;
+}

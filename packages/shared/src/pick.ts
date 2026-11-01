@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { EntryDto, EntryStatus } from './collection.js';
+import { ENTRY_STATUSES, type EntryDto, type EntryStatus } from './collection.js';
 
 export const pickFiltersSchema = z.object({
     /** Owned on any of these platforms */
@@ -10,12 +10,14 @@ export const pickFiltersSchema = z.object({
     genres: z.array(z.string().trim().min(1)).optional(),
     /** Games with an unknown time to beat are excluded when this is set */
     maxTtbMinutes: z.number().int().positive().optional(),
-    includePaused: z.boolean().optional()
+    /** Only games with one of these statuses; left out or empty means any status */
+    statuses: z.array(z.enum(ENTRY_STATUSES)).optional()
 });
 export type PickFilters = z.infer<typeof pickFiltersSchema>;
 
 export const pickSchema = z.object({
     source: z.discriminatedUnion('type', [
+        z.object({ type: z.literal('collection') }),
         z.object({ type: z.literal('backlog') }),
         z.object({ type: z.literal('list'), listId: z.number().int().positive() }),
         z.object({ type: z.literal('smart'), smartListId: z.number().int().positive() })
@@ -34,6 +36,8 @@ export interface PickResultDto {
     wrapped: boolean;
     /** Games on the chosen list that aren't in the collection, so they could not be picked */
     skippedUnowned: number;
+    /** Owned games in the chosen source by status, before any filter (explains an empty result) */
+    poolStatuses: Partial<Record<EntryStatus, number>>;
 }
 
 /** The slice of an entry that picking cares about. */
@@ -57,13 +61,14 @@ export const toCandidate = (e: EntryDto): PickCandidate => ({
 
 const lower = (xs: string[]) => new Set(xs.map((x) => x.toLowerCase()));
 
-/** Games that can be picked: unplayed (plus paused if asked) and matching every filter set. */
+/** Games that can be picked: any status unless `statuses` is set, and matching every filter set. */
 export function filterCandidates(all: PickCandidate[], f: PickFilters = {}): PickCandidate[] {
     const tags = f.tags?.length ? lower(f.tags) : undefined;
     const genres = f.genres?.length ? lower(f.genres) : undefined;
+    const statuses = f.statuses?.length ? new Set<EntryStatus>(f.statuses) : undefined;
     const platforms = f.platformIds?.length ? new Set(f.platformIds) : undefined;
     return all.filter((c) => {
-        if (c.status !== 'unplayed' && !(f.includePaused && c.status === 'paused')) return false;
+        if (statuses && !statuses.has(c.status)) return false;
         if (platforms && !c.platformIds.some((p) => platforms.has(p))) return false;
         if (tags && !c.tags.some((t) => tags.has(t.toLowerCase()))) return false;
         if (genres && !c.genres.some((g) => genres.has(g.toLowerCase()))) return false;

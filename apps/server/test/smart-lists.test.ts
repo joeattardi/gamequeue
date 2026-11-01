@@ -208,7 +208,7 @@ describe('smart lists', () => {
 });
 
 describe('random pick from a smart list', () => {
-    it('draws only from the list, still skipping games that are not unplayed', async () => {
+    it('draws only from the list, and the status filter applies to it too', async () => {
         const { call, make, hades, wilds, celeste } = await setup();
         const { smartList } = await make({
             rules: [{ field: 'tag', anyOf: ['cozy', 'roguelike'] }]
@@ -217,7 +217,8 @@ describe('random pick from a smart list', () => {
         const seen = new Set<number>();
         for (let i = 0; i < 30; i++) {
             const res = await call('/pick', 'POST', {
-                source: { type: 'smart', smartListId: smartList.id }
+                source: { type: 'smart', smartListId: smartList.id },
+                filters: { statuses: ['unplayed'] }
             });
             expect(res.candidateCount).toBe(2);
             seen.add(res.entry.id);

@@ -50,24 +50,35 @@ describe('POST /pick', () => {
         expect((await post({ source: { type: 'backlog' }, filters: {} })).candidateCount).toBe(4);
     });
 
-    it('includes paused games only when asked', async () => {
-        const { post, call, knight } = await setup();
+    it('picks from the whole collection by default, narrowed by a status filter', async () => {
+        const { post, call, knight, celeste } = await setup();
         await call(`/entries/${knight.id}/start`, 'POST', {});
         await call(`/entries/${knight.id}/pause`, 'POST');
-        expect((await post({ source: { type: 'backlog' } })).candidateCount).toBe(3);
-        const res = await post({ source: { type: 'backlog' }, filters: { includePaused: true } });
-        expect(res.candidateCount).toBe(4);
+        await call(`/entries/${celeste.id}/start`, 'POST', {});
+        const collection = { type: 'collection' };
+        expect((await post({ source: collection })).candidateCount).toBe(4);
+        expect((await post({ source: { type: 'backlog' } })).candidateCount).toBe(2);
+        const only = async (statuses: string[]) =>
+            (await post({ source: collection, filters: { statuses } })).candidateCount;
+        expect(await only(['paused'])).toBe(1);
+        expect(await only(['unplayed', 'paused'])).toBe(3);
+        expect(await only([])).toBe(4);
     });
 
-    it('picks from a list, in any order, ignoring games that are not unplayed', async () => {
+    it('picks from a list, in any order, whatever the status of its games', async () => {
         const { post, call, hades, celeste, knight } = await setup();
         const list = (await call('/lists', 'POST', { name: 'Up next' })).list.id;
         for (const e of [hades, celeste, knight])
             await call(`/lists/${list}/items`, 'POST', { igdbId: e.game.id });
         await call(`/entries/${celeste.id}/start`, 'POST', {});
         const res = await post({ source: { type: 'list', listId: list } });
-        expect(res.candidateCount).toBe(2);
-        expect([hades.id, knight.id]).toContain(res.entry.id);
+        expect(res.candidateCount).toBe(3);
+        const unplayed = await post({
+            source: { type: 'list', listId: list },
+            filters: { statuses: ['unplayed'] }
+        });
+        expect(unplayed.candidateCount).toBe(2);
+        expect([hades.id, knight.id]).toContain(unplayed.entry.id);
 
         expect((await post({ source: { type: 'list', listId: 99999 } })).status).toBe(404);
     });
@@ -94,6 +105,23 @@ describe('POST /pick', () => {
             skippedUnowned: 1
         });
         expect((await post({ source: { type: 'backlog' } })).skippedUnowned).toBe(0);
+    });
+
+    it('reports the statuses of the source so an empty result can say why', async () => {
+        const { post, call, hades } = await setup();
+        await call(`/entries/${hades.id}/start`, 'POST', { platformId: 6 });
+        await call(`/entries/${hades.id}/pause`, 'POST', {});
+        const list = (await call('/lists', 'POST', { name: 'Paused' })).list.id;
+        await call(`/lists/${list}/items`, 'POST', { igdbId: hades.game.id });
+        const res = await post({
+            source: { type: 'list', listId: list },
+            filters: { statuses: ['unplayed'] }
+        });
+        expect(res).toMatchObject({
+            entry: null,
+            candidateCount: 0,
+            poolStatuses: { paused: 1 }
+        });
     });
 
     it('returns no entry when nothing matches (an empty backlog is not an error)', async () => {

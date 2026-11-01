@@ -481,8 +481,8 @@ Code: `services/lists.ts`, `services/smart-lists.ts`, `services/wishlist.ts`, `s
 ```mermaid
 flowchart TD
     subgraph criteria["Pick by criteria (server)"]
-        S1["Choose a source:<br/>backlog, queue, a list or a smart list"] --> S2["Candidates: unplayed games<br/>(+ paused if you ask)"]
-        S2 --> S3["Filter by platform, genre,<br/>tag, max time to beat"]
+        S1["Choose a source:<br/>collection, backlog, queue,<br/>a list or a smart list"] --> S2["Candidates: any owned game<br/>in that source"]
+        S2 --> S3["Filter by status, platform, genre,<br/>tag, max time to beat"]
         S3 --> S4["Pick one at random"]
     end
     subgraph choose["Choose between (browser only)"]

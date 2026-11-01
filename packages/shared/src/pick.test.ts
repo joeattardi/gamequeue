@@ -12,7 +12,7 @@ const c = (id: number, extra: Partial<PickCandidate> = {}): PickCandidate => ({
 });
 
 describe('filterCandidates', () => {
-    it('only offers unplayed games, plus paused when asked', () => {
+    it('offers every status unless a status filter is set', () => {
         const all = [
             c(1),
             c(2, { status: 'paused' }),
@@ -20,8 +20,11 @@ describe('filterCandidates', () => {
             c(4, { status: 'finished' }),
             c(5, { status: 'abandoned' })
         ];
-        expect(filterCandidates(all).map((x) => x.id)).toEqual([1]);
-        expect(filterCandidates(all, { includePaused: true }).map((x) => x.id)).toEqual([1, 2]);
+        expect(filterCandidates(all).map((x) => x.id)).toEqual([1, 2, 3, 4, 5]);
+        expect(filterCandidates(all, { statuses: [] }).map((x) => x.id)).toEqual([1, 2, 3, 4, 5]);
+        expect(
+            filterCandidates(all, { statuses: ['unplayed', 'paused'] }).map((x) => x.id)
+        ).toEqual([1, 2]);
     });
 
     it('matches any selected platform, tag or genre (case-insensitively)', () => {
