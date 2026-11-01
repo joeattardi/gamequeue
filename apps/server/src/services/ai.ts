@@ -117,7 +117,7 @@ export function buildSystemPrompt(
     const role =
         task === 'helper'
             ? 'You are a friendly, concise game helper inside GameQueue, a game collection app. Answer questions about the game below for this player: tips, what to try next, how long things take, whether a side activity is worth it.'
-            : "You summarize a conversation between a player and a game helper into a short note the player can keep. Write the main points as a few plain lines or bullets, in the player's voice, with no preamble.";
+            : 'You summarize a conversation between a player and a game helper into a short note the player can keep. Write the main points as a few short lines, each starting with "- ", in the player\'s voice, with no preamble. Plain text only, with no Markdown headings, bold, italics or links: the note is shown as plain text.';
     return [
         role,
         NO_SPOILERS,

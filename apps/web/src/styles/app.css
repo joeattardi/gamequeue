@@ -7777,3 +7777,54 @@ fieldset.stars:disabled .stars__star {
     padding: 0;
     margin: 0;
 }
+.helper__md {
+    white-space: normal;
+}
+.helper__md > :first-child {
+    margin-top: 0;
+}
+.helper__md > :last-child {
+    margin-bottom: 0;
+}
+.helper__md p,
+.helper__md ul,
+.helper__md ol,
+.helper__md pre,
+.helper__md blockquote {
+    margin: 0 0 0.6em;
+}
+.helper__md ul,
+.helper__md ol {
+    padding-left: 1.3em;
+}
+.helper__md li + li {
+    margin-top: 0.2em;
+}
+.helper__md h1,
+.helper__md h2,
+.helper__md h3,
+.helper__md h4 {
+    font-size: 1rem;
+    margin: 0.8em 0 0.4em;
+}
+.helper__md code {
+    font-size: 0.9em;
+    padding: 0.1em 0.3em;
+    border-radius: 4px;
+    background: var(--surface);
+}
+.helper__md pre {
+    overflow-x: auto;
+    padding: 8px 10px;
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+}
+.helper__md pre code {
+    padding: 0;
+    background: none;
+}
+.helper__md blockquote {
+    padding-left: 10px;
+    border-left: 3px solid var(--line-strong);
+    color: var(--ink-muted);
+}

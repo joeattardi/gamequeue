@@ -6,6 +6,7 @@ import {
 } from '@gamequeue/shared';
 import { Bot, NotebookPen, Send, Sparkles, Trash2 } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
+import Markdown from 'react-markdown';
 import { useAiChat, useAiStatus, useAiSummarize } from '../api/ai';
 import { ApiRequestError } from '../api/client';
 import { useNoteMutations } from '../api/collection';
@@ -15,6 +16,31 @@ const errorText = (e: unknown) =>
     e instanceof ApiRequestError ? e.message : 'Something went wrong.';
 
 type Destination = 'private' | 'public' | 'journal';
+
+/**
+ * The helper's answer, which usually comes back as Markdown. react-markdown builds React elements
+ * and never renders raw HTML, so a reply can't inject markup; pictures are dropped and links open
+ * in a new tab without a referrer.
+ */
+function Reply({ text }: { text: string }) {
+    return (
+        <div className="helper__md">
+            <Markdown
+                disallowedElements={['img']}
+                unwrapDisallowed
+                components={{
+                    a: ({ href, children }) => (
+                        <a href={href} target="_blank" rel="noopener noreferrer">
+                            {children}
+                        </a>
+                    )
+                }}
+            >
+                {text}
+            </Markdown>
+        </div>
+    );
+}
 
 /**
  * A chat about this game. Only shown when the server has an AI key, an admin switched AI on for
@@ -86,7 +112,7 @@ function HelperPanel({ entry }: { entry: EntryDto }) {
                             <span className="sr-only">
                                 {m.role === 'user' ? 'You' : 'Helper'}:{' '}
                             </span>
-                            {m.content}
+                            {m.role === 'assistant' ? <Reply text={m.content} /> : m.content}
                         </li>
                     ))}
                     {chat.isPending && (
