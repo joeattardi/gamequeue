@@ -101,7 +101,8 @@ export async function storeImage(db: Db, config: Config, upload: Buffer): Promis
         .where(eq(postImages.fileName, fileName))
         .get();
     const cap = screenshotCap(db);
-    if (!alreadyStored && used + encoded.data.length > cap)
+    // A full store (or a limit of 0) refuses everything, even a picture it already holds
+    if (used >= cap || (!alreadyStored && used + encoded.data.length > cap))
         throw new HttpError(
             507,
             'Screenshot storage is full. Delete some screenshots, or ask the admin to raise the limit.'

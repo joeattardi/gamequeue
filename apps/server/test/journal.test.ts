@@ -411,6 +411,11 @@ describe('screenshot uploads', () => {
                 .status
         ).toBe(403);
         expect((await admin('/screenshots/cap', 'PUT', { capBytes: -1 })).status).toBe(400);
+
+        // a limit of 0 means no uploads at all, even of a picture that is already stored
+        await admin('/screenshots/cap', 'PUT', { capBytes: 0 });
+        const again = (await post({ kind: 'screenshot' })).post;
+        expect((await upload(again.id, await picture('png', 200, 200))).status).toBe(507);
     });
 });
 
