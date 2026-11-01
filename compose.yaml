@@ -22,6 +22,8 @@ services:
             NOTIFY_FROM: ${NOTIFY_FROM:-GameQueue <onboarding@resend.dev>}
             MAIL_FROM: ${MAIL_FROM:-}
             MAIL_DAILY_LIMIT: ${MAIL_DAILY_LIMIT:-}
+            ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+            AI_MODEL: ${AI_MODEL:-}
         volumes:
             - ./data:/data
 

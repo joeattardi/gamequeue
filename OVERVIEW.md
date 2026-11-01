@@ -16,6 +16,7 @@ For the exhaustive reference (every route, column and edge case), see `ARCHITECT
 8. [The collection: games and their status](#8-the-collection-games-and-their-status)
 9. [Playing: what you're playing right now](#9-playing-what-youre-playing-right-now)
    9b. [Journals](#9b-journals)
+   9c. [The AI game helper](#9c-the-ai-game-helper)
 10. [Organizing games: lists, queue, smart lists, wishlist](#10-organizing-games-lists-queue-smart-lists-wishlist)
 11. [Random pick](#11-random-pick)
 12. [Stats and Save File](#12-stats-and-save-file)
@@ -430,6 +431,23 @@ flowchart LR
 Pictures live on disk, not in the database, and total storage has an admin-set cap (default 1 GiB). Deleting a post, playthrough, game or account removes the files too, and a daily job sweeps up anything left behind. Finishing a game opens one dialog for the date, total time (pre-filled from the hours you logged), rating and final thoughts.
 
 Code: `services/journal.ts`, `services/screenshots.ts`, `routes/journal.ts`, `components/Journal.tsx`, `routes/JournalPage.tsx`.
+
+## 9c. The AI game helper
+
+An optional chat box on the game page, for questions like "how do I get past this boss?" It shows only when the server has an Anthropic API key **and** an admin has switched AI on for your account.
+
+```mermaid
+flowchart LR
+    B["Browser keeps the conversation"] -->|"whole chat each turn"| S["Server builds the prompt:<br/>game data + latest journal posts<br/>(+ your notes if ticked)<br/>+ no-spoiler rule"]
+    S --> A["Anthropic API"]
+    A --> S
+    S -->|"reply"| B
+    S --> U["ai_usage row:<br/>tokens and estimated cost only"]
+```
+
+The server stores nothing of the conversation, only a usage row so the admin can see the month's spend against a budget (default $5); at 100% new calls are refused. "Summarize to notes" turns the chat into a draft you edit and then save as a private note, a public note or a journal post.
+
+Code: `ai/provider.ts`, `services/ai.ts`, `services/ai-usage.ts`, `routes/ai.ts`, `components/GameHelper.tsx`.
 
 ## 10. Organizing games: lists, queue, smart lists, wishlist
 

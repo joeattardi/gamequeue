@@ -7732,3 +7732,48 @@ fieldset.stars:disabled .stars__star {
         transition: width 0.4s ease;
     }
 }
+
+/* ---- Game helper (AI) ---- */
+.helper__disclosure {
+    margin: 0;
+    font-size: 0.9rem;
+}
+.helper__log {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 8px;
+}
+.helper__msg {
+    max-width: 92%;
+    padding: 10px 12px;
+    border-radius: var(--radius-sm);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+.helper__msg--user {
+    justify-self: end;
+    background: var(--accent-soft);
+    color: var(--ink);
+}
+.helper__msg--assistant {
+    justify-self: start;
+    background: var(--surface-2);
+    min-width: 40%;
+}
+.helper__form {
+    display: flex;
+    gap: 8px;
+    align-items: flex-end;
+}
+.helper__form textarea {
+    flex: 1;
+    min-width: 0;
+    resize: vertical;
+}
+.helper__draft fieldset {
+    border: 0;
+    padding: 0;
+    margin: 0;
+}

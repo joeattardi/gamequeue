@@ -52,7 +52,8 @@ export function getUserDto(db: Db, userId: number): UserDto {
         bio: row.bio,
         socialLinks: socialLinksOf(row),
         searchIndexable: row.searchIndexable,
-        showActivity: row.showActivity
+        showActivity: row.showActivity,
+        aiEnabled: row.aiEnabled
     };
 }
 

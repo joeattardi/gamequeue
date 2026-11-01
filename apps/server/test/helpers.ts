@@ -1,7 +1,8 @@
 import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { createApp } from '../src/app.js';
+import { createApp, type AppDeps } from '../src/app.js';
+import type { AiProvider, GenerateRequest } from '../src/ai/provider.js';
 import { FailureLimiter } from '../src/auth/rate-limit.js';
 import { loadConfig, type Config } from '../src/config.js';
 import { openDb } from '../src/db/client.js';
@@ -13,7 +14,9 @@ export function makeApp(
     overrides: Partial<Config> = {},
     igdb?: IgdbClient,
     cloudflare?: CloudflareClient,
-    mailer?: Mailer
+    mailer?: Mailer,
+    /** Any other dependency, e.g. a fake AI provider */
+    extra: Partial<AppDeps> = {}
 ) {
     const db = openDb(':memory:');
     // Screenshots go to a throw-away folder, never into ./data
@@ -32,7 +35,8 @@ export function makeApp(
         igdb,
         cloudflare,
         mailer,
-        requestLimits: false
+        requestLimits: false,
+        ...extra
     });
     return { app, db, config };
 }
@@ -184,4 +188,35 @@ export function fakeIgdb(catalog: GameRecord[], similar: Record<number, number[]
         }
     };
     return { client, calls };
+}
+
+/** A stand-in for the AI provider: records each request and answers with a canned reply. */
+export function fakeAi(
+    opts: {
+        reply?: string;
+        inputTokens?: number;
+        outputTokens?: number;
+        model?: string;
+        fail?: boolean;
+    } = {}
+) {
+    const requests: GenerateRequest[] = [];
+    const provider: AiProvider = {
+        model: opts.model ?? 'claude-sonnet-5-5',
+        async generate(req) {
+            requests.push(req);
+            if (opts.fail)
+                throw new (await import('../src/ai/provider.js')).AiProviderError(
+                    'Anthropic API error 500'
+                );
+            return {
+                text: opts.reply ?? 'Try the left door.',
+                model: opts.model ?? 'claude-sonnet-5-5',
+                inputTokens: opts.inputTokens ?? 1000,
+                outputTokens: opts.outputTokens ?? 200,
+                refused: false
+            };
+        }
+    };
+    return { provider, requests };
 }

@@ -7,6 +7,7 @@ import {
     type ErrorKind,
     type IgdbStatusDto,
     adminUpdateUserSchema,
+    setAiBudgetSchema,
     setScreenshotCapSchema
 } from '@gamequeue/shared';
 import { getCookie } from 'hono/cookie';
@@ -32,6 +33,7 @@ import { clearErrors, listErrors } from '../services/error-log.js';
 import { readBackupReport } from '../services/backup-status.js';
 import { getMirrorStatus } from '../services/mirror-status.js';
 import { getTraffic, trafficCache } from '../services/traffic.js';
+import { adminAi, setAiBudgetUsd } from '../services/ai-usage.js';
 import {
     cleanupScreenshots,
     screenshotStorage,
@@ -45,11 +47,20 @@ import { imageFilesOf, removeUnreferencedFiles } from '../services/screenshots.j
 
 /** Admin-only API. Every route here is behind `requireAuth` + `requireAdmin`. */
 
-export function adminRoutes({ db, config, igdb, cloudflare, mailer }: AppDeps) {
+export function adminRoutes({ db, config, igdb, cloudflare, mailer, ai }: AppDeps) {
     const r = new Hono<{ Variables: AuthVars }>();
     r.use('*', requireAuth(db, config), requireAdmin);
     // Cheap check that the caller may use the admin area at all
     r.get('/', (c) => c.json({ ok: true }));
+    // AI spend this month against the budget, by feature, and the last calls (never their text)
+    r.get('/ai', (c) => c.json(adminAi(db, config, Boolean(ai))));
+    r.put('/ai/budget', async (c) => {
+        setAiBudgetUsd(
+            db,
+            validate(setAiBudgetSchema, await c.req.json().catch(() => undefined)).budgetUsd
+        );
+        return c.json(adminAi(db, config, Boolean(ai)));
+    });
     // Journal screenshots: space used against the cap, free disk, and the cap itself
     r.get('/screenshots', (c) => c.json(screenshotStorage(db, config)));
     r.put('/screenshots/cap', async (c) => {

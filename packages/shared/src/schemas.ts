@@ -133,6 +133,8 @@ export interface UserDto {
     searchIndexable: boolean;
     /** Whether the activity feed is shown on the public profile; on unless the user turns it off */
     showActivity: boolean;
+    /** An admin switched the AI features on for this account (they also need a key on the server) */
+    aiEnabled: boolean;
 }
 export interface ApiError {
     error: string;

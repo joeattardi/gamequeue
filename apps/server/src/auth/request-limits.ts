@@ -46,6 +46,13 @@ export const SPECIFIC_TIERS: Tier[] = [
     },
     // Import (a merge inside a transaction) and the full exports
     { name: 'data', max: 20, windowMs: 10 * MINUTE, match: (_m, p) => p.startsWith('/api/data/') },
+    // Each one is a paid call to the AI provider (there is a per-user limit as well)
+    {
+        name: 'ai',
+        max: 20,
+        windowMs: MINUTE,
+        match: (m, p) => m === 'POST' && p.startsWith('/api/ai/')
+    },
     // Cache misses render a PNG; crawlers fetch these in bursts
     { name: 'share-card', max: 60, windowMs: MINUTE, match: (_m, p) => p.startsWith('/api/og/') },
     // Everything that can reach IGDB; it has its own outbound queue, this stops one client filling it

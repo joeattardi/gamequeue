@@ -110,6 +110,7 @@ export function updateUser(db: Db, userId: number, input: AdminUpdateUserInput):
                 email: input.email,
                 ...(input.email !== current.email ? { emailVerifiedAt: Date.now() } : {}),
                 role: input.role,
+                ...(input.aiEnabled !== undefined ? { aiEnabled: input.aiEnabled } : {}),
                 firstName: input.firstName,
                 lastName: input.lastName,
                 showRealName: input.showRealName,

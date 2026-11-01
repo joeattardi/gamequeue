@@ -25,6 +25,8 @@ export const adminUpdateUserSchema = z.object({
     username: usernameSchema,
     email: emailSchema,
     role: roleSchema,
+    /** Left out = unchanged */
+    aiEnabled: z.boolean().optional(),
     ...accountProfileSchema.shape,
     ...socialLinksSchema.shape
 });

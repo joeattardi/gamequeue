@@ -10,6 +10,9 @@ import { requestLimits, type RequestLimitOverrides } from './auth/request-limits
 import { adminRoutes } from './routes/admin.js';
 import { accountRoutes } from './routes/account.js';
 import { avatarRoutes } from './routes/avatar.js';
+import { aiRoutes } from './routes/ai.js';
+import { createAnthropicProvider, type AiProvider } from './ai/provider.js';
+import type { HitLimiter } from './auth/rate-limit.js';
 import { IMAGE_UPLOAD_PATH, journalRoutes, postRoutes } from './routes/journal.js';
 import { IMAGE_UPLOAD_TYPES, MAX_UPLOAD_BYTES } from '@gamequeue/shared';
 import { authRoutes } from './routes/auth.js';
@@ -52,6 +55,10 @@ export interface AppDeps {
     cards?: CardRenderer;
     /** Overridable for tests */
     limiters?: { loginByAccount: FailureLimiter; loginByIp: FailureLimiter };
+    /** The AI provider; defaults to Anthropic when ANTHROPIC_API_KEY is set, else none (AI off). Tests pass a fake */
+    ai?: AiProvider | null;
+    /** Per-user AI call limit; overridable for tests */
+    aiLimiter?: HitLimiter;
     /** Per-IP request limits; `false` turns them off (the shared test helper does) */
     requestLimits?: false | { overrides?: RequestLimitOverrides; clock?: () => number };
 }
@@ -159,10 +166,17 @@ export function createApp(deps: AppDeps) {
         })
     );
 
+    const ai =
+        deps.ai !== undefined
+            ? deps.ai
+            : config.anthropicApiKey
+              ? createAnthropicProvider(config.anthropicApiKey, config.aiModel)
+              : null;
     app.route('/api/account', accountRoutes({ ...deps, limiters, mailer }));
-    app.route('/api/admin', adminRoutes({ ...deps, mailer }));
+    app.route('/api/admin', adminRoutes({ ...deps, mailer, ai }));
     app.route('/api/avatar', avatarRoutes(deps));
     app.route('/api/posts', postRoutes(deps));
+    app.route('/api/ai', aiRoutes(deps, ai, deps.aiLimiter));
     app.route('/api/journals', journalRoutes(deps));
     // IGDB's similar-game lists are shared by the game pages and Discover
     const similar = similarCache();

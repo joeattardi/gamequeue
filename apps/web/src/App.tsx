@@ -7,6 +7,7 @@ import { AdminErrorsPage } from './routes/AdminErrorsPage';
 import { AdminIgdbPage } from './routes/AdminIgdbPage';
 import { AdminMirrorPage } from './routes/AdminMirrorPage';
 import { AdminScreenshotsPage } from './routes/AdminScreenshotsPage';
+import { AdminAiPage } from './routes/AdminAiPage';
 import { AdminServerPage } from './routes/AdminServerPage';
 import { AdminDatabasePage } from './routes/AdminDatabasePage';
 import { AdminTrafficPage } from './routes/AdminTrafficPage';
@@ -160,6 +161,7 @@ function AppRoutes() {
                         <Route path="admin/igdb" element={<AdminIgdbPage />} />
                         <Route path="admin/mirror" element={<AdminMirrorPage />} />
                         <Route path="admin/screenshots" element={<AdminScreenshotsPage />} />
+                        <Route path="admin/ai" element={<AdminAiPage />} />
                         <Route path="admin/server" element={<AdminServerPage />} />
                         <Route path="admin/traffic" element={<AdminTrafficPage />} />
                         <Route path="admin/users" element={<AdminUsersPage />} />

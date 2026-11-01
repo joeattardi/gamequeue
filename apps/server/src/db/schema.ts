@@ -38,6 +38,8 @@ export const users = sqliteTable('users', {
     searchIndexable: integer('search_indexable', { mode: 'boolean' }).notNull().default(false),
     // Whether the activity feed shows on the public profile (events are recorded either way)
     showActivity: integer('show_activity', { mode: 'boolean' }).notNull().default(true),
+    // The AI features spend the instance's Anthropic credit, so an admin turns them on per user
+    aiEnabled: integer('ai_enabled', { mode: 'boolean' }).notNull().default(false),
     // When the email address was confirmed (ms); null = not yet, and the account stays walled off
     emailVerifiedAt: integer('email_verified_at'),
     createdAt: integer('created_at').notNull().default(now)
@@ -75,6 +77,27 @@ export const settings = sqliteTable('settings', {
     value: text('value').notNull(),
     updatedAt: integer('updated_at').notNull().default(now)
 });
+
+/**
+ * One AI call, for the budget and the admin page. Only counts and the estimated cost: the
+ * conversation itself is never stored.
+ */
+export const aiUsage = sqliteTable(
+    'ai_usage',
+    {
+        id: integer('id').primaryKey({ autoIncrement: true }),
+        // Kept when the user is deleted, so the month's spend stays right
+        userId: integer('user_id').references(() => users.id, { onDelete: 'set null' }),
+        feature: text('feature', { enum: ['helper', 'summary'] }).notNull(),
+        model: text('model').notNull(),
+        inputTokens: integer('input_tokens').notNull(),
+        outputTokens: integer('output_tokens').notNull(),
+        // Estimated cost in millionths of a US dollar (see services/ai-usage.ts)
+        costMicros: integer('cost_micros').notNull(),
+        createdAt: integer('created_at').notNull().default(now)
+    },
+    (t) => [index('ai_usage_created_idx').on(t.createdAt)]
+);
 
 /** Errors the server hit, for the admin page (see services/error-log.ts); pruned by age and count. */
 export const errorEvents = sqliteTable(

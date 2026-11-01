@@ -25,6 +25,10 @@ export interface Config {
     /** User id of the founder's account; that profile gets the "founder" badge */
     founderUserId?: number;
     resendApiKey?: string;
+    /** Anthropic API key for the AI features; they are off (and hidden) without it. Never sent to the browser or logged. */
+    anthropicApiKey?: string;
+    /** Model the AI features use */
+    aiModel: string;
     notifyEmail?: string;
     notifyFrom: string;
     /** Sender of the verification emails (a domain verified in Resend); verification is off without it */
@@ -75,6 +79,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
         founderUserId: positiveInt(env.FOUNDER_USER_ID),
         // Owner alerts (new signups) by email through Resend; off unless both key and address are set
         resendApiKey: env.RESEND_API_KEY || undefined,
+        anthropicApiKey: env.ANTHROPIC_API_KEY || undefined,
+        aiModel: env.AI_MODEL?.trim() || 'claude-sonnet-5-5',
         notifyEmail: env.NOTIFY_EMAIL || undefined,
         // Resend's shared sender only delivers to the address on your Resend account
         notifyFrom: env.NOTIFY_FROM || 'GameQueue <onboarding@resend.dev>',

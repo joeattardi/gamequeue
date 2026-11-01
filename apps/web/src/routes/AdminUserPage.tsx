@@ -175,6 +175,7 @@ function DetailsForm({ user }: { user: AdminUserDto }) {
         firstName: u.firstName ?? '',
         lastName: u.lastName ?? '',
         showRealName: u.showRealName,
+        aiEnabled: u.aiEnabled,
         steam: u.socialLinks.steam ?? '',
         xbox: u.socialLinks.xbox ?? '',
         playstation: u.socialLinks.playstation ?? '',
@@ -262,6 +263,18 @@ function DetailsForm({ user }: { user: AdminUserDto }) {
             <div className="name-form__fields name-form__fields--stack">
                 <RoleSelect value={v.role} onChange={set('role')} />
             </div>
+            <label className="check">
+                <input
+                    type="checkbox"
+                    checked={v.aiEnabled ?? false}
+                    onChange={(e) => {
+                        setSaved(false);
+                        setV((o) => ({ ...o, aiEnabled: e.target.checked }));
+                    }}
+                />
+                Can use the AI features (game helper, summaries); calls count against the monthly AI
+                budget
+            </label>
             <h3 className="admin-subhead">Gaming accounts</h3>
             <div className="name-form__fields">
                 {SOCIAL_SERVICES.map((s) => (

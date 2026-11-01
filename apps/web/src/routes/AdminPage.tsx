@@ -15,6 +15,7 @@ import {
     Database,
     DatabaseBackup,
     DatabaseZap,
+    Bot,
     Gamepad2,
     Images,
     Server,
@@ -38,6 +39,8 @@ import {
 import { AdminTile } from '../components/AdminTile';
 import { StorageMeter } from '../components/StorageMeter';
 import { useScreenshotStorage } from '../api/journal';
+import { useAdminAi } from '../api/ai';
+import { AiBudgetNotice, money } from './AdminAiPage';
 import { BackupSkeleton, CheckSkeletons } from '../components/PageSkeletons';
 import { diskIsLow, formatBytes, formatDuration, timeAgo, usePageTitle } from '../lib';
 
@@ -172,6 +175,38 @@ function DatabaseTile() {
             to="/admin/database"
             linkLabel="Details and cleanup"
         />
+    );
+}
+
+function AiTile() {
+    const q = useAdminAi();
+    const d = q.data;
+    return (
+        <AdminTile
+            id="ai-heading"
+            icon={<Bot aria-hidden="true" />}
+            title="AI"
+            state={state(q)}
+            stats={
+                d
+                    ? [
+                          { label: 'Spent this month', value: money(d.spentUsd) },
+                          { label: 'Budget', value: money(d.budgetUsd) },
+                          {
+                              label: 'Calls this month',
+                              value: d.byFeature.reduce((n, f) => n + f.calls, 0)
+                          }
+                      ]
+                    : []
+            }
+            to="/admin/ai"
+            linkLabel="Spend, calls and budget"
+        >
+            {d && !d.configured && (
+                <p className="muted">Off: set ANTHROPIC_API_KEY on the server to turn it on.</p>
+            )}
+            {d && d.configured && <AiBudgetNotice data={d} />}
+        </AdminTile>
     );
 }
 
@@ -473,6 +508,7 @@ export function AdminPage() {
                 <UsersTile />
                 <DatabaseTile />
                 <ScreenshotsTile />
+                <AiTile />
                 <IgdbTile />
                 <TrafficTile />
                 <MirrorTile />
