@@ -224,6 +224,72 @@ describe('game helper', () => {
     });
 });
 
+describe('streamed answers', () => {
+    /** The server-sent events of a response, in order */
+    const events = async (res: Response) =>
+        (await res.text())
+            .split('\n\n')
+            .filter(Boolean)
+            .map((block) => {
+                const event = /^event: (.*)$/m.exec(block)?.[1];
+                const data = /^data: (.*)$/m.exec(block)?.[1];
+                return { event, data: data ? JSON.parse(data) : null };
+            });
+    const stream = (app: any, cookie: string, body: unknown) =>
+        app.request('/api/ai/chat/stream', {
+            method: 'POST',
+            body: JSON.stringify(body),
+            headers: { origin: 'http://localhost', cookie, 'content-type': 'application/json' }
+        }) as Promise<Response>;
+
+    it('sends the answer in pieces, then the whole answer, and records one usage row', async () => {
+        const { app, cookie, hades, db, ai } = await setup({
+            ai: fakeAi({ reply: 'Dash through her lunge.' })
+        });
+        const res = await stream(app, cookie, {
+            entryId: hades.id,
+            messages: [{ role: 'user', content: 'Meg?' }]
+        });
+        expect(res.status).toBe(200);
+        expect(res.headers.get('content-type')).toContain('text/event-stream');
+        const got = await events(res);
+        const deltas = got.filter((e) => e.event === 'delta').map((e) => e.data.text);
+        expect(deltas.length).toBeGreaterThan(1);
+        expect(deltas.join('')).toBe('Dash through her lunge.');
+        expect(got.at(-1)).toEqual({ event: 'done', data: { reply: 'Dash through her lunge.' } });
+        expect(db.select().from(aiUsage).all()).toHaveLength(1);
+        expect(ai!.requests[0]!.system).toContain(NO_SPOILERS);
+    });
+
+    it('refuses with a plain HTTP error before streaming, and reports a provider failure as an event', async () => {
+        const off = await setup({ enabled: false });
+        const res = await stream(off.app, off.cookie, {
+            entryId: off.hades.id,
+            messages: [{ role: 'user', content: 'x' }]
+        });
+        expect(res.status).toBe(403);
+        expect((await res.json()).error).toMatch(/not switched on/);
+        expect(
+            (await stream(off.app, off.cookie, { entryId: off.hades.id, messages: [] })).status
+        ).toBe(400);
+
+        const broken = await setup({ ai: fakeAi({ fail: true }) });
+        const failed = await stream(broken.app, broken.cookie, {
+            entryId: broken.hades.id,
+            messages: [{ role: 'user', content: 'SECRET-QUESTION' }]
+        });
+        expect(failed.status).toBe(200);
+        const got = await events(failed);
+        expect(got).toEqual([
+            { event: 'error', data: { error: "The AI didn't answer. Try again in a moment." } }
+        ]);
+        expect(broken.db.select().from(aiUsage).all()).toEqual([]);
+        expect(JSON.stringify(broken.db.select().from(errorEvents).all())).not.toContain(
+            'SECRET-QUESTION'
+        );
+    });
+});
+
 describe('summarize to notes', () => {
     const convo = [
         { role: 'user', content: 'How do I beat MEG?' },

@@ -203,14 +203,17 @@ export function fakeAi(
     const requests: GenerateRequest[] = [];
     const provider: AiProvider = {
         model: opts.model ?? 'claude-sonnet-5-5',
-        async generate(req) {
+        async generate(req, onText) {
             requests.push(req);
             if (opts.fail)
                 throw new (await import('../src/ai/provider.js')).AiProviderError(
                     'Anthropic API error 500'
                 );
+            const text = opts.reply ?? 'Try the left door.';
+            // Streams word by word, as the real provider sends pieces
+            if (onText) for (const piece of text.split(/(?<= )/)) onText(piece);
             return {
-                text: opts.reply ?? 'Try the left door.',
+                text,
                 model: opts.model ?? 'claude-sonnet-5-5',
                 inputTokens: opts.inputTokens ?? 1000,
                 outputTokens: opts.outputTokens ?? 200,

@@ -139,10 +139,11 @@ async function run(
     feature: 'helper' | 'summary',
     system: string,
     messages: AiMessage[],
-    maxTokens: number
+    maxTokens: number,
+    onText?: (delta: string) => void
 ) {
     try {
-        const res = await provider.generate({ system, messages, maxTokens });
+        const res = await provider.generate({ system, messages, maxTokens }, onText);
         recordUsage(db, {
             userId,
             feature,
@@ -159,7 +160,11 @@ async function run(
     }
 }
 
-export async function chat(
+/**
+ * Everything that can refuse a chat turn (switched off, over budget, someone else's game), done
+ * before anything is sent, so the route can still answer with a plain HTTP error. Returns the call.
+ */
+export function prepareChat(
     db: Db,
     provider: AiProvider | null,
     userId: number,
@@ -167,7 +172,17 @@ export async function chat(
 ) {
     const ai = requireAi(db, provider, userId);
     const system = buildSystemPrompt(db, userId, input.entryId, input.includeNotes, 'helper');
-    return run(db, ai, userId, 'helper', system, input.messages, MAX_REPLY_TOKENS);
+    return (onText?: (delta: string) => void) =>
+        run(db, ai, userId, 'helper', system, input.messages, MAX_REPLY_TOKENS, onText);
+}
+
+export async function chat(
+    db: Db,
+    provider: AiProvider | null,
+    userId: number,
+    input: AiChatInput
+) {
+    return prepareChat(db, provider, userId, input)();
 }
 
 /** A draft note with the conversation's main points. Nothing is saved here: the user edits and saves it. */

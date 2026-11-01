@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import { streamSSE } from 'hono/streaming';
 import { aiChatSchema, aiSummarizeSchema } from '@gamequeue/shared';
 import type { AppDeps } from '../app.js';
 import type { AiProvider } from '../ai/provider.js';
@@ -6,7 +7,7 @@ import { HitLimiter } from '../auth/rate-limit.js';
 import { requireAuth, type AuthVars } from '../auth/middleware.js';
 import { HttpError } from '../errors.js';
 import { validate } from '../http.js';
-import { aiStatus, chat, summarize } from '../services/ai.js';
+import { aiStatus, chat, prepareChat, summarize } from '../services/ai.js';
 
 /** AI calls one user may make per hour, on top of the per-IP limit in request-limits.ts */
 export const AI_CALLS_PER_USER_HOUR = 60;
@@ -36,6 +37,33 @@ export function aiRoutes(deps: AppDeps, provider: AiProvider | null, perUser?: H
         const input = validate(aiChatSchema, await body(c));
         limit(c, uid(c));
         return c.json({ reply: await chat(db, provider, uid(c), input) });
+    });
+    // The same turn, streamed as server-sent events: `delta` pieces of text as they arrive, then
+    // `done` with the whole answer (which wins over the pieces), or `error`. Refusals that need no
+    // AI call (validation, limits, budget, another user's game) are plain HTTP errors before it starts.
+    r.post('/chat/stream', async (c) => {
+        const input = validate(aiChatSchema, await body(c));
+        limit(c, uid(c));
+        const answer = prepareChat(db, provider, uid(c), input);
+        c.header('Cache-Control', 'no-cache, no-transform');
+        c.header('X-Accel-Buffering', 'no');
+        return streamSSE(c, async (sse) => {
+            // Writes are chained so the pieces keep their order and all go out before `done`
+            let sent = Promise.resolve();
+            const send = (event: string, data: unknown) =>
+                (sent = sent.then(() => sse.writeSSE({ event, data: JSON.stringify(data) })));
+            try {
+                const reply = await answer((text) => void send('delta', { text }));
+                await send('done', { reply });
+            } catch (err) {
+                await send('error', {
+                    error:
+                        err instanceof HttpError
+                            ? err.message
+                            : "The AI didn't answer. Try again in a moment."
+                });
+            }
+        });
     });
     r.post('/summarize', async (c) => {
         const input = validate(aiSummarizeSchema, await body(c));

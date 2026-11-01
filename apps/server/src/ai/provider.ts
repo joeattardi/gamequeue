@@ -17,10 +17,14 @@ export interface GenerateResult {
     refused: boolean;
 }
 
-/** The one thing the AI features need from a provider. Anthropic is the only real one; tests use a fake. */
+/**
+ * The one thing the AI features need from a provider. Anthropic is the only real one; tests use a
+ * fake. With `onText`, the answer is streamed: each piece of text is passed on as it arrives, and
+ * the result still carries the whole answer and the token usage at the end.
+ */
 export interface AiProvider {
     readonly model: string;
-    generate(req: GenerateRequest): Promise<GenerateResult>;
+    generate(req: GenerateRequest, onText?: (delta: string) => void): Promise<GenerateResult>;
 }
 
 /** Thrown for any provider failure, with a message safe to log (no key, no prompt, no conversation). */
@@ -38,25 +42,31 @@ export function createAnthropicProvider(apiKey: string, model: string): AiProvid
     const client = new Anthropic({ apiKey, maxRetries: 2, timeout: 60_000 });
     return {
         model,
-        async generate({ system, messages, maxTokens }) {
-            const fallback = FALLBACK_MODELS.has(model);
+        async generate({ system, messages, maxTokens }, onText) {
+            const params = {
+                model,
+                max_tokens: maxTokens,
+                system,
+                messages,
+                // A chat answer about a game needs little deliberation; this keeps cost and latency down
+                output_config: { effort: 'low' as const },
+                // When the model declines on a safety classifier, the API retries on a suitable model
+                ...(FALLBACK_MODELS.has(model)
+                    ? {
+                          betas: ['server-side-fallback-2026-07-01'],
+                          fallbacks: 'default' as const
+                      }
+                    : {})
+            };
             let res;
             try {
-                res = await client.beta.messages.create({
-                    model,
-                    max_tokens: maxTokens,
-                    system,
-                    messages,
-                    // A chat answer about a game needs little deliberation; this keeps cost and latency down
-                    output_config: { effort: 'low' },
-                    // When the model declines on a safety classifier, the API retries on a suitable model
-                    ...(fallback
-                        ? {
-                              betas: ['server-side-fallback-2026-07-01'],
-                              fallbacks: 'default' as const
-                          }
-                        : {})
-                });
+                if (onText) {
+                    const stream = client.beta.messages.stream(params);
+                    stream.on('text', (delta) => onText(delta));
+                    res = await stream.finalMessage();
+                } else {
+                    res = await client.beta.messages.create(params);
+                }
             } catch (err) {
                 // The SDK's messages carry the HTTP status and error type, never the key or the request body
                 const status = err instanceof Anthropic.APIError ? err.status : undefined;

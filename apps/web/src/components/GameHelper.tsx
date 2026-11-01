@@ -71,10 +71,14 @@ function HelperPanel({ entry }: { entry: EntryDto }) {
         setInput('');
         setError(undefined);
         try {
-            const { reply } = await chat.mutateAsync({
-                entryId: entry.id,
-                includeNotes,
-                messages: next
+            // The answer grows in place as its pieces arrive; the whole answer replaces it at the end
+            let partial = '';
+            const reply = await chat.mutateAsync({
+                input: { entryId: entry.id, includeNotes, messages: next },
+                onDelta: (piece) => {
+                    partial += piece;
+                    setMessages([...next, { role: 'assistant', content: partial }]);
+                }
             });
             setMessages([...next, { role: 'assistant', content: reply }]);
         } catch (err) {
@@ -106,7 +110,7 @@ function HelperPanel({ entry }: { entry: EntryDto }) {
                 Include my notes on this game
             </label>
             {messages.length > 0 && (
-                <ol className="helper__log" aria-live="polite">
+                <ol className="helper__log" aria-live="polite" aria-busy={chat.isPending}>
                     {messages.map((m, i) => (
                         <li key={i} className={`helper__msg helper__msg--${m.role}`}>
                             <span className="sr-only">
@@ -115,7 +119,7 @@ function HelperPanel({ entry }: { entry: EntryDto }) {
                             {m.role === 'assistant' ? <Reply text={m.content} /> : m.content}
                         </li>
                     ))}
-                    {chat.isPending && (
+                    {chat.isPending && messages[messages.length - 1]?.role === 'user' && (
                         <li className="helper__msg helper__msg--assistant" role="status">
                             <span
                                 className="skeleton skeleton--line"
@@ -162,7 +166,7 @@ function HelperPanel({ entry }: { entry: EntryDto }) {
             <p className="form-error" role="alert">
                 {error}
             </p>
-            {messages.length >= 2 && (
+            {messages.length >= 2 && !chat.isPending && (
                 <div className="row">
                     <Summarize entry={entry} messages={messages} includeNotes={includeNotes} />
                     <button
