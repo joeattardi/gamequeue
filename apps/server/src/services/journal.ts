@@ -108,9 +108,9 @@ const postsQuery = (db: Db, playthroughId: number) =>
         .select()
         .from(playthroughPosts)
         .where(eq(playthroughPosts.playthroughId, playthroughId))
-        .orderBy(asc(playthroughPosts.createdAt), asc(playthroughPosts.id));
+        .orderBy(desc(playthroughPosts.createdAt), desc(playthroughPosts.id));
 
-/** The owner's view of a journal: all posts, oldest first. */
+/** The owner's view of a journal: all posts, newest first. */
 export function listPosts(db: Db, userId: number, playthroughId: number): PostDto[] {
     requireOwnPlaythrough(db, userId, playthroughId);
     return toPostDtos(db, postsQuery(db, playthroughId).all());

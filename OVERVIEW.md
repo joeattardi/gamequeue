@@ -417,7 +417,7 @@ Code: `services/playthroughs.ts`, `components/PlayingCard.tsx`, `components/Star
 
 ## 9b. Journals
 
-Every playthrough can keep a journal: short notes, hours played and screenshots, shown oldest first between a "Started" and a "Finished" marker taken from the playthrough's own dates. Only you can write to it. You choose who can read it: private (the default), unlisted (anyone with the link, `/p/<random token>`) or public (the same, and listed on your profile). Setting it back to private deletes the token, so the link and its picture URLs stop working immediately.
+Every playthrough can keep a journal: short notes, hours played and screenshots, shown newest first, with the "Finished" marker above them and the "Started" marker below taken from the playthrough's own dates. Only you can write to it. You choose who can read it: private (the default), unlisted (anyone with the link, `/p/<random token>`) or public (the same, and listed on your profile). Setting it back to private deletes the token, so the link and its picture URLs stop working immediately.
 
 ```mermaid
 flowchart LR

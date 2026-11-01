@@ -76,9 +76,9 @@ describe('journal posts', () => {
         expect((await post({ kind: 'note', body: '  ' })).status).toBe(400);
         expect((await post({ kind: 'hours', minutes: 0 })).status).toBe(400);
 
-        // oldest first, and the hours total is on the playthrough
+        // newest first, and the hours total is on the playthrough
         const list = (await call(`/playthroughs/${open.id}/posts`)).posts;
-        expect(list.map((p: any) => p.kind)).toEqual(['note', 'hours', 'hours']);
+        expect(list.map((p: any) => p.kind)).toEqual(['hours', 'hours', 'note']);
         const history = (await call(`/entries/${hades.id}/playthroughs`)).playthroughs;
         expect(history[0].loggedMinutes).toBe(150);
         expect((await call(`/entries/${hades.id}`)).entry.openPlaythrough.loggedMinutes).toBe(150);
@@ -119,7 +119,9 @@ describe('journal posts', () => {
         expect(stolen.status).toBe(404);
         expect(postId).toBeGreaterThan(0);
         // nothing changed
-        expect((await call(`/playthroughs/${open.id}/posts`)).posts[0].body).toBe('mine');
+        expect(
+            (await call(`/playthroughs/${open.id}/posts`)).posts.map((p: any) => p.body)
+        ).toContain('mine');
     });
 
     it('stores final thoughts, time and rating when finishing, and they show on the journal', async () => {
@@ -156,7 +158,7 @@ describe('journal posts', () => {
         expect((await call(`/journals/${shareSlug}`)).journal.finalThoughts).toBe('Even better.');
     });
 
-    it('reports unknown dates as null and keeps posts in time order', async () => {
+    it('reports unknown dates as null and lists posts newest first', async () => {
         const { call, add, post } = await setup();
         const celeste = await add(2);
         await call(`/entries/${celeste.id}/playthroughs`, 'POST', { outcome: 'finished' });
@@ -168,7 +170,7 @@ describe('journal posts', () => {
         });
         const j = (await call(`/journals/${shareSlug}`)).journal;
         expect(j).toMatchObject({ startedOn: null, endedOn: null, outcome: 'finished' });
-        expect(j.posts.map((p: any) => p.body)).toEqual(['first', 'second']);
+        expect(j.posts.map((p: any) => p.body)).toEqual(['second', 'first']);
     });
 
     it('never includes private entry notes in a journal', async () => {
@@ -349,7 +351,11 @@ describe('screenshot uploads', () => {
         const note = (await post({ kind: 'note', body: 'x' })).post;
         expect((await upload(note.id, await picture('png'))).status).toBe(400);
         expect(open.id).toBeGreaterThan(0);
-        expect((await call(`/playthroughs/${open.id}/posts`)).posts[0].images).toHaveLength(6);
+        expect(
+            (await call(`/playthroughs/${open.id}/posts`)).posts.find(
+                (p: any) => p.id === created.id
+            ).images
+        ).toHaveLength(6);
     });
 
     it('keeps the Origin check: a foreign origin is refused', async () => {

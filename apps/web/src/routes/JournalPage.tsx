@@ -90,18 +90,6 @@ function JournalView({ journal }: { journal: JournalDto }) {
             </header>
 
             <ol className="journal-timeline">
-                {journal.startedOn && (
-                    <li className="journal-marker">
-                        <Play aria-hidden="true" />
-                        <span>Started {formatDate(journal.startedOn)}</span>
-                    </li>
-                )}
-                {journal.posts.map((post) => (
-                    <PublicPost key={post.id} post={post} slug={journal.slug} />
-                ))}
-                {journal.posts.length === 0 && (
-                    <li className="muted">No posts in this journal yet.</li>
-                )}
                 {journal.outcome && (
                     <li className="journal-marker journal-marker--end">
                         <Flag aria-hidden="true" />
@@ -112,6 +100,18 @@ function JournalView({ journal }: { journal: JournalDto }) {
                         {journal.finalThoughts && (
                             <p className="journal__body">{journal.finalThoughts}</p>
                         )}
+                    </li>
+                )}
+                {journal.posts.map((post) => (
+                    <PublicPost key={post.id} post={post} slug={journal.slug} />
+                ))}
+                {journal.posts.length === 0 && (
+                    <li className="muted">No posts in this journal yet.</li>
+                )}
+                {journal.startedOn && (
+                    <li className="journal-marker">
+                        <Play aria-hidden="true" />
+                        <span>Started {formatDate(journal.startedOn)}</span>
                     </li>
                 )}
             </ol>

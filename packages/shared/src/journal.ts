@@ -82,7 +82,7 @@ export interface JournalDto {
     rating: number | null;
     playtimeMinutes: number | null;
     finalThoughts: string;
-    /** Oldest first */
+    /** Newest first */
     posts: JournalPostDto[];
 }
 
