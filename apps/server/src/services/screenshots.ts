@@ -72,7 +72,7 @@ export async function storeImage(db: Db, config: Config, upload: Buffer): Promis
     if (upload.length === 0) throw new HttpError(400, 'No image was sent');
     if (upload.length > MAX_UPLOAD_BYTES)
         throw new HttpError(413, 'That image is larger than 8 MB');
-    let encoded: { data: Buffer; info: sharp.OutputInfo };
+    let encoded: { data: Buffer; info: { width: number; height: number } };
     try {
         const source = sharp(upload, { limitInputPixels: MAX_INPUT_PIXELS });
         const meta = await source.metadata();

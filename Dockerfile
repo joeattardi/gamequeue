@@ -15,8 +15,6 @@ COPY . .
 RUN npm run build
 # Production-only dependencies for the server (shared is inlined by tsup)
 RUN rm -rf node_modules && npm ci --omit=dev --workspace @gamequeue/server --include-workspace-root=false
-# Fail the build if the image library (sharp, prebuilt libvips for this CPU) can't load or encode WebP
-RUN cd apps/server && node -e "require('sharp')({create:{width:2,height:2,channels:3,background:'#fff'}}).webp().toBuffer().then(b=>{if(!b.length)process.exit(1)})"
 
 FROM base AS runtime
 # Shown on the admin Server page and recorded with each start; CI passes the commit SHA
@@ -35,6 +33,9 @@ RUN mkdir /data && chown node:node /data
 USER node
 # The app resolves the web build (../web/dist) relative to the working directory
 WORKDIR /app/apps/server
+# Fail the build if the final image can't load its native and runtime packages, the way the server
+# imports them: sharp (prebuilt libvips for this CPU) must encode a WebP, and the others must resolve
+RUN node --input-type=module -e "const { default: sharp } = await import('sharp'); await import('@anthropic-ai/sdk'); await import('better-sqlite3'); await import('@resvg/resvg-js'); const b = await sharp({ create: { width: 2, height: 2, channels: 3, background: '#fff' } }).webp().toBuffer(); if (!b.length) process.exit(1);"
 VOLUME /data
 EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s \
