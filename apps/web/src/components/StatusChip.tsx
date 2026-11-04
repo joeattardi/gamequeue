@@ -1,3 +1,4 @@
+import type { EntryDto } from '@gamequeue/shared';
 import type { CSSProperties } from 'react';
 import { statusColor, statusText, type StatusKey } from '../statusColor';
 
@@ -23,5 +24,16 @@ export function StatusChip({
             <span className="status-chip__dot" aria-hidden="true" />
             {label ?? statusText(status)}
         </span>
+    );
+}
+
+/** An entry's status chip; a Not Started game on the queue reads "Up next" (same colour, it is not a state of its own). */
+export function EntryStatusChip({ entry, className }: { entry: EntryDto; className?: string }) {
+    return (
+        <StatusChip
+            status={entry.status}
+            label={entry.status === 'unplayed' && entry.queued ? 'Up next' : undefined}
+            className={className}
+        />
     );
 }

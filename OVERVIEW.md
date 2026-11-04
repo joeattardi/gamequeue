@@ -685,6 +685,24 @@ TanStack Query is a cache of server data in the browser. Two kinds of hooks:
 
 Long lists use an "infinite query" with a "Load more" button that fetches the next page.
 
+### Search
+
+One search box finds games in two places at once: your own library and IGDB. It is the same search everywhere, in two shapes:
+
+```mermaid
+flowchart LR
+    KEY["⌘K, / or the Search button"] --> PAL["Command palette<br/>(desktop and tablet)"]
+    TAB["Search tab"] --> PHONE["Search page<br/>(phones)"]
+    PAL --> HOOK["useUnifiedSearch"]
+    PHONE --> HOOK
+    HOOK --> LIB["/api/entries?q=<br/>your library"]
+    HOOK --> IGDB["/api/igdb/search<br/>IGDB, cached"]
+    PAL -- "Tab: quick add" --> ADD["useQuickAdd<br/>existing endpoints"]
+    PHONE -- "+ then the sheet" --> ADD
+```
+
+Both answers are cached for five minutes in the browser, so repeating a search never asks IGDB again. Adding a game from a result never leaves the page: the row just changes to show its new status, and a toast (or, in the palette, a small Undo on the row) takes it back.
+
 ### Conventions worth knowing
 
 - **Loading skeletons, always.** Every page shows shimmering placeholder shapes while its data loads, never a blank page or a bare "Loading…".

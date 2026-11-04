@@ -1,5 +1,5 @@
 import { ENTRY_SORTS } from '@gamequeue/shared';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { useFacetCounts, usePagedEntries } from '../api/collection';
 import { AddGameDialog } from '../components/AddGameDialog';
@@ -10,7 +10,7 @@ import { LayoutToggle, useLayout } from '../components/LayoutToggle';
 import { LoadMore } from '../components/LoadMore';
 import { GameCard } from '../components/GameCard';
 import { GameRow } from '../components/GameRow';
-import { useDebounced, useMediaQuery, usePageTitle } from '../lib';
+import { usePageTitle } from '../lib';
 import { Filter, Library, ListTodo, Plus } from 'lucide-react';
 
 const SORT_LABELS: Record<(typeof ENTRY_SORTS)[number], string> = {
@@ -30,11 +30,7 @@ export function CollectionPage({ view }: { view: 'all' | 'backlog' }) {
     const [layout, setLayout] = useLayout(LAYOUT_KEY);
     // Under 900px the filter panel (with the sort) hides behind an icon button next to the search
     const [filtersOpen, setFiltersOpen] = useState(false);
-    // The same breakpoint at which the search row turns into the compact phone layout
-    const compact = useMediaQuery('(max-width: 899px)');
 
-    const [text, setText] = useState(params.get('q') ?? '');
-    const q = useDebounced(text, 250);
     const set = (key: string, value: string) =>
         setParams(
             (p) => {
@@ -44,11 +40,6 @@ export function CollectionPage({ view }: { view: 'all' | 'backlog' }) {
             },
             { replace: true }
         );
-    useEffect(() => {
-        if ((params.get('q') ?? '') !== q.trim()) set('q', q.trim());
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [q]);
-
     const selected = (key: FacetKey) => params.getAll(key);
     const toggle = (key: FacetKey, value: string) =>
         setParams(
@@ -109,15 +100,6 @@ export function CollectionPage({ view }: { view: 'all' | 'backlog' }) {
             </div>
 
             <form className="filters" role="search" onSubmit={(e) => e.preventDefault()}>
-                <label className="field field--grow">
-                    <span>Search</span>
-                    <input
-                        type="search"
-                        value={text}
-                        onChange={(e) => setText(e.target.value)}
-                        placeholder={compact ? 'Search games…' : 'Title…'}
-                    />
-                </label>
                 <label className="field filters__sort">
                     <span>Sort by</span>
                     <select

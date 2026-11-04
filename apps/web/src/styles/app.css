@@ -3934,9 +3934,8 @@ fieldset.stars:disabled .stars__star {
     }
 }
 
-/* Narrow screens: the nav becomes a full-screen menu opened from the bar at the top */
+/* Below the desktop sidebar (900px): a slim top bar with the logo and a bottom tab bar */
 .mobile-bar,
-.sidebar__close,
 .tabbar {
     display: none;
 }
@@ -3949,31 +3948,31 @@ fieldset.stars:disabled .stars__star {
     padding: 0 12px;
 }
 @media (max-width: 899px) {
+    :root {
+        --tabbar-h: 60px;
+    }
     .app-shell {
         grid-template-columns: minmax(0, 1fr);
         /* Without this the spare height of a short page is shared out among the rows, which
            stretches the bar */
         grid-template-rows: auto 1fr;
+        /* Anything wider than the screen is clipped, not allowed to widen the page: a phone browser
+           answers a too-wide page by widening the layout viewport, which would stretch the fixed bars
+           past the edge of the screen. `clip`, unlike `hidden`, makes no scroll container. */
+        overflow-x: clip;
+    }
+    .sidebar {
+        display: none;
     }
     .mobile-bar {
         position: relative;
         display: flex;
         align-items: center;
+        justify-content: center;
         min-height: 52px;
         padding: 2px var(--gutter);
         border-bottom: 1px solid var(--line);
-        background: var(--surface);
-    }
-    .mobile-bar__menu {
-        padding: 0 10px;
-        margin-left: -10px;
-    }
-    /* Centred in the bar; the open menu copies its measured box so the logo never moves */
-    .mobile-bar__brand {
-        position: absolute;
-        left: 50%;
-        top: 50%;
-        transform: translate(-50%, -50%);
+        background: var(--bg-1);
     }
     .mobile-bar__logo {
         display: flex;
@@ -3982,185 +3981,16 @@ fieldset.stars:disabled .stars__star {
         color: inherit;
         text-decoration: none;
     }
-    /* Full screen: the menu is revealed by a circle growing out of the Menu tab (and shrinking back
-       into it on close), then its rows rise in one after another. */
-    .sidebar {
-        position: fixed;
-        inset: 0;
-        width: auto;
-        /* Not the desktop 100dvh: that resizes as a phone's address bar slides in and out */
-        height: auto;
-        z-index: 30;
-        border-right: 0;
-        overscroll-behavior: contain;
-        /* Keep the menu on its own compositor layer, so the first frame of the reveal doesn't
-           have to build one (the usual cause of a one-frame flash at the start) */
-        will-change: clip-path;
-        clip-path: circle(0 at var(--menu-cx, 28px) var(--menu-cy, 24px));
-        visibility: hidden;
-        transition:
-            clip-path 0.45s cubic-bezier(0.7, 0, 0.3, 1),
-            visibility 0s linear 0.45s;
-    }
-    .sidebar.is-open {
-        clip-path: circle(150vmax at var(--menu-cx, 28px) var(--menu-cy, 24px));
-        visibility: visible;
-        transition-delay: 0s;
-    }
-    /* Only the menu's own rows rise in: the account tab in the tab bar is also a .user-menu */
-    .nav-search,
-    .nav__group,
-    .sidebar .user-menu {
-        opacity: 0;
-        transform: translateY(18px);
-        will-change: opacity, transform;
-        transition:
-            opacity 0.15s ease,
-            transform 0.15s ease;
-    }
-    .sidebar.is-open .nav-search,
-    .sidebar.is-open .nav__group,
-    .sidebar.is-open .user-menu {
-        opacity: 1;
-        transform: none;
-        transition:
-            opacity 0.35s ease var(--rise, 0.15s),
-            transform 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.2) var(--rise, 0.15s);
-    }
-    .sidebar.is-open .nav-search {
-        --rise: 0.2s;
-    }
-    .sidebar.is-open .nav__group:nth-child(1) {
-        --rise: 0.26s;
-    }
-    .sidebar.is-open .nav__group:nth-child(2) {
-        --rise: 0.32s;
-    }
-    .sidebar.is-open .nav__group:nth-child(3) {
-        --rise: 0.38s;
-    }
-    .sidebar.is-open .nav__group:nth-child(4) {
-        --rise: 0.44s;
-    }
-    .sidebar.is-open .user-menu {
-        --rise: 0.5s;
-    }
-    /* A header strip that stays put while the rows scroll beneath it; the fixed logo lives inside
-       it (at the top bar's measured logo box, --logo-left/top/h), so it sits above the rows */
-    .sidebar__head {
-        position: sticky;
-        top: 0;
-        z-index: 2;
-        /* Its child is fixed, so without this the flex column squashes it to nothing */
-        flex: none;
-        height: calc(var(--logo-top, 2px) + var(--logo-h, 48px) + 8px);
-        margin: 0 calc(-1 * max(16px, var(--gutter)));
-        background: var(--texture-faint), var(--surface);
-    }
-    .sidebar__logo {
-        position: fixed;
-        left: var(--logo-left, 40%);
-        top: var(--logo-top, 2px);
-        display: flex;
-        align-items: center;
-        height: var(--logo-h, 48px);
-        color: inherit;
-        text-decoration: none;
-    }
-    /* The ✕ sits exactly where the hamburger was (Shell measures it on open: --menu-left/top/w/h),
-       so the bars morph into it without moving */
-    .sidebar__close {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        position: fixed;
-        left: var(--menu-left, 6px);
-        top: var(--menu-top, 2px);
-        width: var(--menu-w, 44px);
-        height: var(--menu-h, 44px);
-        padding: 0;
-    }
-    .menu-icon__bar {
-        transform-box: fill-box;
-        transform-origin: center;
-        transition:
-            transform 0.4s cubic-bezier(0.6, 0, 0.2, 1),
-            opacity 0.2s ease;
-    }
-    .menu-icon.is-open .menu-icon__bar {
-        transition-delay: 0.12s;
-    }
-    .menu-icon.is-open .menu-icon__bar--1 {
-        transform: translateY(4.75px) rotate(45deg);
-    }
-    .menu-icon.is-open .menu-icon__bar--2 {
-        opacity: 0;
-        transform: scaleX(0);
-    }
-    .menu-icon.is-open .menu-icon__bar--3 {
-        transform: translate(4px, -4.75px) rotate(-45deg) scaleX(1.8);
-    }
-    .mobile-bar .logo__word,
-    .sidebar .logo__word {
+    .mobile-bar .logo__word {
         display: inline;
     }
-    /* Bigger rows and type in the menu: it is operated with a thumb */
-    .sidebar {
-        gap: 20px;
-        /* No top padding: the sticky head fills the top edge, so rows can't show above it */
-        padding: 0 max(16px, var(--gutter))
-            calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 16px);
-    }
-    .nav {
-        gap: 20px;
-    }
-    .nav__group {
-        gap: 4px;
-    }
-    .nav__label {
-        font-size: 0.8rem;
-    }
-    .nav a,
-    .nav-search,
-    .user-menu__button,
-    .user-menu__panel a,
-    .user-menu__panel button {
-        min-height: 52px;
-        font-size: 1.1rem;
-    }
-    .nav a,
-    .nav-search {
-        gap: 14px;
-    }
-    .nav a .lucide,
-    .nav-search .lucide,
-    .user-menu__panel .lucide {
-        width: 24px;
-        height: 24px;
-    }
-    .nav a.active::before {
-        top: 10px;
-        bottom: 10px;
-    }
-    .nav__count {
-        min-width: 24px;
-        font-size: 0.85rem;
-        line-height: 24px;
-        border-radius: 12px;
-    }
-}
-/* Phones: the main places are one tap away in a bar at the bottom, where thumbs are; Menu opens the
-   full list. It stays above the open menu, so the same tab closes it again. */
-@media (max-width: 899px) {
-    :root {
-        --tabbar-h: 60px;
-    }
-    /* Anything wider than the screen is clipped, not allowed to widen the page: a phone browser
-       answers a too-wide page by widening the layout viewport, which would stretch the fixed bars
-       (tab bar, quick actions) past the edge of the screen. `clip`, unlike `hidden`, makes no
-       scroll container, so sticky and window scrolling keep working. */
-    .app-shell {
-        overflow-x: clip;
+    /* Tablets (768 to 899 px) search with the palette; the button sits at the bar's right edge */
+    .mobile-bar__search {
+        position: absolute;
+        right: calc(var(--gutter) - 10px);
+        top: 50%;
+        transform: translateY(-50%);
+        padding: 0 10px;
     }
     .tabbar {
         position: fixed;
@@ -4173,7 +4003,7 @@ fieldset.stars:disabled .stars__star {
         height: calc(var(--tabbar-h) + env(safe-area-inset-bottom));
         padding-bottom: env(safe-area-inset-bottom);
         border-top: 1px solid var(--line);
-        background: var(--surface);
+        background: var(--bg-1);
     }
     .tabbar__item {
         position: relative;
@@ -4183,10 +4013,11 @@ fieldset.stars:disabled .stars__star {
         justify-content: center;
         gap: 3px;
         min-width: 0;
+        min-height: 44px;
         padding: 0;
         border: 0;
         background: none;
-        color: var(--ink-muted);
+        color: var(--text-2);
         font: inherit;
         font-size: 0.75rem;
         font-weight: 600;
@@ -4218,74 +4049,859 @@ fieldset.stars:disabled .stars__star {
         text-overflow: ellipsis;
         white-space: nowrap;
     }
-    /* The account tab: the avatar over "You"; its panel pops up above the bar */
-    .user-menu--tab {
-        position: relative;
-        display: flex;
-        padding: 0;
-        border: 0;
-    }
-    .user-menu--tab .tabbar__item {
-        flex: 1;
-        min-width: 0;
-    }
-    .user-menu--tab .tabbar__item[aria-expanded='true'] {
-        color: var(--accent);
-    }
-    .user-menu--tab .tabbar__item[aria-expanded='true'] .avatar {
-        outline: 2px solid var(--accent);
-        outline-offset: 2px;
-    }
-    .user-menu--tab .user-menu__panel {
-        left: auto;
-        right: 8px;
-        bottom: calc(100% + 8px);
-        width: min(280px, calc(100vw - 16px));
-        transform-origin: bottom right;
-    }
-    .tabbar__count {
-        position: absolute;
-        top: 6px;
-        left: calc(50% + 6px);
-        min-width: 18px;
-        padding: 0 5px;
-        border-radius: 9px;
-        background: var(--accent-grad);
-        color: var(--accent-ink);
-        font-size: 0.7rem;
-        line-height: 18px;
-        text-align: center;
-        font-variant-numeric: tabular-nums;
-    }
-    /* Room for the bar under the page, and under the page's footer */
+    /* Room for the bar under the page */
     .content {
         padding-bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom));
     }
 }
-@media (max-width: 899px) and (prefers-reduced-motion: reduce) {
-    .sidebar,
-    .nav-search,
-    .nav__group,
-    .user-menu,
-    .menu-icon__bar {
-        transition: none !important;
-    }
-    .nav-search,
-    .nav__group,
-    .user-menu {
-        opacity: 1;
-        transform: none;
+@media (max-width: 767px) {
+    /* The full-screen search has its own bar and the keyboard to share the screen with */
+    body:has(.search-page--active) .tabbar {
+        display: none;
     }
 }
 
-/* ---- Search page and the not-yet-owned game page ---- */
+/* ---- Search: ⌘K palette, the phone search page, result rows, the add sheet, toasts ---- */
+.nav-search {
+    width: 100%;
+    font: inherit;
+    font-size: 0.92rem;
+    text-align: left;
+    cursor: pointer;
+}
+.palette kbd,
+.nav-search kbd {
+    padding: 0 6px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: var(--bg-2);
+    color: var(--text-3);
+    font: inherit;
+    font-size: 0.75rem;
+    line-height: 1.6;
+}
+mark.hit {
+    background: none;
+    color: var(--accent);
+    font-weight: 700;
+}
+.score-pill {
+    align-self: flex-start;
+    padding: 0 8px;
+    border-radius: 999px;
+    background: color-mix(in oklab, var(--tier) 16%, var(--bg-2));
+    color: var(--tier);
+    font-size: 0.75rem;
+    font-weight: 700;
+    line-height: 1.45;
+    font-variant-numeric: tabular-nums;
+}
+.score-pill--favorable {
+    --tier: var(--status-finished);
+}
+.score-pill--mixed {
+    --tier: var(--status-paused);
+}
+.score-pill--unfavorable {
+    --tier: var(--status-abandoned);
+}
+
+/* Result rows (shared by the palette and the phone list) */
+.srow__cover {
+    flex: none;
+    width: 44px;
+    height: 62px;
+    border-radius: 8px;
+    overflow: hidden;
+    background: var(--bg-3);
+}
+.srow__cover .cover {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 0;
+    aspect-ratio: auto;
+}
+.srow__text {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+.srow__title {
+    overflow: hidden;
+    font-weight: 600;
+    line-height: 1.25;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.srow__meta {
+    overflow: hidden;
+    color: var(--text-2);
+    font-size: 0.85rem;
+    line-height: 1.3;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.srow__chip {
+    flex: none;
+    margin-left: auto;
+}
+.srow__check {
+    width: 14px;
+    height: 14px;
+}
+.srow__add {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border: 2px solid var(--accent);
+    border-radius: 50%;
+    background: none;
+    color: var(--accent);
+    cursor: pointer;
+}
+.srow__add svg {
+    width: 22px;
+    height: 22px;
+}
+
+/* The palette */
+.palette {
+    width: min(640px, calc(100vw - 24px));
+    max-height: min(580px, 82dvh);
+    margin: 12vh auto auto;
+    padding: 0;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius-panel);
+    background: var(--bg-1);
+    color: var(--text);
+    box-shadow: 0 30px 80px -20px rgb(0 0 0 / 0.6);
+    overflow: hidden;
+}
+.palette[open] {
+    display: flex;
+    flex-direction: column;
+}
+.palette::backdrop,
+.sheet::backdrop {
+    background: rgb(4 6 12 / 0.6);
+}
+.palette::backdrop {
+    backdrop-filter: blur(6px);
+}
+.palette__panel {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-height: 0;
+}
+.palette__field {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--line);
+    color: var(--text-2);
+}
+.palette__field:focus-within {
+    box-shadow: inset 0 -2px 0 var(--accent);
+}
+.palette__field input {
+    flex: 1;
+    min-width: 0;
+    border: 0;
+    background: none;
+    color: var(--text);
+    font: 500 1.15rem var(--font-body);
+    outline: none;
+}
+.palette__list {
+    flex: 1;
+    min-height: 0;
+    padding: 8px;
+    overflow-y: auto;
+}
+.palette__label {
+    padding: 10px 12px 6px;
+    color: var(--text-3);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
+.palette__row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 60px;
+    padding: 8px 12px;
+    border-radius: 12px;
+    cursor: pointer;
+}
+.palette__row[data-active] {
+    background: var(--bg-3);
+    outline: 2px solid var(--accent);
+    outline-offset: -2px;
+}
+.palette__row .srow__cover {
+    width: 36px;
+    height: 50px;
+    border-radius: 6px;
+}
+.palette__row--skeleton {
+    cursor: default;
+}
+.palette__icon {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: var(--bg-2);
+    color: var(--text-2);
+}
+.palette__icon svg {
+    width: 18px;
+    height: 18px;
+}
+.palette__add {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    gap: 4px;
+    min-height: 28px;
+    padding: 0 10px;
+    border: 1px solid var(--line-strong);
+    border-radius: 999px;
+    background: none;
+    color: var(--text-2);
+    font: 600 0.8rem var(--font-body);
+    cursor: pointer;
+}
+.palette__add:hover {
+    border-color: var(--accent);
+    color: var(--text);
+}
+.palette__add svg {
+    width: 14px;
+    height: 14px;
+}
+.palette__keys {
+    flex: none;
+}
+.palette__note {
+    margin: 0;
+    padding: 12px;
+    color: var(--text-2);
+}
+.palette__foot {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 18px;
+    padding: 10px 20px;
+    border-top: 1px solid var(--line);
+    color: var(--text-2);
+    font-size: 0.8rem;
+}
+.palette__foot kbd {
+    margin-right: 4px;
+}
+.palette__foot-end {
+    margin-left: auto;
+}
+@media (max-width: 600px) {
+    .palette__foot-end {
+        display: none;
+    }
+}
+
+/* The phone search page */
 .search-page {
-    max-width: 760px;
+    max-width: 640px;
+    margin: 0 auto;
 }
-.search-page .results {
-    overflow: visible;
-    margin-top: 16px;
+.search-page__head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 16px;
 }
+.search-page__head h1 {
+    margin: 0;
+}
+.search-page__bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.search-field {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+    min-height: 52px;
+    padding: 0 6px 0 16px;
+    border: 1px solid var(--field-line);
+    border-radius: 16px;
+    background: var(--bg-2);
+    color: var(--text-2);
+}
+.search-field:focus-within {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px color-mix(in oklab, var(--accent) 40%, transparent);
+}
+.search-field input {
+    flex: 1;
+    min-width: 0;
+    min-height: 44px;
+    border: 0;
+    background: none;
+    color: var(--text);
+    font: 500 1.05rem var(--font-body);
+    outline: none;
+}
+.search-field input::-webkit-search-cancel-button {
+    display: none;
+}
+.search-field__clear {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border: 0;
+    border-radius: 50%;
+    background: none;
+    color: var(--text-2);
+    cursor: pointer;
+}
+.search-field__clear svg {
+    width: 18px;
+    height: 18px;
+}
+.search-page__cancel {
+    min-height: 44px;
+    padding: 0 4px;
+    border: 0;
+    background: none;
+    color: var(--accent);
+    font: 600 1rem var(--font-body);
+    cursor: pointer;
+}
+.search-page--active {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 45;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+    max-width: none;
+    height: 100dvh;
+    margin: 0;
+    padding: calc(env(safe-area-inset-top) + 12px) 16px 0;
+    background: var(--bg-0);
+}
+.search-page--active .search-page__body {
+    flex: 1;
+    min-height: 0;
+    padding-bottom: calc(env(safe-area-inset-bottom) + 28px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    /* The list fades out at its bottom edge, above the keyboard */
+    -webkit-mask-image: linear-gradient(#000 calc(100% - 28px), transparent);
+    mask-image: linear-gradient(#000 calc(100% - 28px), transparent);
+}
+.search-page__hint {
+    margin: 8px 0 0;
+}
+.chip-row {
+    display: flex;
+    flex: none;
+    gap: 8px;
+    padding: 2px 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+.chip-row::-webkit-scrollbar {
+    display: none;
+}
+.chip-row__chip {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 0 16px;
+    border: 1px solid var(--line-strong);
+    border-radius: 999px;
+    background: var(--bg-2);
+    color: var(--text);
+    font: 600 0.95rem var(--font-body);
+    white-space: nowrap;
+    cursor: pointer;
+}
+.chip-row__chip[aria-pressed='true'] {
+    border-color: var(--text);
+    background: var(--text);
+    color: var(--bg-0);
+}
+.chip-row__count {
+    color: var(--text-3);
+    font-variant-numeric: tabular-nums;
+}
+.chip-row__chip[aria-pressed='true'] .chip-row__count {
+    color: var(--bg-3);
+}
+.search-group {
+    margin: 18px 0 8px;
+    color: var(--text-3);
+    font: 700 0.75rem var(--font-body);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
+.srows {
+    display: grid;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+.srow {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    height: 80px;
+    padding: 0 12px;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    background: var(--bg-2);
+    color: var(--text);
+    font: inherit;
+    text-align: left;
+    text-decoration: none;
+}
+.srow--action {
+    padding: 0;
+}
+.srow__hit {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    gap: 12px;
+    align-self: stretch;
+    min-width: 0;
+    padding: 0 0 0 12px;
+    border: 0;
+    border-radius: 16px;
+    background: none;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+.srow--action .srow__add {
+    margin-right: 12px;
+}
+.srow--skeleton {
+    pointer-events: none;
+}
+.search-empty {
+    display: grid;
+    gap: 4px;
+    padding: 32px 8px;
+    text-align: center;
+}
+.recent__head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+}
+.recent__clear {
+    min-height: 44px;
+    padding: 0 4px;
+    border: 0;
+    background: none;
+    color: var(--accent);
+    font: 600 0.95rem var(--font-body);
+    cursor: pointer;
+}
+.recent__list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+.recent__list li {
+    display: flex;
+    align-items: center;
+    border-bottom: 1px solid var(--line);
+}
+.recent__item {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    gap: 14px;
+    min-width: 0;
+    min-height: 52px;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--text);
+    font: 500 1.05rem var(--font-body);
+    text-align: left;
+    cursor: pointer;
+}
+.recent__item svg,
+.recent__fill svg {
+    width: 20px;
+    height: 20px;
+    color: var(--text-3);
+}
+.recent__fill {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border: 0;
+    background: none;
+    cursor: pointer;
+}
+.jump__row {
+    display: flex;
+    gap: 14px;
+    margin: 0;
+    padding: 0 0 4px;
+    overflow-x: auto;
+    list-style: none;
+    scrollbar-width: none;
+}
+.jump__row::-webkit-scrollbar {
+    display: none;
+}
+.jump__item {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    width: 112px;
+    color: var(--text);
+    text-decoration: none;
+}
+.jump__cover {
+    width: 100%;
+    aspect-ratio: 2 / 3;
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-cover);
+    overflow: hidden;
+}
+.jump__cover .cover {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 0;
+}
+.jump__name {
+    display: -webkit-box;
+    overflow: hidden;
+    font-size: 0.9rem;
+    font-weight: 600;
+    line-height: 1.25;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+}
+.jump__skeleton {
+    flex: none;
+    width: 112px;
+    height: 168px;
+    border-radius: var(--radius-card);
+}
+
+/* Bottom sheets: quick add, and the tab bar's More */
+.sheet {
+    width: 100%;
+    max-width: 560px;
+    max-height: 92dvh;
+    margin: auto auto 0;
+    padding: 0;
+    border: 1px solid var(--line-strong);
+    border-bottom: 0;
+    border-radius: 24px 24px 0 0;
+    background: var(--bg-1);
+    color: var(--text);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+@media (prefers-reduced-motion: no-preference) {
+    .sheet[open] {
+        animation: sheet-up 0.25s cubic-bezier(0.2, 0.9, 0.3, 1);
+    }
+}
+@keyframes sheet-up {
+    from {
+        transform: translateY(40px);
+        opacity: 0;
+    }
+}
+.sheet__body {
+    display: grid;
+    gap: 12px;
+    padding: 0 20px calc(env(safe-area-inset-bottom) + 20px);
+}
+.sheet__grabber {
+    display: grid;
+    place-items: center;
+    height: 28px;
+    touch-action: none;
+}
+.sheet__grabber::before {
+    content: '';
+    width: 40px;
+    height: 5px;
+    border-radius: 3px;
+    background: var(--line-strong);
+}
+.sheet__game {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+}
+.sheet__cover {
+    flex: none;
+    width: 88px;
+    aspect-ratio: 2 / 3;
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-cover);
+    overflow: hidden;
+}
+.sheet__cover .cover {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 0;
+}
+.sheet__info {
+    display: grid;
+    gap: 6px;
+    min-width: 0;
+}
+.sheet__info h2 {
+    margin: 0;
+    font-size: 1.4rem;
+}
+.sheet__info p {
+    margin: 0;
+}
+.sheet__info .score-pill {
+    justify-self: start;
+}
+.srow__add,
+.sheet__chip,
+.sheet__choice,
+.chip-row__chip,
+.srow__hit,
+.more__row,
+.recent__item {
+    -webkit-tap-highlight-color: transparent;
+}
+.sheet__label {
+    margin: 8px 0 0;
+    color: var(--text-3);
+    font: 700 0.75rem var(--font-body);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
+.sheet__chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+.sheet__chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 44px;
+    padding: 0 18px;
+    border: 1px solid var(--line-strong);
+    border-radius: 999px;
+    background: none;
+    color: var(--text);
+    font: 600 1rem var(--font-body);
+    cursor: pointer;
+}
+.sheet__chip svg {
+    width: 18px;
+    height: 18px;
+}
+.sheet__chip[aria-pressed='true'],
+.sheet__choice[data-on='true'] {
+    border-color: var(--accent);
+    background: color-mix(in oklab, var(--accent) 14%, var(--bg-1));
+}
+.sheet__choices {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+.sheet__choice {
+    display: grid;
+    gap: 2px;
+    min-height: 64px;
+    padding: 12px 14px;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    background: var(--bg-2);
+    cursor: pointer;
+}
+.sheet__choice:focus-within {
+    outline: 3px solid var(--focus);
+    outline-offset: 2px;
+}
+.sheet__choice-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 700;
+}
+.sheet__dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+}
+.sheet__submit {
+    min-height: 56px;
+    border-radius: 16px;
+    font-size: 1.1rem;
+}
+.sheet__details {
+    display: grid;
+    place-items: center;
+    min-height: 44px;
+    font-weight: 600;
+}
+.more__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.more__head h2 {
+    margin: 0;
+}
+.more__row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    width: 100%;
+    min-height: 52px;
+    padding: 0 8px;
+    border: 0;
+    border-radius: 12px;
+    background: none;
+    color: var(--text);
+    font: 500 1.05rem var(--font-body);
+    text-align: left;
+    text-decoration: none;
+    cursor: pointer;
+}
+.more__row:active,
+.more__row:hover {
+    background: var(--bg-3);
+}
+.more__row svg {
+    flex: none;
+    width: 22px;
+    height: 22px;
+    color: var(--text-2);
+}
+.more__count {
+    margin-left: auto;
+    padding: 0 8px;
+    border-radius: 999px;
+    background: var(--bg-3);
+    color: var(--text-2);
+    font-size: 0.8rem;
+    line-height: 22px;
+}
+.more__legal {
+    margin: 8px 0 0;
+    color: var(--text-3);
+    font-size: 0.8rem;
+    text-align: center;
+}
+
+/* Toasts */
+.toast-region {
+    position: fixed;
+    right: 0;
+    bottom: calc(env(safe-area-inset-bottom) + 16px);
+    left: 0;
+    z-index: 80;
+    display: flex;
+    justify-content: center;
+    padding: 0 16px;
+    pointer-events: none;
+}
+@media (max-width: 899px) {
+    .toast-region {
+        bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 12px);
+    }
+}
+@media (max-width: 767px) {
+    body:has(.search-page--active) .toast-region {
+        bottom: calc(env(safe-area-inset-bottom) + 16px);
+    }
+}
+.toast {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    max-width: 480px;
+    padding: 4px 4px 4px 16px;
+    border: 1px solid var(--line-strong);
+    border-radius: 14px;
+    background: var(--bg-3);
+    box-shadow: var(--shadow);
+    pointer-events: auto;
+}
+@media (prefers-reduced-motion: no-preference) {
+    .toast {
+        animation: sheet-up 0.2s ease-out;
+    }
+}
+.toast__text {
+    flex: 1;
+}
+.toast__action,
+.toast__close {
+    min-width: 44px;
+    min-height: 44px;
+    border: 0;
+    border-radius: 10px;
+    background: none;
+    color: var(--accent);
+    font: 700 0.95rem var(--font-body);
+    cursor: pointer;
+}
+.toast__close {
+    display: grid;
+    place-items: center;
+    color: var(--text-2);
+}
+.toast__close svg {
+    width: 18px;
+    height: 18px;
+}
+
 .game-actions {
     display: flex;
     flex-wrap: wrap;
