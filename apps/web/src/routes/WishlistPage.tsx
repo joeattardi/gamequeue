@@ -24,31 +24,22 @@ import {
     useMoveInWishlist,
     useWishlist
 } from '../api/wishlist';
-import { CountBadge } from '../components/CountBadge';
 import { AddGameDialog } from '../components/AddGameDialog';
 import { Cover } from '../components/Cover';
 import { reveal } from '../components/motion';
 import { LayoutToggle, useLayout } from '../components/LayoutToggle';
 import { LoadMore } from '../components/LoadMore';
 import { GridSkeletons, RowSkeletons } from '../components/GridSkeletons';
-import { ListLoading } from '../components/ListLoading';
 import { MetaLine } from '../components/MetaLine';
-import { releaseBadgeText, releaseText, usePageTitle } from '../lib';
-import { ChevronDown, ChevronUp, Gift, Plus, ShoppingCart, X } from 'lucide-react';
+import { releaseBadgeText, releaseText } from '../lib';
+import { ChevronDown, ChevronUp, Plus, ShoppingCart, X } from 'lucide-react';
 
 const LAYOUT_KEY = 'gq_wishlist_layout';
 
-export function WishlistPage() {
-    usePageTitle('Wishlist');
+/** The Collection's Wishlist tab: the same list the wishlist has always been, without a page of its own. */
+export function WishlistTab() {
     const wishlist = useWishlist();
-    if (wishlist.isPending)
-        return (
-            <ListLoading
-                icon={<Gift aria-hidden="true" />}
-                title="Wishlist"
-                layoutKey={LAYOUT_KEY}
-            />
-        );
+    if (wishlist.isPending) return <RowSkeletons count={6} />;
     if (wishlist.isError || !wishlist.head)
         return (
             <p className="form-error" role="alert">
@@ -110,18 +101,11 @@ function WishlistView({ paged }: { paged: ReturnType<typeof useWishlist> }) {
 
     return (
         <section>
-            <div className="page-head">
-                <div>
-                    <h1>
-                        <Gift aria-hidden="true" />
-                        Wishlist
-                        <CountBadge total={total} />
-                    </h1>
-                    <p className="muted">Top of the list is what you want most</p>
-                </div>
+            <div className="wishlist-bar">
+                <p className="muted">Top of the list is what you want most</p>
                 <div className="row">
-                    <button className="btn btn--primary" onClick={() => setAdding(true)}>
-                        <Plus />
+                    <button className="btn" onClick={() => setAdding(true)}>
+                        <Plus aria-hidden="true" />
                         Add to wishlist
                     </button>
                     {total > 0 && <LayoutToggle layout={layout} onChange={setLayout} />}

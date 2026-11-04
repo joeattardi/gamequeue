@@ -338,7 +338,7 @@ flowchart TD
     B -- no --> C{"Game in the shared cache?"}
     C -- yes --> E
     C -- no --> D["One IGDB request<br/>game + time to beat"] --> D2["Save to games table"] --> E
-    E["Create your entry<br/>with platforms"] --> F["Tags default to<br/>the game's genres and themes"]
+    E["Create your entry<br/>with platforms"] --> F["Tags start empty<br/>(they are yours, not IGDB's)"]
     F --> G["Remove it from your wishlist<br/>if it was there"]
 ```
 
@@ -407,7 +407,7 @@ The allowed moves are defined once in `packages/shared/src/status.ts`. The serve
 
 **Ratings** are 1 to 5 stars on the entry. You can rate a playthrough when finishing it, and that fills in the game's rating only if it was empty.
 
-**Browsing the collection** (`/collection` and `/backlog`) uses faceted filters: status, platform, genre, tag and series. Within one facet, any value matches ("PS5 or Switch"); across facets, all must match ("PS5 and RPG"). The counts next to each option show how many games you'd get if you picked it.
+**Browsing the collection** (`/collection`) has a tab per status (the Backlog is the Not Started tab, the Wishlist is a tab too) and a bar of filters: platform, genre, tag, series and favorites, with a Wall, Grid or List view. Within one facet, any value matches ("PS5 or Switch"); across facets, all must match ("PS5 and RPG"). The counts next to each option show how many games you'd get if you picked it.
 
 Code: `services/entries.ts` (collection), `services/playthroughs.ts` (status changes).
 

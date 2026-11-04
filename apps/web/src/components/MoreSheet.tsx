@@ -5,8 +5,6 @@ import {
     Compass,
     Database,
     Dices,
-    Gift,
-    Inbox,
     LogOut,
     Monitor,
     Moon,
@@ -94,13 +92,6 @@ export function MoreSheet({
                 <h3 className="sheet__label">Library</h3>
                 <Row to="/lists" icon={<Bookmark aria-hidden="true" />}>
                     Lists
-                </Row>
-                {/* Temporary: Backlog and Wishlist become tabs on the Collection in the Collection phase */}
-                <Row to="/backlog" icon={<Inbox aria-hidden="true" />}>
-                    Backlog
-                </Row>
-                <Row to="/wishlist" icon={<Gift aria-hidden="true" />}>
-                    Wishlist
                 </Row>
                 <h3 className="sheet__label">Explore</h3>
                 <Row to="/pick" icon={<Dices aria-hidden="true" />}>

@@ -28,13 +28,18 @@ const entriesPath = (params: URLSearchParams) => {
 };
 
 /** The collection or backlog a page at a time ("Load more"). */
-export function usePagedEntries(params: URLSearchParams) {
+export function usePagedEntries(
+    params: URLSearchParams,
+    opts: { limit?: number; enabled?: boolean } = {}
+) {
     const path = entriesPath(params);
     return usePagedQuery({
-        key: ['entries', 'paged', params.toString()],
+        key: ['entries', 'paged', params.toString(), opts.limit ?? null],
         load: (offset, limit) => api<EntriesPageDto>(withPage(path, offset, limit)),
         read: (r) => ({ items: r.entries, total: r.total }),
-        placeholder: true
+        placeholder: true,
+        limit: opts.limit,
+        enabled: opts.enabled
     });
 }
 

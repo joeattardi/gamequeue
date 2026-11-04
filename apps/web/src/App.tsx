@@ -46,7 +46,6 @@ import { CreditsPage } from './routes/CreditsPage';
 import { DiscoverPage } from './routes/DiscoverPage';
 import { ForgotPasswordPage, ResetPasswordPage } from './routes/PasswordResetPages';
 import { VerifyEmailGate, VerifyEmailPage } from './routes/VerifyEmailPage';
-import { WishlistPage } from './routes/WishlistPage';
 
 export function App() {
     const pending = useMe().isPending;
@@ -134,14 +133,21 @@ function AppRoutes() {
                 <Route path="/u/:username/:view" element={<ProfileGamesPage />} />
                 <Route path="/u/:username/:view/:year" element={<ProfileGamesPage />} />
 
-                <Route path="collection" element={<CollectionPage view="all" />} />
-                <Route path="backlog" element={<CollectionPage view="backlog" />} />
+                <Route path="collection" element={<CollectionPage />} />
+                {/* Backlog and Wishlist are tabs on the Collection now; old links keep working */}
+                <Route
+                    path="backlog"
+                    element={<Navigate to="/collection?status=unplayed" replace />}
+                />
                 <Route path="search" element={<SearchPage />} />
                 <Route path="games/:id" element={<EntryPage />} />
                 <Route path="games/:id/chat" element={<GameChatPage />} />
                 <Route path="games/igdb/:igdbId" element={<GameDetailPage />} />
                 <Route path="queue" element={<QueuePage />} />
-                <Route path="wishlist" element={<WishlistPage />} />
+                <Route
+                    path="wishlist"
+                    element={<Navigate to="/collection?status=wishlist" replace />}
+                />
                 <Route path="discover" element={<DiscoverPage />} />
                 <Route path="series/:id" element={<SeriesPage />} />
                 <Route path="lists" element={<ListsPage />} />

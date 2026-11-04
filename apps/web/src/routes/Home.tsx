@@ -66,7 +66,8 @@ export function Home() {
                 ) : playingNow.length === 0 ? (
                     <p className="muted">
                         Nothing in play right now. Start a game from your{' '}
-                        <Link to="/queue">queue</Link>, your <Link to="/backlog">backlog</Link> or a{' '}
+                        <Link to="/queue">queue</Link>, your{' '}
+                        <Link to="/collection?status=unplayed">backlog</Link> or a{' '}
                         <Link to="/pick">random pick</Link>.
                     </p>
                 ) : (

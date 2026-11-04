@@ -39,12 +39,10 @@ import {
     gameSeries,
     series,
     games,
-    gameThemes,
     genres,
     platforms,
     playthroughs,
-    tags,
-    themes
+    tags
 } from '../db/schema.js';
 import { HttpError } from '../errors.js';
 import type { IgdbClient } from '../igdb/types.js';
@@ -54,10 +52,13 @@ import { forgetGame, recordActivity } from './activity.js';
 import { loggedMinutesFor } from './journal.js';
 import { dequeue, dropFromWishlist } from './lists.js';
 
+/** A tag as stored: trimmed, inner whitespace collapsed, lowercase. An existing tag keeps the spelling it was first saved with. */
+export const normalizeTag = (n: string) => n.trim().replace(/\s+/g, ' ').toLowerCase();
+
 const dedupeTags = (names: string[]) => {
     const seen = new Map<string, string>();
     for (const n of names) {
-        const name = n.trim();
+        const name = normalizeTag(n);
         if (name && !seen.has(name.toLowerCase())) seen.set(name.toLowerCase(), name);
     }
     return [...seen.values()];
@@ -120,23 +121,8 @@ export async function addEntry(
         t.insert(entryPlatforms)
             .values(platformIds.map((platformId) => ({ entryId: row.id, platformId })))
             .run();
-        // Pre-fill tags from IGDB genres + themes (lowercased) unless the caller supplied their own
-        const fromIgdb = () =>
-            [
-                ...t
-                    .select({ name: genres.name })
-                    .from(gameGenres)
-                    .innerJoin(genres, eq(genres.id, gameGenres.genreId))
-                    .where(eq(gameGenres.gameId, input.igdbId))
-                    .all(),
-                ...t
-                    .select({ name: themes.name })
-                    .from(gameThemes)
-                    .innerJoin(themes, eq(themes.id, gameThemes.themeId))
-                    .where(eq(gameThemes.gameId, input.igdbId))
-                    .all()
-            ].map((r) => r.name.toLowerCase());
-        setTags(t, userId, row.id, input.tags ?? fromIgdb());
+        // Tags are the user's own: a new game starts with none (genres are a separate filter)
+        setTags(t, userId, row.id, input.tags ?? []);
         // Pre-existing history: one playthrough that matches the status (never queued)
         if (
             input.status === 'playing' ||
@@ -325,7 +311,8 @@ function buildOrder(q: EntryQuery): SQL[] {
         added: 'desc',
         release: 'desc',
         rating: 'desc',
-        ttb: 'asc'
+        ttb: 'asc',
+        igdb: 'desc'
     } as const;
     const dir = q.dir ?? defaultDir[q.sort];
     const d = dir === 'asc' ? asc : desc;
@@ -334,7 +321,8 @@ function buildOrder(q: EntryQuery): SQL[] {
         added: entries.addedAt,
         release: games.releaseDate,
         rating: entries.rating,
-        ttb: games.ttbNormallySeconds
+        ttb: games.ttbNormallySeconds,
+        igdb: games.igdbRating
     };
     const k = key[q.sort];
     // Missing values always sort last, whichever direction

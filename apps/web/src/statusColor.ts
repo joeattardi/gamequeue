@@ -20,6 +20,9 @@ const TOKENS: Record<StatusKey, string> = {
  */
 export const statusColor = (state: StatusKey): string => `var(${TOKENS[state]})`;
 
+/** The same state's colour for drawing over cover art: brighter, and the same in light and dark. */
+export const statusColorOnCover = (state: StatusKey): string => `var(${TOKENS[state]}-bright)`;
+
 /** The text next to the dot, so colour is never the only cue. */
 export const statusText = (state: StatusKey): string =>
     state === 'wishlist' ? 'Wishlist' : statusLabel(state);

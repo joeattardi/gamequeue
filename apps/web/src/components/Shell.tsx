@@ -24,8 +24,6 @@ import {
     Bot,
     Dices,
     Ellipsis,
-    Gift,
-    Inbox,
     Joystick,
     LibraryBig,
     PanelLeftClose,
@@ -244,21 +242,6 @@ export function Shell({ user }: { user: UserDto }) {
                                         count={counts.collection}
                                         collapsed={collapsed}
                                     />
-                                    {/* Temporary: Backlog and Wishlist become tabs on the Collection in the Collection phase */}
-                                    <NavItem
-                                        to="/backlog"
-                                        icon={<Inbox />}
-                                        label="Backlog"
-                                        count={counts.backlog}
-                                        collapsed={collapsed}
-                                    />
-                                    <NavItem
-                                        to="/wishlist"
-                                        icon={<Gift />}
-                                        label="Wishlist"
-                                        count={counts.wishlist}
-                                        collapsed={collapsed}
-                                    />
                                     <NavItem
                                         to="/lists"
                                         icon={<Bookmark />}
@@ -339,9 +322,7 @@ export function Shell({ user }: { user: UserDto }) {
                             </Link>
                             <Link
                                 to="/collection"
-                                className={tab(
-                                    on('/collection', '/backlog', '/wishlist', '/lists', '/games')
-                                )}
+                                className={tab(on('/collection', '/lists', '/games'))}
                             >
                                 <LibraryBig aria-hidden="true" />
                                 <span>Library</span>

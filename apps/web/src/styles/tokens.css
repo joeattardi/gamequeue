@@ -29,6 +29,13 @@
     --status-wishlist: #6b3fd4;
     /* Borders of form fields: stronger than --line so the control's edge is visible (>= 3:1) */
     --field-line: #74839d;
+    /* Status colours for drawing on top of cover art (chips, the wall's bottom bar): the dark theme's brighter values in both themes, since art is dark-ish whatever the page is */
+    --status-playing-bright: #6c8cff;
+    --status-paused-bright: #f4b740;
+    --status-finished-bright: #3dd6a0;
+    --status-abandoned-bright: #f0707e;
+    --status-notstarted-bright: #a9b1cc;
+    --status-wishlist-bright: #b391ff;
 
     /* Names the rest of the stylesheet already uses, pointing at the tokens above */
     --bg: var(--bg-0);

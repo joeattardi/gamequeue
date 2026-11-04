@@ -99,10 +99,14 @@ describe('adding games', () => {
         expect(igdb.calls.fetchGame).toBe(1);
     });
 
-    it('pre-fills tags from genres and themes, or uses supplied tags', async () => {
+    it('starts a new game with no tags, and stores supplied ones trimmed and lowercase', async () => {
         const { add } = await setup();
-        expect((await add(1)).tags).toEqual(['fantasy', 'hack and slash']);
-        expect((await add(2, [PC.id], ['Cozy', 'cozy', 'Hard'])).tags).toEqual(['Cozy', 'Hard']);
+        // IGDB genres and themes are not copied into the user's tags
+        expect((await add(1)).tags).toEqual([]);
+        expect((await add(2, [PC.id], ['Cozy', 'cozy', '  Hard   Mode '])).tags).toEqual([
+            'cozy',
+            'hard mode'
+        ]);
         expect((await add(3, [PC.id], [])).tags).toEqual([]);
     });
 
@@ -242,6 +246,10 @@ describe('listing, filters and sorting', () => {
             'Hades',
             'Alan Wake'
         ]);
+        // IGDB score: Hades 93, Celeste 80 (the default), Alan Wake 80, Disco Elysium unknown (last)
+        expect(names(await list('?sort=igdb'))[0]).toBe('Hades');
+        expect(names(await list('?sort=igdb')).at(-1)).toBe('Disco Elysium');
+        expect(names(await list('?sort=igdb&dir=asc')).at(-1)).toBe('Disco Elysium');
         expect(names(await list('?sort=ttb'))).toEqual([
             'Celeste',
             'Alan Wake',
@@ -348,7 +356,7 @@ describe('editing and deleting', () => {
             'PATCH'
         );
         const out = (await res.json()).entry;
-        expect(out).toMatchObject({ rating: 5, tags: ['Fast', 'roguelike'] });
+        expect(out).toMatchObject({ rating: 5, tags: ['fast', 'roguelike'] });
         expect(out.platforms.map((p: { id: number }) => p.id)).toEqual([PS5.id]);
     });
 

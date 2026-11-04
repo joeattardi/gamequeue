@@ -20,7 +20,7 @@ export function Welcome() {
                     <Database />
                     Import a library
                 </Link>
-                <Link className="btn" to="/wishlist">
+                <Link className="btn" to="/collection?status=wishlist">
                     <Gift />
                     Start a wishlist
                 </Link>
