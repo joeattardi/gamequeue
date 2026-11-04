@@ -73,14 +73,18 @@ export function CreditsPage() {
                     <h2 id="credits-software">Fonts and software</h2>
                     <p>
                         Headings use{' '}
+                        <External href="https://fonts.google.com/specimen/Outfit">Outfit</External>{' '}
+                        and text uses{' '}
+                        <External href="https://fonts.google.com/specimen/Inter">Inter</External>;
+                        the share-card images use{' '}
                         <External href="https://fonts.google.com/specimen/Bricolage+Grotesque">
                             Bricolage Grotesque
                         </External>{' '}
-                        and text uses{' '}
+                        and{' '}
                         <External href="https://fonts.google.com/specimen/Figtree">
                             Figtree
                         </External>
-                        , both under the SIL Open Font License. Interface icons are from{' '}
+                        . All four are under the SIL Open Font License. Interface icons are from{' '}
                         <External href="https://lucide.dev">Lucide</External> (ISC license).
                     </p>
                     <p>

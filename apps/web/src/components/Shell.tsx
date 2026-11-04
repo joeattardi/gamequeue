@@ -5,11 +5,10 @@ import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router';
 import { useLogout } from '../api/auth';
 import { useNavCounts } from '../api/counts';
 import { useAiStatus } from '../api/ai';
-import { isRecapSeason } from '../lib';
 import { ErrorBoundary } from './ErrorBoundary';
 import { ErrorPage } from './ErrorPage';
-import { Footer } from './Footer';
-import { DevBadge } from './DevBadge';
+import { DismissiblePreviewNotice } from './PreviewNotice';
+import { ShellProvider } from './ShellContext';
 import { Logo } from './Logo';
 import { MenuIcon } from './MenuIcon';
 import { Tooltip } from './Tooltip';
@@ -27,8 +26,7 @@ import {
     PanelLeftClose,
     PanelLeftOpen,
     Search,
-    SkipForward,
-    Sparkles
+    SkipForward
 } from 'lucide-react';
 
 const NARROW = '(max-width: 899px)';
@@ -201,7 +199,7 @@ export function Shell({ user }: { user: UserDto }) {
     };
 
     return (
-        <>
+        <ShellProvider value={true}>
             <a className="skip-link" href="#main">
                 Skip to content
             </a>
@@ -222,7 +220,6 @@ export function Shell({ user }: { user: UserDto }) {
                         <Link ref={barLogo} to="/" className="mobile-bar__logo">
                             <Logo />
                         </Link>
-                        <DevBadge />
                     </div>
                 </header>
                 <aside
@@ -246,7 +243,6 @@ export function Shell({ user }: { user: UserDto }) {
                             <Link to="/" className="sidebar__logo">
                                 <Logo />
                             </Link>
-                            <DevBadge />
                         </div>
                         <button
                             ref={closeButton}
@@ -258,10 +254,10 @@ export function Shell({ user }: { user: UserDto }) {
                             <MenuIcon open={drawerOpen} />
                         </button>
                     </div>
-                    <Tooltip label="Search games" shortcut="/" enabled={collapsed}>
+                    <Tooltip label="Search or jump to…" shortcut="/" enabled={collapsed}>
                         <NavLink className="nav-search" to="/search">
                             <Search />
-                            <span className="nav__text">Search games</span>
+                            <span className="nav__text">Search or jump to…</span>
                             <kbd aria-hidden="true">/</kbd>
                         </NavLink>
                     </Tooltip>
@@ -284,20 +280,6 @@ export function Shell({ user }: { user: UserDto }) {
                                 count={counts.queue}
                                 collapsed={collapsed}
                             />
-                            <NavItem
-                                to="/pick"
-                                icon={<Dices />}
-                                label="Pick"
-                                collapsed={collapsed}
-                            />
-                            {aiAvailable && (
-                                <NavItem
-                                    to="/chat"
-                                    icon={<Bot />}
-                                    label="Ask AI"
-                                    collapsed={collapsed}
-                                />
-                            )}
                         </div>
                         <div className="nav__group" role="group" aria-labelledby="nav-library">
                             <h2 className="nav__label" id="nav-library">
@@ -310,19 +292,12 @@ export function Shell({ user }: { user: UserDto }) {
                                 count={counts.collection}
                                 collapsed={collapsed}
                             />
+                            {/* Temporary: Backlog and Wishlist become tabs on the Collection in the Collection phase */}
                             <NavItem
                                 to="/backlog"
                                 icon={<Inbox />}
                                 label="Backlog"
                                 count={counts.backlog}
-                                collapsed={collapsed}
-                            />
-                            <NavItem
-                                to="/lists"
-                                icon={<Bookmark />}
-                                label="Lists"
-                                count={counts.lists}
-                                unit="list"
                                 collapsed={collapsed}
                             />
                             <NavItem
@@ -333,11 +308,38 @@ export function Shell({ user }: { user: UserDto }) {
                                 collapsed={collapsed}
                             />
                             <NavItem
+                                to="/lists"
+                                icon={<Bookmark />}
+                                label="Lists"
+                                count={counts.lists}
+                                unit="list"
+                                collapsed={collapsed}
+                            />
+                        </div>
+                        <div className="nav__group" role="group" aria-labelledby="nav-explore">
+                            <h2 className="nav__label" id="nav-explore">
+                                Explore
+                            </h2>
+                            <NavItem
+                                to="/pick"
+                                icon={<Dices />}
+                                label="Pick for me"
+                                collapsed={collapsed}
+                            />
+                            <NavItem
                                 to="/discover"
                                 icon={<Compass />}
                                 label="Discover"
                                 collapsed={collapsed}
                             />
+                            {aiAvailable && (
+                                <NavItem
+                                    to="/chat"
+                                    icon={<Bot />}
+                                    label="Ask AI"
+                                    collapsed={collapsed}
+                                />
+                            )}
                         </div>
                         <div className="nav__group" role="group" aria-labelledby="nav-insights">
                             <h2 className="nav__label" id="nav-insights">
@@ -349,16 +351,6 @@ export function Shell({ user }: { user: UserDto }) {
                                 label="Stats"
                                 collapsed={collapsed}
                             />
-                            {/* Always in the footer's site map; promoted here for the season */}
-                            {isRecapSeason() && (
-                                <NavItem
-                                    to="/recap"
-                                    className="nav__season"
-                                    icon={<Sparkles />}
-                                    label="Save File"
-                                    collapsed={collapsed}
-                                />
-                            )}
                         </div>
                     </nav>
                     <Tooltip label="Expand sidebar" enabled={collapsed}>
@@ -414,6 +406,7 @@ export function Shell({ user }: { user: UserDto }) {
                     />
                 </nav>
                 <div className="content" inert={drawerOpen}>
+                    <DismissiblePreviewNotice />
                     <main id="main" className="page" tabIndex={-1}>
                         {/* A page that crashes shows the error here; the sidebar stays usable, and
                             navigating anywhere clears it */}
@@ -424,9 +417,8 @@ export function Shell({ user }: { user: UserDto }) {
                             <Outlet />
                         </ErrorBoundary>
                     </main>
-                    <Footer sitemap />
                 </div>
             </div>
-        </>
+        </ShellProvider>
     );
 }

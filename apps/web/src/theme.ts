@@ -17,7 +17,7 @@ function readTheme(): Theme {
 }
 
 /** The page background in each theme, for the browser's address bar (`<meta name="theme-color">`). */
-const THEME_COLORS = { light: '#f3f6fb', dark: '#0d1320' };
+const THEME_COLORS = { light: '#f3f6fb', dark: '#080b14' };
 
 /**
  * Light and dark pin `data-theme` on <html>; system leaves it off so the media query decides. The

@@ -5,6 +5,7 @@ import { useProfileActivity } from '../api/profile';
 import { ActivityList, ActivitySkeletons } from '../components/ActivityFeed';
 import { LoadMore } from '../components/LoadMore';
 import { PublicHeader } from '../components/PublicHeader';
+import { PublicMain } from '../components/ShellContext';
 import { usePageTitle } from '../lib';
 
 /** Public: everything someone has done lately, newest first (`/u/:username/activity`). */
@@ -18,7 +19,7 @@ export function ProfileActivityPage() {
     return (
         <>
             <PublicHeader />
-            <main className="page">
+            <PublicMain>
                 <Link to={`/u/${username}`} className="back">
                     <ArrowLeft aria-hidden="true" /> {username}
                 </Link>
@@ -45,7 +46,7 @@ export function ProfileActivityPage() {
                         />
                     </>
                 )}
-            </main>
+            </PublicMain>
         </>
     );
 }

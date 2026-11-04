@@ -625,7 +625,7 @@ Code: `services/export.ts`, `services/import.ts`, `packages/shared/src/export.ts
 - **Password change.** Needs your current password, and signs out your other sessions.
 - **Delete account.** Needs your password and a confirmation. The database cascades the delete through every table that belongs to you. (Anything new keyed by `user_id` must cascade too, or this breaks.)
 
-The icons come from game-icons.net and are credited on the `/credits` page (linked from every footer).
+The icons come from game-icons.net and are credited on the `/credits` page (linked from the user menu and from the footer of pages outside the app shell).
 
 Code: `routes/account.ts`, `routes/avatar.ts`, `services/users.ts`, `services/avatars.ts`.
 
@@ -691,7 +691,7 @@ Long lists use an "infinite query" with a "Load more" button that fetches the ne
 - **Confirmations** use `useConfirm()` (a promise-based dialog), never `window.confirm`.
 - **Dialogs** use the native `<dialog>` element through `useModalDialog`.
 - **Page titles** are set with `usePageTitle()`.
-- **Styling**: design tokens (colours, spacing, light and dark themes) in `styles/tokens.css`, everything else in `styles/app.css`. Icons from Lucide.
+- **Styling**: design tokens (three surface levels, text and line colours, one colour per game status, light and dark themes) in `styles/tokens.css`; `statusColor()` is the single map from a game's state to its colour, `StatusChip` shows it as dot, colour and label, everything else in `styles/app.css`. Icons from Lucide.
 - **Layout choice** (cover grid or rows) is remembered per browser in `localStorage`.
 
 ### Development vs production

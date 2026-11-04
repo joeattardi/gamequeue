@@ -5,6 +5,7 @@ import { useProfileList } from '../api/profile';
 import { PublicGameList, usePublicLayout } from '../components/PublicGameList';
 import { LayoutToggle } from '../components/LayoutToggle';
 import { PublicHeader } from '../components/PublicHeader';
+import { PublicMain } from '../components/ShellContext';
 import { usePageTitle } from '../lib';
 
 /**
@@ -25,7 +26,7 @@ export function ProfileListPage({ kind }: { kind: 'lists' | 'smart-lists' }) {
     return (
         <>
             <PublicHeader />
-            <main className="page">
+            <PublicMain>
                 <div className="back-row">
                     <Link to={`/u/${username}`} className="back">
                         <ArrowLeft aria-hidden="true" /> {username}
@@ -79,7 +80,7 @@ export function ProfileListPage({ kind }: { kind: 'lists' | 'smart-lists' }) {
                         />
                     </>
                 )}
-            </main>
+            </PublicMain>
         </>
     );
 }

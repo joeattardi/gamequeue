@@ -41,6 +41,7 @@ import { ListCard } from '../components/ListCard';
 import { SocialLinksList } from '../components/SocialLinks';
 import { ProfileSkeleton } from '../components/PageSkeletons';
 import { PublicHeader } from '../components/PublicHeader';
+import { PublicMain } from '../components/ShellContext';
 import { usePageTitle } from '../lib';
 
 function Games({ username, entries }: { username: string; entries: PublicEntryDto[] }) {
@@ -366,7 +367,7 @@ export function ProfilePage() {
                     }
                 }
             />
-            <main className="page">
+            <PublicMain>
                 {profile.isPending && <ProfileSkeleton />}
                 {profile.isError && (
                     <p role="alert">
@@ -467,7 +468,7 @@ export function ProfilePage() {
                         </div>
                     </>
                 )}
-            </main>
+            </PublicMain>
         </>
     );
 }

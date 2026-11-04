@@ -1,19 +1,41 @@
 :root {
     color-scheme: light dark;
-    --font-display: 'Bricolage Grotesque Variable', system-ui, sans-serif;
-    --font-body: 'Figtree Variable', system-ui, sans-serif;
+    --font-display: 'Outfit Variable', system-ui, sans-serif;
+    --font-body: 'Inter Variable', system-ui, sans-serif;
 
-    /* cool paper + cobalt blue; text/bg pairs all clear WCAG AA */
-    --bg: #f3f6fb;
-    --surface: #fbfcff;
-    --surface-2: #e8eef8;
-    --ink: #111c2e;
-    --ink-muted: #526078;
+    /*
+     * Three surface levels (bg-1 sidebar and inset fields, bg-2 cards and panels, bg-3 hover and
+     * selected) over the page (bg-0). Light is the cool-paper counterpart of the dark set below,
+     * with the same token names. Text/background pairs clear WCAG AA (4.5:1).
+     */
+    --bg-0: #f3f6fb;
+    --bg-1: #e9eef8;
+    --bg-2: #fbfcff;
+    --bg-3: #dde6f5;
     --line: #d6deec;
-    --line-strong: #8392ab;
+    --line-strong: #b4c0d6;
+    --text: #111c2e;
+    --text-2: #4a5873;
+    --text-3: #5a677f;
     --accent: #1d4ed8;
     --accent-ink: #f5f8ff;
-    --accent-soft: #dbe6fc;
+    --accent-soft: color-mix(in oklab, var(--accent) 14%, var(--bg-2));
+    /* Game status colours; use through statusColor() in statusColor.ts. Each is also text on a faint tint of itself. */
+    --status-playing: #1d4ed8;
+    --status-paused: #8a5a00;
+    --status-finished: #0a6b4d;
+    --status-abandoned: #b01d34;
+    --status-notstarted: #505d75;
+    --status-wishlist: #6b3fd4;
+    /* Borders of form fields: stronger than --line so the control's edge is visible (>= 3:1) */
+    --field-line: #74839d;
+
+    /* Names the rest of the stylesheet already uses, pointing at the tokens above */
+    --bg: var(--bg-0);
+    --surface: var(--bg-2);
+    --surface-2: var(--bg-3);
+    --ink: var(--text);
+    --ink-muted: var(--text-2);
     /* Faint scanlines plus a pixel grid for banners and empty states (a background layer list) */
     --texture:
         repeating-linear-gradient(
@@ -67,28 +89,41 @@
     --recap-ink: #fff;
     --recap-ink-soft: rgb(255 255 255 / 0.82);
 
-    --radius: 8px;
-    --radius-sm: 5px;
+    /* Shape: cards and covers 14, panels 18, buttons and fields 12; chips are fully round */
+    --radius: 14px;
+    --radius-card: 14px;
+    --radius-panel: 18px;
+    --radius-sm: 12px;
+    --radius-btn: 12px;
     --shadow: 0 1px 2px rgb(10 25 60 / 0.08), 0 4px 16px -6px rgb(10 25 60 / 0.12);
+    --shadow-cover: 0 6px 16px -6px rgb(10 25 60 / 0.35);
     --gutter: clamp(16px, 4vw, 32px);
 }
 
 @media (prefers-color-scheme: dark) {
     :root:not([data-theme='light']) {
-        --bg: #0d1320;
-        --surface: #151d2e;
-        --surface-2: #1d283d;
-        --ink: #e8eefb;
-        --ink-muted: #9fb0cc;
-        --line: #243049;
-        --line-strong: #5b6d8f;
-        --accent: #6ea0ff;
+        --bg-0: #080b14;
+        --bg-1: #0e1220;
+        --bg-2: #151a2c;
+        --bg-3: #1d2338;
+        --line: #262d45;
+        --line-strong: #343c5a;
+        --text: #eef1fb;
+        --text-2: #a9b1cc;
+        --text-3: #8a93b2;
+        --accent: #6c8cff;
         --accent-ink: #08122b;
-        --accent-soft: #1a2a4d;
+        --status-playing: #6c8cff;
+        --status-paused: #f4b740;
+        --status-finished: #3dd6a0;
+        --status-abandoned: #f0707e;
+        --status-notstarted: #8a93b2;
+        --status-wishlist: #b391ff;
+        --field-line: #5b6d8f;
         --danger: #f97066;
         --danger-ink: #2a0a07;
         --focus: #bfdbfe;
-        --viz-1: #6ea0ff;
+        --viz-1: #6c8cff;
         --viz-2: #3cc0d0;
         --viz-3: #a78bfa;
         --viz-4: #f59e4b;
@@ -97,23 +132,32 @@
         --status-good: #34b055;
         --favorite: #ff6b9d;
         --shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 4px 16px -6px rgb(0 0 0 / 0.5);
+        --shadow-cover: 0 6px 18px -6px rgb(0 0 0 / 0.65);
     }
 }
 :root[data-theme='dark'] {
-    --bg: #0d1320;
-    --surface: #151d2e;
-    --surface-2: #1d283d;
-    --ink: #e8eefb;
-    --ink-muted: #9fb0cc;
-    --line: #243049;
-    --line-strong: #5b6d8f;
-    --accent: #6ea0ff;
+    --bg-0: #080b14;
+    --bg-1: #0e1220;
+    --bg-2: #151a2c;
+    --bg-3: #1d2338;
+    --line: #262d45;
+    --line-strong: #343c5a;
+    --text: #eef1fb;
+    --text-2: #a9b1cc;
+    --text-3: #8a93b2;
+    --accent: #6c8cff;
     --accent-ink: #08122b;
-    --accent-soft: #1a2a4d;
+    --status-playing: #6c8cff;
+    --status-paused: #f4b740;
+    --status-finished: #3dd6a0;
+    --status-abandoned: #f0707e;
+    --status-notstarted: #8a93b2;
+    --status-wishlist: #b391ff;
+    --field-line: #5b6d8f;
     --danger: #f97066;
     --danger-ink: #2a0a07;
     --focus: #bfdbfe;
-    --viz-1: #6ea0ff;
+    --viz-1: #6c8cff;
     --viz-2: #3cc0d0;
     --viz-3: #a78bfa;
     --viz-4: #f59e4b;
@@ -122,6 +166,7 @@
     --status-good: #34b055;
     --favorite: #ff6b9d;
     --shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 4px 16px -6px rgb(0 0 0 / 0.5);
+    --shadow-cover: 0 6px 18px -6px rgb(0 0 0 / 0.65);
 }
 
 :root[data-theme='light'] {

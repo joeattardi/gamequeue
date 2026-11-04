@@ -51,7 +51,7 @@ Each has the default I will follow unless you say otherwise. **The first four ne
 
 Paths are under `apps/web/src/` unless noted. Tests: Vitest for pure helpers; I'll add the status colour helper and any pure logic with tests, and re-run `npm run typecheck`, `npm test`, `npm run format:check` per phase. `ARCHITECTURE.md` / `OVERVIEW.md` are updated in the same PR when pages or nav change (project rule).
 
-### Phase 1: Foundation and shell (branch `redesign/phase-1-shell`)
+### Phase 1: Foundation and shell (branch `redesign-phase-1-shell`)
 
 - `styles/tokens.css`: brief tokens (dark = brief, light derived), aliases for old names, radii, shadows, `--font-display/--font-body`.
 - `main.tsx`, `index.html`, `apps/web/package.json`: swap fonts; update inline splash colours/theme-color in `theme.ts` (`THEME_COLORS`).
@@ -63,24 +63,24 @@ Paths are under `apps/web/src/` unless noted. Tests: Vitest for pure helpers; I'
 - `components/Logo.tsx`, `routes/ProfilePage.tsx`, `components/PublicHeader.tsx`: use the shell when signed in.
 - Docs: `ARCHITECTURE.md` (web shell/nav), `OVERVIEW.md` if the shell diagram changes.
 
-### Phase 2: Global search and mobile search (`redesign/phase-2-search`)
+### Phase 2: Global search and mobile search (`redesign-phase-2-search`)
 
 - New `components/CommandPalette.tsx`, `api/search.ts` (merges `GET /entries?q=` and `GET /igdb/search` into one result model, cached by query), `components/QuickAddSheet.tsx`, shared recent-searches hook; `Shell.tsx` (⌘K and `/`, sidebar button), `App.tsx`, `routes/SearchPage.tsx` rebuilt as the phone landing/results, bottom tab bar (Play, Library, Search, Stats, More) and More sheet, `routes/CollectionPage.tsx` (remove search box), `Footer` link removed, `AddGameDialog.tsx` reuses the sheet's add logic. Server: none (existing endpoints; uses `entryId`/`wishlisted`).
 
-### Phase 3: Collection (`redesign/phase-3-collection`)
+### Phase 3: Collection (`redesign-phase-3-collection`)
 
 - `routes/CollectionPage.tsx` (tabs, top filter bar, density switch, wishlist tab), `components/FacetSidebar.tsx` (becomes the filter popovers; sidebar deleted), `components/GameCard.tsx` and `GameRow.tsx` (chips, progress), new `components/WallTile.tsx`, `components/LayoutToggle.tsx` (Wall/Grid/List, per-user), `components/GridSkeletons.tsx` (skeletons per layout, required by project rules), `routes/WishlistPage.tsx` (content reused in the tab), `App.tsx` redirects, `styles/app.css` (.grid/.card/.browse/.filters).
 - Server and shared: `packages/shared/src/collection.ts` (`ENTRY_SORTS` + `igdb`), `apps/server/src/services/entries.ts` (igdb sort; stop genre/theme tag pre-fill; lowercase new tags), tests in `apps/server/test/collection.test.ts` and `favorites/notes` as needed; `ARCHITECTURE.md`.
 
-### Phase 4: Game detail (`redesign/phase-4-game-detail`)
+### Phase 4: Game detail (`redesign-phase-4-game-detail`)
 
 - `routes/EntryPage.tsx`, `routes/GameDetailPage.tsx`, `components/Screenshots.tsx` (+ `ImageLightbox`), `components/PlaythroughPanels.tsx` (`StatusPanel` becomes primary button + segmented control; history collapsed), `components/EntryActionBar.tsx`, `components/StarRating.tsx`, `components/NotesPanel.tsx`, `components/ScoreGauge.tsx` + `gauge.ts` (keeps tier rules; green token), `components/PageSkeletons.tsx`, `styles/app.css` (.entry*). Backdrop colour: derived from the cover image on the client (canvas average) with a token fallback; no server change.
 
-### Phase 5: Now playing (`redesign/phase-5-now-playing`)
+### Phase 5: Now playing (`redesign-phase-5-now-playing`)
 
 - `routes/Home.tsx`, `components/PlayingCard.tsx` (hero card, Finished/Abandon demoted, ••• menu), `components/UpNext.tsx` (sortable list with Start; reuses the dnd-kit logic from `routes/ListPage.tsx`, extracted to a shared hook), `components/HomeSkeletons.tsx`, `components/Welcome.tsx` untouched until Phase 6, `components/ReleasingSoon.tsx` kept below. "This week" line from the existing stats payload, linking to `/stats`. No server change.
 
-### Phase 6: Polish and cleanup (`redesign/phase-6-polish`)
+### Phase 6: Polish and cleanup (`redesign-phase-6-polish`)
 
 - Empty states (`Welcome.tsx`, Collection, Queue), `routes/ProfilePage.tsx` (stacked status bar, 2-3 stats), `components/ActivityCalendar.tsx` (fit container), dead CSS/components removal, alias tokens removed, responsive + focus + contrast pass over every screen, "after" screenshots. Pages the brief doesn't mention (Lists, Pick, Discover, Stats, Account, Data, Admin, auth, credits) are only restyled via tokens and checked at three widths.
 

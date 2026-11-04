@@ -117,22 +117,23 @@ function AppRoutes() {
             <Route path="/register" element={<Navigate to="/" replace />} />
             <Route path="/credits" element={<CreditsPage />} />
             <Route path="/p/:slug" element={<JournalPage />} />
-            <Route path="/u/:username" element={<ProfilePage />} />
-            <Route path="/u/:username/wishlist" element={<ProfileWishlistPage />} />
-            <Route path="/u/:username/lists/:id" element={<ProfileListPage kind="lists" />} />
-            <Route
-                path="/u/:username/smart-lists/:id"
-                element={<ProfileListPage kind="smart-lists" />}
-            />
-            <Route path="/u/:username/stats" element={<ProfileStatsPage />} />
-            <Route path="/u/:username/activity" element={<ProfileActivityPage />} />
-            <Route path="/u/:username/games/:igdbId" element={<ProfileGamePage />} />
-            <Route path="/u/:username/recap" element={<ProfileRecapPage />} />
-            <Route path="/u/:username/recap/:year" element={<ProfileRecapPage />} />
-            <Route path="/u/:username/:view" element={<ProfileGamesPage />} />
-            <Route path="/u/:username/:view/:year" element={<ProfileGamesPage />} />
             <Route element={<Shell user={me.data} />}>
                 <Route index element={<Home />} />
+                <Route path="/u/:username" element={<ProfilePage />} />
+                <Route path="/u/:username/wishlist" element={<ProfileWishlistPage />} />
+                <Route path="/u/:username/lists/:id" element={<ProfileListPage kind="lists" />} />
+                <Route
+                    path="/u/:username/smart-lists/:id"
+                    element={<ProfileListPage kind="smart-lists" />}
+                />
+                <Route path="/u/:username/stats" element={<ProfileStatsPage />} />
+                <Route path="/u/:username/activity" element={<ProfileActivityPage />} />
+                <Route path="/u/:username/games/:igdbId" element={<ProfileGamePage />} />
+                <Route path="/u/:username/recap" element={<ProfileRecapPage />} />
+                <Route path="/u/:username/recap/:year" element={<ProfileRecapPage />} />
+                <Route path="/u/:username/:view" element={<ProfileGamesPage />} />
+                <Route path="/u/:username/:view/:year" element={<ProfileGamesPage />} />
+
                 <Route path="collection" element={<CollectionPage view="all" />} />
                 <Route path="backlog" element={<CollectionPage view="backlog" />} />
                 <Route path="search" element={<SearchPage />} />

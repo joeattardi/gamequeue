@@ -7,6 +7,7 @@ import { useProfileRecap, useRecap } from '../api/recap';
 import { Footer } from '../components/Footer';
 import { RecapSkeleton } from '../components/PageSkeletons';
 import { PublicHeader } from '../components/PublicHeader';
+import { PublicMain } from '../components/ShellContext';
 import { RecapView } from '../components/RecapView';
 import { usePageTitle } from '../lib';
 
@@ -85,7 +86,7 @@ export function ProfileRecapPage() {
     return (
         <>
             <PublicHeader />
-            <main className="page">
+            <PublicMain>
                 <Link to={`/u/${username}`} className="back">
                     <ArrowLeft aria-hidden="true" /> {username}
                 </Link>
@@ -99,7 +100,7 @@ export function ProfileRecapPage() {
                 ) : (
                     <RecapView recap={recap.data} basePath={`/u/${username}/recap`} />
                 )}
-            </main>
+            </PublicMain>
             <Footer />
         </>
     );

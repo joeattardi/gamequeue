@@ -1,37 +1,14 @@
 import { Link } from 'react-router';
-
-const SITE_MAP = [
-    ['/', 'Now playing'],
-    ['/search', 'Search'],
-    ['/queue', 'Queue'],
-    ['/pick', 'Pick'],
-    ['/collection', 'Collection'],
-    ['/backlog', 'Backlog'],
-    ['/lists', 'Lists'],
-    ['/wishlist', 'Wishlist'],
-    ['/discover', 'Discover'],
-    ['/stats', 'Stats'],
-    ['/recap', 'Save File'],
-    ['/data', 'Data'],
-    ['/account', 'Account']
-] as const;
+import { useInShell } from './ShellContext';
 
 /**
- * Copyright line, the IGDB attribution and a link to the credits page. Shown in the app shell and on the public profile pages.
- * `sitemap` adds plain links to the signed-in pages, including the ones the sidebar tucks away.
+ * Copyright line, the IGDB attribution and a link to the credits page, for the pages outside the app shell
+ * (landing, sign-in, credits, public profiles for visitors). Inside the shell the same attribution is in the user menu.
  */
-export function Footer({ sitemap = false }: { sitemap?: boolean }) {
+export function Footer() {
+    if (useInShell()) return null;
     return (
         <footer className="site-footer">
-            {sitemap && (
-                <nav className="site-footer__map" aria-label="Site map">
-                    {SITE_MAP.map(([to, label]) => (
-                        <Link key={to} to={to}>
-                            {label}
-                        </Link>
-                    ))}
-                </nav>
-            )}
             <span>© {new Date().getFullYear()} Joe Attardi</span>
             <span>Preview: features may change and data could be lost.</span>
             <span>

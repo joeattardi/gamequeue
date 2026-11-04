@@ -11,7 +11,7 @@
         <link rel="manifest" href="/manifest.webmanifest" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         <meta name="theme-color" content="#f3f6fb" media="(prefers-color-scheme: light)" />
-        <meta name="theme-color" content="#0d1320" media="(prefers-color-scheme: dark)" />
+        <meta name="theme-color" content="#080b14" media="(prefers-color-scheme: dark)" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-title" content="GameQueue" />
@@ -25,7 +25,7 @@
                     document.documentElement.dataset.theme = t;
                     // Browser chrome follows a chosen theme, not just the system's (see src/theme.ts)
                     document.querySelectorAll('meta[name="theme-color"]').forEach(function (m) {
-                        m.setAttribute('content', t === 'dark' ? '#0d1320' : '#f3f6fb');
+                        m.setAttribute('content', t === 'dark' ? '#080b14' : '#f3f6fb');
                     });
                 }
             } catch (e) {}
@@ -42,15 +42,15 @@
             }
             @media (prefers-color-scheme: dark) {
                 html:not([data-theme='light']) {
-                    background: #0d1320;
-                    --splash-accent: #6ea0ff;
-                    --splash-bg: #0d1320;
+                    background: #080b14;
+                    --splash-accent: #6c8cff;
+                    --splash-bg: #080b14;
                 }
             }
             html[data-theme='dark'] {
-                background: #0d1320;
-                --splash-accent: #6ea0ff;
-                --splash-bg: #0d1320;
+                background: #080b14;
+                --splash-accent: #6c8cff;
+                --splash-bg: #080b14;
             }
             body {
                 margin: 0;

@@ -1,4 +1,4 @@
-import { ChartColumn, ArrowLeft } from 'lucide-react';
+import { ChartColumn, ArrowLeft, Sparkles } from 'lucide-react';
 import { Link, useParams } from 'react-router';
 import { ApiRequestError } from '../api/client';
 import { useMe } from '../api/auth';
@@ -7,6 +7,7 @@ import { ActivityCalendar } from '../components/ActivityCalendar';
 import { Footer } from '../components/Footer';
 import { StatsSkeleton } from '../components/PageSkeletons';
 import { PublicHeader } from '../components/PublicHeader';
+import { PublicMain } from '../components/ShellContext';
 import { StatsView } from '../components/StatsView';
 import { usePageTitle } from '../lib';
 
@@ -26,6 +27,10 @@ export function StatsPage() {
                         Your collection in numbers. Also on your public profile.
                     </p>
                 </div>
+                <Link className="btn" to="/recap">
+                    <Sparkles aria-hidden="true" />
+                    Save File
+                </Link>
             </div>
             {stats.isError ? (
                 <p className="form-error" role="alert">
@@ -50,7 +55,7 @@ export function ProfileStatsPage() {
     return (
         <>
             <PublicHeader />
-            <main className="page">
+            <PublicMain>
                 <Link to={`/u/${username}`} className="back">
                     <ArrowLeft aria-hidden="true" /> {username}
                 </Link>
@@ -67,7 +72,7 @@ export function ProfileStatsPage() {
                 {!notFound && !stats.isError && (
                     <ActivityCalendar username={username} scope={{ username }} />
                 )}
-            </main>
+            </PublicMain>
             <Footer />
         </>
     );

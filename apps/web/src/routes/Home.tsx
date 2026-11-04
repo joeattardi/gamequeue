@@ -7,7 +7,6 @@ import { useEntries } from '../api/collection';
 import { useStats } from '../api/stats';
 import { useWishlistCount } from '../api/wishlist';
 import { Welcome } from '../components/Welcome';
-import { DismissiblePreviewNotice } from '../components/PreviewNotice';
 import { LogoMark } from '../components/Logo';
 import { Dices, Gamepad2, Pause } from 'lucide-react';
 import { useFirstName } from '../api/auth';
@@ -26,13 +25,7 @@ export function Home() {
     const wishlisted = useWishlistCount();
 
     // Nothing owned (so nothing queued or listed either) and nothing wishlisted
-    if (stats.data?.overview.total === 0 && wishlisted.data === 0)
-        return (
-            <>
-                <DismissiblePreviewNotice />
-                <Welcome />
-            </>
-        );
+    if (stats.data?.overview.total === 0 && wishlisted.data === 0) return <Welcome />;
 
     const overview = stats.data?.overview;
     const summary = overview
@@ -43,7 +36,6 @@ export function Home() {
 
     return (
         <div className="home">
-            <DismissiblePreviewNotice />
             <header className="home-hero">
                 <span className="home-hero__icon" aria-hidden="true">
                     <LogoMark />
