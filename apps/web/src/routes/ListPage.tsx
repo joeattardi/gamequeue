@@ -34,6 +34,7 @@ import { ListLoading } from '../components/ListLoading';
 import { GridSkeletons, RowSkeletons } from '../components/GridSkeletons';
 import { ResultSkeletons } from '../components/ResultSkeletons';
 import { MetaLine } from '../components/MetaLine';
+import { EmptyState } from '../components/EmptyState';
 import { PlatformTags } from '../components/PlatformIcon';
 import { useSortableOrder } from '../components/useSortableOrder';
 import { formatMinutes, useDebounced, yearOf, usePageTitle } from '../lib';
@@ -211,16 +212,23 @@ function ListView({
             </p>
 
             {total === 0 ? (
-                <div className="empty">
-                    <p>
-                        <strong>{isQueue ? 'Your queue is empty.' : 'This list is empty.'}</strong>
-                    </p>
-                    <p className="muted">
-                        {isQueue
-                            ? 'Search above to line up what to play next. Any game in your collection can go on it.'
-                            : 'Search above to add games from your collection.'}
-                    </p>
-                </div>
+                <EmptyState
+                    icon={isQueue ? <ListOrdered /> : <List />}
+                    title={isQueue ? 'Your queue is empty.' : 'This list is empty.'}
+                    actions={
+                        isQueue && (
+                            <>
+                                <Link className="btn" to="/collection?status=unplayed">
+                                    Browse Not Started
+                                </Link>
+                            </>
+                        )
+                    }
+                >
+                    {isQueue
+                        ? 'Search above to line up what to play next. Any game in your collection can go on it.'
+                        : 'Search above to add games from your collection.'}
+                </EmptyState>
             ) : (
                 <>
                     {layout === 'grid' ? (

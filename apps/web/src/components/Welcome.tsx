@@ -9,7 +9,8 @@ export function Welcome() {
         <div className="home welcome">
             <h1>{firstName ? `Welcome to GameQueue, ${firstName}` : 'Welcome to GameQueue'}</h1>
             <p className="muted welcome__lead">
-                Your games, and what to play next. Start by adding a few to your collection.
+                Your games, and what to play next. Start by adding your first game, then build your
+                queue.
             </p>
             <div className="welcome__actions">
                 <Link className="btn btn--primary" to="/search">

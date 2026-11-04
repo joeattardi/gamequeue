@@ -91,23 +91,11 @@ export function ProfileSkeleton() {
             </div>
             <div className="profile-layout" aria-hidden="true">
                 <div className="profile-side">
-                    <ul className="counters">
-                        {Array.from({ length: 10 }, (_, i) => (
-                            <li key={i} className="counter">
-                                <div className="counter__link">
-                                    <span className="counter__icon">
-                                        <span className="skeleton skeleton--counter-icon" />
-                                    </span>
-                                    <span className="counter__value">
-                                        <span className="skeleton skeleton--counter-value" />
-                                    </span>
-                                    <span className="counter__label">
-                                        <span className="skeleton skeleton--line skeleton--counter-label" />
-                                    </span>
-                                </div>
-                            </li>
+                    <div className="pstats__numbers">
+                        {Array.from({ length: 3 }, (_, i) => (
+                            <span key={i} className="skeleton skeleton--pstat" />
                         ))}
-                    </ul>
+                    </div>
                     <div className="statbar">
                         <span className="skeleton skeleton--statbar" />
                     </div>

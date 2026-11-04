@@ -37,31 +37,29 @@
     --status-notstarted-bright: #a9b1cc;
     --status-wishlist-bright: #b391ff;
 
-    /* Names the rest of the stylesheet already uses, pointing at the tokens above */
-    --bg: var(--bg-0);
-    --surface: var(--bg-2);
-    --surface-2: var(--bg-3);
-    --ink: var(--text);
-    --ink-muted: var(--text-2);
     /* Faint scanlines plus a pixel grid for banners and empty states (a background layer list) */
     --texture:
         repeating-linear-gradient(
             0deg,
-            color-mix(in oklab, var(--ink) 4.5%, transparent) 0 1px,
+            color-mix(in oklab, var(--text) 4.5%, transparent) 0 1px,
             transparent 1px 3px
         ),
-        linear-gradient(90deg, color-mix(in oklab, var(--ink) 3%, transparent) 1px, transparent 1px)
+        linear-gradient(
+                90deg,
+                color-mix(in oklab, var(--text) 3%, transparent) 1px,
+                transparent 1px
+            )
             0 0 / 4px 4px;
     /* The same, about half as strong, for the sidebar */
     --texture-faint:
         repeating-linear-gradient(
             0deg,
-            color-mix(in oklab, var(--ink) 2.2%, transparent) 0 1px,
+            color-mix(in oklab, var(--text) 2.2%, transparent) 0 1px,
             transparent 1px 3px
         ),
         linear-gradient(
                 90deg,
-                color-mix(in oklab, var(--ink) 1.5%, transparent) 1px,
+                color-mix(in oklab, var(--text) 1.5%, transparent) 1px,
                 transparent 1px
             )
             0 0 / 4px 4px;

@@ -6,7 +6,7 @@ import { ApiRequestError } from '../api/client';
 import { useEntryAction, useLogPlaythrough } from '../api/collection';
 import { useAddToQueue, useRemoveFromQueue } from '../api/queue';
 import { hueOf, platformText } from '../collectionModel';
-import { GAUGE_THRESHOLDS, TIER_LABELS, gaugePercent, gaugeTier } from '../gauge';
+import { TIER_LABELS, gaugePercent, gaugeTier } from '../gauge';
 import { formatMinutes, todayLocal, yearOf } from '../lib';
 import { COVER_TRANSITION } from '../pageTransitions';
 import { primaryAction, type Move } from '../statusMoves';

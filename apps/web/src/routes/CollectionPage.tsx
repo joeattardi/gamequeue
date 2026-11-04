@@ -1,12 +1,13 @@
 import { ENTRY_STATUSES } from '@gamequeue/shared';
-import { Plus } from 'lucide-react';
+import { Library, Plus, SearchX } from 'lucide-react';
 import { useState } from 'react';
-import { useSearchParams } from 'react-router';
+import { Link, useSearchParams } from 'react-router';
 import { useMe } from '../api/auth';
 import { useFacetCounts, usePagedEntries } from '../api/collection';
 import { useWishlistCount } from '../api/wishlist';
 import { AddGameDialog } from '../components/AddGameDialog';
 import { CollectionCard, CollectionRow, WallTile } from '../components/CollectionCards';
+import { EmptyState } from '../components/EmptyState';
 import { DensityToggle } from '../components/DensityToggle';
 import { FACET_KEYS, FilterBar, type FacetKey } from '../components/FilterBar';
 import { GridSkeletons } from '../components/GridSkeletons';
@@ -135,7 +136,7 @@ export function CollectionPage() {
                             edit((n) => (v === DEFAULT_SORT ? n.delete('sort') : n.set('sort', v)))
                         }
                     />
-                    {density === 'wall' && <WallLegend />}
+                    {density === 'wall' && entries.total !== 0 && <WallLegend />}
                     {entries.isError ? (
                         <p className="form-error" role="alert">
                             Couldn't load your games.
@@ -210,23 +211,35 @@ function WallLegend() {
 
 function Empty({ tab, filtered, onAdd }: { tab: TabKey; filtered: boolean; onAdd: () => void }) {
     const label = TABS.find((t) => t.key === tab)?.label.toLowerCase();
+    if (filtered)
+        return (
+            <EmptyState icon={<SearchX />} title="Nothing matches those filters.">
+                Try removing a filter or changing the search.
+            </EmptyState>
+        );
+    if (tab === 'all')
+        return (
+            <EmptyState
+                icon={<Library />}
+                title="Your collection is empty."
+                actions={
+                    <>
+                        <button className="btn btn--primary" onClick={onAdd}>
+                            <Plus aria-hidden="true" />
+                            Add your first game
+                        </button>
+                        <Link className="btn" to="/data">
+                            Import a library
+                        </Link>
+                    </>
+                }
+            >
+                Add the games you own and they become your backlog, ready to queue.
+            </EmptyState>
+        );
     return (
-        <div className="empty">
-            <p>
-                <strong>
-                    {filtered
-                        ? 'Nothing matches those filters.'
-                        : tab === 'all'
-                          ? 'No games yet.'
-                          : `Nothing in ${label} yet.`}
-                </strong>
-            </p>
-            {!filtered && tab === 'all' && (
-                <button className="btn btn--primary" onClick={onAdd}>
-                    <Plus aria-hidden="true" />
-                    Add your first game
-                </button>
-            )}
-        </div>
+        <EmptyState icon={<Library />} title={`Nothing in ${label} yet.`}>
+            Games move here as you play them.
+        </EmptyState>
     );
 }

@@ -8,22 +8,15 @@ import {
 } from '@gamequeue/shared';
 import {
     ArrowRight,
-    Ban,
     BarChart3,
     CalendarDays,
     Check,
     Copy,
     Gift,
-    Heart,
-    Library,
     ListOrdered,
-    ListTodo,
-    Pause,
-    Pencil,
-    Play,
-    Trophy
+    Pencil
 } from 'lucide-react';
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router';
 import { ApiRequestError } from '../api/client';
 import { useAuthConfig, useMe } from '../api/auth';
@@ -42,6 +35,7 @@ import { SocialLinksList } from '../components/SocialLinks';
 import { ProfileSkeleton } from '../components/PageSkeletons';
 import { PublicHeader } from '../components/PublicHeader';
 import { PublicMain } from '../components/ShellContext';
+import { statusColor, statusText } from '../statusColor';
 import { usePageTitle } from '../lib';
 
 function Games({ username, entries }: { username: string; entries: PublicEntryDto[] }) {
@@ -73,137 +67,107 @@ function GameGrid({ username, entries }: { username: string; entries: PublicEntr
     );
 }
 
-const STATS: { key: 'total' | EntryStatus; view: ProfileView; label: string; icon: ReactNode }[] = [
-    {
-        key: 'total',
-        view: 'collection',
-        label: 'Total games',
-        icon: <Library aria-hidden="true" />
-    },
-    {
-        key: 'unplayed',
-        view: 'backlog',
-        label: 'In backlog',
-        icon: <ListTodo aria-hidden="true" />
-    },
-    { key: 'playing', view: 'playing', label: 'Playing', icon: <Play aria-hidden="true" /> },
-    { key: 'paused', view: 'paused', label: 'Paused', icon: <Pause aria-hidden="true" /> },
-    { key: 'finished', view: 'finished', label: 'Finished', icon: <Trophy aria-hidden="true" /> },
-    { key: 'abandoned', view: 'abandoned', label: 'Abandoned', icon: <Ban aria-hidden="true" /> }
+/** The five states in the order they sit in the status bar, each linking to its public page. */
+const STATUS_SEGMENTS: { status: EntryStatus; view: ProfileView }[] = [
+    { status: 'playing', view: 'playing' },
+    { status: 'paused', view: 'paused' },
+    { status: 'finished', view: 'finished' },
+    { status: 'abandoned', view: 'abandoned' },
+    { status: 'unplayed', view: 'backlog' }
 ];
 
-/** One stat tile; it links to the sub-page listing exactly those games. */
-function Counter({
-    className,
-    to,
-    icon,
-    value,
-    label,
-    blurb
-}: {
-    className: string;
-    to: string;
-    icon: ReactNode;
-    value?: number;
-    label: string;
-    /** Only for the link tiles (no `value`): a line saying what is behind the link */
-    blurb?: string;
-}) {
-    if (value === undefined)
-        return (
-            <li className={`counter counter--nav ${className}`}>
-                <Link to={to} className="counter__link">
-                    <span className="counter__icon">{icon}</span>
-                    <span className="counter__title">{label}</span>
-                    {blurb && <span className="counter__blurb">{blurb}</span>}
-                    <ArrowRight className="counter__go" aria-hidden="true" />
-                </Link>
-            </li>
-        );
+function Stat({ to, value, label }: { to: string; value: number | string; label: string }) {
     return (
-        <li className={`counter ${className}`}>
-            <Link to={to} className="counter__link">
-                <span className="counter__icon">{icon}</span>
-                <span className="counter__value">
-                    <CountUp value={value} />
+        <li className="pstat">
+            <Link to={to} className="pstat__link">
+                <span className="pstat__value">
+                    {typeof value === 'number' ? <CountUp value={value} /> : value}
                 </span>
-                <span className="counter__label">{label}</span>
+                <span className="pstat__label">{label}</span>
             </Link>
         </li>
     );
 }
 
+/**
+ * The collection at a glance: three real numbers, one stacked bar split by status (its legend is
+ * the links to each status page, with the word and count, so colour is never the only cue) and
+ * quiet links to the queue, wishlist, stats and Save File.
+ */
 function Stats({ username, summary }: { username: string; summary: ProfileDto['summary'] }) {
-    const count = (k: 'total' | EntryStatus) =>
-        k === 'total' ? summary.total : summary.byStatus[k];
-    const done = summary.byStatus.finished + summary.byStatus.abandoned;
+    const { total, byStatus } = summary;
+    const base = `/u/${username}`;
+    const finishedPct = total > 0 ? Math.round((byStatus.finished / total) * 100) : 0;
+    const shown = STATUS_SEGMENTS.filter((s) => byStatus[s.status] > 0);
     return (
-        <>
-            <ul className="counters">
-                {STATS.map((st) => (
-                    <Counter
-                        key={st.key}
-                        className={`counter--${st.key}`}
-                        to={`/u/${username}/${st.view}`}
-                        icon={st.icon}
-                        value={count(st.key)}
-                        label={st.label}
-                    />
-                ))}
-                <Counter
-                    className="counter--favorites"
-                    to={`/u/${username}/favorites`}
-                    icon={<Heart aria-hidden="true" />}
-                    value={summary.favorites}
-                    label="Favorites"
-                />
-                <Counter
-                    className="counter--queued"
-                    to={`/u/${username}/queue`}
-                    icon={<ListOrdered aria-hidden="true" />}
-                    value={summary.queued}
-                    label="In queue"
-                />
-                <Counter
-                    className="counter--wishlisted"
-                    to={`/u/${username}/wishlist`}
-                    icon={<Gift aria-hidden="true" />}
-                    value={summary.wishlisted}
-                    label="On wishlist"
-                />
-                <Counter
-                    className="counter--stats"
-                    to={`/u/${username}/stats`}
-                    icon={<BarChart3 aria-hidden="true" />}
-                    label="View stats"
-                    blurb="Finishes per year, top genres, play time"
-                />
-                <Counter
-                    className="counter--recap"
-                    to={`/u/${username}/recap`}
-                    icon={<CalendarDays aria-hidden="true" />}
-                    label="Save File"
-                    blurb="Your year in games, ready to share"
-                />
+        <div className="pstats">
+            <ul className="pstats__numbers">
+                <Stat to={`${base}/collection`} value={total} label="Games" />
+                <Stat to={`${base}/finished`} value={byStatus.finished} label="Finished" />
+                <Stat to={`${base}/favorites`} value={summary.favorites} label="Favorites" />
             </ul>
-            {summary.total > 0 && (
-                <div
-                    className="statbar"
-                    role="img"
-                    aria-label={`${Math.round((summary.byStatus.finished / summary.total) * 100)}% finished, ${done} of ${summary.total} games played through`}
-                >
-                    {STATS.slice(1)
-                        .filter((st) => count(st.key) > 0)
-                        .map((st) => (
+            {total > 0 && (
+                <>
+                    <div
+                        className="statbar"
+                        role="img"
+                        aria-label={`${finishedPct}% finished: ${shown
+                            .map((s) => `${byStatus[s.status]} ${statusLabel(s.status)}`)
+                            .join(', ')}`}
+                    >
+                        {shown.map((s) => (
                             <span
-                                key={st.key}
-                                className={`statbar__seg counter--${st.key}`}
-                                style={{ flexGrow: count(st.key) }}
+                                key={s.status}
+                                className="statbar__seg"
+                                style={{
+                                    flexGrow: byStatus[s.status],
+                                    background: statusColor(s.status)
+                                }}
                             />
                         ))}
-                </div>
+                    </div>
+                    <ul className="statlegend">
+                        {shown.map((s) => (
+                            <li key={s.status}>
+                                <Link to={`${base}/${s.view}`}>
+                                    <span
+                                        className="statlegend__dot"
+                                        style={{ background: statusColor(s.status) }}
+                                        aria-hidden="true"
+                                    />
+                                    {statusText(s.status)}
+                                    <span className="statlegend__n">{byStatus[s.status]}</span>
+                                </Link>
+                            </li>
+                        ))}
+                    </ul>
+                </>
             )}
-        </>
+            <ul className="pstats__links">
+                <li>
+                    <Link to={`${base}/queue`}>
+                        <ListOrdered aria-hidden="true" /> In queue
+                        <span className="statlegend__n">{summary.queued}</span>
+                    </Link>
+                </li>
+                <li>
+                    <Link to={`${base}/wishlist`}>
+                        <Gift aria-hidden="true" /> On wishlist
+                        <span className="statlegend__n">{summary.wishlisted}</span>
+                    </Link>
+                </li>
+                <li>
+                    <Link to={`${base}/stats`}>
+                        <BarChart3 aria-hidden="true" /> Stats
+                    </Link>
+                </li>
+                <li>
+                    <Link to={`${base}/recap`}>
+                        <CalendarDays aria-hidden="true" /> Save File
+                    </Link>
+                </li>
+            </ul>
+        </div>
     );
 }
 
