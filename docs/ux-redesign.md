@@ -30,24 +30,24 @@ The mockups live on a canvas titled "GameQueue Redesign Mockups" with eight artb
 
 Define these once as CSS variables (or the project's existing theme mechanism) and replace hard-coded colors as you go. Every text color below passes 4.5:1 on the surface it sits on.
 
-| Token | Value | Use |
-| --- | --- | --- |
-| `--bg-0` | #080B14 | App background |
-| `--bg-1` | #0E1220 | Sidebar, rail, inset fields |
-| `--bg-2` | #151A2C | Cards, panels, filter chips |
-| `--bg-3` | #1D2338 | Hover, selected rows, active nav |
-| `--line` | #262D45 | Borders on cards and inputs |
-| `--line-strong` | #343C5A | Borders on secondary buttons |
-| `--text` | #EEF1FB | Primary text |
-| `--text-2` | #A9B1CC | Secondary text |
-| `--text-3` | #8A93B2 | Labels, counts (use for 12px+ only) |
-| `--accent` | #6C8CFF | Primary buttons, focus ring, active icons |
-| `--status-playing` | #6C8CFF | Playing |
-| `--status-paused` | #F4B740 | Paused |
-| `--status-finished` | #3DD6A0 | Finished |
-| `--status-abandoned` | #F0707E | Abandoned |
-| `--status-notstarted` | #8A93B2 | Not Started, Backlog, Up next |
-| `--status-wishlist` | #B391FF | Wishlist |
+| Token                 | Value   | Use                                       |
+| --------------------- | ------- | ----------------------------------------- |
+| `--bg-0`              | #080B14 | App background                            |
+| `--bg-1`              | #0E1220 | Sidebar, rail, inset fields               |
+| `--bg-2`              | #151A2C | Cards, panels, filter chips               |
+| `--bg-3`              | #1D2338 | Hover, selected rows, active nav          |
+| `--line`              | #262D45 | Borders on cards and inputs               |
+| `--line-strong`       | #343C5A | Borders on secondary buttons              |
+| `--text`              | #EEF1FB | Primary text                              |
+| `--text-2`            | #A9B1CC | Secondary text                            |
+| `--text-3`            | #8A93B2 | Labels, counts (use for 12px+ only)       |
+| `--accent`            | #6C8CFF | Primary buttons, focus ring, active icons |
+| `--status-playing`    | #6C8CFF | Playing                                   |
+| `--status-paused`     | #F4B740 | Paused                                    |
+| `--status-finished`   | #3DD6A0 | Finished                                  |
+| `--status-abandoned`  | #F0707E | Abandoned                                 |
+| `--status-notstarted` | #8A93B2 | Not Started, Backlog, Up next             |
+| `--status-wishlist`   | #B391FF | Wishlist                                  |
 
 **Type and shape**
 
@@ -138,15 +138,15 @@ Three result groups: In your library, Actions (start playing, add to queue for t
 
 Some mockup details assume data or features the app may not have. Check each against the code and follow this table.
 
-| Mockup element | What to do |
-| --- | --- |
-| 5-star "Your take" rating | Keep the existing 1 to 10 rating, restyled to match |
-| Hours played, sessions, progress % | Show only when playthrough data records them; otherwise hide, never fake |
-| "Time to beat" filter and estimates | Include only if IGDB time-to-beat is available; otherwise omit |
-| "Save as view" button | Out of scope; omit |
+| Mockup element                               | What to do                                                                           |
+| -------------------------------------------- | ------------------------------------------------------------------------------------ |
+| 5-star "Your take" rating                    | Keep the existing 1 to 10 rating, restyled to match                                  |
+| Hours played, sessions, progress %           | Show only when playthrough data records them; otherwise hide, never fake             |
+| "Time to beat" filter and estimates          | Include only if IGDB time-to-beat is available; otherwise omit                       |
+| "Save as view" button                        | Out of scope; omit                                                                   |
 | Mood chips (Short, Cozy, Story-heavy, Co-op) | Out of scope; keep only a "Pick one for me" button wired to the existing random pick |
-| "Log session" primary button | See open question in the rules below |
-| Sample game names and gradient covers | Placeholders; real covers come from IGDB |
+| "Log session" primary button                 | See open question in the rules below                                                 |
+| Sample game names and gradient covers        | Placeholders; real covers come from IGDB                                             |
 
 ### Screen-level details worth keeping
 
