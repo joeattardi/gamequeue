@@ -108,7 +108,7 @@ function ShareControl({ p }: { p: PlaythroughDto }) {
 type Kind = 'note' | 'hours' | 'screenshot';
 
 /** The "add to the journal" form: a note, hours played, or screenshots. */
-function AddPost({ playthroughId }: { playthroughId: number }) {
+export function AddPost({ playthroughId }: { playthroughId: number }) {
     const m = usePostMutations(playthroughId);
     const [kind, setKind] = useState<Kind>('note');
     const [body, setBody] = useState('');

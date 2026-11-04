@@ -415,7 +415,7 @@ Code: `services/entries.ts` (collection), `services/playthroughs.ts` (status cha
 
 ## 9. Playing: what you're playing right now
 
-There is no limit and nothing to set up. Every game whose status is `playing` shows on the home page under **Playing**, glowing, with quick Pause, Finished and Abandon buttons. Paused games sit in a smaller **Paused** row underneath. The public profile's "Currently playing" lists the same playing games.
+There is no limit and nothing to set up. Every game whose status is `playing` shows on the home page under **Playing** as a hero card tinted from its cover. The loudest button is **Add journal entry** (the app has no sessions; the journal is where hours are logged); Pause and Mark finished are outlined, and Abandon hides in a ••• menu. Paused games sit in a small **Paused** card beside them with a Resume button. Below, **Up next** shows the top of your queue: drag a row (or use the keyboard) to reorder it, and press Start playing to begin. The public profile's "Currently playing" lists the same playing games.
 
 **Start playing** is the one way in, whether you click it on the game page, on a queue row, on the random pick result or choose "Playing" when adding a game. It is the plain start action from section 8: open a playthrough, set the status to `playing` and take the game off the queue, all in one transaction. A game owned on several platforms asks which one you're playing it on (a small select in place, no dialog). Finishing or abandoning a game removes it from both rows, and the UI calls the stored status `unplayed` "Not Started" (the "Backlog" view keeps its name).
 

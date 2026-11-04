@@ -1,12 +1,12 @@
 /** Placeholder cards shaped like `PlayingCard`, shown while the playing games load. */
 export function PlayingSkeletons({ count = 2 }: { count?: number }) {
     return (
-        <ul className="play-grid" role="status" aria-label="Loading what you are playing">
+        <ul className="play-list" role="status" aria-label="Loading what you are playing">
             {Array.from({ length: count }, (_, i) => (
-                <li key={i} className="play-card play-card--skeleton" aria-hidden="true">
-                    <div className="play-card__game">
+                <li key={i} className="play-hero play-hero--skeleton" aria-hidden="true">
+                    <div className="play-hero__game">
                         <span className="skeleton skeleton--play-cover" />
-                        <div className="stack">
+                        <div className="play-hero__body">
                             <div>
                                 <span
                                     className="skeleton skeleton--line skeleton--play-title"
@@ -26,20 +26,21 @@ export function PlayingSkeletons({ count = 2 }: { count?: number }) {
     );
 }
 
-/** Placeholder tiles shaped like the `UpNext` cards. */
+/** Placeholder rows shaped like the `UpNext` rows. */
 export function UpNextSkeletons({ count = 4 }: { count?: number }) {
     return (
-        <ol className="grid upnext__list" role="status" aria-label="Loading your queue">
+        <ol className="upnext-rows" role="status" aria-label="Loading your queue">
             {Array.from({ length: count }, (_, i) => (
-                <li
-                    key={i}
-                    className="card card--skeleton"
-                    aria-hidden="true"
-                    style={{ animationDelay: `${i * 60}ms` }}
-                >
-                    <div className="card__link">
-                        <span className="skeleton skeleton--card-cover" />
+                <li key={i} className="upnext-row upnext-row--skeleton" aria-hidden="true">
+                    <span className="skeleton skeleton--upnext-cover" />
+                    <div className="upnext-row__main">
+                        <span
+                            className="skeleton skeleton--line"
+                            style={{ width: `${70 - (i % 3) * 14}%` }}
+                        />
+                        <span className="skeleton skeleton--line skeleton--sub" />
                     </div>
+                    <span className="skeleton skeleton--btn skeleton--btn-wide" />
                 </li>
             ))}
         </ol>
