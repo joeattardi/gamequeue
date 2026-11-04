@@ -2,18 +2,16 @@ import type { EntryDto } from '@gamequeue/shared';
 import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router';
 import { ApiRequestError } from '../api/client';
-import { useAddToQueue, useRemoveFromQueue } from '../api/queue';
 import { CheckSkeletons } from './PageSkeletons';
+import { FoldPanel } from './FoldPanel';
 import { useAddToList, useCreateList, useLists, useRemoveFromList } from '../api/lists';
 
-/** Which lists a game is on, with quick add/remove and a way to start a new list. */
+/** Which lists a game is on, with quick add/remove and a way to start a new list. (The queue has its own button in the hero.) */
 export function ListsPanel({ entry }: { entry: EntryDto }) {
     const lists = useLists();
     const add = useAddToList();
     const remove = useRemoveFromList();
     const create = useCreateList();
-    const enqueue = useAddToQueue();
-    const dequeue = useRemoveFromQueue();
     const [name, setName] = useState('');
     const [error, setError] = useState<string>();
     const member = new Set(entry.lists.map((l) => l.id));
@@ -25,12 +23,6 @@ export function ListsPanel({ entry }: { entry: EntryDto }) {
         const vars = { listId, igdbId: entry.game.id };
         if (member.has(listId)) remove.mutate(vars, { onError: fail });
         else add.mutate(vars, { onError: fail });
-    }
-
-    function toggleQueue() {
-        setError(undefined);
-        const m = entry.queued ? dequeue : enqueue;
-        m.mutate(entry.game.id, { onError: fail });
     }
 
     function submit(e: FormEvent) {
@@ -49,12 +41,11 @@ export function ListsPanel({ entry }: { entry: EntryDto }) {
     }
 
     return (
-        <section aria-labelledby="lists-h" className="panel">
-            <h2 id="lists-h">Queue &amp; lists</h2>
-            <label className="check">
-                <input type="checkbox" checked={entry.queued} onChange={toggleQueue} />
-                On my <Link to="/queue">queue</Link>
-            </label>
+        <FoldPanel
+            id="lists-h"
+            title="Lists"
+            hint={entry.lists.length ? `${entry.lists.length} on` : undefined}
+        >
             {lists.isPending ? (
                 <CheckSkeletons label="Loading your lists" />
             ) : lists.data?.length ? (
@@ -93,6 +84,6 @@ export function ListsPanel({ entry }: { entry: EntryDto }) {
             <p className="form-error" role="alert">
                 {error}
             </p>
-        </section>
+        </FoldPanel>
     );
 }

@@ -46,5 +46,12 @@ export function gaugeTier(percent: number): GaugeTier {
     return 'unfavorable';
 }
 
+/** The tier in words (Metacritic's wording for the same cut-offs). */
+export const TIER_LABELS: Record<GaugeTier, string> = {
+    favorable: 'Generally favorable',
+    mixed: 'Mixed or average',
+    unfavorable: 'Generally unfavorable'
+};
+
 /** Where a threshold falls around the circle, in SVG degrees. */
 export const thresholdAngle = (percent: number) => GAUGE_START + (percent / 100) * GAUGE_SWEEP;

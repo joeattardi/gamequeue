@@ -1,16 +1,13 @@
 import { HistorySkeletons } from './PageSkeletons';
 import {
-    statusLabel,
-    availableActions,
     MAX_FINAL_THOUGHTS,
     RATING_MAX,
     type EntryDto,
     type PlaythroughDto
 } from '@gamequeue/shared';
-import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
+import { useState, type FormEvent, type ReactNode } from 'react';
 import {
     useDeletePlaythrough,
-    useEntryAction,
     useLogPlaythrough,
     usePatchPlaythrough,
     usePlaythroughs
@@ -31,7 +28,6 @@ import {
 import { Journal } from './Journal';
 import { MetaLine } from './MetaLine';
 import { NotebookPen } from 'lucide-react';
-import { celebrate, pop } from './motion';
 import { PlatformTags } from './PlatformIcon';
 
 const errorText = (e: unknown) =>
@@ -79,220 +75,6 @@ function PlaytimeField({ value, onChange }: { value: string; onChange: (v: strin
 }
 
 /** The entry's status; its colour eases over and it swells when the status changes in place. */
-function StatusBadge({ status }: { status: EntryDto['status'] }) {
-    const ref = useRef<HTMLSpanElement>(null);
-    const prev = useRef(status);
-    useEffect(() => {
-        if (prev.current === status) return;
-        prev.current = status;
-        pop(ref.current);
-    }, [status]);
-    return (
-        <span ref={ref} className={`badge badge--${status}`}>
-            {statusLabel(status)}
-        </span>
-    );
-}
-
-/** Status plus whatever actions are allowed from it. */
-export function StatusPanel({
-    entry,
-    finishRequest = 0
-}: {
-    entry: EntryDto;
-    /** Bumped by the page's quick-action bar to open the finish form here */
-    finishRequest?: number;
-}) {
-    const panel = useRef<HTMLElement>(null);
-    const act = useEntryAction(entry.id);
-    const log = useLogPlaythrough(entry.id);
-    const [mode, setMode] = useState<'finish' | 'abandon' | null>(null);
-    useEffect(() => {
-        if (finishRequest > 0) setMode('finish');
-    }, [finishRequest]);
-    const [error, setError] = useState<string>();
-    const actions = availableActions(entry.status);
-
-    const run = (action: Parameters<typeof act.mutate>[0], after?: () => void) => {
-        setError(undefined);
-        act.mutate(action, {
-            onSuccess: () => {
-                setMode(null);
-                after?.();
-            },
-            onError: (e) => setError(errorText(e))
-        });
-    };
-
-    return (
-        <section id="status" aria-labelledby="status-h" className="panel" ref={panel}>
-            <div className="panel__head">
-                <h2 id="status-h">Status</h2>
-                <StatusBadge status={entry.status} />
-            </div>
-            {entry.openPlaythrough && (
-                <p className="muted">
-                    Started {formatDate(entry.openPlaythrough.startedOn)}
-                    {entry.openPlaythrough.platform && (
-                        <>
-                            {' on '}
-                            <PlatformTags platforms={[entry.openPlaythrough.platform]} />
-                        </>
-                    )}
-                </p>
-            )}
-            {entry.status === 'finished' && entry.lastFinishedOn && (
-                <p className="muted">Last finished {formatDate(entry.lastFinishedOn)}</p>
-            )}
-
-            {actions.includes('start') && (
-                <StartForm
-                    entry={entry}
-                    replay={entry.status !== 'unplayed'}
-                    pending={act.isPending}
-                    onStart={(body) => run({ action: 'start', body })}
-                />
-            )}
-            {entry.status === 'unplayed' && (
-                <div className="row">
-                    <button
-                        className="btn"
-                        disabled={log.isPending}
-                        onClick={() => {
-                            setError(undefined);
-                            log.mutate(
-                                { outcome: 'abandoned' },
-                                { onError: (e) => setError(errorText(e)) }
-                            );
-                        }}
-                    >
-                        Mark abandoned
-                    </button>
-                </div>
-            )}
-
-            <div className="row">
-                {actions.includes('pause') && (
-                    <button
-                        className="btn"
-                        disabled={act.isPending}
-                        onClick={() => run({ action: 'pause' })}
-                    >
-                        Pause
-                    </button>
-                )}
-                {actions.includes('resume') && (
-                    <button
-                        className="btn btn--primary"
-                        disabled={act.isPending}
-                        onClick={() => run({ action: 'resume' })}
-                    >
-                        Resume
-                    </button>
-                )}
-                {actions.includes('finish') && (
-                    <button
-                        className="btn btn--primary"
-                        onClick={() => setMode(mode === 'finish' ? null : 'finish')}
-                        aria-expanded={mode === 'finish'}
-                    >
-                        Mark finished
-                    </button>
-                )}
-                {actions.includes('abandon') && (
-                    <button
-                        className="btn"
-                        onClick={() => setMode(mode === 'abandon' ? null : 'abandon')}
-                        aria-expanded={mode === 'abandon'}
-                    >
-                        Abandon
-                    </button>
-                )}
-            </div>
-
-            {mode && (
-                <CloseFlow
-                    key={mode}
-                    mode={mode}
-                    playthrough={entry.openPlaythrough}
-                    pending={act.isPending}
-                    onSubmit={(body) =>
-                        run({ action: mode, body }, () => {
-                            if (mode === 'finish') celebrate(panel.current);
-                        })
-                    }
-                    onCancel={() => setMode(null)}
-                />
-            )}
-            <p className="form-error" role="alert">
-                {error}
-            </p>
-        </section>
-    );
-}
-
-function StartForm({
-    entry,
-    replay,
-    pending,
-    onStart
-}: {
-    entry: EntryDto;
-    replay: boolean;
-    pending: boolean;
-    onStart: (body: { platformId?: number; date: string; paused?: boolean }) => void;
-}) {
-    const [date, setDate] = useState(todayLocal());
-    const [platformId, setPlatformId] = useState(
-        entry.platforms.length === 1 ? String(entry.platforms[0]!.id) : ''
-    );
-    const start = (paused: boolean) =>
-        onStart({
-            date,
-            ...(platformId ? { platformId: Number(platformId) } : {}),
-            ...(paused ? { paused } : {})
-        });
-    function submit(e: FormEvent) {
-        e.preventDefault();
-        start(false);
-    }
-    const blocked = pending || (entry.platforms.length > 1 && !platformId);
-    return (
-        <form className="inline-form" onSubmit={submit}>
-            {entry.platforms.length > 1 && (
-                <PlatformSelect
-                    platforms={entry.platforms}
-                    value={platformId}
-                    onChange={setPlatformId}
-                />
-            )}
-            <label className="field">
-                <span>Start date</span>
-                <input
-                    type="date"
-                    value={date}
-                    max={todayLocal()}
-                    onChange={(e) => setDate(e.target.value)}
-                    required
-                />
-            </label>
-            <button className="btn btn--primary" type="submit" disabled={blocked}>
-                {replay ? 'Play again' : 'Start playing'}
-            </button>
-            {!replay && (
-                <button
-                    className="btn"
-                    type="button"
-                    disabled={blocked}
-                    onClick={() => start(true)}
-                >
-                    Mark paused
-                </button>
-            )}
-        </form>
-    );
-}
-
 type CloseBody = {
     date: string;
     rating: number | null;
@@ -475,28 +257,47 @@ export function JournalPanel({ playthrough }: { playthrough: PlaythroughDto }) {
     );
 }
 
-/** Every playthrough of this game, with edit/delete and a way to log past ones. */
+/**
+ * Every playthrough of this game, with edit/delete and a way to log past ones. Folded until there is
+ * something in it (and it stays as the user left it once they open or close it).
+ */
 export function HistoryPanel({ entry }: { entry: EntryDto }) {
     const history = usePlaythroughs(entry.id);
+    const count = history.data?.length;
+    const [open, setOpen] = useState<boolean | null>(null);
+    const isOpen = open ?? (count !== undefined && count > 0);
     return (
-        <section aria-labelledby="history-h" className="panel">
-            <h2 id="history-h">Playthroughs</h2>
-            {history.isPending ? (
-                <HistorySkeletons />
-            ) : history.data?.length === 0 ? (
-                <p className="muted">No playthroughs yet.</p>
-            ) : (
-                <ul className="history">
-                    {history.data?.map((p) => (
-                        <HistoryRow key={p.id} p={p} entry={entry} />
-                    ))}
-                </ul>
-            )}
-            <details className="disclosure">
-                <summary>Log a past playthrough</summary>
-                <LogForm entry={entry} />
-            </details>
-        </section>
+        <details
+            aria-labelledby="history-h"
+            className="panel fold"
+            open={isOpen}
+            onToggle={(e) => setOpen(e.currentTarget.open)}
+        >
+            <summary className="fold__summary">
+                <h2 id="history-h">Playthroughs</h2>
+                {count ? <span className="fold__count">{count}</span> : null}
+            </summary>
+            <div className="fold__body">
+                {history.isPending ? (
+                    <HistorySkeletons />
+                ) : history.data?.length === 0 ? (
+                    <p className="muted">
+                        Nothing logged yet. Start playing and your first playthrough begins today,
+                        or log one you finished before.
+                    </p>
+                ) : (
+                    <ul className="history">
+                        {history.data?.map((p) => (
+                            <HistoryRow key={p.id} p={p} entry={entry} />
+                        ))}
+                    </ul>
+                )}
+                <details className="disclosure">
+                    <summary>Log a past playthrough</summary>
+                    <LogForm entry={entry} />
+                </details>
+            </div>
+        </details>
     );
 }
 

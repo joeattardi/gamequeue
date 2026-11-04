@@ -1710,30 +1710,6 @@ a.game-row:hover {
     gap: 6px;
     margin-bottom: 12px;
 }
-.entry__layout {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    gap: 24px;
-}
-.entry__layout > * {
-    min-width: 0;
-}
-@media (min-width: 760px) {
-    .entry__layout {
-        grid-template-columns: 320px minmax(0, 1fr);
-    }
-}
-.entry__cover {
-    max-width: 160px;
-}
-@media (min-width: 760px) {
-    .entry__cover {
-        max-width: 320px;
-    }
-}
-.entry h1 {
-    margin-bottom: 4px;
-}
 .summary {
     margin: 0;
     overflow-wrap: anywhere;
@@ -2578,17 +2554,6 @@ input[type='file'] {
         transition: none;
     }
 }
-.entry__head {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 16px;
-}
-.entry__badges {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
 .favorite-btn {
     display: grid;
     place-items: center;
@@ -2671,9 +2636,6 @@ input[type='file'] {
     .favorite-burst {
         display: none;
     }
-}
-.entry__head h1 {
-    overflow-wrap: anywhere;
 }
 
 /* ---- Score in search results ---- */
@@ -5524,47 +5486,6 @@ mark.hit {
         margin: 0;
     }
 }
-
-/* ---- Screenshots under the cover (hidden on narrow screens, where the layout is one column) ---- */
-.shots {
-    display: none;
-    list-style: none;
-    margin: 12px 0 0;
-    padding: 0;
-    gap: 8px;
-}
-@media (min-width: 760px) {
-    .shots {
-        display: grid;
-    }
-}
-.shots__thumb {
-    display: block;
-    width: 100%;
-    padding: 0;
-    border: 1px solid var(--line);
-    border-radius: var(--radius-sm);
-    overflow: hidden;
-    background: var(--surface-2);
-    cursor: zoom-in;
-}
-.shots__thumb img {
-    display: block;
-    width: 100%;
-    height: auto;
-    /* 16:9 only until the image loads and brings its own proportions */
-    aspect-ratio: auto 16 / 9;
-    transition: transform 0.15s ease-out;
-}
-.shots__thumb:hover img,
-.shots__thumb:focus-visible img {
-    transform: scale(1.05);
-}
-@media (prefers-reduced-motion: reduce) {
-    .shots__thumb img {
-        transition: none;
-    }
-}
 .dialog--shots {
     width: min(100% - 24px, 1100px);
     background: transparent;
@@ -7599,63 +7520,6 @@ mark.hit {
     }
 }
 
-/* ---- Game page quick actions (phones): see components/EntryActionBar.tsx ---- */
-.action-bar {
-    display: none;
-}
-@media (max-width: 899px) {
-    .action-bar {
-        position: fixed;
-        left: 0;
-        right: 0;
-        bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom));
-        z-index: 25;
-        display: grid;
-        gap: 6px;
-        padding: 8px var(--gutter);
-        border-top: 1px solid var(--line);
-        background: color-mix(in srgb, var(--surface) 92%, transparent);
-        backdrop-filter: blur(10px);
-        transition:
-            transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1),
-            opacity 0.2s ease;
-    }
-    .action-bar.is-hidden {
-        transform: translateY(110%);
-        opacity: 0;
-        pointer-events: none;
-    }
-    .action-bar__row {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-    }
-    .action-bar__row .btn {
-        flex: 1 1 0;
-        min-width: 0;
-        min-height: 48px;
-        justify-content: center;
-    }
-    .action-bar__row .favorite-btn {
-        flex: none;
-    }
-    .action-bar__error {
-        margin: 0;
-        color: var(--danger);
-        font-size: 0.9rem;
-        font-weight: 600;
-    }
-    /* Keep the end of the page, footer included, clear of the bar */
-    .content:has(.action-bar) {
-        padding-bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 76px);
-    }
-}
-@media (prefers-reduced-motion: reduce) {
-    .action-bar {
-        transition: none;
-    }
-}
-
 /* ---- Preview notice (landing, sign in, register) ---- */
 .preview-notice {
     display: flex;
@@ -9181,4 +9045,469 @@ a.chat-list__item:focus-visible {
     gap: 6px;
     padding-right: 6px;
     font-size: 0.88rem;
+}
+
+/* ---- Game page (redesign): hero, facts, status control, two balanced columns ---- */
+.page:has(> .game) {
+    max-width: 1200px;
+}
+.game {
+    display: grid;
+    gap: 28px;
+}
+.game-hero {
+    position: relative;
+    isolation: isolate;
+    margin: calc(-1 * var(--gutter)) calc(-1 * var(--gutter)) 0;
+    padding: var(--gutter);
+    border-bottom: 1px solid var(--line);
+    overflow: hidden;
+}
+/* The cover, enlarged and blurred, fading into the page: every game gets its own colours */
+.game-hero__bg {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    overflow: hidden;
+    -webkit-mask-image: linear-gradient(#000 40%, transparent);
+    mask-image: linear-gradient(#000 40%, transparent);
+}
+.game-hero__bg img,
+.game-hero__bg span {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: blur(48px) saturate(1.5);
+    opacity: 0.45;
+    transform: scale(1.5);
+}
+.game-hero__bg span {
+    background: linear-gradient(
+        165deg,
+        hsl(var(--hue) 55% 40%),
+        hsl(calc(var(--hue) + 40) 50% 15%)
+    );
+}
+:root[data-theme='light'] .game-hero__bg img,
+:root[data-theme='light'] .game-hero__bg span {
+    opacity: 0.3;
+}
+@media (prefers-color-scheme: light) {
+    :root:not([data-theme='dark']) .game-hero__bg img,
+    :root:not([data-theme='dark']) .game-hero__bg span {
+        opacity: 0.3;
+    }
+}
+.game-hero__inner {
+    display: grid;
+    gap: 16px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+.game-hero__grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 20px;
+}
+@media (min-width: 760px) {
+    .game-hero__grid {
+        grid-template-columns: 240px minmax(0, 1fr);
+        gap: 32px;
+        align-items: start;
+    }
+}
+.game-hero__cover {
+    width: min(55%, 220px);
+    aspect-ratio: 2 / 3;
+    border-radius: var(--radius-card);
+    box-shadow: 0 18px 40px -12px rgb(0 0 0 / 0.6);
+    overflow: hidden;
+}
+@media (min-width: 760px) {
+    .game-hero__cover {
+        width: 100%;
+    }
+}
+.game-hero__cover .cover {
+    width: 100%;
+    height: 100%;
+    border-radius: 0;
+    aspect-ratio: auto;
+    object-fit: cover;
+}
+.game-hero__info {
+    display: grid;
+    gap: 14px;
+    justify-items: start;
+    min-width: 0;
+}
+.game-hero__eyebrow {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    color: var(--text-2);
+    font-size: 0.95rem;
+}
+.game-hero__info h1 {
+    margin: 0;
+    font-size: clamp(2rem, 5.5vw, 3.4rem);
+    line-height: 1.05;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+}
+.facts {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 14px 0;
+    margin: 0;
+}
+.facts__item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 0 22px;
+    border-left: 1px solid var(--line-strong);
+}
+.facts__item:first-child {
+    padding-left: 0;
+    border-left: 0;
+}
+.facts__item--score {
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+}
+.facts dt {
+    color: var(--text-2);
+    font-size: 0.9rem;
+}
+.facts dd {
+    margin: 0;
+}
+.facts__big {
+    font: 700 1.5rem/1.15 var(--font-display);
+    letter-spacing: -0.02em;
+}
+.facts__sub {
+    color: var(--text-2);
+    font-size: 0.9rem;
+}
+.facts__item--score dt {
+    color: var(--text);
+    font-weight: 600;
+}
+.game-hero__actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+}
+.btn--lg {
+    min-height: 52px;
+    padding: 0 22px;
+    font-size: 1.02rem;
+    border-radius: var(--radius-btn);
+}
+.game-hero__actions .btn[aria-pressed='true'] {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+.game-hero__actions .favorite-btn {
+    width: 52px;
+    height: 52px;
+    border-color: var(--line-strong);
+    border-radius: var(--radius-btn);
+    background: transparent;
+}
+.amenu {
+    position: relative;
+}
+.amenu__btn {
+    width: 52px;
+    min-height: 52px;
+    padding: 0;
+    border-radius: var(--radius-btn);
+}
+.amenu__panel {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    z-index: 20;
+    display: grid;
+    min-width: 240px;
+    padding: 6px;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius);
+    background: var(--bg-2);
+    box-shadow: var(--shadow);
+}
+.amenu__panel .btn,
+.amenu__item {
+    justify-content: flex-start;
+    gap: 10px;
+    width: 100%;
+    min-height: 44px;
+    padding: 0 12px;
+    border: 0;
+    border-radius: 10px;
+    background: none;
+    color: var(--text);
+    font: 500 0.95rem var(--font-body);
+    text-align: left;
+    cursor: pointer;
+}
+.amenu__item {
+    display: flex;
+    align-items: center;
+}
+.amenu__panel .btn:hover,
+.amenu__item:hover {
+    background: var(--bg-3);
+}
+.amenu__item--danger {
+    color: var(--danger);
+}
+.amenu__panel svg {
+    width: 18px;
+    height: 18px;
+}
+
+/* Segmented status control: a dot per status, the current one filled */
+.status-seg {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 2px;
+    max-width: 100%;
+    padding: 4px;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius-btn);
+    background: color-mix(in oklab, var(--bg-0) 55%, transparent);
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+}
+.status-seg__item {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 0 14px;
+    border: 0;
+    border-radius: 10px;
+    background: none;
+    color: var(--text);
+    font: 600 0.95rem var(--font-body);
+    white-space: nowrap;
+    cursor: pointer;
+}
+.status-seg__item:hover:not(:disabled):not([aria-pressed='true']) {
+    background: var(--bg-3);
+}
+.status-seg__item[aria-pressed='true'] {
+    background: var(--bg-3);
+    box-shadow: inset 0 0 0 1px var(--line-strong);
+}
+.status-seg__item:disabled:not([aria-pressed='true']) {
+    color: var(--text-3);
+    cursor: not-allowed;
+}
+.status-seg__dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    border: 2px solid var(--dot);
+}
+/* Filled for the current status; the others are rings (a shape, not just a colour, tells them apart) */
+.status-seg__item[aria-pressed='true'] .status-seg__dot {
+    background: var(--dot);
+}
+.hero-choose {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    gap: 10px;
+    padding: 12px;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius);
+    background: color-mix(in oklab, var(--bg-1) 80%, transparent);
+}
+@media (max-width: 759px) {
+    .status-seg {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        width: 100%;
+    }
+    .game-hero__actions .btn--primary {
+        flex: 1 1 100%;
+    }
+}
+
+/* Two columns of about the same length below the hero */
+.game-cols {
+    display: grid;
+    gap: 24px;
+    align-items: start;
+}
+@media (min-width: 960px) {
+    .game-cols {
+        grid-template-columns: minmax(0, 1.5fr) minmax(320px, 1fr);
+        gap: 32px;
+    }
+}
+.game-main,
+.game-side {
+    display: grid;
+    gap: 24px;
+    min-width: 0;
+}
+.game-side {
+    gap: 16px;
+}
+.game-section {
+    display: grid;
+    gap: 10px;
+}
+.game-section h2,
+.game-main > .panel h2 {
+    margin: 0;
+    font-size: 1.3rem;
+}
+.game-section__head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+}
+.clamped {
+    display: grid;
+    justify-items: start;
+    gap: 6px;
+}
+.clamped__text {
+    margin: 0;
+    color: var(--text);
+    line-height: 1.6;
+    max-width: 70ch;
+}
+.clamped__text--cut {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: var(--lines, 4);
+}
+.clamped__toggle {
+    min-height: 32px;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--accent);
+    font: 600 0.95rem var(--font-body);
+    cursor: pointer;
+}
+.shots-row {
+    display: flex;
+    gap: 12px;
+    margin: 0;
+    padding: 0 0 8px;
+    overflow-x: auto;
+    list-style: none;
+    scroll-snap-type: x proximity;
+}
+.shots-row li {
+    flex: none;
+    scroll-snap-align: start;
+}
+.shots-row__thumb {
+    display: block;
+    padding: 0;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-card);
+    background: var(--bg-2);
+    overflow: hidden;
+    cursor: zoom-in;
+}
+.shots-row__thumb img {
+    display: block;
+    width: min(62vw, 300px);
+    aspect-ratio: 16 / 9;
+    object-fit: cover;
+}
+@media (prefers-reduced-motion: no-preference) {
+    .shots-row__thumb img {
+        transition: transform 0.2s ease;
+    }
+    .shots-row__thumb:hover img {
+        transform: scale(1.04);
+    }
+}
+/* A panel that folds shut until it has something in it */
+.fold__summary {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    list-style: none;
+    cursor: pointer;
+}
+.fold__summary::-webkit-details-marker {
+    display: none;
+}
+.fold__summary::after {
+    content: '';
+    width: 8px;
+    height: 8px;
+    margin-left: auto;
+    border-right: 2px solid var(--text-2);
+    border-bottom: 2px solid var(--text-2);
+    transform: rotate(45deg);
+}
+.fold[open] > .fold__summary::after {
+    transform: rotate(-135deg);
+}
+.fold__summary h2 {
+    margin: 0;
+}
+.fold__hint {
+    overflow: hidden;
+    margin-left: 2px;
+    color: var(--text-2);
+    font-size: 0.9rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.fold__count {
+    padding: 0 8px;
+    border-radius: 999px;
+    background: var(--bg-3);
+    color: var(--text-2);
+    font-size: 0.8rem;
+    line-height: 22px;
+}
+.fold__body {
+    display: grid;
+    gap: 12px;
+    margin-top: 12px;
+}
+.skeleton--action-lg {
+    display: block;
+    width: 160px;
+    height: 52px;
+    border-radius: var(--radius-btn);
+}
+.skeleton--shot {
+    flex: none;
+    width: min(62vw, 300px);
+    aspect-ratio: 16 / 9;
+    border-radius: var(--radius-card);
+}
+
+.tag-add {
+    display: flex;
+    gap: 8px;
+    align-items: stretch;
+}
+.tag-add .field {
+    flex: 1;
+    min-width: 0;
 }
