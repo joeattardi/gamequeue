@@ -23,25 +23,45 @@ export function SeriesSkeleton() {
 /** The game page: cover on the left, header, summary and a few panels on the right. */
 export function EntrySkeleton() {
     return (
-        <article className="entry" role="status" aria-label="Loading game">
-            <span className="skeleton skeleton--line skeleton--back" aria-hidden="true" />
-            <div className="entry__layout" aria-hidden="true">
-                <div className="entry__cover">
-                    <span className="skeleton skeleton--card-cover" />
-                </div>
-                <div className="stack">
-                    <header className="entry__head">
-                        <div>
-                            <span className="skeleton skeleton--title skeleton--entry-title" />
-                            <span className="skeleton skeleton--line skeleton--subtitle skeleton--gap" />
+        <article className="game" role="status" aria-label="Loading game">
+            <header className="game-hero" aria-hidden="true">
+                <div className="game-hero__inner">
+                    <span className="skeleton skeleton--line skeleton--back" />
+                    <div className="game-hero__grid">
+                        <div className="game-hero__cover">
+                            <span className="skeleton skeleton--card-cover" />
                         </div>
-                        <span className="skeleton skeleton--gauge-lg" />
-                    </header>
-                    <div className="stack">
+                        <div className="game-hero__info">
+                            <span className="skeleton skeleton--line skeleton--subtitle" />
+                            <span className="skeleton skeleton--title skeleton--entry-title" />
+                            <div className="facts">
+                                <span className="skeleton skeleton--gauge-lg" />
+                                <span className="skeleton skeleton--line" style={{ width: 90 }} />
+                                <span className="skeleton skeleton--line" style={{ width: 90 }} />
+                            </div>
+                            <div className="game-hero__actions">
+                                <span className="skeleton skeleton--action-lg" />
+                                <span className="skeleton skeleton--action-lg" />
+                            </div>
+                            <span className="skeleton skeleton--action-lg" style={{ width: 420 }} />
+                        </div>
+                    </div>
+                </div>
+            </header>
+            <div className="game-cols" aria-hidden="true">
+                <div className="game-main">
+                    <div className="game-section">
+                        <span className="skeleton skeleton--line skeleton--panel-title" />
                         <span className="skeleton skeleton--line" style={{ width: '96%' }} />
                         <span className="skeleton skeleton--line" style={{ width: '90%' }} />
                         <span className="skeleton skeleton--line" style={{ width: '62%' }} />
                     </div>
+                    <div className="shots-row">
+                        <span className="skeleton skeleton--shot" />
+                        <span className="skeleton skeleton--shot" />
+                    </div>
+                </div>
+                <div className="game-side">
                     {[0, 1, 2].map((i) => (
                         <div key={i} className="panel">
                             <span className="skeleton skeleton--line skeleton--panel-title" />
@@ -71,23 +91,11 @@ export function ProfileSkeleton() {
             </div>
             <div className="profile-layout" aria-hidden="true">
                 <div className="profile-side">
-                    <ul className="counters">
-                        {Array.from({ length: 10 }, (_, i) => (
-                            <li key={i} className="counter">
-                                <div className="counter__link">
-                                    <span className="counter__icon">
-                                        <span className="skeleton skeleton--counter-icon" />
-                                    </span>
-                                    <span className="counter__value">
-                                        <span className="skeleton skeleton--counter-value" />
-                                    </span>
-                                    <span className="counter__label">
-                                        <span className="skeleton skeleton--line skeleton--counter-label" />
-                                    </span>
-                                </div>
-                            </li>
+                    <div className="pstats__numbers">
+                        {Array.from({ length: 3 }, (_, i) => (
+                            <span key={i} className="skeleton skeleton--pstat" />
                         ))}
-                    </ul>
+                    </div>
                     <div className="statbar">
                         <span className="skeleton skeleton--statbar" />
                     </div>

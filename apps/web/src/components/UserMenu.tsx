@@ -14,6 +14,7 @@ import { useEffect, useId, useRef, useState } from 'react';
 import { Link, NavLink, useLocation } from 'react-router';
 import { THEMES, useTheme } from '../theme';
 import { Avatar } from './Avatar';
+import { DevBadge } from './DevBadge';
 
 const THEME_ICONS = { system: Monitor, light: Sun, dark: Moon };
 const THEME_LABELS = { system: 'System', light: 'Light', dark: 'Dark' };
@@ -109,32 +110,43 @@ export function UserMenu({
                     <LogOut />
                     Sign out
                 </button>
+                <p className="user-menu__legal">
+                    Game data from{' '}
+                    <a href="https://www.igdb.com" target="_blank" rel="noreferrer">
+                        IGDB.com
+                    </a>
+                    {' · '}
+                    <Link to="/credits">Credits</Link>
+                </p>
             </div>
-            <button
-                ref={button}
-                type="button"
-                className={variant === 'tab' ? 'tabbar__item' : 'user-menu__button'}
-                aria-expanded={open}
-                aria-controls={panelId}
-                aria-haspopup="true"
-                aria-label={variant === 'tab' ? `Account menu for ${user.username}` : undefined}
-                onClick={() => setOpen((o) => !o)}
-            >
-                <Avatar
-                    username={user.username}
-                    size={variant === 'tab' ? 26 : 28}
-                    avatarUpdatedAt={user.avatarUpdatedAt}
-                    avatarIcon={user.avatarIcon}
-                />
-                {variant === 'tab' ? (
-                    <span>You</span>
-                ) : (
-                    <>
-                        <span className="user-menu__name">{user.username}</span>
-                        <ChevronsUpDown aria-hidden="true" />
-                    </>
-                )}
-            </button>
+            <div className="user-menu__row">
+                <button
+                    ref={button}
+                    type="button"
+                    className={variant === 'tab' ? 'tabbar__item' : 'user-menu__button'}
+                    aria-expanded={open}
+                    aria-controls={panelId}
+                    aria-haspopup="true"
+                    aria-label={variant === 'tab' ? `Account menu for ${user.username}` : undefined}
+                    onClick={() => setOpen((o) => !o)}
+                >
+                    <Avatar
+                        username={user.username}
+                        size={variant === 'tab' ? 26 : 28}
+                        avatarUpdatedAt={user.avatarUpdatedAt}
+                        avatarIcon={user.avatarIcon}
+                    />
+                    {variant === 'tab' ? (
+                        <span>You</span>
+                    ) : (
+                        <>
+                            <span className="user-menu__name">{user.username}</span>
+                            <ChevronsUpDown aria-hidden="true" />
+                        </>
+                    )}
+                </button>
+                {variant === 'sidebar' && <DevBadge variant="pill" />}
+            </div>
         </div>
     );
 }

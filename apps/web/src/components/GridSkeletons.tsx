@@ -1,7 +1,20 @@
 import type { Layout } from './LayoutToggle';
 
+/** The Collection also has the wall. */
+export type CollectionLayout = Layout | 'wall';
+
 /** Placeholders shaped like the collection's grid cards or list rows, shown while games load. */
-export function GridSkeletons({ layout, count }: { layout: Layout; count?: number }) {
+export function GridSkeletons({ layout, count }: { layout: CollectionLayout; count?: number }) {
+    if (layout === 'wall')
+        return (
+            <ul className="wall" role="status" aria-label="Loading games">
+                {Array.from({ length: count ?? 24 }, (_, i) => (
+                    <li key={i} className="wall__tile wall__tile--skeleton" aria-hidden="true">
+                        <span className="skeleton wall__skeleton" />
+                    </li>
+                ))}
+            </ul>
+        );
     if (layout === 'list')
         return (
             <ul className="game-rows" role="status" aria-label="Loading games">

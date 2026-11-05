@@ -2,19 +2,22 @@ import { screenshotUrl } from '@gamequeue/shared';
 import { useState } from 'react';
 import { Lightbox } from './ImageLightbox';
 
-const SHOWN = 3;
-
-/** A few screenshots under the cover; a click opens them full size, where all of them can be paged. */
+/** Every screenshot IGDB has, as a row that scrolls sideways; a click opens them full size in the lightbox. */
 export function Screenshots({ imageIds, name }: { imageIds: string[]; name: string }) {
     const [open, setOpen] = useState<number | null>(null);
     if (imageIds.length === 0) return null;
     return (
-        <>
-            <ul className="shots" aria-label={`${name} screenshots`}>
-                {imageIds.slice(0, SHOWN).map((id, i) => (
+        <section aria-labelledby="shots-h" className="game-section">
+            <div className="game-section__head">
+                <h2 id="shots-h">Screenshots</h2>
+                <span className="muted">Click to open</span>
+            </div>
+            <ul className="shots-row" aria-label={`${name} screenshots`}>
+                {imageIds.map((id, i) => (
                     <li key={id}>
                         <button
-                            className="shots__thumb"
+                            type="button"
+                            className="shots-row__thumb"
                             onClick={() => setOpen(i)}
                             aria-label={`View screenshot ${i + 1} of ${imageIds.length}`}
                         >
@@ -31,6 +34,6 @@ export function Screenshots({ imageIds, name }: { imageIds: string[]; name: stri
                 onIndex={setOpen}
                 onClose={() => setOpen(null)}
             />
-        </>
+        </section>
     );
 }

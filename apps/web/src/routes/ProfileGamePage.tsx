@@ -8,6 +8,7 @@ import { EntrySkeleton } from '../components/PageSkeletons';
 import { PublicNotes } from '../components/NotesPanel';
 import { PlatformTags } from '../components/PlatformIcon';
 import { PublicHeader } from '../components/PublicHeader';
+import { PublicMain } from '../components/ShellContext';
 import { ScoreGauge } from '../components/ScoreGauge';
 import { Screenshots } from '../components/Screenshots';
 import { StarDisplay } from '../components/StarRating';
@@ -34,7 +35,7 @@ export function ProfileGamePage() {
     return (
         <>
             <PublicHeader />
-            <main className="page">
+            <PublicMain>
                 {data.isPending && !notFound && <EntrySkeleton />}
                 {notFound && (
                     <>
@@ -54,7 +55,7 @@ export function ProfileGamePage() {
                         <ProfileGame data={data.data} />
                     </article>
                 )}
-            </main>
+            </PublicMain>
         </>
     );
 }

@@ -12,6 +12,7 @@ import { useProfileGames } from '../api/profile';
 import { PublicGameList, usePublicLayout } from '../components/PublicGameList';
 import { LayoutToggle } from '../components/LayoutToggle';
 import { PublicHeader } from '../components/PublicHeader';
+import { PublicMain } from '../components/ShellContext';
 import { usePageTitle } from '../lib';
 
 const VIEWS: Record<ProfileView, { title: string; empty: string; numbered?: boolean }> = {
@@ -52,7 +53,7 @@ export function ProfileGamesPage() {
     return (
         <>
             <PublicHeader />
-            <main className="page">
+            <PublicMain>
                 <div className="back-row">
                     <Link to={year ? `/u/${username}/finished` : `/u/${username}`} className="back">
                         <ArrowLeft aria-hidden="true" /> {year ? 'All finished' : username}
@@ -101,7 +102,7 @@ export function ProfileGamesPage() {
                         />
                     </>
                 )}
-            </main>
+            </PublicMain>
         </>
     );
 }

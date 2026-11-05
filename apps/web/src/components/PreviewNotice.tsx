@@ -34,7 +34,7 @@ export function PreviewNotice({ compact = false }: { compact?: boolean }) {
     );
 }
 
-/** The notice for signed-in users on the home page: closable, and stays closed on this browser. */
+/** The one preview banner at the top of the app shell: closable, and stays closed on this browser. */
 export function DismissiblePreviewNotice() {
     const [dismissed, setDismissed] = useState(() => {
         try {
@@ -45,7 +45,7 @@ export function DismissiblePreviewNotice() {
     });
     if (dismissed) return null;
     return (
-        <aside className="preview-notice preview-notice--inline">
+        <aside className="preview-notice preview-banner" aria-label="Preview notice">
             <FlaskConical aria-hidden="true" />
             <p>
                 <strong>GameQueue is in preview.</strong> <PreviewDetail />

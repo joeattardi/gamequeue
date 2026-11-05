@@ -1,258 +1,245 @@
-import { ENTRY_SORTS } from '@gamequeue/shared';
-import { useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router';
+import { ENTRY_STATUSES } from '@gamequeue/shared';
+import { Library, Plus, SearchX } from 'lucide-react';
+import { useState } from 'react';
+import { Link, useSearchParams } from 'react-router';
+import { useMe } from '../api/auth';
 import { useFacetCounts, usePagedEntries } from '../api/collection';
+import { useWishlistCount } from '../api/wishlist';
 import { AddGameDialog } from '../components/AddGameDialog';
-import { FACET_KEYS, FacetSidebar, type FacetKey } from '../components/FacetSidebar';
-import { CountBadge } from '../components/CountBadge';
+import { CollectionCard, CollectionRow, WallTile } from '../components/CollectionCards';
+import { EmptyState } from '../components/EmptyState';
+import { DensityToggle } from '../components/DensityToggle';
+import { FACET_KEYS, FilterBar, type FacetKey } from '../components/FilterBar';
 import { GridSkeletons } from '../components/GridSkeletons';
-import { LayoutToggle, useLayout } from '../components/LayoutToggle';
 import { LoadMore } from '../components/LoadMore';
-import { GameCard } from '../components/GameCard';
-import { GameRow } from '../components/GameRow';
-import { useDebounced, useMediaQuery, usePageTitle } from '../lib';
-import { Filter, Library, ListTodo, Plus } from 'lucide-react';
+import { StatusTabs, StatusTabsSkeleton } from '../components/StatusTabs';
+import { useDensity } from '../components/useDensity';
+import { WishlistTab } from './WishlistPage';
+import {
+    DEFAULT_SORT,
+    TABS,
+    apiParams,
+    tabCounts,
+    tabFromParams,
+    type TabKey
+} from '../collectionModel';
+import { usePageTitle } from '../lib';
+import { statusColorOnCover, statusText } from '../statusColor';
 
-const SORT_LABELS: Record<(typeof ENTRY_SORTS)[number], string> = {
-    title: 'Title',
-    added: 'Recently added',
-    release: 'Release date',
-    rating: 'My rating',
-    ttb: 'Time to beat'
-};
-
-const LAYOUT_KEY = 'gq_collection_layout';
-
-export function CollectionPage({ view }: { view: 'all' | 'backlog' }) {
+/**
+ * The Collection: status tabs with counts, a compact bar of filters, and the games as a Wall, a
+ * Grid or a List. Backlog (Not Started) and Wishlist are tabs here, not pages of their own. All of
+ * it lives in the address (`?status=&platform=&genre=&tag=&sort=…`), so views can be linked and Back works.
+ */
+export function CollectionPage() {
+    const me = useMe().data!;
+    usePageTitle('Collection');
     const [params, setParams] = useSearchParams();
-    usePageTitle(view === 'backlog' ? 'Backlog' : 'Collection');
     const [adding, setAdding] = useState(false);
-    const [layout, setLayout] = useLayout(LAYOUT_KEY);
-    // Under 900px the filter panel (with the sort) hides behind an icon button next to the search
-    const [filtersOpen, setFiltersOpen] = useState(false);
-    // The same breakpoint at which the search row turns into the compact phone layout
-    const compact = useMediaQuery('(max-width: 899px)');
+    const { density, choose, wallAvailable } = useDensity(me.id);
 
-    const [text, setText] = useState(params.get('q') ?? '');
-    const q = useDebounced(text, 250);
-    const set = (key: string, value: string) =>
+    const tab = tabFromParams(params);
+    const isWishlist = tab === 'wishlist';
+    const query = apiParams(params);
+    const entries = usePagedEntries(query, {
+        limit: density === 'list' ? 48 : 96,
+        enabled: !isWishlist
+    });
+    const facets = useFacetCounts(query);
+    const wishlistCount = useWishlistCount();
+    const counts = tabCounts(facets.data?.statuses, wishlistCount.data);
+
+    const edit = (change: (p: URLSearchParams) => void) =>
         setParams(
             (p) => {
                 const n = new URLSearchParams(p);
-                value ? n.set(key, value) : n.delete(key);
+                change(n);
                 return n;
             },
             { replace: true }
         );
-    useEffect(() => {
-        if ((params.get('q') ?? '') !== q.trim()) set('q', q.trim());
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [q]);
-
     const selected = (key: FacetKey) => params.getAll(key);
     const toggle = (key: FacetKey, value: string) =>
-        setParams(
-            (p) => {
-                const n = new URLSearchParams(p);
-                const values = n.getAll(key);
-                n.delete(key);
-                (values.includes(value)
-                    ? values.filter((v) => v !== value)
-                    : [...values, value]
-                ).forEach((v) => n.append(key, v));
-                return n;
-            },
-            { replace: true }
-        );
-    const clearFacets = () =>
-        setParams(
-            (p) => {
-                const n = new URLSearchParams(p);
-                FACET_KEYS.forEach((k) => n.delete(k));
-                return n;
-            },
-            { replace: true }
-        );
-
-    const query = new URLSearchParams(params);
-    query.set('view', view);
-    const entries = usePagedEntries(query);
-    const facets = useFacetCounts(query);
+        edit((n) => {
+            const values = n.getAll(key);
+            n.delete(key);
+            (values.includes(value)
+                ? values.filter((v) => v !== value)
+                : [...values, value]
+            ).forEach((v) => n.append(key, v));
+        });
     const filtered = [...FACET_KEYS, 'q'].some((k) => params.get(k));
-    const activeFacets = FACET_KEYS.reduce((n, k) => n + params.getAll(k).length, 0);
+    const pickTab = (t: TabKey) =>
+        edit((n) => {
+            n.delete('status');
+            if (t !== 'all') n.set('status', t);
+        });
+
+    const total = isWishlist ? wishlistCount.data : entries.total;
 
     return (
-        <section>
-            <div className="page-head">
-                <div>
-                    <h1>
-                        {view === 'backlog' ? (
-                            <ListTodo aria-hidden="true" />
-                        ) : (
-                            <Library aria-hidden="true" />
-                        )}
-                        {view === 'backlog' ? 'Backlog' : 'Collection'}
-                        <CountBadge total={entries.total} filtered={filtered} />
-                    </h1>
-                    {view === 'backlog' && <p className="muted">Everything you haven't started</p>}
+        <section className="collection">
+            <div className="page-head collection__head">
+                <div className="collection__title">
+                    <h1>Collection</h1>
+                    <span className="collection__count" aria-live="polite">
+                        {total !== undefined &&
+                            `${total.toLocaleString()} ${total === 1 ? 'game' : 'games'}${filtered && !isWishlist ? ' match' : ''}`}
+                    </span>
                 </div>
                 <div className="page-head__tools">
-                    <LayoutToggle layout={layout} onChange={setLayout} />
-                    <button
-                        className="btn btn--primary page-head__add"
-                        onClick={() => setAdding(true)}
-                    >
-                        <Plus />
+                    {!isWishlist && (
+                        <DensityToggle
+                            density={density}
+                            onChange={choose}
+                            wallAvailable={wallAvailable}
+                        />
+                    )}
+                    <button className="btn btn--primary" onClick={() => setAdding(true)}>
+                        <Plus aria-hidden="true" />
                         Add game
                     </button>
                 </div>
             </div>
 
-            <form className="filters" role="search" onSubmit={(e) => e.preventDefault()}>
-                <label className="field field--grow">
-                    <span>Search</span>
-                    <input
-                        type="search"
-                        value={text}
-                        onChange={(e) => setText(e.target.value)}
-                        placeholder={compact ? 'Search games…' : 'Title…'}
-                    />
-                </label>
-                <label className="field filters__sort">
-                    <span>Sort by</span>
-                    <select
-                        value={params.get('sort') ?? 'title'}
-                        onChange={(e) =>
-                            set('sort', e.target.value === 'title' ? '' : e.target.value)
-                        }
-                    >
-                        {ENTRY_SORTS.map((s) => (
-                            <option key={s} value={s}>
-                                {SORT_LABELS[s]}
-                            </option>
-                        ))}
-                    </select>
-                </label>
-                <button
-                    type="button"
-                    className="bar-btn bar-btn--narrow"
-                    aria-label="Filters and sort"
-                    aria-expanded={filtersOpen}
-                    aria-controls="collection-facets"
-                    onClick={() => setFiltersOpen((o) => !o)}
-                >
-                    <Filter />
-                    {activeFacets > 0 && <span className="bar-btn__count">{activeFacets}</span>}
-                </button>
-                <button
-                    type="button"
-                    className="bar-btn bar-btn--narrow"
-                    aria-label="Add game"
-                    onClick={() => setAdding(true)}
-                >
-                    <Plus />
-                </button>
-            </form>
+            {facets.isPending && !facets.data ? (
+                <StatusTabsSkeleton />
+            ) : (
+                <StatusTabs active={tab} counts={counts} onPick={pickTab} />
+            )}
 
-            <div className="browse">
-                <div className="browse__main">
+            {isWishlist ? (
+                <WishlistTab />
+            ) : (
+                <>
+                    <FilterBar
+                        facets={facets.data}
+                        selected={selected}
+                        onToggle={toggle}
+                        onClear={(k) => edit((n) => n.delete(k))}
+                        onClearAll={() =>
+                            edit((n) => {
+                                FACET_KEYS.forEach((k) => n.delete(k));
+                                n.delete('q');
+                            })
+                        }
+                        favorite={params.get('favorite') === 'true'}
+                        onFavorite={() =>
+                            edit((n) =>
+                                n.get('favorite') === 'true'
+                                    ? n.delete('favorite')
+                                    : n.set('favorite', 'true')
+                            )
+                        }
+                        sort={params.get('sort') ?? DEFAULT_SORT}
+                        onSort={(v) =>
+                            edit((n) => (v === DEFAULT_SORT ? n.delete('sort') : n.set('sort', v)))
+                        }
+                    />
+                    {density === 'wall' && entries.total !== 0 && <WallLegend />}
                     {entries.isError ? (
                         <p className="form-error" role="alert">
                             Couldn't load your games.
                         </p>
                     ) : entries.isPending ? (
-                        <GridSkeletons layout={layout} />
+                        <GridSkeletons layout={density} />
                     ) : entries.total === 0 ? (
-                        <Empty view={view} filtered={filtered} onAdd={() => setAdding(true)} />
+                        <Empty tab={tab} filtered={filtered} onAdd={() => setAdding(true)} />
                     ) : (
                         <>
-                            {layout === 'list' ? (
-                                <ul className="game-rows" aria-busy={entries.isFetching}>
+                            {density === 'list' ? (
+                                <ul className="crows" aria-busy={entries.isFetching}>
                                     {entries.items.map((e) => (
-                                        <GameRow key={e.id} entry={e} />
+                                        <CollectionRow key={e.id} entry={e} />
+                                    ))}
+                                </ul>
+                            ) : density === 'wall' ? (
+                                <ul className="wall" aria-busy={entries.isFetching}>
+                                    {entries.items.map((e) => (
+                                        <WallTile key={e.id} entry={e} />
                                     ))}
                                 </ul>
                             ) : (
-                                <ul className="grid" aria-busy={entries.isFetching}>
+                                <ul className="cgrid" aria-busy={entries.isFetching}>
                                     {entries.items.map((e) => (
-                                        <GameCard key={e.id} entry={e} />
+                                        <CollectionCard key={e.id} entry={e} />
                                     ))}
                                 </ul>
                             )}
                             <LoadMore
+                                auto={density !== 'list'}
                                 shown={entries.items.length}
                                 total={entries.total}
                                 hasMore={entries.hasNextPage}
                                 loading={entries.isFetchingNextPage}
                                 failed={entries.isFetchNextPageError}
                                 onMore={() => entries.fetchNextPage()}
-                                skeleton={<GridSkeletons layout={layout} count={4} />}
+                                skeleton={
+                                    <GridSkeletons
+                                        layout={density}
+                                        count={density === 'list' ? 3 : 6}
+                                    />
+                                }
                             />
                         </>
                     )}
-                </div>
-                <aside className="browse__side" aria-label="Filters">
-                    <FacetSidebar
-                        facets={facets.data}
-                        selected={selected}
-                        onToggle={toggle}
-                        onClear={clearFacets}
-                        showStatus={view === 'all'}
-                        open={filtersOpen}
-                        sort={
-                            <label className="field">
-                                <span>Sort by</span>
-                                <select
-                                    value={params.get('sort') ?? 'title'}
-                                    onChange={(e) =>
-                                        set(
-                                            'sort',
-                                            e.target.value === 'title' ? '' : e.target.value
-                                        )
-                                    }
-                                >
-                                    {ENTRY_SORTS.map((s) => (
-                                        <option key={s} value={s}>
-                                            {SORT_LABELS[s]}
-                                        </option>
-                                    ))}
-                                </select>
-                            </label>
-                        }
-                    />
-                </aside>
-            </div>
+                </>
+            )}
             <AddGameDialog open={adding} onClose={() => setAdding(false)} />
         </section>
     );
 }
 
-function Empty({
-    view,
-    filtered,
-    onAdd
-}: {
-    view: 'all' | 'backlog';
-    filtered: boolean;
-    onAdd: () => void;
-}) {
+/** What the bar along the bottom of each wall cover means. */
+function WallLegend() {
     return (
-        <div className="empty">
-            <p>
-                <strong>
-                    {filtered
-                        ? 'Nothing matches those filters.'
-                        : view === 'backlog'
-                          ? 'Your backlog is empty.'
-                          : 'No games yet.'}
-                </strong>
+        <div className="wall-legend">
+            <p className="muted">
+                Hover or focus a cover for details. The bar along its bottom edge shows its status.
             </p>
-            {!filtered && (
-                <button className="btn btn--primary" onClick={onAdd}>
-                    <Plus />
-                    Add your first game
-                </button>
-            )}
+            <ul aria-label="Status colours">
+                {ENTRY_STATUSES.map((s) => (
+                    <li key={s}>
+                        <span style={{ background: statusColorOnCover(s) }} aria-hidden="true" />
+                        {statusText(s)}
+                    </li>
+                ))}
+            </ul>
         </div>
+    );
+}
+
+function Empty({ tab, filtered, onAdd }: { tab: TabKey; filtered: boolean; onAdd: () => void }) {
+    const label = TABS.find((t) => t.key === tab)?.label.toLowerCase();
+    if (filtered)
+        return (
+            <EmptyState icon={<SearchX />} title="Nothing matches those filters.">
+                Try removing a filter or changing the search.
+            </EmptyState>
+        );
+    if (tab === 'all')
+        return (
+            <EmptyState
+                icon={<Library />}
+                title="Your collection is empty."
+                actions={
+                    <>
+                        <button className="btn btn--primary" onClick={onAdd}>
+                            <Plus aria-hidden="true" />
+                            Add your first game
+                        </button>
+                        <Link className="btn" to="/data">
+                            Import a library
+                        </Link>
+                    </>
+                }
+            >
+                Add the games you own and they become your backlog, ready to queue.
+            </EmptyState>
+        );
+    return (
+        <EmptyState icon={<Library />} title={`Nothing in ${label} yet.`}>
+            Games move here as you play them.
+        </EmptyState>
     );
 }

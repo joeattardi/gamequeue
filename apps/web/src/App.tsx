@@ -46,7 +46,6 @@ import { CreditsPage } from './routes/CreditsPage';
 import { DiscoverPage } from './routes/DiscoverPage';
 import { ForgotPasswordPage, ResetPasswordPage } from './routes/PasswordResetPages';
 import { VerifyEmailGate, VerifyEmailPage } from './routes/VerifyEmailPage';
-import { WishlistPage } from './routes/WishlistPage';
 
 export function App() {
     const pending = useMe().isPending;
@@ -117,30 +116,38 @@ function AppRoutes() {
             <Route path="/register" element={<Navigate to="/" replace />} />
             <Route path="/credits" element={<CreditsPage />} />
             <Route path="/p/:slug" element={<JournalPage />} />
-            <Route path="/u/:username" element={<ProfilePage />} />
-            <Route path="/u/:username/wishlist" element={<ProfileWishlistPage />} />
-            <Route path="/u/:username/lists/:id" element={<ProfileListPage kind="lists" />} />
-            <Route
-                path="/u/:username/smart-lists/:id"
-                element={<ProfileListPage kind="smart-lists" />}
-            />
-            <Route path="/u/:username/stats" element={<ProfileStatsPage />} />
-            <Route path="/u/:username/activity" element={<ProfileActivityPage />} />
-            <Route path="/u/:username/games/:igdbId" element={<ProfileGamePage />} />
-            <Route path="/u/:username/recap" element={<ProfileRecapPage />} />
-            <Route path="/u/:username/recap/:year" element={<ProfileRecapPage />} />
-            <Route path="/u/:username/:view" element={<ProfileGamesPage />} />
-            <Route path="/u/:username/:view/:year" element={<ProfileGamesPage />} />
             <Route element={<Shell user={me.data} />}>
                 <Route index element={<Home />} />
-                <Route path="collection" element={<CollectionPage view="all" />} />
-                <Route path="backlog" element={<CollectionPage view="backlog" />} />
+                <Route path="/u/:username" element={<ProfilePage />} />
+                <Route path="/u/:username/wishlist" element={<ProfileWishlistPage />} />
+                <Route path="/u/:username/lists/:id" element={<ProfileListPage kind="lists" />} />
+                <Route
+                    path="/u/:username/smart-lists/:id"
+                    element={<ProfileListPage kind="smart-lists" />}
+                />
+                <Route path="/u/:username/stats" element={<ProfileStatsPage />} />
+                <Route path="/u/:username/activity" element={<ProfileActivityPage />} />
+                <Route path="/u/:username/games/:igdbId" element={<ProfileGamePage />} />
+                <Route path="/u/:username/recap" element={<ProfileRecapPage />} />
+                <Route path="/u/:username/recap/:year" element={<ProfileRecapPage />} />
+                <Route path="/u/:username/:view" element={<ProfileGamesPage />} />
+                <Route path="/u/:username/:view/:year" element={<ProfileGamesPage />} />
+
+                <Route path="collection" element={<CollectionPage />} />
+                {/* Backlog and Wishlist are tabs on the Collection now; old links keep working */}
+                <Route
+                    path="backlog"
+                    element={<Navigate to="/collection?status=unplayed" replace />}
+                />
                 <Route path="search" element={<SearchPage />} />
                 <Route path="games/:id" element={<EntryPage />} />
                 <Route path="games/:id/chat" element={<GameChatPage />} />
                 <Route path="games/igdb/:igdbId" element={<GameDetailPage />} />
                 <Route path="queue" element={<QueuePage />} />
-                <Route path="wishlist" element={<WishlistPage />} />
+                <Route
+                    path="wishlist"
+                    element={<Navigate to="/collection?status=wishlist" replace />}
+                />
                 <Route path="discover" element={<DiscoverPage />} />
                 <Route path="series/:id" element={<SeriesPage />} />
                 <Route path="lists" element={<ListsPage />} />

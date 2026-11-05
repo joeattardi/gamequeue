@@ -28,13 +28,18 @@ const entriesPath = (params: URLSearchParams) => {
 };
 
 /** The collection or backlog a page at a time ("Load more"). */
-export function usePagedEntries(params: URLSearchParams) {
+export function usePagedEntries(
+    params: URLSearchParams,
+    opts: { limit?: number; enabled?: boolean } = {}
+) {
     const path = entriesPath(params);
     return usePagedQuery({
-        key: ['entries', 'paged', params.toString()],
+        key: ['entries', 'paged', params.toString(), opts.limit ?? null],
         load: (offset, limit) => api<EntriesPageDto>(withPage(path, offset, limit)),
         read: (r) => ({ items: r.entries, total: r.total }),
-        placeholder: true
+        placeholder: true,
+        limit: opts.limit,
+        enabled: opts.enabled
     });
 }
 
@@ -74,12 +79,13 @@ export const useAllPlatforms = () =>
         staleTime: Infinity
     });
 
+export const searchIgdb = async (q: string) =>
+    (await api<{ results: SearchResultDto[] }>(`/igdb/search?q=${encodeURIComponent(q)}`)).results;
+
 export function useGameSearch(q: string) {
     return useQuery({
         queryKey: ['search', q],
-        queryFn: async () =>
-            (await api<{ results: SearchResultDto[] }>(`/igdb/search?q=${encodeURIComponent(q)}`))
-                .results,
+        queryFn: () => searchIgdb(q),
         enabled: q.length >= 2,
         staleTime: 5 * 60_000,
         retry: false
@@ -110,6 +116,7 @@ const COLLECTION_KEYS = [
     'entry',
     'facets',
     'search',
+    'uni-library',
     'playthroughs',
     'lists',
     'list',
@@ -125,6 +132,24 @@ const COLLECTION_KEYS = [
 export function useInvalidateCollection() {
     const qc = useQueryClient();
     return () => Promise.all(COLLECTION_KEYS.map((k) => qc.invalidateQueries({ queryKey: [k] })));
+}
+
+/**
+ * Like useInvalidateCollection, but the search results on screen keep their data: they are only
+ * marked stale (refetched next time that query is used). A game added from the results then stays
+ * where it is, showing its new state, instead of jumping between groups.
+ */
+export function useInvalidateQuietly() {
+    const qc = useQueryClient();
+    return () =>
+        Promise.all(
+            COLLECTION_KEYS.map((k) =>
+                qc.invalidateQueries({
+                    queryKey: [k],
+                    refetchType: k === 'search' || k === 'uni-library' ? 'none' : 'active'
+                })
+            )
+        );
 }
 
 /**

@@ -1,14 +1,13 @@
 import { Link } from 'react-router';
 import { PlayingSkeletons } from '../components/HomeSkeletons';
-import { PlayingCard } from '../components/PlayingCard';
+import { PausedCard, PlayingCard } from '../components/PlayingCard';
 import { ReleasingSoon } from '../components/ReleasingSoon';
 import { UpNext } from '../components/UpNext';
 import { useEntries } from '../api/collection';
 import { useStats } from '../api/stats';
 import { useWishlistCount } from '../api/wishlist';
 import { Welcome } from '../components/Welcome';
-import { DismissiblePreviewNotice } from '../components/PreviewNotice';
-import { LogoMark } from '../components/Logo';
+import { ThisWeek } from '../components/ThisWeek';
 import { Dices, Gamepad2, Pause } from 'lucide-react';
 import { useFirstName } from '../api/auth';
 import { greeting, usePageTitle } from '../lib';
@@ -26,13 +25,7 @@ export function Home() {
     const wishlisted = useWishlistCount();
 
     // Nothing owned (so nothing queued or listed either) and nothing wishlisted
-    if (stats.data?.overview.total === 0 && wishlisted.data === 0)
-        return (
-            <>
-                <DismissiblePreviewNotice />
-                <Welcome />
-            </>
-        );
+    if (stats.data?.overview.total === 0 && wishlisted.data === 0) return <Welcome />;
 
     const overview = stats.data?.overview;
     const summary = overview
@@ -43,64 +36,59 @@ export function Home() {
 
     return (
         <div className="home">
-            <DismissiblePreviewNotice />
-            <header className="home-hero">
-                <span className="home-hero__icon" aria-hidden="true">
-                    <LogoMark />
-                </span>
-                <h1>{greeting(firstName)}</h1>
-                <p className="home-hero__sub">{summary}</p>
-            </header>
-            <section aria-labelledby="playing-h" className="home-section home-section--first">
-                <div className="page-head">
-                    <div>
-                        <h2 id="playing-h">
-                            <Gamepad2 aria-hidden="true" />
-                            Playing
-                        </h2>
-                        <p className="muted">Every game you have in progress.</p>
-                    </div>
-                    <Link className="btn" to="/pick">
-                        <Dices />
-                        Random pick
-                    </Link>
+            <header className="home-head">
+                <div>
+                    <h1>{greeting(firstName)}</h1>
+                    <p className="muted home-head__sub">{summary}</p>
                 </div>
-                {playing.isError ? (
-                    <p className="form-error" role="alert">
-                        Couldn't load what you are playing.
-                    </p>
-                ) : playing.isPending ? (
-                    <PlayingSkeletons />
-                ) : playingNow.length === 0 ? (
-                    <p className="muted">
-                        Nothing in play right now. Start a game from your{' '}
-                        <Link to="/queue">queue</Link>, your <Link to="/backlog">backlog</Link> or a{' '}
-                        <Link to="/pick">random pick</Link>.
-                    </p>
-                ) : (
-                    <ul className="play-grid" aria-busy={playing.isFetching}>
-                        {playingNow.map((e) => (
-                            <PlayingCard key={e.id} entry={e} />
-                        ))}
-                    </ul>
-                )}
-            </section>
-            {pausedNow.length > 0 && (
-                <section aria-labelledby="paused-h" className="home-section">
-                    <div className="page-head">
-                        <h2 id="paused-h">
+                <Link className="btn" to="/pick">
+                    <Dices aria-hidden="true" />
+                    Pick one for me
+                </Link>
+            </header>
+            <div className={`now${pausedNow.length > 0 ? ' now--aside' : ''}`}>
+                <section aria-labelledby="playing-h" className="now__main">
+                    <h2 id="playing-h" className="home-h">
+                        <Gamepad2 aria-hidden="true" />
+                        Playing
+                    </h2>
+                    {playing.isError ? (
+                        <p className="form-error" role="alert">
+                            Couldn't load what you are playing.
+                        </p>
+                    ) : playing.isPending ? (
+                        <PlayingSkeletons />
+                    ) : playingNow.length === 0 ? (
+                        <p className="muted">
+                            Nothing in play right now. Start a game from your{' '}
+                            <Link to="/queue">queue</Link>, your{' '}
+                            <Link to="/collection?status=unplayed">backlog</Link> or a{' '}
+                            <Link to="/pick">random pick</Link>.
+                        </p>
+                    ) : (
+                        <ul className="play-list" aria-busy={playing.isFetching}>
+                            {playingNow.map((e) => (
+                                <PlayingCard key={e.id} entry={e} />
+                            ))}
+                        </ul>
+                    )}
+                </section>
+                {pausedNow.length > 0 && (
+                    <aside aria-labelledby="paused-h" className="now__side">
+                        <h2 id="paused-h" className="home-h">
                             <Pause aria-hidden="true" />
                             Paused
                         </h2>
-                    </div>
-                    <ul className="play-grid play-grid--compact" aria-busy={paused.isFetching}>
-                        {pausedNow.map((e) => (
-                            <PlayingCard key={e.id} entry={e} compact />
-                        ))}
-                    </ul>
-                </section>
-            )}
+                        <ul className="paused-list" aria-busy={paused.isFetching}>
+                            {pausedNow.map((e) => (
+                                <PausedCard key={e.id} entry={e} />
+                            ))}
+                        </ul>
+                    </aside>
+                )}
+            </div>
             <UpNext />
+            <ThisWeek />
             <ReleasingSoon />
         </div>
     );

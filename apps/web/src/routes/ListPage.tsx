@@ -1,19 +1,5 @@
-import {
-    DndContext,
-    KeyboardSensor,
-    PointerSensor,
-    closestCenter,
-    useSensor,
-    useSensors,
-    type DragEndEvent
-} from '@dnd-kit/core';
-import {
-    SortableContext,
-    arrayMove,
-    sortableKeyboardCoordinates,
-    useSortable,
-    verticalListSortingStrategy
-} from '@dnd-kit/sortable';
+import { DndContext, closestCenter } from '@dnd-kit/core';
+import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import {
     MAX_LIST_DESCRIPTION,
@@ -22,7 +8,7 @@ import {
     type ListItemDto,
     type SearchResultDto
 } from '@gamequeue/shared';
-import { useCallback, useEffect, useState, type FormEvent } from 'react';
+import { useCallback, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import { useEntries, useGameSearch } from '../api/collection';
 import { ApiRequestError } from '../api/client';
@@ -48,7 +34,9 @@ import { ListLoading } from '../components/ListLoading';
 import { GridSkeletons, RowSkeletons } from '../components/GridSkeletons';
 import { ResultSkeletons } from '../components/ResultSkeletons';
 import { MetaLine } from '../components/MetaLine';
+import { EmptyState } from '../components/EmptyState';
 import { PlatformTags } from '../components/PlatformIcon';
+import { useSortableOrder } from '../components/useSortableOrder';
 import { formatMinutes, useDebounced, yearOf, usePageTitle } from '../lib';
 import {
     ArrowLeft,
@@ -137,35 +125,16 @@ function ListView({
     const confirm = useConfirm();
     // Reordering and removing only exist in the list layout; tiles are for browsing
     const [layout, setLayout] = useLayout(LAYOUT_KEY, 'list');
-    const [order, setOrder] = useState(items);
-    const [error, setError] = useState<string>();
     const [editing, setEditing] = useState(false);
-    useEffect(() => setOrder(items), [items]);
-
-    const sensors = useSensors(
-        useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
-        useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+    const {
+        order,
+        sensors,
+        onDragEnd,
+        commit,
+        error: orderError
+    } = useSortableOrder(items, (igdbId, toIndex, onError) =>
+        reorder.mutate({ igdbId, toIndex }, { onError })
     );
-
-    // Only the first pages are loaded, so an index here is also the game's index in the whole
-    // list, and the server moves just that one game.
-    function commit(from: number, to: number) {
-        const igdbId = order[from]!.igdbId;
-        setOrder(arrayMove(order, from, to)); // optimistic; the query refetches and corrects it if the save fails
-        setError(undefined);
-        reorder.mutate(
-            { igdbId, toIndex: to },
-            { onError: () => setError("Couldn't save the new order.") }
-        );
-    }
-
-    function onDragEnd({ active, over }: DragEndEvent) {
-        if (!over || active.id === over.id) return;
-        commit(
-            order.findIndex((e) => e.igdbId === active.id),
-            order.findIndex((e) => e.igdbId === over.id)
-        );
-    }
 
     const move = (index: number, by: -1 | 1) => commit(index, index + by);
 
@@ -239,20 +208,27 @@ function ListView({
 
             <AddGames listId={id} isQueue={isQueue} inList={new Set(items.map((i) => i.igdbId))} />
             <p className="form-error" role="alert">
-                {error}
+                {orderError}
             </p>
 
             {total === 0 ? (
-                <div className="empty">
-                    <p>
-                        <strong>{isQueue ? 'Your queue is empty.' : 'This list is empty.'}</strong>
-                    </p>
-                    <p className="muted">
-                        {isQueue
-                            ? 'Search above to line up what to play next. Any game in your collection can go on it.'
-                            : 'Search above to add games from your collection.'}
-                    </p>
-                </div>
+                <EmptyState
+                    icon={isQueue ? <ListOrdered /> : <List />}
+                    title={isQueue ? 'Your queue is empty.' : 'This list is empty.'}
+                    actions={
+                        isQueue && (
+                            <>
+                                <Link className="btn" to="/collection?status=unplayed">
+                                    Browse Not Started
+                                </Link>
+                            </>
+                        )
+                    }
+                >
+                    {isQueue
+                        ? 'Search above to line up what to play next. Any game in your collection can go on it.'
+                        : 'Search above to add games from your collection.'}
+                </EmptyState>
             ) : (
                 <>
                     {layout === 'grid' ? (

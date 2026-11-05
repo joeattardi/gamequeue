@@ -25,7 +25,7 @@ export function ReleasingSoon() {
                     </h2>
                     <p className="muted">From your wishlist, in the next {WINDOW_DAYS} days.</p>
                 </div>
-                <Link className="btn" to="/wishlist">
+                <Link className="btn" to="/collection?status=wishlist">
                     View wishlist
                 </Link>
             </div>

@@ -9,7 +9,7 @@ import { useConfirm } from './Confirm';
 const when = (ms: number) => new Date(ms).toLocaleDateString(undefined, { dateStyle: 'medium' });
 
 /** The owner's notes on a game: add, edit, delete, and choose which ones the profile shows. */
-export function NotesPanel({ entry }: { entry: EntryDto }) {
+export function NotesPanel({ entry, embedded = false }: { entry: EntryDto; embedded?: boolean }) {
     const m = useNoteMutations(entry.id);
     const [draft, setDraft] = useState('');
     const [isPublic, setIsPublic] = useState(false);
@@ -31,13 +31,18 @@ export function NotesPanel({ entry }: { entry: EntryDto }) {
     }
 
     return (
-        <section aria-labelledby="notes-h" className="panel stack">
-            <h2 id="notes-h">Notes</h2>
+        <section
+            aria-labelledby={embedded ? undefined : 'notes-h'}
+            aria-label={embedded ? 'Notes' : undefined}
+            className={embedded ? 'stack' : 'panel stack'}
+        >
+            {!embedded && <h2 id="notes-h">Notes</h2>}
             <form className="stack" onSubmit={add}>
                 <label className="field">
-                    <span>Add a note</span>
+                    <span className="sr-only">Add a note</span>
                     <textarea
-                        rows={3}
+                        rows={2}
+                        placeholder="Add a note: why you want to play it, who recommended it…"
                         maxLength={MAX_NOTE_LENGTH}
                         value={draft}
                         onChange={(e) => setDraft(e.target.value)}

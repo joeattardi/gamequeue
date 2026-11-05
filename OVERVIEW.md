@@ -338,7 +338,7 @@ flowchart TD
     B -- no --> C{"Game in the shared cache?"}
     C -- yes --> E
     C -- no --> D["One IGDB request<br/>game + time to beat"] --> D2["Save to games table"] --> E
-    E["Create your entry<br/>with platforms"] --> F["Tags default to<br/>the game's genres and themes"]
+    E["Create your entry<br/>with platforms"] --> F["Tags start empty<br/>(they are yours, not IGDB's)"]
     F --> G["Remove it from your wishlist<br/>if it was there"]
 ```
 
@@ -407,7 +407,7 @@ The allowed moves are defined once in `packages/shared/src/status.ts`. The serve
 
 **Ratings** are 1 to 5 stars on the entry. You can rate a playthrough when finishing it, and that fills in the game's rating only if it was empty.
 
-**Browsing the collection** (`/collection` and `/backlog`) uses faceted filters: status, platform, genre, tag and series. Within one facet, any value matches ("PS5 or Switch"); across facets, all must match ("PS5 and RPG"). The counts next to each option show how many games you'd get if you picked it.
+**Browsing the collection** (`/collection`) has a tab per status (the Backlog is the Not Started tab, the Wishlist is a tab too) and a bar of filters: platform, genre, tag, series and favorites, with a Wall, Grid or List view. Within one facet, any value matches ("PS5 or Switch"); across facets, all must match ("PS5 and RPG"). The counts next to each option show how many games you'd get if you picked it.
 
 Code: `services/entries.ts` (collection), `services/playthroughs.ts` (status changes).
 
@@ -415,7 +415,7 @@ Code: `services/entries.ts` (collection), `services/playthroughs.ts` (status cha
 
 ## 9. Playing: what you're playing right now
 
-There is no limit and nothing to set up. Every game whose status is `playing` shows on the home page under **Playing**, glowing, with quick Pause, Finished and Abandon buttons. Paused games sit in a smaller **Paused** row underneath. The public profile's "Currently playing" lists the same playing games.
+There is no limit and nothing to set up. Every game whose status is `playing` shows on the home page under **Playing** as a hero card tinted from its cover. The loudest button is **Add journal entry** (the app has no sessions; the journal is where hours are logged); Pause and Mark finished are outlined, and Abandon hides in a ••• menu. Paused games sit in a small **Paused** card beside them with a Resume button. Below, **Up next** shows the top of your queue: drag a row (or use the keyboard) to reorder it, and press Start playing to begin. The public profile's "Currently playing" lists the same playing games.
 
 **Start playing** is the one way in, whether you click it on the game page, on a queue row, on the random pick result or choose "Playing" when adding a game. It is the plain start action from section 8: open a playthrough, set the status to `playing` and take the game off the queue, all in one transaction. A game owned on several platforms asks which one you're playing it on (a small select in place, no dialog). Finishing or abandoning a game removes it from both rows, and the UI calls the stored status `unplayed` "Not Started" (the "Backlog" view keeps its name).
 
@@ -625,7 +625,7 @@ Code: `services/export.ts`, `services/import.ts`, `packages/shared/src/export.ts
 - **Password change.** Needs your current password, and signs out your other sessions.
 - **Delete account.** Needs your password and a confirmation. The database cascades the delete through every table that belongs to you. (Anything new keyed by `user_id` must cascade too, or this breaks.)
 
-The icons come from game-icons.net and are credited on the `/credits` page (linked from every footer).
+The icons come from game-icons.net and are credited on the `/credits` page (linked from the user menu and from the footer of pages outside the app shell).
 
 Code: `routes/account.ts`, `routes/avatar.ts`, `services/users.ts`, `services/avatars.ts`.
 
@@ -685,13 +685,31 @@ TanStack Query is a cache of server data in the browser. Two kinds of hooks:
 
 Long lists use an "infinite query" with a "Load more" button that fetches the next page.
 
+### Search
+
+One search box finds games in two places at once: your own library and IGDB. It is the same search everywhere, in two shapes:
+
+```mermaid
+flowchart LR
+    KEY["⌘K, / or the Search button"] --> PAL["Command palette<br/>(desktop and tablet)"]
+    TAB["Search tab"] --> PHONE["Search page<br/>(phones)"]
+    PAL --> HOOK["useUnifiedSearch"]
+    PHONE --> HOOK
+    HOOK --> LIB["/api/entries?q=<br/>your library"]
+    HOOK --> IGDB["/api/igdb/search<br/>IGDB, cached"]
+    PAL -- "Tab: quick add" --> ADD["useQuickAdd<br/>existing endpoints"]
+    PHONE -- "+ then the sheet" --> ADD
+```
+
+Both answers are cached for five minutes in the browser, so repeating a search never asks IGDB again. Adding a game from a result never leaves the page: the row just changes to show its new status, and a toast (or, in the palette, a small Undo on the row) takes it back.
+
 ### Conventions worth knowing
 
 - **Loading skeletons, always.** Every page shows shimmering placeholder shapes while its data loads, never a blank page or a bare "Loading…".
 - **Confirmations** use `useConfirm()` (a promise-based dialog), never `window.confirm`.
 - **Dialogs** use the native `<dialog>` element through `useModalDialog`.
 - **Page titles** are set with `usePageTitle()`.
-- **Styling**: design tokens (colours, spacing, light and dark themes) in `styles/tokens.css`, everything else in `styles/app.css`. Icons from Lucide.
+- **Styling**: design tokens (three surface levels, text and line colours, one colour per game status, light and dark themes) in `styles/tokens.css`; `statusColor()` is the single map from a game's state to its colour, `StatusChip` shows it as dot, colour and label, everything else in `styles/app.css`. Icons from Lucide.
 - **Layout choice** (cover grid or rows) is remembered per browser in `localStorage`.
 
 ### Development vs production

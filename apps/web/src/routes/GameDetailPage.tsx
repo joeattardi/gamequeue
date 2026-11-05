@@ -5,14 +5,15 @@ import { ApiRequestError } from '../api/client';
 import { useGameDetail } from '../api/collection';
 import { useAddToWishlist, useRemoveFromWishlist } from '../api/wishlist';
 import { AddGameDialog } from '../components/AddGameDialog';
-import { Cover } from '../components/Cover';
+import { ClampedText } from '../components/ClampedText';
+import { GameHero } from '../components/GameHero';
+import { StatusChip } from '../components/StatusChip';
 import { SimilarGames } from '../components/SimilarGames';
 import { Screenshots } from '../components/Screenshots';
 import { EntrySkeleton } from '../components/PageSkeletons';
 import { PlatformTags } from '../components/PlatformIcon';
-import { SeriesLinks } from '../components/SeriesLinks';
-import { ScoreGauge } from '../components/ScoreGauge';
-import { usePageTitle, yearOf } from '../lib';
+import { platformText } from '../collectionModel';
+import { usePageTitle } from '../lib';
 import { Gift, Library, X } from 'lucide-react';
 import { TimeToBeat } from '../components/TimeToBeat';
 
@@ -63,74 +64,71 @@ function GameDetail({ detail }: { detail: GameDetailDto }) {
     };
 
     return (
-        <article className="entry">
-            <div className="entry__layout">
-                <div className="entry__cover">
-                    <Cover imageId={game.coverImageId} name={game.name} size="720p" />
-                    <Screenshots imageIds={game.screenshots} name={game.name} />
+        <article className="game">
+            <GameHero
+                game={game}
+                backTo="/collection"
+                backLabel="Collection"
+                chip={wishlisted ? <StatusChip status="wishlist" /> : undefined}
+                platformsLabel="Available on"
+                platforms={platformText(game.platforms)}
+            >
+                <div className="game-hero__actions">
+                    <button
+                        type="button"
+                        className="btn btn--primary btn--lg"
+                        onClick={() => setAdding(true)}
+                    >
+                        <Library aria-hidden="true" />
+                        Add to collection
+                    </button>
+                    {wishlisted ? (
+                        <button
+                            type="button"
+                            className="btn btn--lg"
+                            disabled={removeWish.isPending}
+                            onClick={() => {
+                                setError(undefined);
+                                removeWish.mutate(game.id, { onError: fail });
+                            }}
+                        >
+                            <X aria-hidden="true" />
+                            Remove from wishlist
+                        </button>
+                    ) : (
+                        <button
+                            type="button"
+                            className="btn btn--lg"
+                            disabled={addWish.isPending}
+                            onClick={() => {
+                                setError(undefined);
+                                addWish.mutate({ igdbId: game.id }, { onError: fail });
+                            }}
+                        >
+                            <Gift aria-hidden="true" />
+                            Add to wishlist
+                        </button>
+                    )}
                 </div>
-                <div className="stack">
-                    <header className="entry__head">
-                        <div>
-                            <h1>{game.name}</h1>
-                            <p className="muted">
-                                {[yearOf(game.releaseDate), game.genres.join(', ')]
-                                    .filter(Boolean)
-                                    .join(' · ')}
-                            </p>
-                            <SeriesLinks series={game.series} />
-                        </div>
-                        {game.igdbRating !== null && (
-                            <ScoreGauge value={game.igdbRating} label="IGDB" />
-                        )}
-                    </header>
-                    {game.summary && <p className="summary">{game.summary}</p>}
-
-                    <section aria-labelledby="own-h" className="panel stack">
-                        <h2 id="own-h">Your copy</h2>
-                        <p className="muted">
-                            {wishlisted ? 'On your wishlist.' : "You don't own this game yet."}
-                        </p>
-                        <div className="game-actions">
-                            <button className="btn btn--primary" onClick={() => setAdding(true)}>
-                                <Library />
-                                Add to collection
-                            </button>
-                            {wishlisted ? (
-                                <button
-                                    className="btn"
-                                    disabled={removeWish.isPending}
-                                    onClick={() => {
-                                        setError(undefined);
-                                        removeWish.mutate(game.id, { onError: fail });
-                                    }}
-                                >
-                                    <X />
-                                    Remove from wishlist
-                                </button>
-                            ) : (
-                                <button
-                                    className="btn"
-                                    disabled={addWish.isPending}
-                                    onClick={() => {
-                                        setError(undefined);
-                                        addWish.mutate({ igdbId: game.id }, { onError: fail });
-                                    }}
-                                >
-                                    <Gift />
-                                    Add to wishlist
-                                </button>
-                            )}
-                        </div>
-                        <p className="form-error" role="alert">
-                            {error}
-                        </p>
-                    </section>
-
+                <p className="muted">
+                    {wishlisted ? 'On your wishlist.' : "You don't own this game yet."}
+                </p>
+                <p className="form-error" role="alert">
+                    {error}
+                </p>
+            </GameHero>
+            <div className="game-cols">
+                <div className="game-main">
+                    {game.summary && (
+                        <section aria-labelledby="about-h" className="game-section">
+                            <h2 id="about-h">About</h2>
+                            <ClampedText text={game.summary} />
+                        </section>
+                    )}
+                    <Screenshots imageIds={game.screenshots} name={game.name} />
                     <TimeToBeat ttb={game.ttb} />
-
-                    <SimilarGames igdbId={game.id} />
-
+                </div>
+                <div className="game-side">
                     <section aria-labelledby="plat-h" className="panel">
                         <h2 id="plat-h">Platforms</h2>
                         {game.platforms.length ? (
@@ -141,6 +139,7 @@ function GameDetail({ detail }: { detail: GameDetailDto }) {
                     </section>
                 </div>
             </div>
+            <SimilarGames igdbId={game.id} />
             <AddGameDialog
                 open={adding}
                 onClose={() => setAdding(false)}

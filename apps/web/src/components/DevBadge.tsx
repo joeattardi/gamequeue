@@ -3,10 +3,10 @@ import { useState } from 'react';
 import { useModalDialog } from './useModalDialog';
 
 /**
- * A "Dev" stamp by the logo, only under `npm run dev` (Vite's dev mode); the production build drops it.
+ * A "Dev" stamp by the logo (public pages) or, as `pill`, a small label in the sidebar's user block, only under `npm run dev` (Vite's dev mode); the production build drops it.
  * It opens a dialog saying this is the development version. Keep it outside the logo's link.
  */
-export function DevBadge() {
+export function DevBadge({ variant = 'stamp' }: { variant?: 'stamp' | 'pill' }) {
     const [open, setOpen] = useState(false);
     const ref = useModalDialog(open);
     if (!import.meta.env.DEV) return null;
@@ -14,7 +14,7 @@ export function DevBadge() {
         <>
             <button
                 type="button"
-                className="logo__badge"
+                className={variant === 'pill' ? 'dev-pill' : 'logo__badge'}
                 aria-haspopup="dialog"
                 aria-label="Development version: more info"
                 onClick={() => setOpen(true)}
